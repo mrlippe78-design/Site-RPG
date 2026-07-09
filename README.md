@@ -16,7 +16,7 @@ Acesse `http://127.0.0.1:5173`.
 - Área Player separada da Área Admin.
 - Player: perfil público/privado, ficha, roleta de afinidade, inventário, chat, missões e reports.
 - Admin: painel de controle, inspeção/edição de fichas, envio de prêmios, títulos, pets, PO, essências, itens e afinidades.
-- Admin pode criar raças, classes, categorias de afinidade, afinidades, categorias de item, itens e missões pelo painel.
+- Admin usa a Forja para criar raças, classes, categorias de afinidade, afinidades, categorias de item, itens, missões, biomas, reinos, regiões e NPCs.
 - Chat global, sussurro e privado.
 - Reports de bug e denúncia de player.
 - Aviso global, temporada e temas de cores.
@@ -35,12 +35,31 @@ Acesse `http://127.0.0.1:5173`.
 - Mensagem direta em formato de lista lateral, com amigos, jogadores online e atalho para abrir perfil.
 - Perfis privados mostram apenas foto, nome do player, nome do personagem, título ativo e botão de amizade.
 - Correio no perfil para pedidos de amizade, convites de guilda e presentes enviados pelo Admin.
-- Sistema de guildas: criar custa 50 PO, líder edita brasão/nome/descrição, convida/remover membros, conversa no chat da guilda e monta partys de até 4 jogadores.
+- Sistema de guildas: criar custa 1.000 PO, limite de 10 membros, lista pública de guildas, pedido de entrada, líder edita brasão/nome/descrição, convida/remove membros, conversa no chat da guilda e monta partys de até 4 jogadores.
 - Missões de guilda têm raridade alta, recompensas maiores, envio para aprovação do Admin e reset semanal junto das missões comuns.
 - Admin consegue abrir e administrar guildas sem precisar ser membro.
+- Codex do player com afinidades, raridades, contagem de players por afinidade, raças, classes, biomas, reinos, regiões e NPCs em tempo real.
+- Formulários de ficha e edição de player mantêm rascunho local para não resetar quando chegam snapshots do Firebase.
+- Chat direto ordena mensagens no cliente, mostra erro de permissão quando o Firestore bloquear e tem botões rápidos de emoji.
 - Ficha base trava raça, classe e redução de atributos depois do primeiro salvamento.
 - Novos temas visuais e som leve de clique nos botões.
 - Tela inicial recebeu fonte medieval legível, título maior, card de login centralizado e sem aviso fixo de email Admin quando o Firebase está ativo.
+- Home do player agora mostra notícias em tempo real, players online, ranking compacto e visualizações de perfil.
+- Forja do Admin permite editar conteúdos existentes por JSON.
+- Admin tem botão de pânico para desconectar players e publicar alerta emergencial.
+- Poderes usam slots controlados pelo Admin; técnicas dependem de poder base aprovado.
+- Perfil aceita avatar/banner por URL ou GIF e descrição pública do personagem.
+- Modo app mobile com menu inferior fixo, cards compactos e textos menos empilhados.
+- Dashboard do player ganhou próximos passos, tutorial, status rápido, notificações e acesso ao termo.
+- Perfil agora tem abas de visão geral, itens, pets, poderes, histórico e conquistas.
+- Codex ganhou busca, filtros, ordenação, quadro de procurados, bestiário e facções.
+- Guia do player inclui tutorial inicial, livro de regras por capítulos, FAQ, termo e busca global.
+- Hall da Fama mostra rankings por prestígio, nível, raros e guildas.
+- Mercado inclui vitrine, leilão, crafting, cofre pessoal e passe de temporada.
+- Guildas mostram nível, reputação e mural editável pelo líder.
+- Admin ganhou Operações com auditoria, economia, balanceamento, modo manutenção e versão do termo.
+- Admin pode mutar/suspender players; denúncias de mensagem agora incluem contexto.
+- Forja épica permite criar/editar regras, FAQ, tutorial, procurados, bestiário, mercado, leilões, crafting, técnicas, conquistas, passe e reputações.
 
 ## Coleções Firestore usadas
 
@@ -55,13 +74,30 @@ Acesse `http://127.0.0.1:5173`.
 - `items/{id}`
 - `missionPool/{id}`
 - `weeklyMissions/{id}`
+- `biomes/{id}`
+- `kingdoms/{id}`
+- `regions/{id}`
+- `npcs/{id}`
 - `globalMessages/{id}`
 - `campaignDiary/{id}`
 - `socialRequests/{id}`
 - `guilds/{id}`
 - `guildMessages/{id}`
 - `guildMissions/{id}`
-- `privateChats/{chatId}/messages/{id}`
+- `directMessages/{id}`
+- `profileViews/{id}`
+- `rulesChapters/{id}`
+- `faqEntries/{id}`
+- `tutorialSteps/{id}`
+- `wantedBoard/{id}`
+- `bestiary/{id}`
+- `marketListings/{id}`
+- `auctionListings/{id}`
+- `craftingRecipes/{id}`
+- `techniqueLibrary/{id}`
+- `achievements/{id}`
+- `seasonPass/{id}`
+- `reputationFactions/{id}`
 - `reports/{id}`
 - `progressRequests/{id}`
 

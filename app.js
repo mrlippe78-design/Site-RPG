@@ -15,7 +15,10 @@ const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
 ];
 
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
+const GUILD_CREATE_COST = 1000;
+const GUILD_MEMBER_LIMIT = 10;
+const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
   { key: "for", label: "Força", short: "FOR" },
   { key: "vel", label: "Velocidade", short: "VEL" },
@@ -46,6 +49,10 @@ const DEFAULT_CONTENT = {
     soundEnabled: true,
     theme: "default",
     globalNotice: "Bem-vindo ao suporte oficial da mesa Millennium RPG.",
+    rulesVersion: "1.0",
+    termsText: "Ao entrar na mesa Millennium RPG, você concorda em respeitar os jogadores, seguir as decisões do Admin, não abusar de bugs do site, não manipular dados de ficha sem autorização e manter o jogo saudável para todos.",
+    maintenanceMode: false,
+    panicVersion: "",
     lastWeeklyResetKey: "",
     seedVersion: SEED_VERSION,
   },
@@ -129,7 +136,85 @@ const DEFAULT_CONTENT = {
     { id: "eco-antigo", title: "Eco Antigo", description: "Investigar ruínas, documentos ou memórias ligadas à temporada.", rarity: "Épico", reward: "Item raro aprovado pelo Admin" },
     { id: "desafio-celeste", title: "Desafio Celeste", description: "Criar uma cena marcante envolvendo sacrifício, pacto ou revelação.", rarity: "Lendário", reward: "Título raro" },
   ],
+  biomes: [
+    { id: "floresta-viva", name: "Floresta Viva", imageUrl: "", description: "Bosques antigos onde a natureza responde a pactos, sangue e magia.", region: "Terras Verdes" },
+    { id: "deserto-de-vidro", name: "Deserto de Vidro", imageUrl: "", description: "Campos de areia vitrificada por guerras arcanas esquecidas.", region: "Sul Escaldante" },
+    { id: "abismo-frio", name: "Abismo Frio", imageUrl: "", description: "Fendas congeladas que guardam ruínas e criaturas de eras perdidas.", region: "Norte Branco" },
+  ],
+  kingdoms: [
+    { id: "aurevia", name: "Aurèvia", imageUrl: "", description: "Reino comercial guiado por casas nobres e juramentos de ouro.", ruler: "Conselho Dourado" },
+    { id: "noctheryn", name: "Noctheryn", imageUrl: "", description: "Domínio de fortalezas sombrias, pactos antigos e diplomacia perigosa.", ruler: "Coroa Velada" },
+  ],
+  regions: [
+    { id: "porto-millennium", name: "Porto Millennium", imageUrl: "", description: "Cidade de chegada dos aventureiros, mercadores e rumores da temporada.", kingdomId: "aurevia" },
+    { id: "ruinas-de-kael", name: "Ruínas de Kael", imageUrl: "", description: "Território de exploração onde missões raras costumam nascer.", kingdomId: "noctheryn" },
+  ],
+  npcs: [
+    { id: "arquivista-eren", name: "Arquivista Eren", imageUrl: "", description: "Guardião de contratos, registros de guilda e segredos de mesa.", role: "Informante" },
+    { id: "capita-lyra", name: "Capitã Lyra", imageUrl: "", description: "Responsável por missões semanais e recompensas oficiais.", role: "Comandante" },
+  ],
+  rulesChapters: [
+    { id: "criacao-personagem", name: "Criação de personagem", order: 1, summary: "Defina nome, raça, classe, história, atributos e perfil público antes de começar.", full: "A primeira ficha salva trava raça, classe e atributos base. Depois disso, pontos novos entram apenas por evolução aprovada pelo Admin." },
+    { id: "atributos-testes", name: "Atributos e testes", order: 2, summary: "FOR, VEL, HAB, RES e POD orientam testes, combate e resistência.", full: "O Admin define dificuldade, bônus e consequências. Itens, afinidades, títulos e efeitos temporários podem alterar os totais." },
+    { id: "combate", name: "Combate", order: 3, summary: "Combate acontece fora do site, mas ficha, inventário e técnicas ficam registrados aqui.", full: "Use o site como apoio de consulta. Mudanças de poder, técnica, item raro e recompensa dependem de validação do Admin." },
+    { id: "afinidades", name: "Afinidades", order: 4, summary: "Afinidades vêm da roleta e podem gerar anúncios quando forem raras.", full: "A roleta usa categorias, pesos, pity e eventos configurados pelo Admin. XP não vem de giros." },
+    { id: "poderes-tecnicas", name: "Poderes e técnicas", order: 5, summary: "Cada player começa com um slot de poder base e cria técnicas a partir dele.", full: "Novos poderes exigem slot liberado pelo Admin. Técnicas e poderes podem receber pedido de nerf antes da aprovação." },
+    { id: "treino-evolucao", name: "Treino e evolução", order: 6, summary: "XP vem de treinos e missões aprovados.", full: "O player relata treino ou conclui missão. O Admin aprova, define XP, PO, essências e recompensas." },
+    { id: "missoes-semanais", name: "Missões semanais", order: 7, summary: "Missões resetam segunda 00:00 e podem ser recicladas pelo Admin.", full: "O player escolhe a missão, marca conclusão e aguarda validação. Guildas têm missões próprias mais difíceis." },
+    { id: "guildas", name: "Guildas", order: 8, summary: "Guildas têm limite, chat, líderes, partys e missões internas.", full: "Criar guilda custa 1.000 PO. O líder controla imagem, descrição, convites, membros e partys de até 4 pessoas." },
+    { id: "economia-inventario", name: "Economia, loja e inventário", order: 9, summary: "PO, itens, pets, títulos e recompensas ficam registrados no perfil.", full: "O Admin pode adicionar, remover e corrigir inventário. Itens raros podem aparecer no chat global." },
+    { id: "conduta", name: "Regras de conduta", order: 10, summary: "Respeito, clareza e jogo saudável vêm primeiro.", full: "Denúncias, bugs e abusos devem ser reportados pelo site. O Admin pode advertir, mutar, suspender ou ajustar fichas." },
+  ],
+  faqEntries: [
+    { id: "ganhar-xp", name: "Como ganho XP?", category: "Evolução", answer: "XP vem de missões, treinos e criações aprovadas pelo Admin. Girar roleta não dá XP." },
+    { id: "conseguir-poder", name: "Como consigo poder?", category: "Poderes", answer: "Envie um poder base em Missões > Poderes e técnicas. Para ter outro poder, o Admin precisa liberar um slot." },
+    { id: "entrar-guilda", name: "Como entro em guilda?", category: "Guildas", answer: "Abra Guildas, escolha uma na lista e envie pedido de entrada. O líder aprova pelo correio." },
+    { id: "perfil-privado", name: "O que perfil privado esconde?", category: "Perfil", answer: "Esconde atributos, itens, história e detalhes, mas mantém foto, nome, título e botão de amizade." },
+  ],
+  tutorialSteps: [
+    { id: "tutorial-ficha", name: "Crie sua ficha", order: 1, description: "Preencha personagem, avatar, raça, classe e atributos. Salvar pela primeira vez trava a base." },
+    { id: "tutorial-afinidade", name: "Role afinidade", order: 2, description: "Use essências para sortear afinidade. Raridades altas geram anúncio no chat global." },
+    { id: "tutorial-missao", name: "Pegue uma missão", order: 3, description: "Escolha uma missão semanal, conclua fora do site e envie para validação do Admin." },
+    { id: "tutorial-treino", name: "Relate treino", order: 4, description: "Treinos aprovados rendem XP e podem destravar evolução." },
+    { id: "tutorial-guilda", name: "Entre em guilda", order: 5, description: "Junte-se a uma guilda para acessar chat interno, partys e missões de alto risco." },
+  ],
+  wantedBoard: [
+    { id: "sombra-do-porto", name: "Sombra do Porto", rarity: "Raro", description: "Figura procurada por roubo de artefatos no Porto Millennium.", reward: "80 PO + pista de facção" },
+  ],
+  bestiary: [
+    { id: "sentinela-de-vidro", name: "Sentinela de Vidro", rarity: "Raro", region: "Deserto de Vidro", description: "Construto antigo que reflete magia e protege ruínas vitrificadas." },
+  ],
+  marketListings: [
+    { id: "kit-aventureiro", name: "Kit Aventureiro", rarity: "Comum", price: 75, description: "Pacote base de consumíveis e ferramentas. Compra depende de aprovação do Admin." },
+  ],
+  auctionListings: [
+    { id: "lamina-celeste", name: "Lâmina Celeste", rarity: "Épico", minBid: 500, endsAt: "Domingo 22:00", description: "Leilão semanal controlado pelo Admin." },
+  ],
+  craftingRecipes: [
+    { id: "amuleto-guarda", name: "Amuleto de Guarda", rarity: "Incomum", materials: "Cristal menor + tecido ritual", result: "Acessório defensivo aprovado pelo Admin." },
+  ],
+  techniqueLibrary: [
+    { id: "lamina-flamejante", name: "Lâmina Flamejante", rarity: "Comum", powerType: "Fogo", description: "Exemplo de técnica aprovada: dano simples com custo e alcance claros." },
+  ],
+  achievements: [
+    { id: "primeira-missao", name: "Primeira missão", rarity: "Comum", description: "Concluir uma missão aprovada pelo Admin." },
+    { id: "primeiro-raro", name: "Primeiro raro", rarity: "Raro", description: "Receber item, título ou afinidade rara." },
+    { id: "fundador-guilda", name: "Fundador de guilda", rarity: "Épico", description: "Criar uma guilda com 1.000 PO." },
+  ],
+  seasonPass: [
+    { id: "marco-1", name: "Marco I", tier: 1, reward: "Título cosmético da temporada", description: "Conclua atividades aprovadas para marcar presença na temporada." },
+    { id: "marco-2", name: "Marco II", tier: 2, reward: "Pet cosmético", description: "Recompensa sugerida para players ativos." },
+  ],
+  reputationFactions: [
+    { id: "conselho-dourado", name: "Conselho Dourado", region: "Aurèvia", description: "Facção comercial que valoriza contratos cumpridos e estabilidade.", levels: "Neutro, Aliado, Honrado" },
+  ],
 };
+
+const CONTENT_COLLECTIONS = Object.keys(DEFAULT_CONTENT).filter((key) => key !== "settings");
+
+function defaultContentState() {
+  return Object.fromEntries(CONTENT_COLLECTIONS.map((collection) => [collection, [...DEFAULT_CONTENT[collection]]]));
+}
 
 const NAVS = {
   player: [
@@ -139,7 +224,11 @@ const NAVS = {
     { id: "roulette", label: "Roleta", icon: "✦" },
     { id: "inventory", label: "Inventário", icon: "◎" },
     { id: "grimoire", label: "Grimório", icon: "✧" },
+    { id: "codex", label: "Codex", icon: "✥" },
+    { id: "help", label: "Guia", icon: "?" },
+    { id: "market", label: "Mercado", icon: "$" },
     { id: "ranking", label: "Ranking", icon: "#" },
+    { id: "hall", label: "Hall", icon: "★" },
     { id: "diary", label: "Diário", icon: "✒" },
     { id: "guild", label: "Guilda", icon: "⚔" },
     { id: "chat", label: "Chat", icon: "☷" },
@@ -149,10 +238,11 @@ const NAVS = {
   admin: [
     { id: "admin-home", label: "Controle", icon: "⚙" },
     { id: "admin-users", label: "Usuários", icon: "◈" },
-    { id: "admin-content", label: "Conteúdo", icon: "✚" },
+    { id: "admin-content", label: "Forja", icon: "✚" },
     { id: "admin-rewards", label: "Prêmios", icon: "✦" },
     { id: "admin-mail", label: "Correio", icon: "@" },
     { id: "admin-requests", label: "Validações", icon: "✓" },
+    { id: "admin-ops", label: "Operações", icon: "◆" },
     { id: "diary", label: "Diário", icon: "✒" },
     { id: "guild", label: "Guildas", icon: "⚔" },
     { id: "admin-chat", label: "Chat", icon: "☷" },
@@ -169,7 +259,11 @@ const VIEW_TITLES = {
   roulette: "Roleta de afinidade",
   inventory: "Inventário e dinheiro",
   grimoire: "Grimório e títulos",
+  codex: "Codex do mundo",
+  help: "Guia, regras e tutorial",
+  market: "Mercado e crafting",
   ranking: "Ranking da mesa",
+  hall: "Hall da Fama",
   diary: "Diário de campanha",
   guild: "Guildas e partys",
   chat: "Chat da comunidade",
@@ -177,10 +271,11 @@ const VIEW_TITLES = {
   reports: "Reports e denúncias",
   "admin-home": "Painel de controle",
   "admin-users": "Usuários e fichas",
-  "admin-content": "Raças, classes e afinidades",
+  "admin-content": "Forja do Admin",
   "admin-rewards": "Enviar prêmios",
   "admin-mail": "Correio místico",
   "admin-requests": "Validações e nerf",
+  "admin-ops": "Operações e auditoria",
   "admin-chat": "Chat e sussurros",
   "admin-missions": "Missões semanais",
   "admin-settings": "Temporada, avisos e temas",
@@ -200,26 +295,29 @@ const state = {
   selectedUserId: "",
   selectedPrivateUserId: "",
   contentTab: "race",
+  codexTab: "affinities",
+  codexSearch: "",
+  codexFilter: "all",
+  codexSort: "name",
+  profileTab: "overview",
+  helpTab: "tutorial",
+  marketTab: "market",
+  adminRequestFilter: "all",
+  epicCollection: "wantedBoard",
   lastRoll: null,
   lastRollResults: [],
   rolling: false,
   settings: { ...DEFAULT_CONTENT.settings },
-  content: {
-    races: [...DEFAULT_CONTENT.races],
-    classes: [...DEFAULT_CONTENT.classes],
-    affinityCategories: [...DEFAULT_CONTENT.affinityCategories],
-    affinities: [...DEFAULT_CONTENT.affinities],
-    itemCategories: [...DEFAULT_CONTENT.itemCategories],
-    items: [...DEFAULT_CONTENT.items],
-    missionPool: [...DEFAULT_CONTENT.missionPool],
-  },
+  content: defaultContentState(),
   users: [],
   characters: [],
   character: null,
   weeklyMissions: [],
   diaryEntries: [],
   globalMessages: [],
+  directMessages: [],
   privateMessages: [],
+  privateChatError: "",
   socialRequests: [],
   guilds: [],
   guildMessages: [],
@@ -227,7 +325,12 @@ const state = {
   selectedGuildId: "",
   reports: [],
   progressRequests: [],
+  profileViews: [],
   presenceTimer: null,
+  sessionAnnounced: false,
+  lastPanicVersion: "",
+  characterDraft: null,
+  adminUserDraft: null,
   unsubs: [],
   privateUnsub: null,
 };
@@ -291,7 +394,15 @@ function timeValue(value) {
 }
 
 function sortByName(items) {
-  return [...items].sort((a, b) => String(a.name || a.displayName || "").localeCompare(String(b.name || b.displayName || ""), "pt-BR"));
+  return [...items].sort((a, b) => String(a.name || a.title || a.displayName || "").localeCompare(String(b.name || b.title || b.displayName || ""), "pt-BR"));
+}
+
+function sortByOrder(items) {
+  return [...items].sort((a, b) => Number(a.order || a.tier || 0) - Number(b.order || b.tier || 0) || String(a.name || a.title || "").localeCompare(String(b.name || b.title || ""), "pt-BR"));
+}
+
+function normalize(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function bonusToText(bonus = {}) {
@@ -317,6 +428,10 @@ function optionList(items, selected = "", label = "name") {
     .join("");
 }
 
+function draftValue(draft, name, fallback = "") {
+  return draft && Object.prototype.hasOwnProperty.call(draft, name) ? draft[name] : fallback;
+}
+
 function getCategory(id) {
   return state.content.affinityCategories.find((item) => item.id === id) || state.content.affinityCategories[0];
 }
@@ -333,6 +448,15 @@ function getAffinity(id) {
   return state.content.affinities.find((item) => item.id === id) || null;
 }
 
+function affinityOwnerCount(affinityId) {
+  return state.characters.filter((character) => character.affinityId === affinityId).length;
+}
+
+function categoryOwnerCount(categoryId) {
+  const ids = new Set(state.content.affinities.filter((affinity) => affinity.categoryId === categoryId).map((affinity) => affinity.id));
+  return state.characters.filter((character) => ids.has(character.affinityId)).length;
+}
+
 function getItem(id) {
   return state.content.items.find((item) => item.id === id) || null;
 }
@@ -346,7 +470,9 @@ function defaultCharacter(uid, displayName = "") {
     playerName: displayName,
     characterName: "",
     characterAge: "",
+    characterDescription: "",
     creationLocked: false,
+    bannerUrl: "",
     raceId: "humano",
     classId: "guerreiro",
     affinityId: "",
@@ -368,6 +494,8 @@ function defaultCharacter(uid, displayName = "") {
     pets: [],
     inventory: [],
     power: { name: "", description: "" },
+    powers: [],
+    powerSlots: 1,
     techniques: [{ name: "", description: "" }],
     story: "",
     personality: "",
@@ -514,9 +642,10 @@ function myGuilds(uid = state.user?.uid) {
 }
 
 function currentGuild() {
-  const guilds = myGuilds();
-  if (!state.selectedGuildId && guilds.length) state.selectedGuildId = guilds[0].id;
-  return state.guilds.find((guild) => guild.id === state.selectedGuildId) || guilds[0] || null;
+  const mine = guildForUser();
+  if (!state.selectedGuildId && mine) state.selectedGuildId = mine.id;
+  if (!state.selectedGuildId && state.guilds.length) state.selectedGuildId = state.guilds[0].id;
+  return state.guilds.find((guild) => guild.id === state.selectedGuildId) || mine || state.guilds[0] || null;
 }
 
 function isGuildLeader(guild, uid = state.user?.uid) {
@@ -525,6 +654,23 @@ function isGuildLeader(guild, uid = state.user?.uid) {
 
 function guildMembers(guild) {
   return (guild?.memberIds || []).map((uid) => ({ uid, user: state.users.find((user) => user.id === uid), character: findCharacter(uid) })).filter((item) => item.user || item.character);
+}
+
+function guildForUser(uid = state.user?.uid) {
+  return state.guilds.find((guild) => (guild.memberIds || []).includes(uid)) || null;
+}
+
+function isGuildMember(guild, uid = state.user?.uid) {
+  return Boolean(guild && (guild.memberIds || []).includes(uid));
+}
+
+function pendingGuildRequest(guildId, uid = state.user?.uid) {
+  return state.socialRequests.find((request) => (
+    request.status === "pendente"
+    && request.guildId === guildId
+    && (request.type === "guildInvite" || request.type === "guildJoinRequest")
+    && (request.participants || []).includes(uid)
+  ));
 }
 
 function isCharacterBanned(character = currentCharacter()) {
@@ -635,6 +781,32 @@ function levelFromXp(xp = 0) {
 
 function pendingProgressRequests(uid = state.user?.uid) {
   return state.progressRequests.filter((request) => request.uid === uid && request.status === "pendente");
+}
+
+function syncPrivateMessages() {
+  if (!state.selectedPrivateUserId) {
+    state.privateMessages = [];
+    return;
+  }
+  state.privateMessages = state.directMessages
+    .filter((message) => (message.participants || []).includes(state.user.uid) && (message.participants || []).includes(state.selectedPrivateUserId))
+    .sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
+}
+
+function profileViewsFor(uid = state.user?.uid) {
+  return state.profileViews?.filter((view) => view.targetId === uid).length || 0;
+}
+
+function recentNews() {
+  return state.globalMessages
+    .filter((message) => ["system", "rare", "admin-alert", "join"].includes(message.type))
+    .slice(-8);
+}
+
+function approvedPowerCount(character = currentCharacter()) {
+  const powers = character.powers || [];
+  if (powers.length) return powers.filter((power) => power.status !== "reprovado").length;
+  return character.power?.name ? 1 : 0;
 }
 
 function progressTypeLabel(type) {
@@ -864,7 +1036,7 @@ async function seedDefaultsIfNeeded() {
 
     const batch = state.db.batch();
     batch.set(settingsRef, DEFAULT_CONTENT.settings, { merge: true });
-    ["races", "classes", "affinityCategories", "affinities", "itemCategories", "items", "missionPool"].forEach((collection) => {
+    CONTENT_COLLECTIONS.forEach((collection) => {
       DEFAULT_CONTENT[collection].forEach((item) => {
         batch.set(state.db.collection(collection).doc(item.id), item, { merge: true });
       });
@@ -883,7 +1055,16 @@ function subscribeDoc(path, id, cb) {
 function subscribeCollection(path, cb, queryBuilder = null) {
   const base = state.db.collection(path);
   const query = queryBuilder ? queryBuilder(base) : base;
-  const unsub = query.onSnapshot((snap) => cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))));
+  const unsub = query.onSnapshot(
+    (snap) => cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))),
+    (error) => {
+      console.error(error);
+      if (path === "directMessages") {
+        state.privateChatError = "O Firestore bloqueou o chat direto. Publique as regras novas e recarregue o site.";
+        render();
+      }
+    },
+  );
   state.unsubs.push(unsub);
 }
 
@@ -896,8 +1077,29 @@ function subscribeCore() {
   });
 
   subscribeDoc("settings", "system", (settings) => {
+    const previousPanic = state.lastPanicVersion;
     state.settings = { ...DEFAULT_CONTENT.settings, ...(settings || {}) };
-    document.body.className = state.settings.theme && state.settings.theme !== "default" ? `theme-${state.settings.theme}` : "";
+    if (!state.lastPanicVersion) state.lastPanicVersion = state.settings.panicVersion || "";
+    if (
+      previousPanic
+      && state.settings.panicVersion
+      && state.settings.panicVersion !== previousPanic
+      && state.role !== "admin"
+    ) {
+      toast("Atualização emergencial iniciada pelo Admin. Você será desconectado.");
+      setPresence(false);
+      cleanupListeners();
+      state.auth?.signOut?.();
+      state.user = null;
+      state.demo = false;
+      showAuth();
+      return;
+    }
+    state.lastPanicVersion = state.settings.panicVersion || "";
+    document.body.className = [
+      state.settings.theme && state.settings.theme !== "default" ? `theme-${state.settings.theme}` : "",
+      `season-${Number(state.settings.seasonNumber || 1)}`,
+    ].filter(Boolean).join(" ");
     maybeResetWeeklyMissions();
     render();
   });
@@ -911,7 +1113,7 @@ function subscribeCore() {
     render();
   });
 
-  ["races", "classes", "affinityCategories", "affinities", "itemCategories", "items", "missionPool"].forEach((collection) => {
+  CONTENT_COLLECTIONS.forEach((collection) => {
     subscribeCollection(collection, (items) => {
       state.content[collection] = items.length ? items : DEFAULT_CONTENT[collection];
       render();
@@ -942,6 +1144,17 @@ function subscribeCore() {
     state.globalMessages = messages.reverse();
     render();
   }, (q) => q.orderBy("createdAt", "desc").limit(80));
+
+  subscribeCollection("directMessages", (messages) => {
+    state.directMessages = messages.sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
+    syncPrivateMessages();
+    render();
+  }, (q) => q.where("participants", "array-contains", state.user.uid).limit(200));
+
+  subscribeCollection("profileViews", (views) => {
+    state.profileViews = views;
+    render();
+  }, (q) => q.limit(500));
 
   subscribeCollection("reports", (reports) => {
     state.reports = reports;
@@ -982,6 +1195,7 @@ function subscribeCore() {
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
   startPresence();
+  announceSessionEntry();
   render();
 }
 
@@ -992,15 +1206,7 @@ function enterDemo(role) {
   state.role = role;
   state.view = NAVS[role][0].id;
   state.settings = { ...DEFAULT_CONTENT.settings };
-  state.content = {
-    races: [...DEFAULT_CONTENT.races],
-    classes: [...DEFAULT_CONTENT.classes],
-    affinityCategories: [...DEFAULT_CONTENT.affinityCategories],
-    affinities: [...DEFAULT_CONTENT.affinities],
-    itemCategories: [...DEFAULT_CONTENT.itemCategories],
-    items: [...DEFAULT_CONTENT.items],
-    missionPool: [...DEFAULT_CONTENT.missionPool],
-  };
+  state.content = defaultContentState();
   const playerChar = {
     ...defaultCharacter("demo-player", "Player Demo"),
     characterName: "Ariadne Vesper",
@@ -1061,6 +1267,10 @@ function writeDemo(collection, id, data) {
   if (collection === "weeklyMissions") state.weeklyMissions = state.weeklyMissions.filter((item) => item.id !== id).concat({ ...data, id });
   if (collection === "campaignDiary") state.diaryEntries = state.diaryEntries.filter((item) => item.id !== id).concat({ ...data, id });
   if (collection === "globalMessages") state.globalMessages.push({ ...data, id });
+  if (collection === "directMessages") {
+    state.directMessages = state.directMessages.filter((item) => item.id !== id).concat({ ...data, id });
+    syncPrivateMessages();
+  }
   if (collection === "socialRequests") {
     const current = state.socialRequests.find((item) => item.id === id) || {};
     state.socialRequests = state.socialRequests.filter((item) => item.id !== id).concat({ ...current, ...data, id });
@@ -1090,6 +1300,22 @@ async function addGlobalMessage(data) {
     rarity: data.rarity || "",
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
+}
+
+async function announceSessionEntry() {
+  if (state.sessionAnnounced || !state.user || state.demo) return;
+  state.sessionAnnounced = true;
+  const character = currentCharacter();
+  const title = activeTitle(character);
+  const name = displayNameWithTitle(state.user.uid, state.profile?.displayName || state.user.email);
+  await addGlobalMessage({
+    senderId: "system",
+    senderName: "Sistema",
+    type: state.role === "admin" ? "admin-alert" : "join",
+    text: state.role === "admin"
+      ? `ALERTA: Admin ${name} entrou no site.`
+      : `${name}${title ? ` (${title.name})` : ""} entrou no servidor.`,
+  }).catch(() => {});
 }
 
 async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
@@ -1128,8 +1354,26 @@ function render() {
   const character = currentCharacter();
   $("#moneyPill").hidden = state.role === "admin";
   $("#moneyPill strong").textContent = Number(character.gold || 0);
+  $("#quickStatus").innerHTML = renderQuickStatus(character);
+  const notifications = notificationCount();
+  $("#notifyCount").hidden = notifications < 1;
+  $("#notifyCount").textContent = notifications;
+  $("#mobileBottomNav").innerHTML = renderMobileBottomNav(nav);
   $("#globalNotice").classList.toggle("show", Boolean(state.settings.globalNotice));
   $("#globalNotice").textContent = state.settings.globalNotice || "";
+
+  if (state.role !== "admin" && state.profile?.status === "suspended") {
+    $("#viewHost").innerHTML = renderSuspendedGate();
+    return;
+  }
+  if (state.role !== "admin" && state.settings.maintenanceMode) {
+    $("#viewHost").innerHTML = renderMaintenanceGate();
+    return;
+  }
+  if (state.role !== "admin" && !hasAcceptedTerms()) {
+    $("#viewHost").innerHTML = renderTermsGate();
+    return;
+  }
 
   const renderer = VIEW_RENDERERS[state.view] || renderPlayerHome;
   $("#viewHost").innerHTML = renderer();
@@ -1137,6 +1381,84 @@ function render() {
 
 function renderStat(label, value) {
   return `<div class="stat"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+}
+
+function notificationCount() {
+  const character = currentCharacter();
+  return pendingIncomingRequests().length
+    + (character.pendingGift ? 1 : 0)
+    + pendingProgressRequests().length;
+}
+
+function hasAcceptedTerms() {
+  return state.profile?.acceptedTermsVersion === (state.settings.rulesVersion || "1.0");
+}
+
+function renderQuickStatus(character) {
+  if (state.role === "admin") {
+    const online = state.users.filter((user) => user.role !== "admin" && isUserOnline(user)).length;
+    return `
+      <span>Online ${online}</span>
+      <span>Validações ${state.progressRequests.filter((request) => request.status === "pendente").length}</span>
+      <span>Reports ${state.reports.filter((report) => report.status !== "resolvido").length}</span>
+    `;
+  }
+  return `
+    <span>Nv ${Number(character.level || levelFromXp(character.xp || 0))}</span>
+    <span>Ess ${Number(character.affinityAttempts ?? state.settings.defaultAffinityAttempts ?? 0)}</span>
+    <span>Online ${state.users.filter((user) => user.role !== "admin" && isUserOnline(user)).length}</span>
+  `;
+}
+
+function renderMobileBottomNav(nav) {
+  const ids = state.role === "admin"
+    ? ["admin-home", "admin-users", "admin-requests", "admin-chat", "admin-ops"]
+    : ["player-home", "character", "chat", "missions", "profile"];
+  return nav
+    .filter((item) => ids.includes(item.id))
+    .map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`)
+    .join("");
+}
+
+function renderMaintenanceGate() {
+  return `
+    <div class="grid">
+      <article class="panel span-12 center-panel">
+        <p class="eyebrow">Modo manutenção</p>
+        <h2>O Admin está ajustando a plataforma</h2>
+        <p>Players ficam temporariamente bloqueados para evitar perda de dados durante correções e atualizações.</p>
+      </article>
+    </div>
+  `;
+}
+
+function renderSuspendedGate() {
+  return `
+    <div class="grid">
+      <article class="panel span-12 center-panel danger-zone">
+        <p class="eyebrow">Conta suspensa</p>
+        <h2>Seu acesso foi pausado pelo Admin</h2>
+        <p>Entre em contato com a administração da mesa pelo canal combinado para entender a decisão.</p>
+      </article>
+    </div>
+  `;
+}
+
+function renderTermsGate() {
+  return `
+    <div class="grid">
+      <article class="panel span-12 terms-gate">
+        <p class="eyebrow">Termo de acordo</p>
+        <h2>Antes de entrar na mesa</h2>
+        <p>${esc(state.settings.termsText || DEFAULT_CONTENT.settings.termsText)}</p>
+        <div class="content-grid">${renderRulesCards(state.content.rulesChapters.slice(0, 4))}</div>
+        <form class="form-stack" data-form="terms-accept">
+          <label class="checkbox-line"><input name="accepted" type="checkbox" value="true" required /> <span>Li e aceito as regras da mesa, convivência, punições e uso do site.</span></label>
+          <button class="primary-button" type="submit">Aceitar e entrar</button>
+        </form>
+      </article>
+    </div>
+  `;
 }
 
 function renderPlayerHome() {
@@ -1147,8 +1469,28 @@ function renderPlayerHome() {
   const pityMax = Number(state.settings.pityMax || 30);
   const pity = Number(character.pityCounter || 0);
   const pending = character.pendingGift;
+  const onlinePlayers = state.users.filter((user) => user.role !== "admin" && isUserOnline(user));
+  const topRank = leaderboard().slice(0, 5);
+  const news = recentNews();
+  const nextSteps = playerNextSteps(character);
   return `
     <div class="grid">
+      <article class="panel span-12 news-ticker">
+        <span>Notícias</span>
+        <div><p>${news.map((item) => esc(item.text || item.senderName || "Movimento registrado")).join(" • ") || "Nenhuma notícia recente da mesa."}</p></div>
+      </article>
+      <article class="panel span-12">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Próximos passos</p>
+            <h2>Seu painel de ação</h2>
+          </div>
+          <button class="ghost-button" type="button" data-nav="help">Tutorial</button>
+        </div>
+        <div class="next-step-grid">
+          ${nextSteps.map(renderNextStep).join("")}
+        </div>
+      </article>
       ${pending ? `
         <article class="gift-panel span-12">
           <div>
@@ -1160,7 +1502,7 @@ function renderPlayerHome() {
           <button class="primary-button" type="button" data-action="claim-gift">Recebido</button>
         </article>
       ` : ""}
-      <article class="panel span-8">
+      <article class="panel span-7">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Resumo</p>
@@ -1177,6 +1519,7 @@ function renderPlayerHome() {
           ${renderStat("Raros", character.totalRares || 0)}
           ${renderStat("PV máx.", totals.hpMax)}
           ${renderStat("PP máx.", totals.ppMax)}
+          ${renderStat("Views", profileViewsFor(state.user.uid))}
         </div>
         <div class="meter-block">
           <div class="panel-heading compact">
@@ -1186,13 +1529,28 @@ function renderPlayerHome() {
           ${renderPityBar(pity, pityMax)}
         </div>
       </article>
-      <article class="panel span-4">
+      <article class="panel span-5 affinity-mini">
         <p class="eyebrow">Afinidade</p>
         <h3>${esc(affinity?.name || "Não sorteada")}</h3>
         <p>${affinity ? `${esc(getCategory(affinity.categoryId)?.name)} · ${esc(bonusToText(affinity.bonus))}` : "Use a roleta quando tiver essências disponíveis."}</p>
-        <button class="ghost-button" type="button" data-nav="roulette">Ir para roleta</button>
+        <div class="action-row">
+          <button class="ghost-button" type="button" data-nav="roulette">Roleta</button>
+          <button class="ghost-button" type="button" data-nav="codex">Codex</button>
+        </div>
       </article>
-      <article class="panel span-7">
+      <article class="panel span-4">
+        <div class="panel-heading"><div><p class="eyebrow">Online agora</p><h3>${onlinePlayers.length} player(s)</h3></div></div>
+        <div class="online-strip">
+          ${onlinePlayers.slice(0, 8).map((user) => `<button class="online-pill" type="button" data-action="open-user-profile" data-user-id="${esc(user.id)}"><span></span>${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</button>`).join("") || `<div class="empty-state compact">Ninguém online agora.</div>`}
+        </div>
+      </article>
+      <article class="panel span-4">
+        <div class="panel-heading"><div><p class="eyebrow">Ranking</p><h3>Top 5</h3></div></div>
+        <div class="mini-rank">
+          ${topRank.map((char, index) => `<button class="ranking-row compact" type="button" data-action="open-user-profile" data-user-id="${esc(char.ownerId)}"><strong>#${index + 1}</strong><span>${esc(char.characterName || getUserName(char.ownerId))}</span><b>${prestigeFor(char)}</b></button>`).join("") || `<div class="empty-state compact">Sem ranking ainda.</div>`}
+        </div>
+      </article>
+      <article class="panel span-4">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Missões</p>
@@ -1202,7 +1560,7 @@ function renderPlayerHome() {
         </div>
         <div class="list">${renderMissionList(state.weeklyMissions.slice(0, 3))}</div>
       </article>
-      <article class="panel span-5">
+      <article class="panel span-8">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Chat</p>
@@ -1216,15 +1574,72 @@ function renderPlayerHome() {
   `;
 }
 
+function playerNextSteps(character) {
+  const pending = pendingProgressRequests();
+  const hasActiveMission = (character.activeMissions || []).length > 0;
+  const hasGuild = Boolean(guildForUser());
+  return [
+    {
+      title: character.creationLocked ? "Ficha base salva" : "Finalize sua ficha",
+      text: character.creationLocked ? "Raça, classe e atributos base já estão protegidos." : "Salve nome, raça, classe e atributos para liberar a jornada.",
+      nav: "character",
+      done: character.creationLocked,
+    },
+    {
+      title: getAffinity(character.affinityId) ? "Afinidade registrada" : "Role sua afinidade",
+      text: getAffinity(character.affinityId) ? getAffinity(character.affinityId).name : "Use essências na roleta. XP vem de missões e treinos, não de giros.",
+      nav: "roulette",
+      done: Boolean(getAffinity(character.affinityId)),
+    },
+    {
+      title: hasActiveMission ? "Missão em andamento" : "Escolha uma missão",
+      text: hasActiveMission ? `${(character.activeMissions || []).length} missão(ões) ativa(s).` : "Pegue uma missão semanal e envie conclusão ao Admin.",
+      nav: "missions",
+      done: hasActiveMission,
+    },
+    {
+      title: pending.length ? "Validação pendente" : "Relate treino ou criação",
+      text: pending.length ? `${pending.length} pedido(s) aguardando análise.` : "Treinos, poderes e técnicas passam pelo Admin.",
+      nav: "missions",
+      done: pending.length > 0,
+    },
+    {
+      title: hasGuild ? "Guilda ativa" : "Entre em uma guilda",
+      text: hasGuild ? guildForUser().name : "Guildas liberam chat interno e missões em party.",
+      nav: "guild",
+      done: hasGuild,
+    },
+  ];
+}
+
+function renderNextStep(step) {
+  return `
+    <button class="next-step ${step.done ? "done" : ""}" type="button" data-nav="${esc(step.nav)}">
+      <span>${step.done ? "✓" : "!"}</span>
+      <strong>${esc(step.title)}</strong>
+      <small>${esc(step.text)}</small>
+    </button>
+  `;
+}
+
 function renderProfile() {
   const character = currentCharacter();
   const totals = getTotals(character);
   const race = getRace(character.raceId);
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
+  const tabs = [
+    ["overview", "Visão"],
+    ["inventory", "Itens"],
+    ["pets", "Pets"],
+    ["powers", "Poderes"],
+    ["history", "Histórico"],
+    ["achievements", "Conquistas"],
+  ];
   return `
     <div class="grid">
       <article class="panel span-12">
+        ${character.bannerUrl ? `<img class="profile-banner" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
         <div class="profile-grid">
           <img class="avatar" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
           <div>
@@ -1233,17 +1648,27 @@ function renderProfile() {
                 <p class="eyebrow">${esc(state.profile?.displayName || "Player")}</p>
                 <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
               </div>
-              <button class="ghost-button" type="button" data-action="toggle-profile-public">
-                ${character.profilePublic ? "Deixar privado" : "Deixar público"}
-              </button>
+              <div class="action-row">
+                <button class="ghost-button" type="button" data-action="copy-profile-card">Copiar cartão</button>
+                <button class="ghost-button" type="button" data-action="toggle-profile-public">
+                  ${character.profilePublic ? "Deixar privado" : "Deixar público"}
+                </button>
+              </div>
             </div>
             <p>${esc(race?.name)} · ${esc(klass?.name)} · ${esc(affinity?.name || "Sem afinidade")}</p>
+            <p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>
             <div class="tag-row">
               ${(character.titles || []).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
             </div>
           </div>
         </div>
       </article>
+      <article class="panel span-12">
+        <div class="tabs profile-tabs">
+          ${tabs.map(([id, label]) => `<button class="tab ${state.profileTab === id ? "active" : ""}" type="button" data-action="profile-tab" data-tab="${id}">${label}</button>`).join("")}
+        </div>
+      </article>
+      ${renderProfileTab(character, totals)}
       <article class="panel span-12">
         <div class="panel-heading">
           <div>
@@ -1254,28 +1679,87 @@ function renderProfile() {
         </div>
         <div class="mailbox-list">${renderMailbox()}</div>
       </article>
-      <article class="panel span-4">
-        <p class="eyebrow">Atributos</p>
-        <div class="attribute-grid">${ATTRIBUTES.map((attr) => renderStat(attr.short, totals[attr.key])).join("")}${renderStat("DEF", totals.def)}</div>
-      </article>
-      <article class="panel span-4">
-        <p class="eyebrow">Pets</p>
-        <div class="list">${renderPets(character.pets || [])}</div>
-      </article>
-      <article class="panel span-4">
-        <p class="eyebrow">Itens em destaque</p>
-        <div class="list">${renderInventoryItems((character.inventory || []).slice(0, 5), false)}</div>
-      </article>
-      <article class="panel span-6">
-        <p class="eyebrow">História</p>
-        <p>${esc(character.story || "Nenhuma história registrada.")}</p>
-      </article>
-      <article class="panel span-6">
-        <p class="eyebrow">Personalidade</p>
-        <p>${esc(character.personality || "Nenhuma personalidade registrada.")}</p>
-      </article>
     </div>
   `;
+}
+
+function renderProfileTab(character, totals) {
+  const tab = state.profileTab || "overview";
+  if (tab === "inventory") {
+    return `<article class="panel span-12"><div class="inventory-grid">${renderInventoryItems(character.inventory || [], true)}</div></article>`;
+  }
+  if (tab === "pets") {
+    return `<article class="panel span-12"><div class="pet-grid">${renderPets(character.pets || [])}</div></article>`;
+  }
+  if (tab === "powers") {
+    const powers = character.powers?.length ? character.powers : (character.power?.name ? [character.power] : []);
+    return `
+      <article class="panel span-6"><p class="eyebrow">Poderes</p><div class="list">${renderPowerRows(powers, "Nenhum poder aprovado.")}</div></article>
+      <article class="panel span-6"><p class="eyebrow">Técnicas</p><div class="list">${renderPowerRows(character.techniques || [], "Nenhuma técnica aprovada.")}</div></article>
+    `;
+  }
+  if (tab === "history") {
+    const rewards = rewardHistoryFor(character).slice(0, 20);
+    return `
+      <article class="panel span-6"><p class="eyebrow">Giros recentes</p><div class="grimoire-list">${(character.rollHistory || []).slice(-12).reverse().map((roll) => `<div class="grimoire-row"><div><span>${esc(roll.rarity || "Comum")}</span><strong>${esc(roll.affinityName || roll.name || "Afinidade")}</strong><p>${esc(tsText(roll.createdAt))}</p></div></div>`).join("") || `<div class="empty-state">Sem histórico de giros.</div>`}</div></article>
+      <article class="panel span-6"><p class="eyebrow">Recompensas</p><div class="grimoire-list">${rewards.map((item) => `<div class="grimoire-row"><div><span>${esc(item.type)}</span><strong>${esc(item.name)}</strong><p>${esc(item.detail)}</p></div></div>`).join("") || `<div class="empty-state">Sem recompensas registradas.</div>`}</div></article>
+    `;
+  }
+  if (tab === "achievements") {
+    return `<article class="panel span-12"><div class="achievement-grid">${renderAchievements(character)}</div></article>`;
+  }
+  return `
+    <article class="panel span-4">
+      <p class="eyebrow">Atributos</p>
+      <div class="attribute-grid">${ATTRIBUTES.map((attr) => renderStat(attr.short, totals[attr.key])).join("")}${renderStat("DEF", totals.def)}</div>
+    </article>
+    <article class="panel span-4">
+      <p class="eyebrow">História</p>
+      <p>${esc(character.story || "Nenhuma história registrada.")}</p>
+    </article>
+    <article class="panel span-4">
+      <p class="eyebrow">Personalidade</p>
+      <p>${esc(character.personality || "Nenhuma personalidade registrada.")}</p>
+    </article>
+  `;
+}
+
+function renderPowerRows(items, emptyText) {
+  return items.filter((item) => item?.name || item?.description).map((item) => `
+    <div class="item-row">
+      <span>${esc(item.status || "Aprovado")}</span>
+      <strong>${esc(item.name || "Sem nome")}</strong>
+      <p>${esc(item.description || "")}</p>
+    </div>
+  `).join("") || `<div class="empty-state">${emptyText}</div>`;
+}
+
+function rewardHistoryFor(character) {
+  return [
+    ...(character.titles || []).map((item) => ({ type: "Título", name: item.name, detail: item.rarity || "Título" })),
+    ...(character.inventory || []).map((item) => ({ type: "Item", name: item.name, detail: item.rarity || "Comum" })),
+    ...(character.pets || []).map((item) => ({ type: "Pet", name: item.name, detail: item.rarity || "Pet" })),
+  ];
+}
+
+function derivedAchievementIds(character) {
+  const approved = state.progressRequests.filter((request) => request.uid === character.ownerId && request.status === "aprovado");
+  return new Set([
+    approved.some((request) => request.type === "mission") ? "primeira-missao" : "",
+    Number(character.totalRares || 0) > 0 || (character.inventory || []).some((item) => isRareReward(item.rarity)) || (character.titles || []).some((item) => isRareReward(item.rarity)) ? "primeiro-raro" : "",
+    state.guilds.some((guild) => guild.leaderId === character.ownerId) ? "fundador-guilda" : "",
+  ].filter(Boolean));
+}
+
+function renderAchievements(character) {
+  const earned = derivedAchievementIds(character);
+  return state.content.achievements.map((achievement) => `
+    <div class="achievement-card ${earned.has(achievement.id) ? "earned" : ""}">
+      <span>${earned.has(achievement.id) ? "Conquistado" : "Bloqueado"} · ${esc(achievement.rarity || "Comum")}</span>
+      <strong>${esc(achievement.name)}</strong>
+      <p>${esc(achievement.description || "")}</p>
+    </div>
+  `).join("") || `<div class="empty-state">Nenhuma conquista cadastrada.</div>`;
 }
 
 function renderMailbox() {
@@ -1297,11 +1781,17 @@ function renderMailbox() {
   }
   requests.forEach((request) => {
     const fromName = displayNameWithTitle(request.fromId, request.fromName || "Player");
+    const requestLabel = request.type === "guildInvite" ? "Convite de guilda" : request.type === "guildJoinRequest" ? "Pedido para guilda" : "Pedido de amizade";
+    const requestTitle = request.type === "guildInvite"
+      ? `${fromName} convidou você para ${request.guildName || "uma guilda"}`
+      : request.type === "guildJoinRequest"
+        ? `${fromName} quer entrar em ${request.guildName || "sua guilda"}`
+        : `${fromName} quer adicionar você`;
     rows.push(`
       <div class="mail-row">
         <div>
-          <span>${request.type === "guildInvite" ? "Convite de guilda" : "Pedido de amizade"}</span>
-          <strong>${esc(request.type === "guildInvite" ? `${fromName} convidou você para ${request.guildName || "uma guilda"}` : `${fromName} quer adicionar você`)}</strong>
+          <span>${esc(requestLabel)}</span>
+          <strong>${esc(requestTitle)}</strong>
           <p>${esc(request.message || "")}</p>
         </div>
         <div class="action-row">
@@ -1316,8 +1806,10 @@ function renderMailbox() {
 
 function renderCharacterForm() {
   const character = currentCharacter();
+  const draft = state.characterDraft || null;
   const locked = character.creationLocked || Boolean(character.characterName && character.raceId && character.classId);
-  const spent = ATTRIBUTES.reduce((sum, attr) => sum + Number(character.base?.[attr.key] || 0), 0);
+  const visibleBase = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(draftValue(draft, `base_${attr.key}`, character.base?.[attr.key] || 0))]));
+  const spent = ATTRIBUTES.reduce((sum, attr) => sum + Number(visibleBase[attr.key] || 0), 0);
   const totalPoints = 20 + Number(character.freePoints || 0);
   const remaining = totalPoints - spent;
   return `
@@ -1332,14 +1824,16 @@ function renderCharacterForm() {
           <button class="primary-button" type="submit">Salvar ficha</button>
         </div>
         <div class="form-grid">
-          <label><span>Nome do player</span><input name="playerName" value="${esc(character.playerName || "")}" /></label>
-          <label><span>Nome do personagem</span><input name="characterName" value="${esc(character.characterName || "")}" /></label>
-          <label><span>Idade do personagem</span><input name="characterAge" value="${esc(character.characterAge || "")}" /></label>
-          <label><span>Avatar por URL</span><input name="avatarUrl" value="${esc(character.avatarUrl || "")}" /></label>
-          <label><span>Raça</span><select name="raceId" ${locked ? "disabled" : ""}>${optionList(state.content.races, character.raceId)}</select>${locked ? `<input type="hidden" name="raceId" value="${esc(character.raceId)}" />` : ""}</label>
-          <label><span>Classe</span><select name="classId" ${locked ? "disabled" : ""}>${optionList(state.content.classes, character.classId)}</select>${locked ? `<input type="hidden" name="classId" value="${esc(character.classId)}" />` : ""}</label>
-          <label class="wide"><span>História</span><textarea name="story" rows="5">${esc(character.story || "")}</textarea></label>
-          <label class="wide"><span>Personalidade</span><textarea name="personality" rows="4">${esc(character.personality || "")}</textarea></label>
+          <label><span>Nome do player</span><input name="playerName" value="${esc(draftValue(draft, "playerName", character.playerName || ""))}" /></label>
+          <label><span>Nome do personagem</span><input name="characterName" value="${esc(draftValue(draft, "characterName", character.characterName || ""))}" /></label>
+          <label><span>Idade do personagem</span><input name="characterAge" type="number" inputmode="numeric" min="0" step="1" value="${esc(draftValue(draft, "characterAge", character.characterAge || ""))}" /></label>
+          <label><span>Avatar por URL ou GIF</span><input name="avatarUrl" value="${esc(draftValue(draft, "avatarUrl", character.avatarUrl || ""))}" /></label>
+          <label><span>Banner animado por URL ou GIF</span><input name="bannerUrl" value="${esc(draftValue(draft, "bannerUrl", character.bannerUrl || ""))}" /></label>
+          <label><span>Raça</span><select name="raceId" ${locked ? "disabled" : ""}>${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select>${locked ? `<input type="hidden" name="raceId" value="${esc(character.raceId)}" />` : ""}</label>
+          <label><span>Classe</span><select name="classId" ${locked ? "disabled" : ""}>${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select>${locked ? `<input type="hidden" name="classId" value="${esc(character.classId)}" />` : ""}</label>
+          <label class="wide"><span>Descrição do personagem</span><textarea name="characterDescription" rows="4">${esc(draftValue(draft, "characterDescription", character.characterDescription || ""))}</textarea></label>
+          <label class="wide"><span>História</span><textarea name="story" rows="5">${esc(draftValue(draft, "story", character.story || ""))}</textarea></label>
+          <label class="wide"><span>Personalidade</span><textarea name="personality" rows="4">${esc(draftValue(draft, "personality", character.personality || ""))}</textarea></label>
         </div>
       </article>
       <article class="panel span-6">
@@ -1354,7 +1848,7 @@ function renderCharacterForm() {
           ${ATTRIBUTES.map((attr) => `
             <label>
               <span>${attr.label} (${attr.short})</span>
-              <input name="base_${attr.key}" type="number" min="${locked ? Number(character.base?.[attr.key] || 0) : 0}" value="${Number(character.base?.[attr.key] || 0)}" />
+              <input name="base_${attr.key}" type="number" min="${locked ? Number(character.base?.[attr.key] || 0) : 0}" value="${Number(visibleBase[attr.key] || 0)}" />
             </label>
           `).join("")}
         </div>
@@ -1472,7 +1966,7 @@ function renderInventoryItems(items, withEquip) {
       <span>${esc(item.rarity || "Comum")}</span>
       <strong>${esc(item.name)}</strong>
       <p>${esc(bonusToText(item.bonus || {}))}</p>
-      ${withEquip ? `<button class="ghost-button" type="button" data-action="toggle-equip" data-item-instance="${esc(item.instanceId || item.id)}">${item.equipped ? "Desequipar" : "Equipar"}</button>` : ""}
+      ${withEquip ? `<div class="action-row"><button class="ghost-button" type="button" data-action="compare-item" data-item-instance="${esc(item.instanceId || item.id)}">Comparar</button><button class="ghost-button" type="button" data-action="toggle-equip" data-item-instance="${esc(item.instanceId || item.id)}">${item.equipped ? "Desequipar" : "Equipar"}</button></div>` : ""}
     </div>
   `).join("");
 }
@@ -1585,6 +2079,308 @@ function renderRanking() {
   `;
 }
 
+function renderCodex() {
+  const tabs = [
+    ["affinities", "Afinidades"],
+    ["categories", "Raridades"],
+    ["races", "Raças"],
+    ["classes", "Classes"],
+    ["biomes", "Biomas"],
+    ["kingdoms", "Reinos"],
+    ["regions", "Regiões"],
+    ["npcs", "NPCs"],
+    ["wanted", "Procurados"],
+    ["bestiary", "Bestiário"],
+    ["reputation", "Facções"],
+  ];
+  const tab = state.codexTab || "affinities";
+  const renderCodexCards = (items, detail) => {
+    const visible = filterCodexItems(items);
+    return `
+    <div class="codex-grid">
+      ${visible.map((item) => `
+        <article class="codex-card">
+          ${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || item.id)}" />` : `<div class="codex-mark">${esc(String(item.name || item.title || "?").slice(0, 1))}</div>`}
+          <div>
+            <span>${esc(item.rarity || item.region || item.role || item.ruler || item.id)}</span>
+            <h3>${esc(item.name || item.title || item.id)}</h3>
+            <p>${esc(detail(item))}</p>
+          </div>
+        </article>
+      `).join("") || `<div class="empty-state">Nada cadastrado nesta aba.</div>`}
+    </div>
+  `;
+  };
+  const views = {
+    affinities: () => renderCodexCards(state.content.affinities, (item) => {
+      const category = getCategory(item.categoryId);
+      return `${category?.name || "Sem categoria"} · ${category?.rarity || "Comum"} · ${bonusToText(item.bonus)} · ${affinityOwnerCount(item.id)} player(s) · ${item.passive || item.description || ""}`;
+    }),
+    categories: () => renderCodexCards(state.content.affinityCategories, (item) => `Peso ${item.weight || 0} · ${item.rarity || "Comum"} · ${state.content.affinities.filter((affinity) => affinity.categoryId === item.id).length} afinidade(s) · ${categoryOwnerCount(item.id)} player(s) · ${item.description || "Categoria de roleta e balanceamento."}`),
+    races: () => renderCodexCards(state.content.races, (item) => `${bonusToText(item.bonus)} · ${item.passive || ""} ${item.description || ""}`),
+    classes: () => renderCodexCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role || ""} ${item.description || ""}`),
+    biomes: () => renderCodexCards(state.content.biomes, (item) => `${item.region || "Mundo"} · ${item.description || ""}`),
+    kingdoms: () => renderCodexCards(state.content.kingdoms, (item) => `${item.ruler || "Sem governante"} · ${item.description || ""}`),
+    regions: () => renderCodexCards(state.content.regions, (item) => `${state.content.kingdoms.find((kingdom) => kingdom.id === item.kingdomId)?.name || "Independente"} · ${item.description || ""}`),
+    npcs: () => renderCodexCards(state.content.npcs, (item) => `${item.role || "NPC importante"} · ${item.description || ""}`),
+    wanted: () => renderCodexCards(state.content.wantedBoard, (item) => `${item.reward || "Recompensa a definir"} · ${item.description || ""}`),
+    bestiary: () => renderCodexCards(state.content.bestiary, (item) => `${item.region || "Região desconhecida"} · ${item.description || ""}`),
+    reputation: () => renderCodexCards(state.content.reputationFactions, (item) => `${item.region || "Mundo"} · ${item.levels || ""} · ${item.description || ""}`),
+  };
+  return `
+    <div class="grid">
+      <article class="panel span-12">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Biblioteca viva</p>
+            <h2>Codex Millennium</h2>
+          </div>
+          <span class="tag">Atualizado pela Forja</span>
+        </div>
+        <div class="tabs codex-tabs">
+          ${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="codex-tab" data-tab="${id}">${label}</button>`).join("")}
+        </div>
+        <div class="codex-controls">
+          <input data-action="codex-search" placeholder="Buscar no Codex..." value="${esc(state.codexSearch)}" />
+          <select data-action="codex-filter">
+            <option value="all" ${state.codexFilter === "all" ? "selected" : ""}>Todos</option>
+            ${RARITIES.map((rarity) => `<option value="${rarity}" ${state.codexFilter === rarity ? "selected" : ""}>${rarity}</option>`).join("")}
+          </select>
+          <select data-action="codex-sort">
+            <option value="name" ${state.codexSort === "name" ? "selected" : ""}>Nome</option>
+            <option value="rarity" ${state.codexSort === "rarity" ? "selected" : ""}>Raridade</option>
+            <option value="owners" ${state.codexSort === "owners" ? "selected" : ""}>Mais players</option>
+          </select>
+        </div>
+      </article>
+      <article class="panel span-12">
+        ${views[tab]?.() || views.affinities()}
+      </article>
+    </div>
+  `;
+}
+
+function filterCodexItems(items) {
+  const search = normalize(state.codexSearch || "");
+  const filter = state.codexFilter || "all";
+  const ranked = [...items].filter((item) => {
+    const text = normalize(`${item.name || ""} ${item.title || ""} ${item.description || ""} ${item.passive || ""} ${item.role || ""} ${item.region || ""} ${item.rarity || ""}`);
+    const rarity = item.rarity || getCategory(item.categoryId)?.rarity || "";
+    return (!search || text.includes(search)) && (filter === "all" || rarity === filter);
+  });
+  if (state.codexSort === "rarity") return ranked.sort((a, b) => RARITIES.indexOf(a.rarity || getCategory(a.categoryId)?.rarity || "Comum") - RARITIES.indexOf(b.rarity || getCategory(b.categoryId)?.rarity || "Comum"));
+  if (state.codexSort === "owners") return ranked.sort((a, b) => affinityOwnerCount(b.id) - affinityOwnerCount(a.id));
+  return sortByName(ranked);
+}
+
+function renderRulesCards(chapters) {
+  return sortByOrder(chapters).map((chapter) => `
+    <article class="rule-card">
+      <span>Capítulo ${Number(chapter.order || 0)}</span>
+      <h3>${esc(chapter.name)}</h3>
+      <p>${esc(chapter.summary || "")}</p>
+      <details><summary>Versão completa</summary><p>${esc(chapter.full || "")}</p></details>
+    </article>
+  `).join("") || `<div class="empty-state">Nenhum capítulo cadastrado.</div>`;
+}
+
+function renderHelpCenter() {
+  const tabs = [
+    ["tutorial", "Tutorial"],
+    ["rules", "Livro de regras"],
+    ["faq", "FAQ"],
+    ["terms", "Termo"],
+    ["search", "Busca"],
+  ];
+  const tab = state.helpTab || "tutorial";
+  const views = {
+    tutorial: () => `
+      <article class="panel span-12">
+        <div class="timeline-list">
+          ${sortByOrder(state.content.tutorialSteps).map((step) => `<div class="timeline-step"><span>${Number(step.order || 0)}</span><div><h3>${esc(step.name)}</h3><p>${esc(step.description || "")}</p></div></div>`).join("")}
+        </div>
+      </article>
+    `,
+    rules: () => `<article class="panel span-12"><div class="content-grid">${renderRulesCards(state.content.rulesChapters)}</div></article>`,
+    faq: () => `
+      <article class="panel span-12">
+        <div class="faq-list">
+          ${sortByName(state.content.faqEntries).map((faq) => `<details class="faq-item"><summary>${esc(faq.name)}</summary><p>${esc(faq.answer || "")}</p><span>${esc(faq.category || "FAQ")}</span></details>`).join("") || `<div class="empty-state">Nenhuma pergunta cadastrada.</div>`}
+        </div>
+      </article>
+    `,
+    terms: () => `
+      <article class="panel span-12 terms-gate">
+        <p class="eyebrow">Versão ${esc(state.settings.rulesVersion || "1.0")}</p>
+        <h2>Termo de acordo da mesa</h2>
+        <p>${esc(state.settings.termsText || DEFAULT_CONTENT.settings.termsText)}</p>
+        <span class="tag">${hasAcceptedTerms() ? "Aceito por você" : "Aceite pendente"}</span>
+      </article>
+    `,
+    search: () => renderGlobalSearchPanel(),
+  };
+  return `
+    <div class="grid">
+      <article class="panel span-12">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Central do player</p><h2>Guia, regras e ajuda rápida</h2></div>
+          <span class="tag">Versão ${esc(state.settings.rulesVersion || "1.0")}</span>
+        </div>
+        <div class="tabs codex-tabs">
+          ${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="help-tab" data-tab="${id}">${label}</button>`).join("")}
+        </div>
+      </article>
+      ${views[tab]?.() || views.tutorial()}
+    </div>
+  `;
+}
+
+function renderGlobalSearchPanel() {
+  const query = normalize(state.codexSearch || "");
+  const pools = [
+    ["Afinidade", state.content.affinities],
+    ["Raça", state.content.races],
+    ["Classe", state.content.classes],
+    ["Missão", state.content.missionPool],
+    ["Regra", state.content.rulesChapters],
+    ["FAQ", state.content.faqEntries],
+    ["NPC", state.content.npcs],
+    ["Item", state.content.items],
+  ];
+  const results = pools.flatMap(([type, items]) => items.map((item) => ({ type, item })))
+    .filter(({ item }) => !query || normalize(`${item.name || item.title || ""} ${item.description || ""} ${item.summary || ""} ${item.answer || ""}`).includes(query))
+    .slice(0, 40);
+  return `
+    <article class="panel span-12">
+      <div class="codex-controls">
+        <input data-action="codex-search" placeholder="Buscar fogo, guerreiro, missão, regra..." value="${esc(state.codexSearch)}" />
+      </div>
+      <div class="content-grid">
+        ${results.map(({ type, item }) => `<div class="content-card"><span>${esc(type)}</span><h3>${esc(item.name || item.title || item.id)}</h3><p>${esc(item.description || item.summary || item.answer || item.passive || "")}</p></div>`).join("") || `<div class="empty-state">Digite algo para buscar no site.</div>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderMarket() {
+  const tabs = [
+    ["market", "Mercado"],
+    ["auction", "Leilão"],
+    ["crafting", "Crafting"],
+    ["vault", "Cofre"],
+    ["pass", "Passe"],
+  ];
+  const tab = state.marketTab || "market";
+  const cards = {
+    market: () => marketCards(state.content.marketListings, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`),
+    auction: () => marketCards(state.content.auctionListings, (item) => `Lance mínimo ${Number(item.minBid || 0)} PO · termina ${item.endsAt || "a definir"} · ${item.description || ""}`),
+    crafting: () => marketCards(state.content.craftingRecipes, (item) => `${item.materials || "Materiais a definir"} → ${item.result || ""}`),
+    vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO no bolso", currentCharacter().gold || 0)}${renderStat("Itens", (currentCharacter().inventory || []).length)}${renderStat("Raros", currentCharacter().totalRares || 0)}</div><p class="hint">Cofre pessoal visual. Movimentações raras ainda passam pelo Admin.</p></article>`,
+    pass: () => marketCards(state.content.seasonPass, (item) => `Tier ${item.tier || 1} · ${item.reward || ""} · ${item.description || ""}`),
+  };
+  return `
+    <div class="grid">
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Economia</p><h2>Mercado, leilão, cofre e passe</h2></div><span class="tag">Admin controla recompensas</span></div>
+        <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="market-tab" data-tab="${id}">${label}</button>`).join("")}</div>
+      </article>
+      ${tab === "vault" ? cards.vault() : `<article class="panel span-12"><div class="content-grid">${cards[tab]?.() || cards.market()}</div></article>`}
+    </div>
+  `;
+}
+
+function marketCards(items, detail) {
+  return sortByName(items).map((item) => `
+    <div class="content-card market-card">
+      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
+      <span>${esc(item.rarity || item.category || "Mercado")}</span>
+      <h3>${esc(item.name)}</h3>
+      <p>${esc(detail(item))}</p>
+      <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("Solicite ao Admin pelo chat/correio para comprar, dar lance ou fabricar este registro.")}">Como usar?</button>
+    </div>
+  `).join("") || `<div class="empty-state">Nada publicado aqui ainda.</div>`;
+}
+
+function renderHallOfFame() {
+  const byPrestige = leaderboard().slice(0, 5);
+  const byLevel = [...state.characters].sort((a, b) => Number(b.level || levelFromXp(b.xp || 0)) - Number(a.level || levelFromXp(a.xp || 0))).slice(0, 5);
+  const byRares = [...state.characters].sort((a, b) => Number(b.totalRares || 0) - Number(a.totalRares || 0)).slice(0, 5);
+  const guilds = [...state.guilds].sort((a, b) => guildScore(b) - guildScore(a)).slice(0, 5);
+  return `
+    <div class="grid">
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Legado</p><h2>Hall da Fama</h2></div><span class="tag">Temporada ${Number(state.settings.seasonNumber || 1)}</span></div></article>
+      ${hallPanel("Prestígio", byPrestige, (char) => `${prestigeFor(char)} pontos · ${activeTitle(char)?.name || "sem título"}`)}
+      ${hallPanel("Maiores níveis", byLevel, (char) => `Nível ${Number(char.level || levelFromXp(char.xp || 0))} · ${Number(char.xp || 0)} XP`)}
+      ${hallPanel("Mais raros", byRares, (char) => `${Number(char.totalRares || 0)} raros · ${Number(char.totalRolls || 0)} giros`)}
+      <article class="panel span-6"><p class="eyebrow">Guildas lendárias</p><div class="ranking-list">${guilds.map((guild, index) => `<div class="ranking-row compact"><strong>#${index + 1}</strong><span>${esc(guild.name)} · ${guildScore(guild)} pts</span><b>${(guild.memberIds || []).length}/${GUILD_MEMBER_LIMIT}</b></div>`).join("") || `<div class="empty-state">Sem guildas ainda.</div>`}</div></article>
+    </div>
+  `;
+}
+
+function hallPanel(title, characters, detail) {
+  return `
+    <article class="panel span-6">
+      <p class="eyebrow">${esc(title)}</p>
+      <div class="ranking-list">
+        ${characters.map((char, index) => `<button class="ranking-row compact" type="button" data-action="open-user-profile" data-user-id="${esc(char.ownerId)}"><strong>#${index + 1}</strong><span>${esc(char.characterName || getUserName(char.ownerId))}</span><b>${esc(detail(char))}</b></button>`).join("") || `<div class="empty-state">Sem dados.</div>`}
+      </div>
+    </article>
+  `;
+}
+
+function guildScore(guild) {
+  const missionScore = state.progressRequests.filter((request) => request.guildId === guild.id && request.status === "aprovado").length * 100;
+  return missionScore + (guild.memberIds || []).length * 10;
+}
+
+function renderAdminOps() {
+  const totalGold = state.characters.reduce((sum, char) => sum + Number(char.gold || 0), 0);
+  const totalItems = state.characters.reduce((sum, char) => sum + (char.inventory || []).length, 0);
+  const totalEssences = state.characters.reduce((sum, char) => sum + Number(char.affinityAttempts || 0), 0);
+  const accepted = state.users.filter((user) => user.acceptedTermsVersion === (state.settings.rulesVersion || "1.0")).length;
+  const affinityRows = sortByName(state.content.affinities).map((affinity) => ({ name: affinity.name, count: affinityOwnerCount(affinity.id) })).sort((a, b) => b.count - a.count).slice(0, 8);
+  return `
+    <div class="grid">
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Operações</p><h2>Auditoria, economia e manutenção</h2></div><span class="tag">${accepted}/${state.users.length} aceitaram termos</span></div>
+        <div class="stat-grid">
+          ${renderStat("PO total", totalGold)}
+          ${renderStat("Itens", totalItems)}
+          ${renderStat("Essências", totalEssences)}
+          ${renderStat("Guildas", state.guilds.length)}
+          ${renderStat("Online", state.users.filter(isUserOnline).length)}
+        </div>
+      </article>
+      <article class="panel span-6">
+        <p class="eyebrow">Balanceamento</p>
+        <div class="ranking-list">${affinityRows.map((row, index) => `<div class="ranking-row compact"><strong>#${index + 1}</strong><span>${esc(row.name)}</span><b>${row.count} player(s)</b></div>`).join("") || `<div class="empty-state">Sem afinidades distribuídas.</div>`}</div>
+      </article>
+      <article class="panel span-6">
+        <p class="eyebrow">Auditoria recente</p>
+        <div class="scroll-list">${renderAuditRows()}</div>
+      </article>
+      <article class="panel span-12">
+        <p class="eyebrow">Modo manutenção e termo</p>
+        <form class="form-grid" data-form="admin-ops">
+          <label><span>Modo manutenção</span><select name="maintenanceMode"><option value="false" ${!state.settings.maintenanceMode ? "selected" : ""}>Desligado</option><option value="true" ${state.settings.maintenanceMode ? "selected" : ""}>Ligado</option></select></label>
+          <label><span>Versão do termo</span><input name="rulesVersion" value="${esc(state.settings.rulesVersion || "1.0")}" /></label>
+          <label class="wide"><span>Texto do termo</span><textarea name="termsText" rows="5">${esc(state.settings.termsText || "")}</textarea></label>
+          <button class="primary-button wide" type="submit">Salvar operações</button>
+        </form>
+      </article>
+    </div>
+  `;
+}
+
+function renderAuditRows() {
+  const rows = [
+    ...state.progressRequests.map((item) => ({ at: item.reviewedAt || item.createdAt, label: `Validação ${item.status || "pendente"}`, text: `${item.title || "Solicitação"} · ${getUserName(item.uid)}` })),
+    ...state.reports.map((item) => ({ at: item.createdAt, label: `Report ${item.status || "aberto"}`, text: item.title || item.description || "Report" })),
+    ...state.globalMessages.filter((item) => ["rare", "admin-alert", "system"].includes(item.type)).map((item) => ({ at: item.createdAt, label: item.type, text: item.text })),
+  ].sort((a, b) => timeValue(b.at) - timeValue(a.at)).slice(0, 20);
+  return rows.map((row) => `<div class="item-row"><span>${esc(row.label)} · ${esc(tsText(row.at))}</span><strong>${esc(row.text)}</strong></div>`).join("") || `<div class="empty-state">Nada auditado ainda.</div>`;
+}
+
 function renderDiary() {
   const isAdminView = state.role === "admin";
   return `
@@ -1628,68 +2424,87 @@ function renderDiary() {
 function renderGuild() {
   const character = currentCharacter();
   const guild = currentGuild();
-  const guilds = myGuilds();
-  if (!guild) {
-    return `
-      <div class="grid">
-        <article class="panel span-6">
-          <p class="eyebrow">Fundação</p>
-          <h2>Criar guilda</h2>
-          <p>Custa 50 PO. O líder pode editar nome, imagem, descrição, convidar membros e formar partys.</p>
-          <form class="form-stack" data-form="create-guild">
-            <label><span>Nome da guilda</span><input name="name" required /></label>
-            <label><span>Imagem / brasão por URL</span><input name="imageUrl" /></label>
-            <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
-            <button class="primary-button" type="submit" ${Number(character.gold || 0) >= 50 ? "" : "disabled"}>Criar por 50 PO</button>
-          </form>
-        </article>
-        <article class="panel span-6">
-          <p class="eyebrow">Guildas conhecidas</p>
-          <h3>Arquivo da temporada</h3>
-          <div class="guild-list">
-            ${state.guilds.map((item) => `
-              <div class="guild-card">
-                ${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : `<div class="guild-emblem">G</div>`}
-                <div>
+  const ownGuild = guildForUser();
+  const canCreate = state.role !== "admin" && !ownGuild;
+  const createDisabled = !canCreate || Number(character.gold || 0) < GUILD_CREATE_COST;
+  const guildBrowser = `
+    <article class="panel span-4 guild-browser">
+      <div class="panel-heading"><div><p class="eyebrow">Guildas</p><h2>Salões da temporada</h2></div></div>
+      ${state.role !== "admin" ? `
+        <form class="form-stack compact-form" data-form="create-guild">
+          <label><span>Nome da guilda</span><input name="name" required ${canCreate ? "" : "disabled"} /></label>
+          <label><span>Imagem / brasão por URL</span><input name="imageUrl" ${canCreate ? "" : "disabled"} /></label>
+          <label><span>Descrição</span><textarea name="description" rows="3" ${canCreate ? "" : "disabled"}></textarea></label>
+          <button class="primary-button" type="submit" ${createDisabled ? "disabled" : ""}>Criar por ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO</button>
+          ${ownGuild ? `<p class="hint">Você já pertence a uma guilda. Para fundar outra, fale com o Admin.</p>` : Number(character.gold || 0) < GUILD_CREATE_COST ? `<p class="hint">Você precisa de ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO para fundar uma guilda.</p>` : ""}
+        </form>
+      ` : ""}
+      <div class="guild-list scroll-list">
+        ${state.guilds.map((item) => {
+          const count = (item.memberIds || []).length;
+          const pending = pendingGuildRequest(item.id);
+          const joined = isGuildMember(item);
+          return `
+            <div class="guild-card ${guild?.id === item.id ? "active" : ""}">
+              <button class="guild-card-main" type="button" data-action="select-guild" data-guild-id="${esc(item.id)}">
+                ${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : `<span class="guild-emblem">G</span>`}
+                <span>
                   <strong>${esc(item.name)}</strong>
-                  <p>${esc((item.memberIds || []).length)} membro(s)</p>
-                </div>
-              </div>
-            `).join("") || `<div class="empty-state">Nenhuma guilda fundada ainda.</div>`}
-          </div>
-        </article>
+                  <small>${count}/${GUILD_MEMBER_LIMIT} membros · Líder ${esc(getUserName(item.leaderId))}</small>
+                </span>
+              </button>
+              ${state.role !== "admin" && !joined && !ownGuild ? `<button class="ghost-button" type="button" data-action="request-guild-join" data-guild-id="${esc(item.id)}" ${(pending || count >= GUILD_MEMBER_LIMIT) ? "disabled" : ""}>${pending ? "Pedido enviado" : count >= GUILD_MEMBER_LIMIT ? "Lotada" : "Pedir entrada"}</button>` : joined ? `<span class="tag">Sua guilda</span>` : ""}
+            </div>
+          `;
+        }).join("") || `<div class="empty-state">Nenhuma guilda fundada ainda.</div>`}
       </div>
-    `;
+    </article>
+  `;
+
+  if (!guild) {
+    return `<div class="grid">${guildBrowser}<article class="panel span-8"><div class="empty-state">Crie a primeira guilda ou aguarde novas fundações.</div></article></div>`;
   }
 
   const leader = isGuildLeader(guild);
   const members = guildMembers(guild);
-  const availableUsers = state.users.filter((user) => user.id !== state.user.uid && !(guild.memberIds || []).includes(user.id));
+  const memberCount = (guild.memberIds || []).length;
+  const selectedMember = isGuildMember(guild) || state.role === "admin";
+  const availableUsers = state.users.filter((user) => user.id !== state.user.uid && !(guild.memberIds || []).includes(user.id) && !guildForUser(user.id));
   const messages = state.guildMessages.filter((message) => message.guildId === guild.id);
   const activeMission = guild.activeMission || null;
+  const selectedPending = pendingGuildRequest(guild.id);
+  const selectedFull = memberCount >= GUILD_MEMBER_LIMIT;
+  const score = guildScore(guild);
+  const guildLevel = Math.max(1, Math.floor(score / 100) + 1);
   return `
     <div class="grid">
-      <article class="panel span-12 guild-hero">
+      ${guildBrowser}
+      <article class="panel span-8 guild-hero">
         ${guild.imageUrl ? `<img src="${esc(guild.imageUrl)}" alt="${esc(guild.name)}" />` : `<div class="guild-emblem big">G</div>`}
         <div>
           <p class="eyebrow">Guilda</p>
           <h2>${esc(guild.name)}</h2>
           <p>${esc(guild.description || "Sem descrição.")}</p>
           <div class="tag-row">
-            <span class="tag">${members.length} membro(s)</span>
+            <span class="tag">${memberCount}/${GUILD_MEMBER_LIMIT} membro(s)</span>
+            <span class="tag">Nível ${guildLevel}</span>
+            <span class="tag">${score} reputação</span>
             <span class="tag">Líder: ${esc(getUserName(guild.leaderId))}</span>
+            ${selectedMember ? `<span class="tag">Acesso liberado</span>` : `<span class="tag">Prévia pública</span>`}
           </div>
+          ${!selectedMember && state.role !== "admin" ? `
+            <div class="action-row" style="margin-top:14px">
+              <button class="primary-button" type="button" data-action="request-guild-join" data-guild-id="${esc(guild.id)}" ${(ownGuild || selectedPending || selectedFull) ? "disabled" : ""}>${ownGuild ? "Você já tem guilda" : selectedPending ? "Pedido enviado" : selectedFull ? "Guilda lotada" : "Pedir entrada"}</button>
+            </div>
+          ` : ""}
         </div>
       </article>
-      ${guilds.length > 1 ? `
-        <article class="panel span-12">
-          <p class="eyebrow">Trocar salão</p>
-          <div class="tag-row">
-            ${guilds.map((item) => `<button class="chip ${item.id === guild.id ? "active" : ""}" type="button" data-action="select-guild" data-guild-id="${esc(item.id)}">${esc(item.name)}</button>`).join("")}
-          </div>
+      ${!selectedMember ? `
+        <article class="panel span-8">
+          <div class="empty-state">Entre na guilda para liberar chat interno, missões de party e painel de membros.</div>
         </article>
       ` : ""}
-      ${leader ? `
+      ${selectedMember && leader ? `
         <article class="panel span-5">
           <p class="eyebrow">Liderança</p>
           <h3>Editar guilda</h3>
@@ -1698,16 +2513,17 @@ function renderGuild() {
             <label><span>Nome</span><input name="name" value="${esc(guild.name)}" required /></label>
             <label><span>Imagem / brasão</span><input name="imageUrl" value="${esc(guild.imageUrl || "")}" /></label>
             <label><span>Descrição</span><textarea name="description" rows="4">${esc(guild.description || "")}</textarea></label>
+            <label><span>Mural</span><textarea name="mural" rows="4">${esc(guild.mural || "")}</textarea></label>
             <button class="primary-button" type="submit">Salvar guilda</button>
           </form>
           <form class="form-stack" data-form="guild-invite">
             <input type="hidden" name="guildId" value="${esc(guild.id)}" />
             <label><span>Convidar player</span><select name="uid">${availableUsers.map((user) => `<option value="${esc(user.id)}">${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</option>`).join("")}</select></label>
-            <button class="ghost-button" type="submit" ${availableUsers.length ? "" : "disabled"}>Enviar convite</button>
+            <button class="ghost-button" type="submit" ${(availableUsers.length && memberCount < GUILD_MEMBER_LIMIT) ? "" : "disabled"}>${memberCount >= GUILD_MEMBER_LIMIT ? "Guilda lotada" : "Enviar convite"}</button>
           </form>
         </article>
       ` : ""}
-      <article class="panel ${leader ? "span-7" : "span-12"}">
+      ${selectedMember ? `<article class="panel ${leader ? "span-7" : "span-8"}">
         <div class="panel-heading"><div><p class="eyebrow">Membros</p><h3>Salão da guilda</h3></div></div>
         <div class="guild-members">
           ${members.map((member) => `
@@ -1718,13 +2534,18 @@ function renderGuild() {
             </div>
           `).join("")}
         </div>
-      </article>
-      <article class="panel span-6">
+      </article>` : ""}
+      ${selectedMember ? `<article class="panel span-12 guild-mural">
+        <div class="panel-heading"><div><p class="eyebrow">Mural da guilda</p><h3>Recados, reputação e objetivos</h3></div><span class="tag">Nível ${guildLevel}</span></div>
+        <p>${esc(guild.mural || "Use este espaço como mural narrativo da guilda. O líder pode editar no painel de liderança.")}</p>
+      </article>` : ""}
+      ${selectedMember ? `<article class="panel span-6">
         <div class="panel-heading"><div><p class="eyebrow">Chat da guilda</p><h3>Canal interno</h3></div></div>
         <div class="scroll-list">${renderMessages(messages, { source: "guild", reportable: true })}</div>
         <form class="form-stack" data-form="guild-chat">
           <input type="hidden" name="guildId" value="${esc(guild.id)}" />
           <textarea name="text" rows="3" required placeholder="Mensagem da guilda..."></textarea>
+          ${renderEmojiBar()}
           <button class="primary-button" type="submit">Enviar para guilda</button>
         </form>
       </article>
@@ -1757,7 +2578,7 @@ function renderGuild() {
             </div>
           `).join("")}
         </div>
-      </article>
+      </article>` : ""}
     </div>
   `;
 }
@@ -1775,6 +2596,7 @@ function renderChatView() {
         <div class="scroll-list">${renderMessages(globalMessages, { source: "global", reportable: true })}</div>
         <form class="form-stack" data-form="global-chat">
           <textarea name="text" rows="3" placeholder="Escreva no chat global..." required></textarea>
+          ${renderEmojiBar()}
           <button class="primary-button" type="submit">Enviar global</button>
         </form>
       </article>
@@ -1792,9 +2614,10 @@ function renderChatView() {
               <strong>${state.selectedPrivateUserId ? esc(displayNameWithTitle(state.selectedPrivateUserId, getUserName(state.selectedPrivateUserId))) : "Selecione uma conversa"}</strong>
               ${state.selectedPrivateUserId ? `<button class="link-button" type="button" data-action="open-user-profile" data-user-id="${esc(state.selectedPrivateUserId)}">Perfil</button>` : ""}
             </div>
-            <div class="scroll-list direct-messages">${renderMessages(state.privateMessages, { source: "private", reportable: true })}</div>
+            <div class="scroll-list direct-messages">${state.privateChatError ? `<div class="empty-state">${esc(state.privateChatError)}</div>` : renderMessages(state.privateMessages, { source: "private", reportable: true })}</div>
             <form class="form-stack" data-form="private-chat">
               <textarea name="text" rows="3" placeholder="Mensagem direta..." ${state.selectedPrivateUserId ? "" : "disabled"} required></textarea>
+              ${renderEmojiBar()}
               <button class="primary-button" type="submit" ${state.selectedPrivateUserId ? "" : "disabled"}>Enviar direto</button>
             </form>
           </div>
@@ -1802,6 +2625,10 @@ function renderChatView() {
       </article>
     </div>
   `;
+}
+
+function renderEmojiBar() {
+  return `<div class="emoji-bar">${CHAT_EMOJIS.map((emoji) => `<button type="button" data-action="add-emoji" data-emoji="${esc(emoji)}" aria-label="Emoji ${esc(emoji)}">${esc(emoji)}</button>`).join("")}</div>`;
 }
 
 function renderMessages(messages, options = {}) {
@@ -1829,6 +2656,8 @@ function renderMissions() {
   const character = currentCharacter();
   const activeIds = new Set(character.activeMissions || []);
   const pending = pendingProgressRequests();
+  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
+  const usedPowers = approvedPowerCount(character);
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -1853,6 +2682,7 @@ function renderMissions() {
       <article class="panel span-6">
         <p class="eyebrow">Nerf e aprovação</p>
         <h3>Poderes e técnicas novas</h3>
+        <p class="muted-text">Poderes liberados: ${usedPowers}/${powerSlots}. Técnicas dependem de um poder base aprovado.</p>
         <form class="form-stack" data-form="creation-request">
           <label><span>Tipo</span><select name="type"><option value="power">Poder</option><option value="technique">Técnica</option></select></label>
           <label><span>Nome</span><input name="title" required /></label>
@@ -1875,7 +2705,7 @@ function renderPlayerMissionList(missions, activeIds, pending) {
     const active = activeIds.has(mission.id);
     return `
       <div class="mission weekly">
-        <span>${esc(mission.rarity || "Comum")}</span>
+        <span class="mission-rarity">${missionIcon(mission.rarity)} ${esc(mission.rarity || "Comum")}</span>
         <h3>${esc(mission.title)}</h3>
         <p>${esc(mission.description)}</p>
         <strong>${esc(mission.reward || "Recompensa a definir")}</strong>
@@ -1893,12 +2723,24 @@ function renderMissionList(missions) {
   if (!missions.length) return `<div class="empty-state">Nenhuma missão semanal publicada.</div>`;
   return missions.map((mission) => `
     <div class="mission weekly">
-      <span>${esc(mission.rarity || "Comum")}</span>
+      <span class="mission-rarity">${missionIcon(mission.rarity)} ${esc(mission.rarity || "Comum")}</span>
       <h3>${esc(mission.title)}</h3>
       <p>${esc(mission.description)}</p>
       <strong>${esc(mission.reward || "Recompensa a definir")}</strong>
     </div>
   `).join("");
+}
+
+function missionIcon(rarity = "Comum") {
+  const icons = {
+    Comum: "◇",
+    Incomum: "◆",
+    Raro: "✦",
+    "Épico": "✧",
+    "Lendário": "★",
+    "Cósmica": "✹",
+  };
+  return icons[rarity] || "◇";
 }
 
 function renderProgressRequests(requests, adminMode = false) {
@@ -1911,6 +2753,9 @@ function renderProgressRequests(requests, adminMode = false) {
       <p>${esc(requestRewardHint(request))}</p>
       ${request.adminNote ? `<p><strong>Nota do Admin:</strong> ${esc(request.adminNote)}</p>` : ""}
       ${adminMode && request.status === "pendente" ? `
+        <div class="action-row">
+          <button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button>
+        </div>
         <form class="form-grid compact-form" data-form="review-request">
           <input type="hidden" name="requestId" value="${esc(request.id)}" />
           <label><span>XP</span><input name="xp" type="number" min="0" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label>
@@ -1995,7 +2840,8 @@ function renderAdminUsers() {
   state.selectedUserId = selectedId;
   const selectedUser = state.users.find((user) => user.id === selectedId);
   const character = selectedId ? getCharacterFor(selectedId) : null;
-  const affinityOptions = `<option value="">Sem afinidade</option>${optionList(state.content.affinities, character?.affinityId || "")}`;
+  const draft = state.adminUserDraft?.uid === selectedId ? state.adminUserDraft.values : null;
+  const affinityOptions = `<option value="">Sem afinidade</option>${optionList(state.content.affinities, draftValue(draft, "affinityId", character?.affinityId || ""))}`;
   return `
     <div class="grid">
       <article class="panel span-4">
@@ -2004,7 +2850,7 @@ function renderAdminUsers() {
           ${state.users.map((user) => `
             <button class="user-row ${selectedId === user.id ? "active" : ""}" type="button" data-action="select-user" data-user-id="${esc(user.id)}">
               <strong>${esc(user.displayName || user.email)}</strong>
-              <span>${esc(user.role || "player")} · ${isUserOnline(user) ? "online" : "offline"}</span>
+              <span>${esc(user.role || "player")} · ${esc(user.status || "active")} · ${isUserOnline(user) ? "online" : "offline"}</span>
             </button>
           `).join("")}
         </div>
@@ -2020,16 +2866,18 @@ function renderAdminUsers() {
           </div>
           <form class="form-grid" data-form="admin-user-edit">
             <input type="hidden" name="uid" value="${esc(selectedId)}" />
-            <label><span>Nome exibido</span><input name="displayName" value="${esc(selectedUser.displayName || "")}" /></label>
-            <label><span>Papel</span><select name="role"><option value="player" ${selectedUser.role !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${selectedUser.role === "admin" ? "selected" : ""}>Admin</option></select></label>
-            <label><span>PO</span><input name="gold" type="number" value="${Number(character.gold || 0)}" /></label>
-            <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(character.affinityAttempts || 0)}" /></label>
-            <label><span>Pity atual</span><input name="pityCounter" type="number" min="0" value="${Number(character.pityCounter || 0)}" /></label>
-            <label><span>Prestígio</span><input name="prestige" type="number" min="0" value="${prestigeFor(character)}" /></label>
-            <label><span>Raça</span><select name="raceId">${optionList(state.content.races, character.raceId)}</select></label>
-            <label><span>Classe</span><select name="classId">${optionList(state.content.classes, character.classId)}</select></label>
+            <label><span>Nome exibido</span><input name="displayName" value="${esc(draftValue(draft, "displayName", selectedUser.displayName || ""))}" /></label>
+            <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Admin</option></select></label>
+            <label><span>Status</span><select name="status"><option value="active" ${draftValue(draft, "status", selectedUser.status || "active") === "active" ? "selected" : ""}>Ativo</option><option value="muted" ${draftValue(draft, "status", selectedUser.status || "active") === "muted" ? "selected" : ""}>Mutado</option><option value="suspended" ${draftValue(draft, "status", selectedUser.status || "active") === "suspended" ? "selected" : ""}>Suspenso</option></select></label>
+            <label><span>PO</span><input name="gold" type="number" value="${Number(draftValue(draft, "gold", character.gold || 0))}" /></label>
+            <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(draftValue(draft, "affinityAttempts", character.affinityAttempts || 0))}" /></label>
+            <label><span>Pity atual</span><input name="pityCounter" type="number" min="0" value="${Number(draftValue(draft, "pityCounter", character.pityCounter || 0))}" /></label>
+            <label><span>Prestígio</span><input name="prestige" type="number" min="0" value="${Number(draftValue(draft, "prestige", prestigeFor(character)))}" /></label>
+            <label><span>Slots de poder</span><input name="powerSlots" type="number" min="1" value="${Number(draftValue(draft, "powerSlots", character.powerSlots || 1))}" /></label>
+            <label><span>Raça</span><select name="raceId">${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select></label>
+            <label><span>Classe</span><select name="classId">${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select></label>
             <label><span>Afinidade</span><select name="affinityId">${affinityOptions}</select></label>
-            <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${character.profilePublic ? "selected" : ""}>Público</option><option value="false" ${!character.profilePublic ? "selected" : ""}>Privado</option></select></label>
+            <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
           <div class="grid" style="margin-top:18px">
@@ -2072,6 +2920,14 @@ function renderAdminContent() {
             ["affinity", "Afinidades"],
             ["itemCategory", "Categorias de item"],
             ["item", "Itens"],
+            ["biome", "Biomas"],
+            ["kingdom", "Reinos"],
+            ["region", "Regiões"],
+            ["npc", "NPCs"],
+            ["rules", "Regras"],
+            ["faq", "FAQ"],
+            ["tutorial", "Tutorial"],
+            ["epic", "Épicos"],
           ].map(([id, label]) => `<button class="tab ${state.contentTab === id ? "active" : ""}" type="button" data-action="content-tab" data-tab="${id}">${label}</button>`).join("")}
         </div>
       </article>
@@ -2086,20 +2942,24 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-race", "Nova raça", `
         <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
         <label><span>Bônus JSON</span><input name="bonus" value='{"for":1}' required /></label>
         <label><span>Passiva</span><textarea name="passive" rows="4"></textarea></label>
+        <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
       `)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.races, (item) => `${bonusToText(item.bonus)} · ${item.passive}`)}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.races, (item) => `${bonusToText(item.bonus)} · ${item.passive}`, "races")}</div></article>
     `;
   }
   if (tab === "class") {
     return `
       <article class="panel span-5">${contentForm("content-class", "Nova classe", `
         <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
         <label><span>Bônus JSON</span><input name="bonus" value='{"pod":2}' required /></label>
         <label><span>Papel</span><textarea name="role" rows="4"></textarea></label>
+        <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
       `)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role}`)}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role}`, "classes")}</div></article>
     `;
   }
   if (tab === "category") {
@@ -2109,8 +2969,10 @@ function renderContentEditor() {
         <label><span>Peso da roleta</span><input name="weight" type="number" min="0" value="10" required /></label>
         <label><span>Raridade</span><select name="rarity">${RARITIES.map((r) => `<option value="${r}">${r}</option>`).join("")}</select></label>
         <label><span>Cor</span><input name="color" value="#d8b45d" /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        <label><span>Descrição / regra de nerf</span><textarea name="description" rows="4"></textarea></label>
       `)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.affinityCategories, (item) => `Peso ${item.weight} · ${item.rarity}`)}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.affinityCategories, (item) => `Peso ${item.weight} · ${item.rarity} · ${state.content.affinities.filter((affinity) => affinity.categoryId === item.id).length} afinidade(s) · ${categoryOwnerCount(item.id)} player(s)`, "affinityCategories")}</div></article>
     `;
   }
   if (tab === "affinity") {
@@ -2118,16 +2980,126 @@ function renderContentEditor() {
       <article class="panel span-5">${contentForm("content-affinity", "Nova afinidade", `
         <label><span>Nome</span><input name="name" required /></label>
         <label><span>Categoria</span><select name="categoryId">${optionList(state.content.affinityCategories)}</select></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
         <label><span>Bônus JSON</span><input name="bonus" value='{"pod":2}' required /></label>
         <label><span>Passiva</span><textarea name="passive" rows="4"></textarea></label>
+        <label><span>Descrição / ajuste de balanceamento</span><textarea name="description" rows="4"></textarea></label>
       `)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.affinities, (item) => `${getCategory(item.categoryId)?.name} · ${bonusToText(item.bonus)} · ${item.passive}`)}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.affinities, (item) => `${getCategory(item.categoryId)?.name} · ${bonusToText(item.bonus)} · ${affinityOwnerCount(item.id)} player(s) · ${item.passive}`, "affinities")}</div></article>
     `;
   }
   if (tab === "itemCategory") {
     return `
       <article class="panel span-5">${contentForm("content-item-category", "Nova categoria de item", `<label><span>Nome</span><input name="name" required /></label>`)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.itemCategories, () => "Categoria de inventário")}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.itemCategories, () => "Categoria de inventário", "itemCategories")}</div></article>
+    `;
+  }
+  if (tab === "biome") {
+    return `
+      <article class="panel span-5">${contentForm("content-biome", "Novo bioma", `
+        <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        <label><span>Região maior</span><input name="region" /></label>
+        <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.biomes, (item) => `${item.region || "Mundo"} · ${item.description || ""}`, "biomes")}</div></article>
+    `;
+  }
+  if (tab === "kingdom") {
+    return `
+      <article class="panel span-5">${contentForm("content-kingdom", "Novo reino", `
+        <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        <label><span>Governante / facção</span><input name="ruler" /></label>
+        <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.kingdoms, (item) => `${item.ruler || "Sem governante"} · ${item.description || ""}`, "kingdoms")}</div></article>
+    `;
+  }
+  if (tab === "region") {
+    return `
+      <article class="panel span-5">${contentForm("content-region", "Nova região", `
+        <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        <label><span>Reino</span><select name="kingdomId"><option value="">Independente</option>${optionList(state.content.kingdoms)}</select></label>
+        <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.regions, (item) => `${state.content.kingdoms.find((kingdom) => kingdom.id === item.kingdomId)?.name || "Independente"} · ${item.description || ""}`, "regions")}</div></article>
+    `;
+  }
+  if (tab === "npc") {
+    return `
+      <article class="panel span-5">${contentForm("content-npc", "Novo NPC importante", `
+        <label><span>Nome</span><input name="name" required /></label>
+        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        <label><span>Função</span><input name="role" /></label>
+        <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.npcs, (item) => `${item.role || "NPC"} · ${item.description || ""}`, "npcs")}</div></article>
+    `;
+  }
+  if (tab === "rules") {
+    return `
+      <article class="panel span-5">${contentForm("content-rule", "Novo capítulo de regra", `
+        <label><span>Título</span><input name="name" required /></label>
+        <label><span>Ordem</span><input name="order" type="number" value="1" /></label>
+        <label><span>Resumo</span><textarea name="summary" rows="4"></textarea></label>
+        <label><span>Versão completa</span><textarea name="full" rows="7"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.rulesChapters, (item) => `${item.summary || ""} ${item.full || ""}`, "rulesChapters")}</div></article>
+    `;
+  }
+  if (tab === "faq") {
+    return `
+      <article class="panel span-5">${contentForm("content-faq", "Nova pergunta frequente", `
+        <label><span>Pergunta</span><input name="name" required /></label>
+        <label><span>Categoria</span><input name="category" /></label>
+        <label><span>Resposta</span><textarea name="answer" rows="6"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.faqEntries, (item) => `${item.category || "FAQ"} · ${item.answer || ""}`, "faqEntries")}</div></article>
+    `;
+  }
+  if (tab === "tutorial") {
+    return `
+      <article class="panel span-5">${contentForm("content-tutorial", "Novo passo de tutorial", `
+        <label><span>Título</span><input name="name" required /></label>
+        <label><span>Ordem</span><input name="order" type="number" value="1" /></label>
+        <label><span>Descrição</span><textarea name="description" rows="6"></textarea></label>
+      `)}</article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.tutorialSteps, (item) => `${item.order || 0} · ${item.description || ""}`, "tutorialSteps")}</div></article>
+    `;
+  }
+  if (tab === "epic") {
+    const collections = [
+      ["wantedBoard", "Quadro de procurados"],
+      ["bestiary", "Bestiário"],
+      ["marketListings", "Mercado"],
+      ["auctionListings", "Leilão"],
+      ["craftingRecipes", "Crafting"],
+      ["techniqueLibrary", "Biblioteca de técnicas"],
+      ["achievements", "Conquistas"],
+      ["seasonPass", "Passe de temporada"],
+      ["reputationFactions", "Reputações/facções"],
+    ];
+    const selected = state.epicCollection || "wantedBoard";
+    return `
+      <article class="panel span-5">
+        <p class="eyebrow">Forja épica</p>
+        <h3>Criar qualquer módulo</h3>
+        <form class="form-stack" data-form="content-generic">
+          <label><span>Coleção</span><select name="collection">${collections.map(([id, label]) => `<option value="${id}" ${selected === id ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+          <label><span>JSON</span><textarea name="json" rows="14" required>{
+  "name": "Novo registro",
+  "rarity": "Comum",
+  "description": "Descrição editável pelo Admin."
+}</textarea></label>
+          <button class="primary-button" type="submit">Salvar módulo</button>
+        </form>
+      </article>
+      <article class="panel span-7">
+        <div class="tabs codex-tabs">${collections.map(([id, label]) => `<button class="tab ${selected === id ? "active" : ""}" type="button" data-action="epic-collection" data-collection="${id}">${label}</button>`).join("")}</div>
+        <div class="content-grid">${contentCards(state.content[selected] || [], (item) => `${item.rarity || item.category || item.region || ""} · ${item.description || item.reward || item.result || item.answer || ""}`, selected)}</div>
+      </article>
     `;
   }
   return `
@@ -2138,7 +3110,7 @@ function renderContentEditor() {
       <label><span>Raridade</span><select name="rarity">${RARITIES.map((r) => `<option value="${r}">${r}</option>`).join("")}</select></label>
       <label><span>Bônus JSON</span><input name="bonus" value='{}' /></label>
     `)}</article>
-    <article class="panel span-7"><div class="content-grid">${contentCards(state.content.items, (item) => `${item.rarity} · ${bonusToText(item.bonus)} · ${item.price || 0} PO`)}</div></article>
+    <article class="panel span-7"><div class="content-grid">${contentCards(state.content.items, (item) => `${item.rarity} · ${bonusToText(item.bonus)} · ${item.price || 0} PO`, "items")}</div></article>
   `;
 }
 
@@ -2153,13 +3125,15 @@ function contentForm(formName, title, fields) {
   `;
 }
 
-function contentCards(items, detail) {
+function contentCards(items, detail, collection = "") {
   if (!items.length) return `<div class="empty-state">Nada cadastrado.</div>`;
   return sortByName(items).map((item) => `
     <div class="content-card">
+      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || item.id)}" />` : ""}
       <span>${esc(item.id)}</span>
-      <h3>${esc(item.name)}</h3>
+      <h3>${esc(item.name || item.title || item.id)}</h3>
       <p>${esc(detail(item))}</p>
+      ${collection ? `<button class="ghost-button" type="button" data-action="edit-content" data-collection="${esc(collection)}" data-id="${esc(item.id)}">Editar</button>` : ""}
     </div>
   `).join("");
 }
@@ -2247,8 +3221,17 @@ function renderAdminMail() {
 }
 
 function renderAdminRequests() {
-  const pending = state.progressRequests.filter((request) => request.status === "pendente");
+  const filter = state.adminRequestFilter || "all";
+  const pending = state.progressRequests.filter((request) => request.status === "pendente" && (filter === "all" || request.type === filter));
   const done = state.progressRequests.filter((request) => request.status !== "pendente").slice(0, 16);
+  const filters = [
+    ["all", "Todos"],
+    ["mission", "Missões"],
+    ["training", "Treinos"],
+    ["power", "Poderes"],
+    ["technique", "Técnicas"],
+    ["guildMission", "Guilda"],
+  ];
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -2264,6 +3247,9 @@ function renderAdminRequests() {
           ${renderStat("Missões", pending.filter((item) => item.type === "mission").length)}
           ${renderStat("Treinos", pending.filter((item) => item.type === "training").length)}
           ${renderStat("Nerfs", pending.filter((item) => item.type === "power" || item.type === "technique").length)}
+        </div>
+        <div class="tabs codex-tabs">
+          ${filters.map(([id, label]) => `<button class="tab ${filter === id ? "active" : ""}" type="button" data-action="request-filter" data-filter="${id}">${label}</button>`).join("")}
         </div>
       </article>
       <article class="panel span-8">
@@ -2307,7 +3293,7 @@ function renderAdminMissions() {
       </article>
       <article class="panel span-7">
         <p class="eyebrow">Pool</p>
-        <div class="content-grid">${renderMissionList(state.content.missionPool)}</div>
+        <div class="content-grid">${contentCards(state.content.missionPool, (mission) => `${mission.rarity || "Comum"} · ${mission.reward || "Sem recompensa"} · ${mission.description || ""}`, "missionPool")}</div>
       </article>
     </div>
   `;
@@ -2362,6 +3348,14 @@ function renderAdminSettings() {
           `).join("")}
         </div>
       </article>
+      <article class="panel span-12 panic-panel">
+        <div>
+          <p class="eyebrow">Operação</p>
+          <h3>Atualização emergencial</h3>
+          <p>Desconecta todos os players online e força recarregamento de sessão. Admins continuam no painel.</p>
+        </div>
+        <button class="danger-button" type="button" data-action="panic-refresh">Botão de pânico</button>
+      </article>
     </div>
   `;
 }
@@ -2397,7 +3391,11 @@ const VIEW_RENDERERS = {
   roulette: renderRoulette,
   inventory: renderInventory,
   grimoire: renderGrimoire,
+  codex: renderCodex,
+  help: renderHelpCenter,
+  market: renderMarket,
   ranking: renderRanking,
+  hall: renderHallOfFame,
   diary: renderDiary,
   guild: renderGuild,
   chat: renderChatView,
@@ -2409,6 +3407,7 @@ const VIEW_RENDERERS = {
   "admin-rewards": renderAdminRewards,
   "admin-mail": renderAdminMail,
   "admin-requests": renderAdminRequests,
+  "admin-ops": renderAdminOps,
   "admin-chat": renderChatView,
   "admin-missions": renderAdminMissions,
   "admin-settings": renderAdminSettings,
@@ -2462,8 +3461,10 @@ async function saveCharacter(form) {
     playerName: values.playerName,
     displayName: values.playerName || state.profile?.displayName,
     characterName: values.characterName,
-    characterAge: values.characterAge,
+    characterAge: values.characterAge === "" ? "" : Math.max(0, Number(values.characterAge || 0)),
+    characterDescription: values.characterDescription || "",
     avatarUrl: values.avatarUrl,
+    bannerUrl: values.bannerUrl || "",
     raceId: locked ? current.raceId : values.raceId,
     classId: locked ? current.classId : values.classId,
     creationLocked: true,
@@ -2472,6 +3473,7 @@ async function saveCharacter(form) {
     personality: values.personality,
   });
   await writeDoc("users", state.user.uid, { displayName: values.playerName || state.profile?.displayName || state.user.email });
+  state.characterDraft = null;
   toast("Ficha salva.");
 }
 
@@ -2657,11 +3659,24 @@ async function submitTrainingRequest(form) {
 
 async function submitCreationRequest(form) {
   const values = formValues(form);
+  const character = currentCharacter();
+  const type = values.type;
+  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
+  const powersUsed = approvedPowerCount(character);
+  const pendingPower = pendingProgressRequests().some((request) => request.type === "power");
+  if (type === "power" && (powersUsed >= powerSlots || pendingPower)) {
+    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s). Peça ao Admin um novo slot quando subir de tier.`);
+    return;
+  }
+  if (type === "technique" && powersUsed < 1) {
+    toast("Crie e aprove um poder base antes de enviar técnicas.");
+    return;
+  }
   await addDoc("progressRequests", {
     uid: state.user.uid,
     playerName: state.profile?.displayName || state.user.email,
-    characterName: currentCharacter().characterName || "",
-    type: values.type,
+    characterName: character.characterName || "",
+    type,
     status: "pendente",
     title: values.title,
     description: values.description,
@@ -2689,6 +3704,7 @@ async function saveDiaryEntry(form) {
 }
 
 async function sendGlobalChat(form) {
+  if (!canSendChat()) return;
   const values = formValues(form);
   await addGlobalMessage({
     text: values.text,
@@ -2703,26 +3719,19 @@ function chatIdFor(a, b) {
 
 function subscribePrivateChat(targetId) {
   if (state.privateUnsub) state.privateUnsub();
-  state.privateMessages = [];
+  state.privateUnsub = null;
+  state.privateChatError = "";
   state.selectedPrivateUserId = targetId;
-  if (!targetId || state.demo) {
-    render();
-    return;
-  }
-  const chatId = chatIdFor(state.user.uid, targetId);
-  state.privateUnsub = state.db.collection("privateChats").doc(chatId).collection("messages")
-    .orderBy("createdAt", "desc")
-    .limit(60)
-    .onSnapshot((snap) => {
-      state.privateMessages = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })).reverse();
-      render();
-    });
+  syncPrivateMessages();
+  render();
 }
 
 async function sendPrivateChat(form) {
+  if (!canSendChat()) return;
   const values = formValues(form);
   if (!state.selectedPrivateUserId) return;
   const targetId = state.selectedPrivateUserId;
+  const localId = cryptoRandom();
   const message = {
     senderId: state.user.uid,
     senderName: state.profile?.displayName || state.user.email,
@@ -2731,15 +3740,36 @@ async function sendPrivateChat(form) {
     participants: [state.user.uid, targetId],
     text: values.text,
     type: "private",
-    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+    createdAt: new Date().toISOString(),
   };
   if (state.demo) {
-    state.privateMessages.push({ id: cryptoRandom(), ...message });
+    state.privateMessages.push({ id: localId, ...message });
+    state.directMessages.push({ id: localId, ...message });
     render();
   } else {
-    await state.db.collection("privateChats").doc(chatIdFor(state.user.uid, targetId)).collection("messages").add(message);
+    state.privateMessages = [...state.privateMessages, { id: localId, ...message, pending: true }];
+    render();
+    try {
+      await addDoc("directMessages", { ...message, createdAt: nowValue() });
+    } catch (error) {
+      state.privateMessages = state.privateMessages.filter((item) => item.id !== localId);
+      render();
+      throw error;
+    }
   }
   form.reset();
+}
+
+function canSendChat() {
+  if (state.profile?.status === "muted") {
+    toast("Você está mutado e não pode enviar mensagens agora.");
+    return false;
+  }
+  if (state.profile?.status === "suspended") {
+    toast("Sua conta está suspensa. Fale com o Admin.");
+    return false;
+  }
+  return true;
 }
 
 async function submitReport(type, form) {
@@ -2766,6 +3796,10 @@ async function reportMessage(messageId, source) {
     toast("Não encontrei essa mensagem para denunciar.");
     return;
   }
+  const index = pool.findIndex((item) => item.id === messageId);
+  const context = pool.slice(Math.max(0, index - 2), index + 3)
+    .map((item) => `${item.senderName || "Player"}: ${item.text || ""}`)
+    .join("\n");
   await addDoc("reports", {
     type: "mensagem",
     status: "aberto",
@@ -2773,12 +3807,22 @@ async function reportMessage(messageId, source) {
     reporterName: state.profile?.displayName || state.user.email,
     targetId: message.senderId || "",
     title: `Mensagem denunciada (${sourceLabel})`,
-    description: `Autor: ${message.senderName || "Player"}\nMensagem: ${message.text || ""}`,
+    description: `Autor: ${message.senderName || "Player"}\nMensagem: ${message.text || ""}\n\nContexto:\n${context}`,
     messageId,
     source,
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   toast("Mensagem denunciada ao Admin.");
+}
+
+async function recordProfileView(uid) {
+  if (!uid || uid === state.user?.uid || state.demo) return;
+  await writeDoc("profileViews", `${uid}_${state.user.uid}`, {
+    targetId: uid,
+    viewerId: state.user.uid,
+    viewerName: state.profile?.displayName || state.user.email,
+    viewedAt: state.demo ? new Date().toISOString() : nowValue(),
+  }).catch(() => {});
 }
 
 async function sendFriendRequest(uid) {
@@ -2812,10 +3856,19 @@ async function respondSocialRequest(id, accept) {
     toast("Esse pedido não é seu.");
     return;
   }
-  if (request.type === "guildInvite" && accept) {
+  if ((request.type === "guildInvite" || request.type === "guildJoinRequest") && accept) {
     const guild = state.guilds.find((item) => item.id === request.guildId);
     if (guild) {
-      const memberIds = Array.from(new Set([...(guild.memberIds || []), state.user.uid]));
+      const joiningUid = request.type === "guildJoinRequest" ? request.fromId : state.user.uid;
+      if (guildForUser(joiningUid)) {
+        toast("Esse player já está em uma guilda.");
+        return;
+      }
+      if ((guild.memberIds || []).length >= GUILD_MEMBER_LIMIT) {
+        toast("Esta guilda já atingiu o limite de membros.");
+        return;
+      }
+      const memberIds = Array.from(new Set([...(guild.memberIds || []), joiningUid]));
       await writeDoc("guilds", guild.id, { memberIds });
     }
   }
@@ -2826,12 +3879,16 @@ async function respondSocialRequest(id, accept) {
 async function createGuild(form) {
   const values = formValues(form);
   const character = currentCharacter();
-  if (Number(character.gold || 0) < 50) {
-    toast("Você precisa de 50 PO para fundar uma guilda.");
+  if (guildForUser()) {
+    toast("Você já pertence a uma guilda.");
+    return;
+  }
+  if (Number(character.gold || 0) < GUILD_CREATE_COST) {
+    toast(`Você precisa de ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO para fundar uma guilda.`);
     return;
   }
   const guildId = slug(values.name || `guild-${cryptoRandom()}`);
-  await updateCharacter(state.user.uid, { gold: Number(character.gold || 0) - 50 });
+  await updateCharacter(state.user.uid, { gold: Number(character.gold || 0) - GUILD_CREATE_COST });
   await writeDoc("guilds", guildId, {
     id: guildId,
     name: values.name,
@@ -2857,6 +3914,7 @@ async function saveGuildSettings(form) {
     name: values.name,
     imageUrl: values.imageUrl || "",
     description: values.description || "",
+    mural: values.mural || "",
   });
   toast("Guilda atualizada.");
 }
@@ -2865,8 +3923,16 @@ async function sendGuildInvite(form) {
   const values = formValues(form);
   const guild = state.guilds.find((item) => item.id === values.guildId);
   if (!guild || !isGuildLeader(guild)) return;
+  if ((guild.memberIds || []).length >= GUILD_MEMBER_LIMIT) {
+    toast("A guilda já está lotada.");
+    return;
+  }
   if (!values.uid) {
     toast("Escolha um player para convidar.");
+    return;
+  }
+  if (guildForUser(values.uid)) {
+    toast("Esse player já pertence a uma guilda.");
     return;
   }
   const exists = state.socialRequests.find((request) => request.type === "guildInvite" && request.guildId === guild.id && request.toId === values.uid && request.status === "pendente");
@@ -2891,6 +3957,37 @@ async function sendGuildInvite(form) {
   toast("Convite de guilda enviado.");
 }
 
+async function requestGuildJoin(guildId) {
+  const guild = state.guilds.find((item) => item.id === guildId);
+  if (!guild) return;
+  if (guildForUser()) {
+    toast("Você já pertence a uma guilda.");
+    return;
+  }
+  if ((guild.memberIds || []).length >= GUILD_MEMBER_LIMIT) {
+    toast("Esta guilda está lotada.");
+    return;
+  }
+  if (pendingGuildRequest(guild.id)) {
+    toast("Seu pedido para essa guilda já está pendente.");
+    return;
+  }
+  await addDoc("socialRequests", {
+    type: "guildJoinRequest",
+    status: "pendente",
+    fromId: state.user.uid,
+    fromName: state.profile?.displayName || state.user.email,
+    toId: guild.leaderId,
+    toName: getUserName(guild.leaderId),
+    participants: [state.user.uid, guild.leaderId],
+    guildId: guild.id,
+    guildName: guild.name,
+    message: `${state.profile?.displayName || state.user.email} pediu entrada na guilda ${guild.name}.`,
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  toast("Pedido de entrada enviado ao líder.");
+}
+
 async function removeGuildMember(guildId, uid) {
   const guild = state.guilds.find((item) => item.id === guildId);
   if (!guild || !isGuildLeader(guild) || uid === guild.leaderId) return;
@@ -2899,6 +3996,7 @@ async function removeGuildMember(guildId, uid) {
 }
 
 async function sendGuildChat(form) {
+  if (!canSendChat()) return;
   const values = formValues(form);
   const guild = state.guilds.find((item) => item.id === values.guildId);
   if (!guild || (state.role !== "admin" && !(guild.memberIds || []).includes(state.user.uid))) return;
@@ -2985,13 +4083,16 @@ function openUserProfile(uid) {
   const affinity = getAffinity(character.affinityId);
   const friendship = areFriends(state.user.uid, uid);
   const pending = pendingFriendRequestWith(uid);
+  recordProfileView(uid);
   $("#modalContent").innerHTML = `
+    ${character.bannerUrl ? `<img class="profile-banner" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
     <div class="profile-grid">
       <img class="avatar" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
       <div>
         <p class="eyebrow">${esc(getUserName(uid))}</p>
         <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
         <p>${isPrivate ? "Perfil privado" : `${esc(race?.name)} · ${esc(klass?.name)} · ${esc(affinity?.name || "Sem afinidade")}`}</p>
+        ${isPrivate ? "" : `<p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>`}
         <div class="tag-row">
           ${activeTitle(character) ? `<span class="tag">${esc(activeTitle(character).name)}</span>` : `<span class="tag">Sem título</span>`}
         </div>
@@ -3023,21 +4124,139 @@ async function saveContent(collection, payload) {
   toast("Conteúdo salvo.");
 }
 
+async function saveGenericContent(form) {
+  const values = formValues(form);
+  let payload;
+  try {
+    payload = JSON.parse(values.json || "{}");
+  } catch {
+    toast("JSON inválido na Forja épica.");
+    return;
+  }
+  await saveContent(values.collection, payload);
+  state.epicCollection = values.collection;
+  form.reset();
+}
+
+async function acceptTerms() {
+  await writeDoc("users", state.user.uid, {
+    acceptedTermsVersion: state.settings.rulesVersion || "1.0",
+    acceptedTermsAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  state.profile = { ...state.profile, acceptedTermsVersion: state.settings.rulesVersion || "1.0" };
+  toast("Termo aceito. Bem-vindo à mesa.");
+  render();
+}
+
+async function saveAdminOps(form) {
+  const values = formValues(form);
+  await writeDoc("settings", "system", {
+    maintenanceMode: values.maintenanceMode === "true",
+    rulesVersion: values.rulesVersion || "1.0",
+    termsText: values.termsText || DEFAULT_CONTENT.settings.termsText,
+  });
+  toast("Operações salvas.");
+}
+
+async function copyProfileCard() {
+  const character = currentCharacter();
+  const affinity = getAffinity(character.affinityId);
+  const text = [
+    `Millennium RPG - ${character.characterName || "Personagem"}`,
+    `Player: ${state.profile?.displayName || state.user.email}`,
+    `Nível: ${character.level || levelFromXp(character.xp || 0)} | PO: ${character.gold || 0}`,
+    `Afinidade: ${affinity?.name || "Sem afinidade"}`,
+    `Título: ${activeTitle(character)?.name || "Sem título"}`,
+  ].join("\n");
+  await navigator.clipboard?.writeText(text).catch(() => {});
+  toast("Cartão do personagem copiado.");
+}
+
+function openHelpText(title, text) {
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Ajuda rápida</p>
+    <h2>${esc(title || "Como usar")}</h2>
+    <p>${esc(text || "Este recurso depende de aprovação ou controle do Admin.")}</p>
+  `;
+  $("#modal").hidden = false;
+}
+
+function openItemCompare(instanceId) {
+  const character = currentCharacter();
+  const item = (character.inventory || []).find((entry) => (entry.instanceId || entry.id) === instanceId);
+  if (!item) return;
+  const equipped = (character.inventory || []).find((entry) => entry.equipped && entry.categoryId === item.categoryId && (entry.instanceId || entry.id) !== instanceId);
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Comparador</p>
+    <h2>${esc(item.name)}</h2>
+    <div class="compare-grid">
+      <div class="item-row">
+        <span>Novo item · ${esc(item.rarity || "Comum")}</span>
+        <strong>${esc(item.name)}</strong>
+        <p>${esc(bonusToText(item.bonus || {}))}</p>
+      </div>
+      <div class="item-row">
+        <span>Equipado atual</span>
+        <strong>${esc(equipped?.name || "Nenhum")}</strong>
+        <p>${esc(equipped ? bonusToText(equipped.bonus || {}) : "Nada equipado nessa categoria.")}</p>
+      </div>
+    </div>
+    <button class="primary-button" type="button" data-action="toggle-equip" data-item-instance="${esc(instanceId)}">Equipar / alternar</button>
+  `;
+  $("#modal").hidden = false;
+}
+
+function openContentEdit(collection, id) {
+  const item = state.content[collection]?.find((entry) => entry.id === id);
+  if (!item) {
+    toast("Conteúdo não encontrado.");
+    return;
+  }
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Forja</p>
+    <h2>Editar ${esc(item.name || item.title || id)}</h2>
+    <form class="form-stack" data-form="content-edit-json">
+      <input type="hidden" name="collection" value="${esc(collection)}" />
+      <input type="hidden" name="id" value="${esc(id)}" />
+      <label><span>JSON do conteúdo</span><textarea name="json" rows="14" required>${esc(JSON.stringify(item, null, 2))}</textarea></label>
+      <button class="primary-button" type="submit">Salvar edição</button>
+    </form>
+  `;
+  $("#modal").hidden = false;
+}
+
+async function saveContentEdit(form) {
+  const values = formValues(form);
+  let payload;
+  try {
+    payload = JSON.parse(values.json || "{}");
+  } catch (error) {
+    toast("JSON inválido. Confira vírgulas, aspas e chaves.");
+    return;
+  }
+  const id = values.id || payload.id || slug(payload.name || payload.title);
+  await writeDoc(values.collection, id, { ...payload, id });
+  closeModal();
+  toast("Conteúdo atualizado.");
+}
+
 async function saveAdminUser(form) {
   const values = formValues(form);
   const uid = values.uid;
-  await writeDoc("users", uid, { displayName: values.displayName, role: values.role });
+  await writeDoc("users", uid, { displayName: values.displayName, role: values.role, status: values.status || "active" });
   await updateCharacter(uid, {
     displayName: values.displayName,
     gold: Number(values.gold || 0),
     affinityAttempts: Number(values.affinityAttempts || 0),
     pityCounter: Number(values.pityCounter || 0),
     prestige: Number(values.prestige || 0),
+    powerSlots: Math.max(1, Number(values.powerSlots || 1)),
     raceId: values.raceId,
     classId: values.classId,
     affinityId: values.affinityId,
     profilePublic: values.profilePublic === "true",
   });
+  state.adminUserDraft = null;
   toast("Player atualizado.");
 }
 
@@ -3060,7 +4279,10 @@ async function adminRemoveItem(uid, instanceId) {
 }
 
 async function reviewProgressRequest(form) {
-  const values = formValues(form);
+  await reviewProgressRequestValues(formValues(form));
+}
+
+async function reviewProgressRequestValues(values) {
   const request = state.progressRequests.find((item) => item.id === values.requestId);
   if (!request) return;
 
@@ -3111,12 +4333,18 @@ async function reviewProgressRequest(form) {
       patch.activeMissions = (character.activeMissions || []).filter((id) => id !== request.missionId);
     }
     if (request.type === "power") {
-      patch.power = { name: request.title, description: request.description, status: "aprovado", adminNote };
+      const legacyPower = character.power?.name ? [{ id: "base", ...character.power, status: character.power.status || "aprovado" }] : [];
+      const powers = (character.powers?.length ? character.powers : legacyPower)
+        .filter((power) => power.id !== request.id && power.name !== request.title);
+      const approvedPower = { id: request.id, name: request.title, description: request.description, status: "aprovado", adminNote };
+      const nextPowers = [...powers, approvedPower];
+      patch.powers = nextPowers;
+      patch.power = nextPowers[0];
+      patch.powerSlots = Math.max(Number(character.powerSlots || 1), nextPowers.length);
     }
     if (request.type === "technique") {
-      const techniques = [...(character.techniques || [])];
-      techniques[0] = { name: request.title, description: request.description, status: "aprovado", adminNote };
-      patch.techniques = techniques;
+      const techniques = (character.techniques || []).filter((technique) => technique.name || technique.description);
+      patch.techniques = [...techniques, { id: request.id, name: request.title, description: request.description, status: "aprovado", adminNote }];
     }
     patch.prestige = prestigeFor({ ...character, ...patch });
     patch.pendingGift = {
@@ -3149,6 +4377,19 @@ async function reviewProgressRequest(form) {
     });
   }
   toast(decision === "approved" ? "Solicitação aprovada." : decision === "nerf" ? "Nerf solicitado ao player." : "Solicitação reprovada.");
+}
+
+async function quickApproveRequest(requestId) {
+  const request = state.progressRequests.find((item) => item.id === requestId);
+  if (!request) return;
+  await reviewProgressRequestValues({
+    requestId,
+    decision: "approved",
+    xp: defaultXpForRequest(request.type, request.rarity),
+    gold: request.type === "mission" ? 50 : request.type === "guildMission" ? 120 : 0,
+    essences: request.type === "training" ? 1 : 0,
+    adminNote: "Aprovado rápido pelo Admin.",
+  });
 }
 
 async function sendReward(form) {
@@ -3371,6 +4612,30 @@ async function markReport(id, status) {
   toast("Report atualizado.");
 }
 
+async function panicRefresh() {
+  if (state.role !== "admin") return;
+  const version = cryptoRandom();
+  await writeDoc("settings", "system", {
+    panicVersion: version,
+    panicAt: state.demo ? new Date().toISOString() : nowValue(),
+    panicBy: state.profile?.displayName || state.user.email,
+  });
+  await Promise.all(state.users
+    .filter((user) => user.role !== "admin")
+    .map((user) => writeDoc("users", user.id, {
+      online: false,
+      panicOfflineAt: state.demo ? new Date().toISOString() : nowValue(),
+    }).catch(() => {})));
+  await addGlobalMessage({
+    senderId: "system",
+    senderName: "Sistema",
+    type: "admin-alert",
+    text: "ALERTA: Admin acionou atualização emergencial da plataforma.",
+  });
+  state.lastPanicVersion = version;
+  toast("Pânico acionado. Players serão desconectados.");
+}
+
 function openReportModal() {
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Atalho rápido</p>
@@ -3415,6 +4680,13 @@ function wireEvents() {
       }
       if (action === "open-report") openReportModal();
       if (action === "close-modal") closeModal();
+      if (action === "add-emoji") {
+        const textarea = button.closest("form")?.querySelector("textarea[name='text']");
+        if (textarea) {
+          textarea.value = `${textarea.value}${textarea.value ? " " : ""}${button.dataset.emoji || ""}`;
+          textarea.focus();
+        }
+      }
       if (action === "toggle-profile-public") await toggleProfilePublic();
       if (action === "roll-affinity") await rollAffinity(Number(button.dataset.qty || 1));
       if (action === "equip-title") await equipTitle(button.dataset.titleId);
@@ -3433,6 +4705,7 @@ function wireEvents() {
       if (action === "send-friend-request") await sendFriendRequest(button.dataset.userId);
       if (action === "accept-social-request") await respondSocialRequest(button.dataset.requestId, true);
       if (action === "decline-social-request") await respondSocialRequest(button.dataset.requestId, false);
+      if (action === "request-guild-join") await requestGuildJoin(button.dataset.guildId);
       if (action === "guild-remove-member") await removeGuildMember(button.dataset.guildId, button.dataset.userId);
       if (action === "finish-guild-mission") await finishGuildMission(button.dataset.guildId);
       if (action === "select-guild") {
@@ -3448,9 +4721,39 @@ function wireEvents() {
         state.contentTab = button.dataset.tab;
         render();
       }
+      if (action === "profile-tab") {
+        state.profileTab = button.dataset.tab;
+        render();
+      }
+      if (action === "help-tab") {
+        state.helpTab = button.dataset.tab;
+        render();
+      }
+      if (action === "market-tab") {
+        state.marketTab = button.dataset.tab;
+        render();
+      }
+      if (action === "request-filter") {
+        state.adminRequestFilter = button.dataset.filter;
+        render();
+      }
+      if (action === "epic-collection") {
+        state.epicCollection = button.dataset.collection;
+        render();
+      }
+      if (action === "edit-content") openContentEdit(button.dataset.collection, button.dataset.id);
+      if (action === "copy-profile-card") await copyProfileCard();
+      if (action === "open-help-text") openHelpText(button.dataset.title, button.dataset.text);
+      if (action === "compare-item") openItemCompare(button.dataset.itemInstance);
+      if (action === "codex-tab") {
+        state.codexTab = button.dataset.tab;
+        render();
+      }
       if (action === "reset-missions") await resetWeeklyMissions(false);
       if (action === "recycle-missions") await resetWeeklyMissions(true);
       if (action === "mark-report") await markReport(button.dataset.reportId, button.dataset.status);
+      if (action === "panic-refresh") await panicRefresh();
+      if (action === "quick-approve") await quickApproveRequest(button.dataset.requestId);
     } catch (error) {
       console.error(error);
       toast(firebaseErrorMessage(error));
@@ -3459,6 +4762,34 @@ function wireEvents() {
 
   document.addEventListener("change", (event) => {
     if (event.target.dataset.action === "select-private-user") subscribePrivateChat(event.target.value);
+    if (event.target.dataset.action === "codex-filter") {
+      state.codexFilter = event.target.value;
+      render();
+    }
+    if (event.target.dataset.action === "codex-sort") {
+      state.codexSort = event.target.value;
+      render();
+    }
+    const form = event.target.closest("form");
+    if (form?.dataset.form === "character") state.characterDraft = formValues(form);
+    if (form?.dataset.form === "admin-user-edit") {
+      const values = formValues(form);
+      state.adminUserDraft = { uid: values.uid, values };
+    }
+  });
+
+  document.addEventListener("input", (event) => {
+    if (event.target.dataset.action === "codex-search") {
+      state.codexSearch = event.target.value;
+      render();
+      return;
+    }
+    const form = event.target.closest("form");
+    if (form?.dataset.form === "character") state.characterDraft = formValues(form);
+    if (form?.dataset.form === "admin-user-edit") {
+      const values = formValues(form);
+      state.adminUserDraft = { uid: values.uid, values };
+    }
   });
 
   document.addEventListener("submit", async (event) => {
@@ -3469,6 +4800,7 @@ function wireEvents() {
     try {
       const type = form.dataset.form;
       if (type === "login") await handleLogin(form);
+      if (type === "terms-accept") await acceptTerms();
       if (type === "character") await saveCharacter(form);
       if (type === "global-chat") await sendGlobalChat(form);
       if (type === "private-chat") await sendPrivateChat(form);
@@ -3487,24 +4819,26 @@ function wireEvents() {
         await submitReport(values.type, form);
         closeModal();
       }
+      if (type === "content-edit-json") await saveContentEdit(form);
+      if (type === "content-generic") await saveGenericContent(form);
       if (type === "content-race") {
         const v = formValues(form);
-        await saveContent("races", { name: v.name, bonus: parseBonus(v.bonus), passive: v.passive });
+        await saveContent("races", { name: v.name, imageUrl: v.imageUrl || "", bonus: parseBonus(v.bonus), passive: v.passive, description: v.description || "" });
         form.reset();
       }
       if (type === "content-class") {
         const v = formValues(form);
-        await saveContent("classes", { name: v.name, bonus: parseBonus(v.bonus), role: v.role });
+        await saveContent("classes", { name: v.name, imageUrl: v.imageUrl || "", bonus: parseBonus(v.bonus), role: v.role, description: v.description || "" });
         form.reset();
       }
       if (type === "content-affinity-category") {
         const v = formValues(form);
-        await saveContent("affinityCategories", { name: v.name, weight: Number(v.weight || 0), rarity: v.rarity, color: v.color });
+        await saveContent("affinityCategories", { name: v.name, weight: Number(v.weight || 0), rarity: v.rarity, color: v.color, imageUrl: v.imageUrl || "", description: v.description || "" });
         form.reset();
       }
       if (type === "content-affinity") {
         const v = formValues(form);
-        await saveContent("affinities", { name: v.name, categoryId: v.categoryId, bonus: parseBonus(v.bonus), passive: v.passive });
+        await saveContent("affinities", { name: v.name, categoryId: v.categoryId, imageUrl: v.imageUrl || "", bonus: parseBonus(v.bonus), passive: v.passive, description: v.description || "" });
         form.reset();
       }
       if (type === "content-item-category") {
@@ -3522,11 +4856,47 @@ function wireEvents() {
         await saveContent("missionPool", { title: v.title, name: v.title, description: v.description, rarity: v.rarity, reward: v.reward });
         form.reset();
       }
+      if (type === "content-biome") {
+        const v = formValues(form);
+        await saveContent("biomes", { name: v.name, imageUrl: v.imageUrl || "", region: v.region || "", description: v.description || "" });
+        form.reset();
+      }
+      if (type === "content-kingdom") {
+        const v = formValues(form);
+        await saveContent("kingdoms", { name: v.name, imageUrl: v.imageUrl || "", ruler: v.ruler || "", description: v.description || "" });
+        form.reset();
+      }
+      if (type === "content-region") {
+        const v = formValues(form);
+        await saveContent("regions", { name: v.name, imageUrl: v.imageUrl || "", kingdomId: v.kingdomId || "", description: v.description || "" });
+        form.reset();
+      }
+      if (type === "content-npc") {
+        const v = formValues(form);
+        await saveContent("npcs", { name: v.name, imageUrl: v.imageUrl || "", role: v.role || "", description: v.description || "" });
+        form.reset();
+      }
+      if (type === "content-rule") {
+        const v = formValues(form);
+        await saveContent("rulesChapters", { name: v.name, order: Number(v.order || 1), summary: v.summary || "", full: v.full || "" });
+        form.reset();
+      }
+      if (type === "content-faq") {
+        const v = formValues(form);
+        await saveContent("faqEntries", { name: v.name, category: v.category || "FAQ", answer: v.answer || "" });
+        form.reset();
+      }
+      if (type === "content-tutorial") {
+        const v = formValues(form);
+        await saveContent("tutorialSteps", { name: v.name, order: Number(v.order || 1), description: v.description || "" });
+        form.reset();
+      }
       if (type === "admin-user-edit") await saveAdminUser(form);
       if (type === "admin-add-item") await adminAddItem(form);
       if (type === "admin-reward") await sendReward(form);
       if (type === "admin-mail") await sendAdminMail(form);
       if (type === "review-request") await reviewProgressRequest(form);
+      if (type === "admin-ops") await saveAdminOps(form);
       if (type === "admin-settings") {
         const v = formValues(form);
         await writeDoc("settings", "system", {

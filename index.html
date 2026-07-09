@@ -79,7 +79,9 @@
             <h1 id="viewTitle">Painel</h1>
           </div>
           <div class="top-actions">
+            <div class="quick-status" id="quickStatus"></div>
             <div class="gold-pill" id="moneyPill"><span>PO</span><strong>0</strong></div>
+            <button class="icon-button notify-button" type="button" data-nav="profile" aria-label="Abrir notificações" title="Notificações">✉<span id="notifyCount" hidden>0</span></button>
             <button class="icon-button" type="button" data-action="open-report" aria-label="Reportar problema" title="Reportar problema">!</button>
           </div>
         </header>
@@ -87,6 +89,7 @@
         <div class="global-notice" id="globalNotice"></div>
         <section id="viewHost"></section>
       </main>
+      <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegação rápida mobile"></nav>
     </div>
 
     <div class="modal" id="modal" hidden>
