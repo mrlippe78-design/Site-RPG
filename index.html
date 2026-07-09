@@ -3,32 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#16120d" />
     <title>Millennium RPG</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800&family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <button class="music-float" id="musicToggle" type="button" data-action="toggle-music" aria-label="Ativar música ambiente" title="Música ambiente">♪</button>
     <section class="auth-screen" id="authScreen">
       <div class="auth-art">
+        <div class="auth-runes" aria-hidden="true"></div>
         <div class="brand big">
           <div class="brand-mark">M</div>
           <div>
             <p>Millennium RPG</p>
-            <span>Suporte de campanha</span>
+            <span>Interface do Oráculo</span>
           </div>
         </div>
-        <h1>Millennium RPG</h1>
-        <p>
-          Um salão de suporte para ficha, roleta, inventário, guildas, missões,
-          diário de campanha, denúncias e conversas entre jogadores.
-        </p>
+        <div class="auth-copy">
+          <span class="season-chip">Temporada I · Despertar dos Heróis</span>
+          <h1>MILLENNIUM</h1>
+          <p>A Interface despertou. Escolhido detectado. Acesse ficha, afinidade, guilda, passe e Codex.</p>
+        </div>
       </div>
 
       <div class="auth-card">
         <p class="eyebrow">Acesso</p>
-        <h2>Entrar ou criar conta</h2>
+        <h2>Identifique-se, escolhido.</h2>
         <form class="form-stack" data-form="login">
           <label>
             <span>Email</span>

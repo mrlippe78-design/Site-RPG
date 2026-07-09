@@ -7,6 +7,11 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
+const CLOUDINARY_CONFIG = {
+  cloudName: "cakvvuqx",
+  uploadPreset: "Millenium",
+};
+
 const ADMIN_EMAILS = ["mrlippe78@gmail.com"];
 
 const FIREBASE_SCRIPTS = [
@@ -18,6 +23,10 @@ const FIREBASE_SCRIPTS = [
 const SEED_VERSION = 4;
 const GUILD_CREATE_COST = 1000;
 const GUILD_MEMBER_LIMIT = 10;
+const CHAT_LIMIT = 60;
+const IDLE_LIMIT_MS = 10 * 60 * 1000;
+const JOIN_ANNOUNCE_COOLDOWN_MS = 10 * 60 * 1000;
+const ORACLE_LABEL = "Oráculo";
 const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
   { key: "for", label: "Força", short: "FOR" },
@@ -37,7 +46,7 @@ const DEFAULT_GUILD_MISSIONS = [
 
 const DEFAULT_CONTENT = {
   settings: {
-    seasonName: "Temporada 1",
+    seasonName: "Temporada do Despertar",
     seasonNumber: 1,
     defaultAffinityAttempts: 3,
     pityMax: 30,
@@ -48,10 +57,13 @@ const DEFAULT_CONTENT = {
     rareRateUpChance: 0.3,
     soundEnabled: true,
     theme: "default",
+    seasonTheme: "awakening",
     globalNotice: "Bem-vindo ao suporte oficial da mesa Millennium RPG.",
     rulesVersion: "1.0",
-    termsText: "Ao entrar na mesa Millennium RPG, você concorda em respeitar os jogadores, seguir as decisões do Admin, não abusar de bugs do site, não manipular dados de ficha sem autorização e manter o jogo saudável para todos.",
+    termsText: "Ao entrar na mesa Millennium RPG, você concorda em respeitar os jogadores, seguir as decisões do Oráculo, não abusar de bugs do site, não manipular dados de ficha sem autorização e manter o jogo saudável para todos.",
     maintenanceMode: false,
+    gameStarted: false,
+    betaGranted: false,
     panicVersion: "",
     lastWeeklyResetKey: "",
     seedVersion: SEED_VERSION,
@@ -133,7 +145,7 @@ const DEFAULT_CONTENT = {
     { id: "patrulha-fronteira", title: "Patrulha da Fronteira", description: "Concluir uma cena de vigília, escolta ou reconhecimento.", rarity: "Comum", reward: "30 PO" },
     { id: "treino-focado", title: "Treino Focado", description: "Registrar um treino com objetivo claro para o personagem.", rarity: "Comum", reward: "1 essência extra" },
     { id: "resgate-noturno", title: "Resgate Noturno", description: "Participar de uma cena com risco social ou físico para salvar alguém.", rarity: "Raro", reward: "70 PO + título temporário" },
-    { id: "eco-antigo", title: "Eco Antigo", description: "Investigar ruínas, documentos ou memórias ligadas à temporada.", rarity: "Épico", reward: "Item raro aprovado pelo Admin" },
+    { id: "eco-antigo", title: "Eco Antigo", description: "Investigar ruínas, documentos ou memórias ligadas à temporada.", rarity: "Épico", reward: "Item raro aprovado pelo Oráculo" },
     { id: "desafio-celeste", title: "Desafio Celeste", description: "Criar uma cena marcante envolvendo sacrifício, pacto ou revelação.", rarity: "Lendário", reward: "Título raro" },
   ],
   biomes: [
@@ -154,27 +166,27 @@ const DEFAULT_CONTENT = {
     { id: "capita-lyra", name: "Capitã Lyra", imageUrl: "", description: "Responsável por missões semanais e recompensas oficiais.", role: "Comandante" },
   ],
   rulesChapters: [
-    { id: "criacao-personagem", name: "Criação de personagem", order: 1, summary: "Defina nome, raça, classe, história, atributos e perfil público antes de começar.", full: "A primeira ficha salva trava raça, classe e atributos base. Depois disso, pontos novos entram apenas por evolução aprovada pelo Admin." },
-    { id: "atributos-testes", name: "Atributos e testes", order: 2, summary: "FOR, VEL, HAB, RES e POD orientam testes, combate e resistência.", full: "O Admin define dificuldade, bônus e consequências. Itens, afinidades, títulos e efeitos temporários podem alterar os totais." },
-    { id: "combate", name: "Combate", order: 3, summary: "Combate acontece fora do site, mas ficha, inventário e técnicas ficam registrados aqui.", full: "Use o site como apoio de consulta. Mudanças de poder, técnica, item raro e recompensa dependem de validação do Admin." },
-    { id: "afinidades", name: "Afinidades", order: 4, summary: "Afinidades vêm da roleta e podem gerar anúncios quando forem raras.", full: "A roleta usa categorias, pesos, pity e eventos configurados pelo Admin. XP não vem de giros." },
-    { id: "poderes-tecnicas", name: "Poderes e técnicas", order: 5, summary: "Cada player começa com um slot de poder base e cria técnicas a partir dele.", full: "Novos poderes exigem slot liberado pelo Admin. Técnicas e poderes podem receber pedido de nerf antes da aprovação." },
-    { id: "treino-evolucao", name: "Treino e evolução", order: 6, summary: "XP vem de treinos e missões aprovados.", full: "O player relata treino ou conclui missão. O Admin aprova, define XP, PO, essências e recompensas." },
-    { id: "missoes-semanais", name: "Missões semanais", order: 7, summary: "Missões resetam segunda 00:00 e podem ser recicladas pelo Admin.", full: "O player escolhe a missão, marca conclusão e aguarda validação. Guildas têm missões próprias mais difíceis." },
+    { id: "criacao-personagem", name: "Criação de personagem", order: 1, summary: "Defina nome, raça, classe, história, atributos e perfil público antes de começar.", full: "A primeira ficha salva trava raça, classe e atributos base. Depois disso, pontos novos entram apenas por evolução aprovada pelo Oráculo." },
+    { id: "atributos-testes", name: "Atributos e testes", order: 2, summary: "FOR, VEL, HAB, RES e POD orientam testes, combate e resistência.", full: "O Oráculo define dificuldade, bônus e consequências. Itens, afinidades, títulos e efeitos temporários podem alterar os totais." },
+    { id: "combate", name: "Combate", order: 3, summary: "Combate acontece fora do site, mas ficha, inventário e técnicas ficam registrados aqui.", full: "Use o site como apoio de consulta. Mudanças de poder, técnica, item raro e recompensa dependem de validação do Oráculo." },
+    { id: "afinidades", name: "Afinidades", order: 4, summary: "Afinidades vêm da roleta e podem gerar anúncios quando forem raras.", full: "A roleta usa categorias, pesos, pity e eventos configurados pelo Oráculo. XP não vem de giros." },
+    { id: "poderes-tecnicas", name: "Poderes e técnicas", order: 5, summary: "Cada player começa com um slot de poder base e cria técnicas a partir dele.", full: "Novos poderes exigem slot liberado pelo Oráculo. Técnicas e poderes podem receber pedido de nerf antes da aprovação." },
+    { id: "treino-evolucao", name: "Treino e evolução", order: 6, summary: "XP vem de treinos e missões aprovados.", full: "O player relata treino ou conclui missão. O Oráculo aprova, define XP, PO, essências e recompensas." },
+    { id: "missoes-semanais", name: "Missões semanais", order: 7, summary: "Missões resetam segunda 00:00 e podem ser recicladas pelo Oráculo.", full: "O player escolhe a missão, marca conclusão e aguarda validação. Guildas têm missões próprias mais difíceis." },
     { id: "guildas", name: "Guildas", order: 8, summary: "Guildas têm limite, chat, líderes, partys e missões internas.", full: "Criar guilda custa 1.000 PO. O líder controla imagem, descrição, convites, membros e partys de até 4 pessoas." },
-    { id: "economia-inventario", name: "Economia, loja e inventário", order: 9, summary: "PO, itens, pets, títulos e recompensas ficam registrados no perfil.", full: "O Admin pode adicionar, remover e corrigir inventário. Itens raros podem aparecer no chat global." },
-    { id: "conduta", name: "Regras de conduta", order: 10, summary: "Respeito, clareza e jogo saudável vêm primeiro.", full: "Denúncias, bugs e abusos devem ser reportados pelo site. O Admin pode advertir, mutar, suspender ou ajustar fichas." },
+    { id: "economia-inventario", name: "Economia, loja e inventário", order: 9, summary: "PO, itens, pets, títulos e recompensas ficam registrados no perfil.", full: "O Oráculo pode adicionar, remover e corrigir inventário. Itens raros podem aparecer no chat global." },
+    { id: "conduta", name: "Regras de conduta", order: 10, summary: "Respeito, clareza e jogo saudável vêm primeiro.", full: "Denúncias, bugs e abusos devem ser reportados pelo site. O Oráculo pode advertir, mutar, suspender ou ajustar fichas." },
   ],
   faqEntries: [
-    { id: "ganhar-xp", name: "Como ganho XP?", category: "Evolução", answer: "XP vem de missões, treinos e criações aprovadas pelo Admin. Girar roleta não dá XP." },
-    { id: "conseguir-poder", name: "Como consigo poder?", category: "Poderes", answer: "Envie um poder base em Missões > Poderes e técnicas. Para ter outro poder, o Admin precisa liberar um slot." },
+    { id: "ganhar-xp", name: "Como ganho XP?", category: "Evolução", answer: "XP vem de missões, treinos e criações aprovadas pelo Oráculo. Girar roleta não dá XP." },
+    { id: "conseguir-poder", name: "Como consigo poder?", category: "Poderes", answer: "Envie um poder base em Missões > Poderes e técnicas. Para ter outro poder, o Oráculo precisa liberar um slot." },
     { id: "entrar-guilda", name: "Como entro em guilda?", category: "Guildas", answer: "Abra Guildas, escolha uma na lista e envie pedido de entrada. O líder aprova pelo correio." },
     { id: "perfil-privado", name: "O que perfil privado esconde?", category: "Perfil", answer: "Esconde atributos, itens, história e detalhes, mas mantém foto, nome, título e botão de amizade." },
   ],
   tutorialSteps: [
     { id: "tutorial-ficha", name: "Crie sua ficha", order: 1, description: "Preencha personagem, avatar, raça, classe e atributos. Salvar pela primeira vez trava a base." },
     { id: "tutorial-afinidade", name: "Role afinidade", order: 2, description: "Use essências para sortear afinidade. Raridades altas geram anúncio no chat global." },
-    { id: "tutorial-missao", name: "Pegue uma missão", order: 3, description: "Escolha uma missão semanal, conclua fora do site e envie para validação do Admin." },
+    { id: "tutorial-missao", name: "Pegue uma missão", order: 3, description: "Escolha uma missão semanal, conclua fora do site e envie para validação do Oráculo." },
     { id: "tutorial-treino", name: "Relate treino", order: 4, description: "Treinos aprovados rendem XP e podem destravar evolução." },
     { id: "tutorial-guilda", name: "Entre em guilda", order: 5, description: "Junte-se a uma guilda para acessar chat interno, partys e missões de alto risco." },
   ],
@@ -185,25 +197,39 @@ const DEFAULT_CONTENT = {
     { id: "sentinela-de-vidro", name: "Sentinela de Vidro", rarity: "Raro", region: "Deserto de Vidro", description: "Construto antigo que reflete magia e protege ruínas vitrificadas." },
   ],
   marketListings: [
-    { id: "kit-aventureiro", name: "Kit Aventureiro", rarity: "Comum", price: 75, description: "Pacote base de consumíveis e ferramentas. Compra depende de aprovação do Admin." },
+    { id: "kit-aventureiro", name: "Kit Aventureiro", rarity: "Comum", price: 75, description: "Pacote base de consumíveis e ferramentas. Compra depende de aprovação do Oráculo." },
   ],
   auctionListings: [
-    { id: "lamina-celeste", name: "Lâmina Celeste", rarity: "Épico", minBid: 500, endsAt: "Domingo 22:00", description: "Leilão semanal controlado pelo Admin." },
+    { id: "lamina-celeste", name: "Lâmina Celeste", rarity: "Épico", minBid: 500, endsAt: "Domingo 22:00", description: "Leilão semanal controlado pelo Oráculo." },
   ],
   craftingRecipes: [
-    { id: "amuleto-guarda", name: "Amuleto de Guarda", rarity: "Incomum", materials: "Cristal menor + tecido ritual", result: "Acessório defensivo aprovado pelo Admin." },
+    { id: "amuleto-guarda", name: "Amuleto de Guarda", rarity: "Incomum", materials: "Cristal menor + tecido ritual", result: "Acessório defensivo aprovado pelo Oráculo." },
   ],
   techniqueLibrary: [
     { id: "lamina-flamejante", name: "Lâmina Flamejante", rarity: "Comum", powerType: "Fogo", description: "Exemplo de técnica aprovada: dano simples com custo e alcance claros." },
   ],
   achievements: [
-    { id: "primeira-missao", name: "Primeira missão", rarity: "Comum", description: "Concluir uma missão aprovada pelo Admin." },
+    { id: "primeira-missao", name: "Primeira missão", rarity: "Comum", description: "Concluir uma missão aprovada pelo Oráculo." },
     { id: "primeiro-raro", name: "Primeiro raro", rarity: "Raro", description: "Receber item, título ou afinidade rara." },
     { id: "fundador-guilda", name: "Fundador de guilda", rarity: "Épico", description: "Criar uma guilda com 1.000 PO." },
   ],
   seasonPass: [
-    { id: "marco-1", name: "Marco I", tier: 1, reward: "Título cosmético da temporada", description: "Conclua atividades aprovadas para marcar presença na temporada." },
-    { id: "marco-2", name: "Marco II", tier: 2, reward: "Pet cosmético", description: "Recompensa sugerida para players ativos." },
+    { id: "despertar-5", name: "Nível 5", tier: 5, rarity: "Comum", freeReward: "Título: Recém-Desperto", premiumReward: "Token: Primeiro Chamado + 3 essências", description: "Primeiro contato real com a interface de Millennium." },
+    { id: "despertar-10", name: "Nível 10", tier: 10, rarity: "Incomum", freeReward: "100 PO", premiumReward: "250 PO + 5 essências", description: "A janela do sistema deixa de ser estranha e começa a responder." },
+    { id: "despertar-15", name: "Nível 15", tier: 15, rarity: "Incomum", freeReward: "Token: Sobrevivente", premiumReward: "Título: Marcado pelos Deuses", description: "A primeira marca visível de quem sobreviveu ao chamado." },
+    { id: "despertar-20", name: "Nível 20", tier: 20, rarity: "Raro", freeReward: "Item cosmético raro", premiumReward: "Item raro + 6 essências", description: "Fragmentos da terra sagrada começam a reconhecer seu nome." },
+    { id: "despertar-25", name: "Nível 25", tier: 25, rarity: "Raro", freeReward: "150 PO + token simples", premiumReward: "400 PO + Token: Olhar do Sistema", description: "O sistema observa, calcula e registra sua existência." },
+    { id: "despertar-30", name: "Nível 30", tier: 30, rarity: "Épico", freeReward: "Título: Peregrino de Millennium", premiumReward: "Título épico + 8 essências", description: "Você já não é apenas alguém perdido em outro mundo." },
+    { id: "despertar-35", name: "Nível 35", tier: 35, rarity: "Épico", freeReward: "250 PO", premiumReward: "Pet cosmético da temporada", description: "Companheiros e sinais surgem onde antes havia apenas silêncio." },
+    { id: "despertar-40", name: "Nível 40", tier: 40, rarity: "Lendário", freeReward: "Token: Chama do Despertar", premiumReward: "Token lendário + 10 essências", description: "O despertar deixa de ser evento e vira lenda pessoal." },
+    { id: "despertar-45", name: "Nível 45", tier: 45, rarity: "Lendário", freeReward: "350 PO + item raro", premiumReward: "700 PO + item lendário sugerido", description: "As escolhas começam a pesar como juramentos." },
+    { id: "despertar-50", name: "Nível 50", tier: 50, rarity: "Cósmica", freeReward: "Título: Filho do Despertar", premiumReward: "Título cósmico + Token: Interface Viva + 15 essências", description: "Recompensa final da primeira temporada de contato com Millennium." },
+  ],
+  passMissions: [
+    { id: "pass-login", name: "Interface inicializada", type: "Diária", xp: 80, description: "Entrar no site e conferir sua ficha durante a temporada." },
+    { id: "pass-codex", name: "Ler os sinais do mundo", type: "Semanal", xp: 180, description: "Consultar o Codex e registrar uma memória no diário." },
+    { id: "pass-affinity", name: "Eco da afinidade", type: "Semanal", xp: 220, description: "Girar afinidade ou acompanhar um evento de roleta aprovado pelo Oráculo." },
+    { id: "pass-guild", name: "Primeiro juramento", type: "Especial", xp: 300, description: "Entrar em uma guilda, criar uma party ou concluir missão de guilda." },
   ],
   reputationFactions: [
     { id: "conselho-dourado", name: "Conselho Dourado", region: "Aurèvia", description: "Facção comercial que valoriza contratos cumpridos e estabilidade.", levels: "Neutro, Aliado, Honrado" },
@@ -227,6 +253,7 @@ const NAVS = {
     { id: "codex", label: "Codex", icon: "✥" },
     { id: "help", label: "Guia", icon: "?" },
     { id: "market", label: "Mercado", icon: "$" },
+    { id: "pass", label: "Passe", icon: "◆" },
     { id: "ranking", label: "Ranking", icon: "#" },
     { id: "hall", label: "Hall", icon: "★" },
     { id: "diary", label: "Diário", icon: "✒" },
@@ -243,6 +270,7 @@ const NAVS = {
     { id: "admin-mail", label: "Correio", icon: "@" },
     { id: "admin-requests", label: "Validações", icon: "✓" },
     { id: "admin-ops", label: "Operações", icon: "◆" },
+    { id: "pass", label: "Passe", icon: "◆" },
     { id: "diary", label: "Diário", icon: "✒" },
     { id: "guild", label: "Guildas", icon: "⚔" },
     { id: "admin-chat", label: "Chat", icon: "☷" },
@@ -262,6 +290,7 @@ const VIEW_TITLES = {
   codex: "Codex do mundo",
   help: "Guia, regras e tutorial",
   market: "Mercado e crafting",
+  pass: "Passe do Despertar",
   ranking: "Ranking da mesa",
   hall: "Hall da Fama",
   diary: "Diário de campanha",
@@ -271,7 +300,7 @@ const VIEW_TITLES = {
   reports: "Reports e denúncias",
   "admin-home": "Painel de controle",
   "admin-users": "Usuários e fichas",
-  "admin-content": "Forja do Admin",
+  "admin-content": "Forja do Oráculo",
   "admin-rewards": "Enviar prêmios",
   "admin-mail": "Correio místico",
   "admin-requests": "Validações e nerf",
@@ -306,7 +335,10 @@ const state = {
   epicCollection: "wantedBoard",
   lastRoll: null,
   lastRollResults: [],
+  affinityChoices: [],
   rolling: false,
+  musicOn: false,
+  musicNodes: null,
   settings: { ...DEFAULT_CONTENT.settings },
   content: defaultContentState(),
   users: [],
@@ -327,6 +359,8 @@ const state = {
   progressRequests: [],
   profileViews: [],
   presenceTimer: null,
+  idleTimer: null,
+  lastActivityAt: Date.now(),
   sessionAnnounced: false,
   lastPanicVersion: "",
   characterDraft: null,
@@ -373,6 +407,110 @@ function formValues(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Não consegui ler a imagem."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function mediaInput(name, label, value = "", options = {}) {
+  const id = `${name}-${cryptoRandom().slice(0, 8)}`;
+  const preview = value ? `<img src="${esc(value)}" alt="${esc(label)}" />` : `<span>Prévia</span>`;
+  return `
+    <label class="media-field">
+      <span>${esc(label)}</span>
+      <input id="${esc(id)}" name="${esc(name)}" data-media-url="${esc(name)}" value="${esc(value || "")}" placeholder="Cole uma URL ou envie um arquivo" />
+      <input type="file" data-media-field="${esc(name)}" accept="${esc(options.accept || "image/*,.gif")}" />
+      <div class="media-preview" data-media-preview="${esc(name)}">${preview}</div>
+      <small>${esc(options.hint || "Aceita PNG, JPG, WEBP ou GIF. Ao salvar, o arquivo vai para o Cloudinary e a URL fica no Firebase.")}</small>
+    </label>
+  `;
+}
+
+function positionSelect(name, label, selected = "center") {
+  const options = [
+    ["center", "Centro"],
+    ["top", "Topo"],
+    ["bottom", "Base"],
+    ["left", "Esquerda"],
+    ["right", "Direita"],
+  ];
+  return `
+    <label>
+      <span>${esc(label)}</span>
+      <select name="${esc(name)}">
+        ${options.map(([value, text]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${text}</option>`).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function objectPosition(value) {
+  return {
+    top: "center top",
+    bottom: "center bottom",
+    left: "left center",
+    right: "right center",
+  }[value] || "center center";
+}
+
+async function uploadMediaFile(file, folder = "general") {
+  if (!file) return "";
+  if (!file.type.startsWith("image/")) throw new Error("Envie apenas imagem ou GIF.");
+  if (file.size > 6 * 1024 * 1024) throw new Error("Imagem muito pesada. Use até 6 MB.");
+  if (state.demo) return fileToDataUrl(file);
+  if (!CLOUDINARY_CONFIG.cloudName || !CLOUDINARY_CONFIG.uploadPreset) {
+    throw new Error("Cloudinary não configurado.");
+  }
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_CONFIG.uploadPreset);
+  formData.append("folder", `millennium/${folder}/${state.user?.uid || "anon"}`);
+  formData.append("tags", "millennium,rpg");
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/auto/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.secure_url) {
+    throw new Error(data.error?.message || "Cloudinary recusou o upload. Confira o upload preset unsigned.");
+  }
+  return data.secure_url;
+}
+
+function mediaFolderForForm(type) {
+  if (type === "character") return "characters";
+  if (type?.startsWith("content-")) return `forja/${type.replace(/^content-/, "")}`;
+  if (type === "create-guild" || type === "guild-settings") return "guilds";
+  return "general";
+}
+
+async function resolveFormMedia(form, folder = "general") {
+  const fileInputs = Array.from(form.querySelectorAll("input[type='file'][data-media-field]"));
+  for (const input of fileInputs) {
+    const file = input.files?.[0];
+    if (!file) continue;
+    const field = input.dataset.mediaField;
+    const urlInput = form.querySelector(`[name="${CSS.escape(field)}"]`);
+    toast("Enviando imagem...");
+    const url = await uploadMediaFile(file, folder);
+    if (urlInput) urlInput.value = url;
+  }
+}
+
+async function previewMediaInput(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const field = input.dataset.mediaField;
+  const preview = input.closest("form")?.querySelector(`[data-media-preview="${CSS.escape(field)}"]`);
+  if (!preview) return;
+  const url = await fileToDataUrl(file);
+  preview.innerHTML = `<img src="${esc(url)}" alt="Prévia de imagem" />`;
+}
+
 function nowValue() {
   if (state.firebaseReady && state.db) return firebase.firestore.FieldValue.serverTimestamp();
   return new Date().toISOString();
@@ -399,6 +537,10 @@ function sortByName(items) {
 
 function sortByOrder(items) {
   return [...items].sort((a, b) => Number(a.order || a.tier || 0) - Number(b.order || b.tier || 0) || String(a.name || a.title || "").localeCompare(String(b.name || b.title || ""), "pt-BR"));
+}
+
+function sortByTier(items) {
+  return [...items].sort((a, b) => Number(a.tier || 0) - Number(b.tier || 0) || String(a.name || a.title || "").localeCompare(String(b.name || b.title || ""), "pt-BR"));
 }
 
 function normalize(value) {
@@ -489,8 +631,10 @@ function defaultCharacter(uid, displayName = "") {
     activeTitleId: "",
     pendingGift: null,
     activeMissions: [],
+    premiumPassUnlocked: false,
     rollHistory: [],
     titles: [],
+    tokens: [],
     pets: [],
     inventory: [],
     power: { name: "", description: "" },
@@ -500,6 +644,8 @@ function defaultCharacter(uid, displayName = "") {
     story: "",
     personality: "",
     avatarUrl: "",
+    avatarPosition: "center",
+    bannerPosition: "center",
     createdAt: nowValue(),
     updatedAt: nowValue(),
   };
@@ -711,6 +857,94 @@ function playSound(kind) {
   }
 }
 
+function updateMusicButton() {
+  const button = $("#musicToggle");
+  if (!button) return;
+  button.classList.toggle("active", state.musicOn);
+  button.textContent = state.musicOn ? "♪" : "♫";
+  button.title = state.musicOn ? "Desligar música ambiente" : "Ligar música ambiente";
+  button.setAttribute("aria-label", button.title);
+}
+
+function ambientContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  const ctx = playSound.ctx || new AudioCtx();
+  playSound.ctx = ctx;
+  return ctx;
+}
+
+async function startAmbientMusic() {
+  if (state.musicNodes) return;
+  const ctx = ambientContext();
+  if (!ctx) {
+    toast("Este navegador bloqueou o áudio ambiente.");
+    return;
+  }
+  await ctx.resume?.().catch(() => {});
+  const master = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  const lfo = ctx.createOscillator();
+  const lfoGain = ctx.createGain();
+  const notes = [110, 164.81, 220, 329.63];
+  const oscillators = notes.map((freq, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = index % 2 ? "sine" : "triangle";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.018 / (index + 1);
+    osc.connect(gain);
+    gain.connect(filter);
+    osc.start();
+    return { osc, gain };
+  });
+  filter.type = "lowpass";
+  filter.frequency.value = 720;
+  filter.Q.value = 0.7;
+  lfo.type = "sine";
+  lfo.frequency.value = 0.035;
+  lfoGain.gain.value = 220;
+  lfo.connect(lfoGain);
+  lfoGain.connect(filter.frequency);
+  filter.connect(master);
+  master.gain.value = 0.16;
+  master.connect(ctx.destination);
+  lfo.start();
+  state.musicNodes = { ctx, master, filter, lfo, lfoGain, oscillators };
+  state.musicOn = true;
+  localStorage.setItem("millenniumMusic", "on");
+  updateMusicButton();
+}
+
+function stopAmbientMusic() {
+  const nodes = state.musicNodes;
+  if (!nodes) {
+    state.musicOn = false;
+    updateMusicButton();
+    return;
+  }
+  nodes.master.gain.setTargetAtTime(0.0001, nodes.ctx.currentTime, 0.08);
+  window.setTimeout(() => {
+    nodes.oscillators.forEach(({ osc }) => {
+      try { osc.stop(); } catch {}
+    });
+    try { nodes.lfo.stop(); } catch {}
+    try { nodes.master.disconnect(); } catch {}
+  }, 260);
+  state.musicNodes = null;
+  state.musicOn = false;
+  localStorage.setItem("millenniumMusic", "off");
+  updateMusicButton();
+}
+
+async function toggleAmbientMusic() {
+  if (state.musicOn) {
+    stopAmbientMusic();
+    return;
+  }
+  await startAmbientMusic();
+}
+
 function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -816,13 +1050,14 @@ function progressTypeLabel(type) {
     guildMission: "Missão de guilda",
     power: "Poder",
     technique: "Técnica",
+    premiumPass: "Passe premium",
   }[type] || "Solicitação";
 }
 
 function defaultXpForRequest(type, rarity = "Comum") {
   const byRarity = { Comum: 40, Incomum: 60, Raro: 90, "Épico": 130, Lendário: 180, Cósmica: 240 };
   if (type === "training") return 30;
-  if (type === "power" || type === "technique") return 0;
+  if (type === "power" || type === "technique" || type === "premiumPass") return 0;
   return byRarity[rarity] || 50;
 }
 
@@ -830,7 +1065,7 @@ function requestRewardHint(request) {
   const parts = [];
   if (request.xp) parts.push(`${request.xp} XP`);
   if (request.reward) parts.push(request.reward);
-  return parts.join(" · ") || "Admin define na aprovação";
+  return parts.join(" · ") || "Oráculo define na aprovação";
 }
 
 function leaderboard() {
@@ -855,6 +1090,7 @@ function mondayResetKey(date = new Date()) {
 function showAuth() {
   $("#authScreen").hidden = false;
   $("#appShell").hidden = true;
+  updateMusicButton();
   $("#demoActions").hidden = state.firebaseReady;
   $("#authNote").hidden = state.firebaseReady;
   $("#authNote").textContent = state.firebaseReady
@@ -933,6 +1169,8 @@ function cleanupListeners() {
   state.privateUnsub = null;
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
   state.presenceTimer = null;
+  if (state.idleTimer) window.clearInterval(state.idleTimer);
+  state.idleTimer = null;
 }
 
 async function setPresence(online) {
@@ -950,9 +1188,28 @@ async function setPresence(online) {
 }
 
 function startPresence() {
+  touchActivity();
   setPresence(true);
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
   state.presenceTimer = window.setInterval(() => setPresence(true), 45000);
+  if (state.idleTimer) window.clearInterval(state.idleTimer);
+  state.idleTimer = window.setInterval(checkIdleTimeout, 30000);
+}
+
+function touchActivity() {
+  state.lastActivityAt = Date.now();
+}
+
+async function checkIdleTimeout() {
+  if (!state.user || state.role === "admin") return;
+  if (Date.now() - state.lastActivityAt < IDLE_LIMIT_MS) return;
+  toast("Sessão encerrada por inatividade.");
+  await setPresence(false);
+  cleanupListeners();
+  if (state.firebaseReady && state.auth?.currentUser) await state.auth.signOut().catch(() => {});
+  state.user = null;
+  state.demo = false;
+  showAuth();
 }
 
 async function initFirebase() {
@@ -995,11 +1252,11 @@ async function ensureUserProfile(user) {
         await ref.set({
           email: user.email,
           role: "admin",
-          displayName: profile.displayName || user.email?.split("@")[0] || "Admin",
+          displayName: profile.displayName || user.email?.split("@")[0] || ORACLE_LABEL,
           updatedAt: nowValue(),
         }, { merge: true });
       } catch (error) {
-        console.warn("Não consegui gravar o papel Admin ainda. Publique firestore.rules.", error);
+        console.warn("Não consegui gravar o papel do Oráculo ainda. Publique firestore.rules.", error);
       }
       profile.role = "admin";
     }
@@ -1086,7 +1343,7 @@ function subscribeCore() {
       && state.settings.panicVersion !== previousPanic
       && state.role !== "admin"
     ) {
-      toast("Atualização emergencial iniciada pelo Admin. Você será desconectado.");
+      toast(`Atualização emergencial iniciada pelo ${ORACLE_LABEL}. Você será desconectado.`);
       setPresence(false);
       cleanupListeners();
       state.auth?.signOut?.();
@@ -1098,6 +1355,7 @@ function subscribeCore() {
     state.lastPanicVersion = state.settings.panicVersion || "";
     document.body.className = [
       state.settings.theme && state.settings.theme !== "default" ? `theme-${state.settings.theme}` : "",
+      state.settings.seasonTheme ? `season-theme-${state.settings.seasonTheme}` : "season-theme-awakening",
       `season-${Number(state.settings.seasonNumber || 1)}`,
     ].filter(Boolean).join(" ");
     maybeResetWeeklyMissions();
@@ -1202,7 +1460,7 @@ function subscribeCore() {
 function enterDemo(role) {
   state.demo = true;
   state.user = { uid: `demo-${role}`, email: `${role}@demo.local` };
-  state.profile = { id: state.user.uid, email: state.user.email, displayName: role === "admin" ? "Admin Demo" : "Player Demo", role };
+  state.profile = { id: state.user.uid, email: state.user.email, displayName: role === "admin" ? "Oráculo Demo" : "Player Demo", role };
   state.role = role;
   state.view = NAVS[role][0].id;
   state.settings = { ...DEFAULT_CONTENT.settings };
@@ -1217,10 +1475,10 @@ function enterDemo(role) {
   };
   state.users = [
     { id: "demo-player", displayName: "Player Demo", email: "player@demo.local", role: "player" },
-    { id: "demo-admin", displayName: "Admin Demo", email: "admin@demo.local", role: "admin" },
+    { id: "demo-admin", displayName: "Oráculo Demo", email: "admin@demo.local", role: "admin" },
   ];
-  state.characters = [playerChar, defaultCharacter("demo-admin", "Admin Demo")];
-  state.character = role === "player" ? playerChar : defaultCharacter("demo-admin", "Admin Demo");
+  state.characters = [playerChar, defaultCharacter("demo-admin", "Oráculo Demo")];
+  state.character = role === "player" ? playerChar : defaultCharacter("demo-admin", "Oráculo Demo");
   state.weeklyMissions = DEFAULT_CONTENT.missionPool.slice(0, 3).map((mission) => ({ ...mission, createdAt: new Date().toISOString() }));
   state.globalMessages = [{ id: "welcome", senderName: "Sistema", text: "Chat global iniciado.", type: "system", createdAt: new Date().toISOString() }];
   $("#authScreen").hidden = true;
@@ -1247,6 +1505,19 @@ async function addDoc(collection, data) {
   }
   const ref = await state.db.collection(collection).add({ ...data, createdAt: nowValue() });
   return ref.id;
+}
+
+async function deleteDoc(collection, id) {
+  if (!id) return;
+  if (state.demo) {
+    if (collection === "globalMessages") state.globalMessages = state.globalMessages.filter((item) => item.id !== id);
+    if (collection === "directMessages") state.directMessages = state.directMessages.filter((item) => item.id !== id);
+    if (collection === "guildMessages") state.guildMessages = state.guildMessages.filter((item) => item.id !== id);
+    syncPrivateMessages();
+    render();
+    return;
+  }
+  await state.db.collection(collection).doc(id).delete();
 }
 
 function writeDemo(collection, id, data) {
@@ -1285,6 +1556,12 @@ function writeDemo(collection, id, data) {
   if (collection === "progressRequests") state.progressRequests = state.progressRequests.filter((item) => item.id !== id).concat({ ...data, id });
 }
 
+async function pruneMessages(collection, messages, predicate = () => true) {
+  const scoped = [...messages].filter(predicate).sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
+  const overflow = scoped.slice(CHAT_LIMIT);
+  await Promise.all(overflow.map((message) => deleteDoc(collection, message.id).catch(() => {})));
+}
+
 async function updateCharacter(uid, patch) {
   await writeDoc("characters", uid, { ...patch, ownerId: uid });
 }
@@ -1300,11 +1577,14 @@ async function addGlobalMessage(data) {
     rarity: data.rarity || "",
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
+  await pruneMessages("globalMessages", state.globalMessages);
 }
 
 async function announceSessionEntry() {
   if (state.sessionAnnounced || !state.user || state.demo) return;
   state.sessionAnnounced = true;
+  const lastAnnouncedAt = timeValue(state.profile?.lastAnnouncedAt);
+  if (lastAnnouncedAt && Date.now() - lastAnnouncedAt < JOIN_ANNOUNCE_COOLDOWN_MS) return;
   const character = currentCharacter();
   const title = activeTitle(character);
   const name = displayNameWithTitle(state.user.uid, state.profile?.displayName || state.user.email);
@@ -1313,9 +1593,10 @@ async function announceSessionEntry() {
     senderName: "Sistema",
     type: state.role === "admin" ? "admin-alert" : "join",
     text: state.role === "admin"
-      ? `ALERTA: Admin ${name} entrou no site.`
+      ? `ALERTA: ${ORACLE_LABEL} ${name} entrou na interface.`
       : `${name}${title ? ` (${title.name})` : ""} entrou no servidor.`,
   }).catch(() => {});
+  await writeDoc("users", state.user.uid, { lastAnnouncedAt: state.demo ? new Date().toISOString() : nowValue() }).catch(() => {});
 }
 
 async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
@@ -1338,11 +1619,12 @@ function render() {
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
+  updateMusicButton();
   const nav = NAVS[state.role];
   if (!nav.some((item) => item.id === state.view)) state.view = nav[0].id;
-  $("#roleLabel").textContent = state.role === "admin" ? "Admin" : "Player";
+  $("#roleLabel").textContent = state.role === "admin" ? ORACLE_LABEL : "Player";
   $("#seasonLabel").textContent = state.settings.seasonName || `Temporada ${state.settings.seasonNumber || 1}`;
-  $("#contextLabel").textContent = state.role === "admin" ? "Administração da plataforma" : "Suporte do personagem";
+  $("#contextLabel").textContent = state.role === "admin" ? "Oráculo da interface" : "Suporte do personagem";
   $("#viewTitle").textContent = VIEW_TITLES[state.view] || "Painel";
   $("#navList").innerHTML = nav.map((item) => `
     <button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}">
@@ -1411,11 +1693,7 @@ function renderQuickStatus(character) {
 }
 
 function renderMobileBottomNav(nav) {
-  const ids = state.role === "admin"
-    ? ["admin-home", "admin-users", "admin-requests", "admin-chat", "admin-ops"]
-    : ["player-home", "character", "chat", "missions", "profile"];
   return nav
-    .filter((item) => ids.includes(item.id))
     .map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`)
     .join("");
 }
@@ -1425,7 +1703,7 @@ function renderMaintenanceGate() {
     <div class="grid">
       <article class="panel span-12 center-panel">
         <p class="eyebrow">Modo manutenção</p>
-        <h2>O Admin está ajustando a plataforma</h2>
+        <h2>O Oráculo está ajustando a interface</h2>
         <p>Players ficam temporariamente bloqueados para evitar perda de dados durante correções e atualizações.</p>
       </article>
     </div>
@@ -1437,8 +1715,8 @@ function renderSuspendedGate() {
     <div class="grid">
       <article class="panel span-12 center-panel danger-zone">
         <p class="eyebrow">Conta suspensa</p>
-        <h2>Seu acesso foi pausado pelo Admin</h2>
-        <p>Entre em contato com a administração da mesa pelo canal combinado para entender a decisão.</p>
+        <h2>Seu acesso foi pausado pelo Oráculo</h2>
+        <p>Entre em contato com o Oráculo da mesa pelo canal combinado para entender a decisão.</p>
       </article>
     </div>
   `;
@@ -1495,7 +1773,7 @@ function renderPlayerHome() {
         <article class="gift-panel span-12">
           <div>
             <p class="eyebrow">Correio místico</p>
-            <h2>Você recebeu um presente do Admin</h2>
+            <h2>Você recebeu um presente do Oráculo</h2>
             <p>${esc(pending.message || "Recompensa entregue. Abra seu perfil para ver os novos registros.")}</p>
             <div class="tag-row">${(pending.rewards || []).map((reward) => `<span class="tag">${esc(reward)}</span>`).join("")}</div>
           </div>
@@ -1593,13 +1871,13 @@ function playerNextSteps(character) {
     },
     {
       title: hasActiveMission ? "Missão em andamento" : "Escolha uma missão",
-      text: hasActiveMission ? `${(character.activeMissions || []).length} missão(ões) ativa(s).` : "Pegue uma missão semanal e envie conclusão ao Admin.",
+      text: hasActiveMission ? `${(character.activeMissions || []).length} missão(ões) ativa(s).` : "Pegue uma missão semanal e envie conclusão ao Oráculo.",
       nav: "missions",
       done: hasActiveMission,
     },
     {
       title: pending.length ? "Validação pendente" : "Relate treino ou criação",
-      text: pending.length ? `${pending.length} pedido(s) aguardando análise.` : "Treinos, poderes e técnicas passam pelo Admin.",
+      text: pending.length ? `${pending.length} pedido(s) aguardando análise.` : "Treinos, poderes e técnicas passam pelo Oráculo.",
       nav: "missions",
       done: pending.length > 0,
     },
@@ -1639,9 +1917,9 @@ function renderProfile() {
   return `
     <div class="grid">
       <article class="panel span-12">
-        ${character.bannerUrl ? `<img class="profile-banner" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
+        ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
         <div class="profile-grid">
-          <img class="avatar" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
+          <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
           <div>
             <div class="panel-heading">
               <div>
@@ -1660,6 +1938,7 @@ function renderProfile() {
             <div class="tag-row">
               ${(character.titles || []).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
             </div>
+            <div class="token-row">${renderTokens(character.tokens || [])}</div>
           </div>
         </div>
       </article>
@@ -1771,7 +2050,7 @@ function renderMailbox() {
     rows.push(`
       <div class="mail-row gift">
         <div>
-          <span>Presente do Admin</span>
+          <span>Presente do Oráculo</span>
           <strong>${esc(gift.message || "Você recebeu uma recompensa.")}</strong>
           <p>${(gift.rewards || []).map(esc).join(" · ")}</p>
         </div>
@@ -1827,8 +2106,10 @@ function renderCharacterForm() {
           <label><span>Nome do player</span><input name="playerName" value="${esc(draftValue(draft, "playerName", character.playerName || ""))}" /></label>
           <label><span>Nome do personagem</span><input name="characterName" value="${esc(draftValue(draft, "characterName", character.characterName || ""))}" /></label>
           <label><span>Idade do personagem</span><input name="characterAge" type="number" inputmode="numeric" min="0" step="1" value="${esc(draftValue(draft, "characterAge", character.characterAge || ""))}" /></label>
-          <label><span>Avatar por URL ou GIF</span><input name="avatarUrl" value="${esc(draftValue(draft, "avatarUrl", character.avatarUrl || ""))}" /></label>
-          <label><span>Banner animado por URL ou GIF</span><input name="bannerUrl" value="${esc(draftValue(draft, "bannerUrl", character.bannerUrl || ""))}" /></label>
+          ${mediaInput("avatarUrl", "Avatar ou GIF do personagem", draftValue(draft, "avatarUrl", character.avatarUrl || ""), { hint: "A imagem aparece circular no perfil público." })}
+          ${mediaInput("bannerUrl", "Banner animado do perfil", draftValue(draft, "bannerUrl", character.bannerUrl || ""), { hint: "Use imagem larga ou GIF para o topo do perfil." })}
+          ${positionSelect("avatarPosition", "Enquadramento do avatar", draftValue(draft, "avatarPosition", character.avatarPosition || "center"))}
+          ${positionSelect("bannerPosition", "Enquadramento do banner", draftValue(draft, "bannerPosition", character.bannerPosition || "center"))}
           <label><span>Raça</span><select name="raceId" ${locked ? "disabled" : ""}>${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select>${locked ? `<input type="hidden" name="raceId" value="${esc(character.raceId)}" />` : ""}</label>
           <label><span>Classe</span><select name="classId" ${locked ? "disabled" : ""}>${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select>${locked ? `<input type="hidden" name="classId" value="${esc(character.classId)}" />` : ""}</label>
           <label class="wide"><span>Descrição do personagem</span><textarea name="characterDescription" rows="4">${esc(draftValue(draft, "characterDescription", character.characterDescription || ""))}</textarea></label>
@@ -1859,7 +2140,7 @@ function renderCharacterForm() {
           <div class="item-row">
             <span>Poder</span>
             <strong>${esc(character.power?.name || "Nenhum poder aprovado")}</strong>
-            <p>${esc(character.power?.description || "Envie uma criação pela aba Missões para o Admin analisar.")}</p>
+            <p>${esc(character.power?.description || "Envie uma criação pela aba Missões para o Oráculo analisar.")}</p>
           </div>
           <div class="item-row">
             <span>Técnica</span>
@@ -1884,6 +2165,7 @@ function renderRoulette() {
   const canRollOne = !state.rolling && attempts >= 1;
   const canRollTen = !state.rolling && attempts >= 10;
   const results = state.lastRollResults || [];
+  const choices = state.affinityChoices || [];
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -1915,6 +2197,24 @@ function renderRoulette() {
             <p>${affinity ? `${esc(category?.name)} · ${esc(category?.rarity)} · ${esc(bonusToText(affinity.bonus))}` : "A afinidade só aparece depois do giro."}</p>
             <p>${esc(affinity?.passive || "")}</p>
           </div>
+          ${choices.length ? `
+            <div class="choice-panel">
+              <div>
+                <p class="eyebrow">Escolha de afinidade</p>
+                <h3>Você tirou opções da mesma raridade</h3>
+                <p>Escolha qual afinidade ficará registrada na sua ficha. Nada menor substitui algo mais raro.</p>
+              </div>
+              <div class="choice-grid">
+                ${choices.map((choice) => `
+                  <button class="choice-card" type="button" data-action="choose-affinity" data-affinity-id="${esc(choice.affinityId)}">
+                    <span class="${rarityClass(choice.rarity)}">${esc(choice.rarity || "Comum")}${choice.current ? " · atual" : ""}</span>
+                    <strong>${esc(choice.name)}</strong>
+                    <small>${esc(choice.categoryName || "Categoria")} · ${esc(choice.bonus || "Sem bônus")}</small>
+                  </button>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
           <div class="roll-results">
             ${results.length ? results.map((result) => `
               <div class="result-card ${result.rare ? "rare" : ""}">
@@ -1979,6 +2279,16 @@ function renderPets(pets) {
       <strong>${esc(pet.name)}</strong>
       <p>${esc(pet.rarity || "Pet")}</p>
     </div>
+  `).join("");
+}
+
+function renderTokens(tokens) {
+  if (!tokens.length) return `<span class="token-chip muted">Sem tokens</span>`;
+  return tokens.map((token) => `
+    <span class="token-chip ${rarityClass(token.rarity)}" title="${esc(token.description || token.name)}">
+      ${token.imageUrl ? `<img src="${esc(token.imageUrl)}" alt="${esc(token.name)}" />` : `<b>${esc(token.icon || String(token.name || "T").slice(0, 1))}</b>`}
+      <small>${esc(token.name)}</small>
+    </span>
   `).join("");
 }
 
@@ -2268,20 +2578,18 @@ function renderMarket() {
     ["auction", "Leilão"],
     ["crafting", "Crafting"],
     ["vault", "Cofre"],
-    ["pass", "Passe"],
   ];
   const tab = state.marketTab || "market";
   const cards = {
     market: () => marketCards(state.content.marketListings, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`),
     auction: () => marketCards(state.content.auctionListings, (item) => `Lance mínimo ${Number(item.minBid || 0)} PO · termina ${item.endsAt || "a definir"} · ${item.description || ""}`),
     crafting: () => marketCards(state.content.craftingRecipes, (item) => `${item.materials || "Materiais a definir"} → ${item.result || ""}`),
-    vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO no bolso", currentCharacter().gold || 0)}${renderStat("Itens", (currentCharacter().inventory || []).length)}${renderStat("Raros", currentCharacter().totalRares || 0)}</div><p class="hint">Cofre pessoal visual. Movimentações raras ainda passam pelo Admin.</p></article>`,
-    pass: () => marketCards(state.content.seasonPass, (item) => `Tier ${item.tier || 1} · ${item.reward || ""} · ${item.description || ""}`),
+    vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO no bolso", currentCharacter().gold || 0)}${renderStat("Itens", (currentCharacter().inventory || []).length)}${renderStat("Raros", currentCharacter().totalRares || 0)}</div><p class="hint">Cofre pessoal visual. Movimentações raras ainda passam pelo Oráculo.</p></article>`,
   };
   return `
     <div class="grid">
       <article class="panel span-12">
-        <div class="panel-heading"><div><p class="eyebrow">Economia</p><h2>Mercado, leilão, cofre e passe</h2></div><span class="tag">Admin controla recompensas</span></div>
+        <div class="panel-heading"><div><p class="eyebrow">Economia</p><h2>Mercado, leilão, crafting e cofre</h2></div><span class="tag">Oráculo controla recompensas</span></div>
         <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="market-tab" data-tab="${id}">${label}</button>`).join("")}</div>
       </article>
       ${tab === "vault" ? cards.vault() : `<article class="panel span-12"><div class="content-grid">${cards[tab]?.() || cards.market()}</div></article>`}
@@ -2296,9 +2604,97 @@ function marketCards(items, detail) {
       <span>${esc(item.rarity || item.category || "Mercado")}</span>
       <h3>${esc(item.name)}</h3>
       <p>${esc(detail(item))}</p>
-      <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("Solicite ao Admin pelo chat/correio para comprar, dar lance ou fabricar este registro.")}">Como usar?</button>
+      <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("Solicite ao Oráculo pelo chat/correio para comprar, dar lance ou fabricar este registro.")}">Como usar?</button>
     </div>
   `).join("") || `<div class="empty-state">Nada publicado aqui ainda.</div>`;
+}
+
+function renderSeasonPass() {
+  const character = currentCharacter();
+  const level = Number(character.level || levelFromXp(character.xp || 0));
+  const hasPremium = character.premiumPassUnlocked === true;
+  const pendingPremium = pendingProgressRequests().some((request) => request.type === "premiumPass");
+  const canRequest = !hasPremium && !pendingPremium && Number(character.gold || 0) >= 1000;
+  return `
+    <div class="season-pass-board">
+      <div class="pass-header">
+        <div>
+          <p class="eyebrow">Temporada do Despertar</p>
+          <h3>Passe Free e Premium</h3>
+          <p>Recompensas até o nível 50. O Premium custa 1.000 PO e também é concedido automaticamente aos Testadores Beta quando o Oráculo inicia o RPG.</p>
+        </div>
+        <div class="pass-status">
+          <span class="tag">${hasPremium ? "Premium ativo" : pendingPremium ? "Premium em análise" : "Premium 1.000 PO"}</span>
+          ${hasPremium ? "" : `<button class="primary-button" type="button" data-action="request-premium-pass" ${canRequest ? "" : "disabled"}>${pendingPremium ? "Pedido enviado" : "Solicitar Premium"}</button>`}
+        </div>
+      </div>
+      <div class="pass-track">
+        ${sortByTier(state.content.seasonPass).map((item) => {
+          const reached = level >= Number(item.tier || 0);
+          return `
+            <div class="pass-tier ${reached ? "reached" : ""}">
+              <div>
+                <span class="${rarityClass(item.rarity)}">${esc(item.rarity || "Temporada")}</span>
+                <strong>${esc(item.name || `Nível ${item.tier || "?"}`)}</strong>
+                <p>${esc(item.description || "")}</p>
+              </div>
+              <div class="pass-rewards">
+                <div><small>Free</small><b>${esc(item.freeReward || item.reward || "Recompensa a definir")}</b></div>
+                <div class="${hasPremium ? "premium-open" : "premium-locked"}"><small>Premium</small><b>${esc(item.premiumReward || "Recompensa premium a definir")}</b></div>
+              </div>
+            </div>
+          `;
+        }).join("") || `<div class="empty-state">Nenhum passe publicado.</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderSeasonPassView() {
+  const character = currentCharacter();
+  return `
+    <div class="grid pass-view">
+      <article class="pass-hero panel span-12">
+        <div class="pass-hero-copy">
+          <p class="eyebrow">Temporada I</p>
+          <h2>Despertar dos Heróis</h2>
+          <p>A interface de Millennium abriu os olhos. Suba níveis, complete missões do passe e desbloqueie molduras, tokens, títulos e recompensas cosméticas.</p>
+          <div class="tag-row">
+            <span class="tag">Nível ${Number(character.level || levelFromXp(character.xp || 0))}</span>
+            <span class="tag">${character.premiumPassUnlocked ? "Premium ativo" : "Premium bloqueado"}</span>
+            <span class="tag">${Number(character.gold || 0).toLocaleString("pt-BR")} PO</span>
+          </div>
+        </div>
+        <div class="pass-feature-card">
+          <span>Recompensa destaque</span>
+          <strong>Interface Viva</strong>
+          <p>Token cósmico da temporada para quem alcançar o marco final.</p>
+        </div>
+      </article>
+      <article class="panel span-12">
+        ${renderSeasonPass()}
+      </article>
+      <article class="panel span-12">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Missões do passe</p>
+            <h3>XP visual da temporada</h3>
+          </div>
+          <span class="tag">Validação narrativa</span>
+        </div>
+        <div class="pass-mission-grid">
+          ${sortByName(state.content.passMissions || []).map((mission) => `
+            <div class="pass-mission">
+              <span>${esc(mission.type || "Missão")}</span>
+              <strong>${esc(mission.name || mission.title || "Missão do passe")}</strong>
+              <p>${esc(mission.description || "")}</p>
+              <b>+${Number(mission.xp || 0)} XP do passe</b>
+            </div>
+          `).join("") || `<div class="empty-state">Nenhuma missão do passe cadastrada.</div>`}
+        </div>
+      </article>
+    </div>
+  `;
 }
 
 function renderHallOfFame() {
@@ -2436,7 +2832,7 @@ function renderGuild() {
           <label><span>Imagem / brasão por URL</span><input name="imageUrl" ${canCreate ? "" : "disabled"} /></label>
           <label><span>Descrição</span><textarea name="description" rows="3" ${canCreate ? "" : "disabled"}></textarea></label>
           <button class="primary-button" type="submit" ${createDisabled ? "disabled" : ""}>Criar por ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO</button>
-          ${ownGuild ? `<p class="hint">Você já pertence a uma guilda. Para fundar outra, fale com o Admin.</p>` : Number(character.gold || 0) < GUILD_CREATE_COST ? `<p class="hint">Você precisa de ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO para fundar uma guilda.</p>` : ""}
+          ${ownGuild ? `<p class="hint">Você já pertence a uma guilda. Para fundar outra, fale com o Oráculo.</p>` : Number(character.gold || 0) < GUILD_CREATE_COST ? `<p class="hint">Você precisa de ${GUILD_CREATE_COST.toLocaleString("pt-BR")} PO para fundar uma guilda.</p>` : ""}
         </form>
       ` : ""}
       <div class="guild-list scroll-list">
@@ -2556,7 +2952,7 @@ function renderGuild() {
             <span>Em andamento</span>
             <h3>${esc(activeMission.title)}</h3>
             <p>Party: ${(activeMission.partyIds || []).map((uid) => esc(getUserName(uid))).join(" · ")}</p>
-            ${leader ? `<button class="primary-button" type="button" data-action="finish-guild-mission" data-guild-id="${esc(guild.id)}">Enviar conclusão ao Admin</button>` : ""}
+            ${leader ? `<button class="primary-button" type="button" data-action="finish-guild-mission" data-guild-id="${esc(guild.id)}">Enviar conclusão ao Oráculo</button>` : ""}
           </div>
         ` : leader ? `
           <form class="form-stack" data-form="start-guild-mission">
@@ -2654,6 +3050,17 @@ function renderMessages(messages, options = {}) {
 
 function renderMissions() {
   const character = currentCharacter();
+  if (!state.settings.gameStarted && state.role !== "admin") {
+    return `
+      <div class="grid">
+        <article class="panel span-12 center-panel">
+          <p class="eyebrow">Pré-lançamento</p>
+          <h2>O chamado ainda não começou</h2>
+          <p>Por enquanto, você pode criar ficha, falar nos chats, ver perfis e girar sua afinidade. Missões, treinos e criações serão liberados quando o ${ORACLE_LABEL} iniciar a Temporada do Despertar.</p>
+        </article>
+      </div>
+    `;
+  }
   const activeIds = new Set(character.activeMissions || []);
   const pending = pendingProgressRequests();
   const powerSlots = Math.max(1, Number(character.powerSlots || 1));
@@ -2676,7 +3083,7 @@ function renderMissions() {
         <form class="form-stack" data-form="training-request">
           <label><span>Título do treino</span><input name="title" required placeholder="Ex: Controle de mana sob pressão" /></label>
           <label><span>O que foi feito?</span><textarea name="description" rows="5" required></textarea></label>
-          <button class="primary-button" type="submit">Enviar treino ao Admin</button>
+          <button class="primary-button" type="submit">Enviar treino ao Oráculo</button>
         </form>
       </article>
       <article class="panel span-6">
@@ -2710,7 +3117,7 @@ function renderPlayerMissionList(missions, activeIds, pending) {
         <p>${esc(mission.description)}</p>
         <strong>${esc(mission.reward || "Recompensa a definir")}</strong>
         <div class="action-row">
-          ${pendingMission ? `<span class="tag">Aguardando Admin</span>` : active
+          ${pendingMission ? `<span class="tag">Aguardando Oráculo</span>` : active
             ? `<button class="primary-button" type="button" data-action="finish-mission" data-mission-id="${esc(mission.id)}">Marcar concluída</button>`
             : `<button class="ghost-button" type="button" data-action="start-mission" data-mission-id="${esc(mission.id)}">Quero fazer</button>`}
         </div>
@@ -2751,7 +3158,7 @@ function renderProgressRequests(requests, adminMode = false) {
       <h3>${esc(request.title || "Solicitação")}</h3>
       <p>${esc(request.description || "")}</p>
       <p>${esc(requestRewardHint(request))}</p>
-      ${request.adminNote ? `<p><strong>Nota do Admin:</strong> ${esc(request.adminNote)}</p>` : ""}
+      ${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}
       ${adminMode && request.status === "pendente" ? `
         <div class="action-row">
           <button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button>
@@ -2867,7 +3274,7 @@ function renderAdminUsers() {
           <form class="form-grid" data-form="admin-user-edit">
             <input type="hidden" name="uid" value="${esc(selectedId)}" />
             <label><span>Nome exibido</span><input name="displayName" value="${esc(draftValue(draft, "displayName", selectedUser.displayName || ""))}" /></label>
-            <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Admin</option></select></label>
+            <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Oráculo</option></select></label>
             <label><span>Status</span><select name="status"><option value="active" ${draftValue(draft, "status", selectedUser.status || "active") === "active" ? "selected" : ""}>Ativo</option><option value="muted" ${draftValue(draft, "status", selectedUser.status || "active") === "muted" ? "selected" : ""}>Mutado</option><option value="suspended" ${draftValue(draft, "status", selectedUser.status || "active") === "suspended" ? "selected" : ""}>Suspenso</option></select></label>
             <label><span>PO</span><input name="gold" type="number" value="${Number(draftValue(draft, "gold", character.gold || 0))}" /></label>
             <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(draftValue(draft, "affinityAttempts", character.affinityAttempts || 0))}" /></label>
@@ -2942,7 +3349,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-race", "Nova raça", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem da raça")}
         <label><span>Bônus JSON</span><input name="bonus" value='{"for":1}' required /></label>
         <label><span>Passiva</span><textarea name="passive" rows="4"></textarea></label>
         <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
@@ -2954,7 +3361,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-class", "Nova classe", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem da classe")}
         <label><span>Bônus JSON</span><input name="bonus" value='{"pod":2}' required /></label>
         <label><span>Papel</span><textarea name="role" rows="4"></textarea></label>
         <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
@@ -2969,7 +3376,7 @@ function renderContentEditor() {
         <label><span>Peso da roleta</span><input name="weight" type="number" min="0" value="10" required /></label>
         <label><span>Raridade</span><select name="rarity">${RARITIES.map((r) => `<option value="${r}">${r}</option>`).join("")}</select></label>
         <label><span>Cor</span><input name="color" value="#d8b45d" /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem da categoria")}
         <label><span>Descrição / regra de nerf</span><textarea name="description" rows="4"></textarea></label>
       `)}</article>
       <article class="panel span-7"><div class="content-grid">${contentCards(state.content.affinityCategories, (item) => `Peso ${item.weight} · ${item.rarity} · ${state.content.affinities.filter((affinity) => affinity.categoryId === item.id).length} afinidade(s) · ${categoryOwnerCount(item.id)} player(s)`, "affinityCategories")}</div></article>
@@ -2980,7 +3387,7 @@ function renderContentEditor() {
       <article class="panel span-5">${contentForm("content-affinity", "Nova afinidade", `
         <label><span>Nome</span><input name="name" required /></label>
         <label><span>Categoria</span><select name="categoryId">${optionList(state.content.affinityCategories)}</select></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem da afinidade")}
         <label><span>Bônus JSON</span><input name="bonus" value='{"pod":2}' required /></label>
         <label><span>Passiva</span><textarea name="passive" rows="4"></textarea></label>
         <label><span>Descrição / ajuste de balanceamento</span><textarea name="description" rows="4"></textarea></label>
@@ -2998,7 +3405,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-biome", "Novo bioma", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem do bioma")}
         <label><span>Região maior</span><input name="region" /></label>
         <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
       `)}</article>
@@ -3009,7 +3416,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-kingdom", "Novo reino", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem do reino")}
         <label><span>Governante / facção</span><input name="ruler" /></label>
         <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
       `)}</article>
@@ -3020,7 +3427,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-region", "Nova região", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem da região")}
         <label><span>Reino</span><select name="kingdomId"><option value="">Independente</option>${optionList(state.content.kingdoms)}</select></label>
         <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
       `)}</article>
@@ -3031,7 +3438,7 @@ function renderContentEditor() {
     return `
       <article class="panel span-5">${contentForm("content-npc", "Novo NPC importante", `
         <label><span>Nome</span><input name="name" required /></label>
-        <label><span>Imagem por URL</span><input name="imageUrl" /></label>
+        ${mediaInput("imageUrl", "Imagem do NPC")}
         <label><span>Função</span><input name="role" /></label>
         <label><span>Descrição</span><textarea name="description" rows="5"></textarea></label>
       `)}</article>
@@ -3079,6 +3486,7 @@ function renderContentEditor() {
       ["techniqueLibrary", "Biblioteca de técnicas"],
       ["achievements", "Conquistas"],
       ["seasonPass", "Passe de temporada"],
+      ["passMissions", "Missões do passe"],
       ["reputationFactions", "Reputações/facções"],
     ];
     const selected = state.epicCollection || "wantedBoard";
@@ -3091,7 +3499,7 @@ function renderContentEditor() {
           <label><span>JSON</span><textarea name="json" rows="14" required>{
   "name": "Novo registro",
   "rarity": "Comum",
-  "description": "Descrição editável pelo Admin."
+  "description": "Descrição editável pelo Oráculo."
 }</textarea></label>
           <button class="primary-button" type="submit">Salvar módulo</button>
         </form>
@@ -3106,6 +3514,7 @@ function renderContentEditor() {
     <article class="panel span-5">${contentForm("content-item", "Novo item", `
       <label><span>Nome</span><input name="name" required /></label>
       <label><span>Categoria</span><select name="categoryId">${optionList(state.content.itemCategories)}</select></label>
+      ${mediaInput("imageUrl", "Imagem do item")}
       <label><span>Preço</span><input name="price" type="number" value="0" /></label>
       <label><span>Raridade</span><select name="rarity">${RARITIES.map((r) => `<option value="${r}">${r}</option>`).join("")}</select></label>
       <label><span>Bônus JSON</span><input name="bonus" value='{}' /></label>
@@ -3151,6 +3560,7 @@ function renderAdminRewards() {
             <option value="gold">PO</option>
             <option value="item">Item</option>
             <option value="title">Título</option>
+            <option value="token">Token</option>
             <option value="affinity">Afinidade</option>
             <option value="pet">Pet</option>
             <option value="attempts">Essências de roleta</option>
@@ -3231,6 +3641,7 @@ function renderAdminRequests() {
     ["power", "Poderes"],
     ["technique", "Técnicas"],
     ["guildMission", "Guilda"],
+    ["premiumPass", "Passe"],
   ];
   return `
     <div class="grid">
@@ -3332,6 +3743,14 @@ function renderAdminSettings() {
             <option value="ember" ${state.settings.theme === "ember" ? "selected" : ""}>Brasa</option>
             <option value="frost" ${state.settings.theme === "frost" ? "selected" : ""}>Geada</option>
           </select></label>
+          <label><span>Tema visual da temporada</span><select name="seasonTheme">
+            <option value="awakening" ${state.settings.seasonTheme === "awakening" ? "selected" : ""}>Despertar dos Heróis</option>
+            <option value="void" ${state.settings.seasonTheme === "void" ? "selected" : ""}>Vazio Cósmico</option>
+            <option value="blood" ${state.settings.seasonTheme === "blood" ? "selected" : ""}>Sangue e Pactos</option>
+            <option value="frost" ${state.settings.seasonTheme === "frost" ? "selected" : ""}>Geada Eterna</option>
+            <option value="ember" ${state.settings.seasonTheme === "ember" ? "selected" : ""}>Brasa da Forja</option>
+            <option value="forest" ${state.settings.seasonTheme === "forest" ? "selected" : ""}>Raízes Vivas</option>
+          </select></label>
           <label><span>Aviso global</span><textarea name="globalNotice" rows="5">${esc(state.settings.globalNotice || "")}</textarea></label>
           <button class="primary-button" type="submit">Publicar mudanças</button>
         </form>
@@ -3352,9 +3771,13 @@ function renderAdminSettings() {
         <div>
           <p class="eyebrow">Operação</p>
           <h3>Atualização emergencial</h3>
-          <p>Desconecta todos os players online e força recarregamento de sessão. Admins continuam no painel.</p>
+          <p>Desconecta todos os players online e força recarregamento de sessão. O Oráculo continua no painel.</p>
         </div>
-        <button class="danger-button" type="button" data-action="panic-refresh">Botão de pânico</button>
+        <div class="action-row">
+          <button class="danger-button" type="button" data-action="panic-refresh">Botão de pânico</button>
+          <button class="ghost-button" type="button" data-action="toggle-maintenance" data-mode="${state.settings.maintenanceMode ? "false" : "true"}">${state.settings.maintenanceMode ? "Abrir interface" : "Fechar interface"}</button>
+          <button class="primary-button" type="button" data-action="start-rpg" ${state.settings.gameStarted ? "disabled" : ""}>Começar RPG</button>
+        </div>
       </article>
     </div>
   `;
@@ -3394,6 +3817,7 @@ const VIEW_RENDERERS = {
   codex: renderCodex,
   help: renderHelpCenter,
   market: renderMarket,
+  pass: renderSeasonPassView,
   ranking: renderRanking,
   hall: renderHallOfFame,
   diary: renderDiary,
@@ -3465,6 +3889,8 @@ async function saveCharacter(form) {
     characterDescription: values.characterDescription || "",
     avatarUrl: values.avatarUrl,
     bannerUrl: values.bannerUrl || "",
+    avatarPosition: values.avatarPosition || "center",
+    bannerPosition: values.bannerPosition || "center",
     raceId: locked ? current.raceId : values.raceId,
     classId: locked ? current.classId : values.classId,
     creationLocked: true,
@@ -3483,11 +3909,11 @@ async function rollAffinity(qty = 1) {
   const attempts = Number(character.affinityAttempts ?? state.settings.defaultAffinityAttempts ?? 0);
   if (state.rolling) return;
   if (isCharacterBanned(character)) {
-    toast("Esta ficha está bloqueada temporariamente pelo Admin.");
+    toast("Esta ficha está bloqueada temporariamente pelo Oráculo.");
     return;
   }
   if (!state.content.affinities.length) {
-    toast("Cadastre afinidades no painel Admin antes de girar.");
+    toast("Cadastre afinidades na Forja do Oráculo antes de girar.");
     return;
   }
   if (attempts < amount) {
@@ -3499,6 +3925,7 @@ async function rollAffinity(qty = 1) {
   state.rolling = true;
   state.lastRoll = null;
   state.lastRollResults = [];
+  state.affinityChoices = [];
   render();
   playSound("rolling");
 
@@ -3524,14 +3951,51 @@ async function rollAffinity(qty = 1) {
     await delay(amount > 1 ? 3300 : 2200);
     window.clearInterval(interval);
 
-    const last = results[results.length - 1];
-    if (!last) {
+    if (!results.length) {
       playSound("fail");
       toast("Não encontrei afinidades para sortear.");
       return;
     }
 
     const rareResults = results.filter((result) => result.rare);
+    const currentAffinity = getAffinity(character.affinityId);
+    const currentCategory = currentAffinity ? getCategory(currentAffinity.categoryId) : null;
+    const currentScore = currentAffinity ? rarityScore(currentCategory?.rarity) : 0;
+    const bestScore = Math.max(...results.map((result) => rarityScore(result.category?.rarity)), currentScore);
+    const bestResults = results
+      .filter((result) => rarityScore(result.category?.rarity) === bestScore)
+      .filter((result, index, list) => list.findIndex((item) => item.affinity.id === result.affinity.id) === index);
+    const resultChoice = (result, current = false) => ({
+      affinityId: result.affinity.id,
+      name: result.affinity.name,
+      categoryName: result.category?.name || "",
+      rarity: result.category?.rarity || "Comum",
+      bonus: bonusToText(result.affinity.bonus || {}),
+      current,
+    });
+    const currentChoice = currentAffinity ? {
+      affinityId: currentAffinity.id,
+      name: currentAffinity.name,
+      categoryName: currentCategory?.name || "",
+      rarity: currentCategory?.rarity || "Comum",
+      bonus: bonusToText(currentAffinity.bonus || {}),
+      current: true,
+    } : null;
+    const hasNewBest = bestResults.some((result) => result.affinity.id !== currentAffinity?.id);
+    const shouldChoose = amount >= 10 && bestScore >= currentScore && bestResults.length > 0
+      && (bestResults.length > 1 || (currentChoice && bestScore === currentScore && hasNewBest));
+    const choices = shouldChoose
+      ? [
+        ...(currentChoice && bestScore === currentScore ? [currentChoice] : []),
+        ...bestResults.map((result) => resultChoice(result)).filter((choice) => choice.affinityId !== currentChoice?.affinityId),
+      ]
+      : [];
+    const chosenResult = choices.length
+      ? null
+      : bestScore >= currentScore
+        ? (bestResults.find((result) => result.affinity.id !== currentAffinity?.id) || bestResults[0] || null)
+        : null;
+    const displayBest = bestResults[0] || results.slice().sort((a, b) => rarityScore(b.category?.rarity) - rarityScore(a.category?.rarity))[0];
     const totalRolls = Number(character.totalRolls || 0) + results.length;
     const totalRares = Number(character.totalRares || 0) + rareResults.length;
     const level = Number(character.level || levelFromXp(character.xp || 0));
@@ -3551,33 +4015,70 @@ async function rollAffinity(qty = 1) {
       })),
     ].slice(-60);
 
-    state.lastRoll = last.affinity;
+    state.lastRoll = chosenResult?.affinity || displayBest.affinity;
     state.lastRollResults = results;
-    await updateCharacter(state.user.uid, {
-      affinityId: last.affinity.id,
+    state.affinityChoices = choices;
+
+    const patch = {
       affinityAttempts: attempts - results.length,
       pityCounter: pity,
       totalRolls,
       totalRares,
       prestige,
       rollHistory: history,
-      affinitySnapshot: { ...last.affinity, categoryName: last.category?.name || "", rarity: last.category?.rarity || "" },
-    });
+    };
+    if (chosenResult) {
+      patch.affinityId = chosenResult.affinity.id;
+      patch.affinitySnapshot = { ...chosenResult.affinity, categoryName: chosenResult.category?.name || "", rarity: chosenResult.category?.rarity || "" };
+    }
+    await updateCharacter(state.user.uid, patch);
 
-    if (rareResults.length) {
+    if (chosenResult && isRareReward(chosenResult.category?.rarity)) {
       playSound("rare");
-      for (const result of rareResults) {
-        await announceRareReward(state.user.uid, result.affinity.name, result.category?.rarity, "afinidade");
-      }
+      await announceRareReward(state.user.uid, chosenResult.affinity.name, chosenResult.category?.rarity, "afinidade");
+    } else if (rareResults.length || choices.some((choice) => isRareReward(choice.rarity))) {
+      playSound("rare");
     }
 
-    const best = results.slice().sort((a, b) => rarityScore(b.category?.rarity) - rarityScore(a.category?.rarity))[0];
-    toast(`${results.length} giro(s): melhor resultado ${best.affinity.name} (${best.category?.rarity || "Comum"}).`);
+    if (choices.length) {
+      toast("Giro 10x concluído. Escolha qual afinidade da melhor raridade ficará na ficha.");
+    } else if (chosenResult) {
+      toast(`${results.length} giro(s): afinidade definida como ${chosenResult.affinity.name} (${chosenResult.category?.rarity || "Comum"}).`);
+    } else {
+      toast(`${results.length} giro(s): ${displayBest.affinity.name} saiu, mas sua afinidade atual é mais rara e foi mantida.`);
+    }
   } finally {
     window.clearInterval(interval);
     state.rolling = false;
     render();
   }
+}
+
+async function chooseAffinity(affinityId) {
+  const choices = state.affinityChoices || [];
+  const choice = choices.find((item) => item.affinityId === affinityId);
+  if (!choice) return;
+  if (choice.current) {
+    state.affinityChoices = [];
+    toast("Afinidade atual mantida.");
+    render();
+    return;
+  }
+  const affinity = getAffinity(affinityId);
+  if (!affinity) return;
+  const category = getCategory(affinity.categoryId);
+  await updateCharacter(state.user.uid, {
+    affinityId: affinity.id,
+    affinitySnapshot: { ...affinity, categoryName: category?.name || "", rarity: category?.rarity || "" },
+  });
+  state.affinityChoices = [];
+  state.lastRoll = affinity;
+  if (isRareReward(category?.rarity)) {
+    playSound("rare");
+    await announceRareReward(state.user.uid, affinity.name, category?.rarity, "afinidade");
+  }
+  toast(`Afinidade escolhida: ${affinity.name}.`);
+  render();
 }
 
 async function toggleProfilePublic() {
@@ -3606,6 +4107,35 @@ async function toggleEquip(instanceId) {
     (item.instanceId || item.id) === instanceId ? { ...item, equipped: !item.equipped } : item
   ));
   await updateCharacter(state.user.uid, { inventory });
+}
+
+async function requestPremiumPass() {
+  const character = currentCharacter();
+  if (character.premiumPassUnlocked) {
+    toast("Seu passe premium já está ativo.");
+    return;
+  }
+  if (pendingProgressRequests().some((request) => request.type === "premiumPass")) {
+    toast("Seu pedido de passe premium já está aguardando o Oráculo.");
+    return;
+  }
+  if (Number(character.gold || 0) < 1000) {
+    toast("Você precisa de 1.000 PO para solicitar o passe premium.");
+    return;
+  }
+  await addDoc("progressRequests", {
+    uid: state.user.uid,
+    playerName: state.profile?.displayName || state.user.email,
+    characterName: character.characterName || "",
+    type: "premiumPass",
+    status: "pendente",
+    title: "Passe Premium - Temporada do Despertar",
+    description: "Solicitação para liberar o passe premium por 1.000 PO.",
+    goldCost: 1000,
+    xp: 0,
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  toast("Pedido de passe premium enviado ao Oráculo.");
 }
 
 async function startMission(missionId) {
@@ -3637,7 +4167,7 @@ async function finishMission(missionId) {
     xp: defaultXpForRequest("mission", mission.rarity),
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
-  toast("Conclusão enviada para o Admin.");
+  toast("Conclusão enviada para o Oráculo.");
 }
 
 async function submitTrainingRequest(form) {
@@ -3665,7 +4195,7 @@ async function submitCreationRequest(form) {
   const powersUsed = approvedPowerCount(character);
   const pendingPower = pendingProgressRequests().some((request) => request.type === "power");
   if (type === "power" && (powersUsed >= powerSlots || pendingPower)) {
-    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s). Peça ao Admin um novo slot quando subir de tier.`);
+    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s). Peça ao Oráculo um novo slot quando subir de tier.`);
     return;
   }
   if (type === "technique" && powersUsed < 1) {
@@ -3684,7 +4214,7 @@ async function submitCreationRequest(form) {
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   form.reset();
-  toast("Criação enviada para análise do Admin.");
+  toast("Criação enviada para análise do Oráculo.");
 }
 
 async function saveDiaryEntry(form) {
@@ -3751,6 +4281,7 @@ async function sendPrivateChat(form) {
     render();
     try {
       await addDoc("directMessages", { ...message, createdAt: nowValue() });
+      await pruneMessages("directMessages", state.directMessages, (item) => (item.participants || []).includes(state.user.uid) && (item.participants || []).includes(targetId));
     } catch (error) {
       state.privateMessages = state.privateMessages.filter((item) => item.id !== localId);
       render();
@@ -3766,7 +4297,7 @@ function canSendChat() {
     return false;
   }
   if (state.profile?.status === "suspended") {
-    toast("Sua conta está suspensa. Fale com o Admin.");
+    toast("Sua conta está suspensa. Fale com o Oráculo.");
     return false;
   }
   return true;
@@ -3785,7 +4316,7 @@ async function submitReport(type, form) {
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   form.reset();
-  toast("Report enviado para o Admin.");
+  toast("Report enviado para o Oráculo.");
 }
 
 async function reportMessage(messageId, source) {
@@ -3812,7 +4343,7 @@ async function reportMessage(messageId, source) {
     source,
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
-  toast("Mensagem denunciada ao Admin.");
+  toast("Mensagem denunciada ao Oráculo.");
 }
 
 async function recordProfileView(uid) {
@@ -4009,6 +4540,7 @@ async function sendGuildChat(form) {
     type: "guild",
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
+  await pruneMessages("guildMessages", state.guildMessages, (message) => message.guildId === guild.id);
   form.reset();
 }
 
@@ -4061,7 +4593,7 @@ async function finishGuildMission(guildId) {
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   await writeDoc("guilds", guild.id, { activeMission: null });
-  toast("Conclusão da missão de guilda enviada ao Admin.");
+  toast("Conclusão da missão de guilda enviada ao Oráculo.");
 }
 
 function openUserProfile(uid) {
@@ -4085,9 +4617,9 @@ function openUserProfile(uid) {
   const pending = pendingFriendRequestWith(uid);
   recordProfileView(uid);
   $("#modalContent").innerHTML = `
-    ${character.bannerUrl ? `<img class="profile-banner" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
+    ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
     <div class="profile-grid">
-      <img class="avatar" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
+      <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
       <div>
         <p class="eyebrow">${esc(getUserName(uid))}</p>
         <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
@@ -4096,6 +4628,7 @@ function openUserProfile(uid) {
         <div class="tag-row">
           ${activeTitle(character) ? `<span class="tag">${esc(activeTitle(character).name)}</span>` : `<span class="tag">Sem título</span>`}
         </div>
+        <div class="token-row">${renderTokens(character.tokens || [])}</div>
         <div class="action-row" style="margin-top:14px">
           ${friendship ? `<span class="tag">Amigo</span>` : pending ? `<span class="tag">Pedido enviado</span>` : `<button class="primary-button" type="button" data-action="send-friend-request" data-user-id="${esc(uid)}">Adicionar amigo</button>`}
           <button class="ghost-button" type="button" data-action="select-direct-user" data-user-id="${esc(uid)}">Mensagem direta</button>
@@ -4176,7 +4709,7 @@ function openHelpText(title, text) {
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Ajuda rápida</p>
     <h2>${esc(title || "Como usar")}</h2>
-    <p>${esc(text || "Este recurso depende de aprovação ou controle do Admin.")}</p>
+    <p>${esc(text || "Este recurso depende de aprovação ou controle do Oráculo.")}</p>
   `;
   $("#modal").hidden = false;
 }
@@ -4265,7 +4798,7 @@ async function adminAddItem(form) {
   const item = getItem(values.itemId);
   if (!item) return;
   const character = getCharacterFor(values.uid);
-  const inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: "Admin" }];
+  const inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: ORACLE_LABEL }];
   await updateCharacter(values.uid, { inventory });
   await announceRareReward(values.uid, item.name, item.rarity, "item");
   toast("Item adicionado.");
@@ -4312,7 +4845,7 @@ async function reviewProgressRequestValues(values) {
           message: `Missão de guilda aprovada: ${request.title}.`,
           rewards: [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 ")),
           createdAt: new Date().toISOString(),
-          from: state.profile?.displayName || "Admin",
+          from: state.profile?.displayName || ORACLE_LABEL,
         },
       };
       if (level > oldLevel) memberPatch.freePoints = Number(memberCharacter.freePoints || 0) + (level - oldLevel);
@@ -4328,6 +4861,10 @@ async function reviewProgressRequestValues(values) {
     patch.gold = Number(character.gold || 0) + goldGain;
     patch.affinityAttempts = Number(character.affinityAttempts || 0) + essenceGain;
     if (level > oldLevel) patch.freePoints = Number(character.freePoints || 0) + (level - oldLevel);
+    if (request.type === "premiumPass") {
+      patch.premiumPassUnlocked = true;
+      patch.gold = Math.max(0, Number(character.gold || 0) - Number(request.goldCost || 1000)) + goldGain;
+    }
 
     if (request.type === "mission" && request.missionId) {
       patch.activeMissions = (character.activeMissions || []).filter((id) => id !== request.missionId);
@@ -4347,12 +4884,14 @@ async function reviewProgressRequestValues(values) {
       patch.techniques = [...techniques, { id: request.id, name: request.title, description: request.description, status: "aprovado", adminNote }];
     }
     patch.prestige = prestigeFor({ ...character, ...patch });
+    const approvedRewards = [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 "));
+    if (request.type === "premiumPass") approvedRewards.push("Passe premium liberado");
     patch.pendingGift = {
       id: cryptoRandom(),
       message: `Validação aprovada: ${request.title}.`,
-      rewards: [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 ")),
+      rewards: approvedRewards,
       createdAt: new Date().toISOString(),
-      from: state.profile?.displayName || "Admin",
+      from: state.profile?.displayName || ORACLE_LABEL,
     };
     await updateCharacter(request.uid, patch);
   }
@@ -4388,7 +4927,7 @@ async function quickApproveRequest(requestId) {
     xp: defaultXpForRequest(request.type, request.rarity),
     gold: request.type === "mission" ? 50 : request.type === "guildMission" ? 120 : 0,
     essences: request.type === "training" ? 1 : 0,
-    adminNote: "Aprovado rápido pelo Admin.",
+    adminNote: `Aprovado rápido pelo ${ORACLE_LABEL}.`,
   });
 }
 
@@ -4417,7 +4956,7 @@ async function sendReward(form) {
   if (values.type === "item") {
     const item = getItem(values.itemId);
     if (!item) return;
-    patch.inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: "Prêmio Admin" }];
+    patch.inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: `Prêmio ${ORACLE_LABEL}` }];
     rewardName = item.name;
     rewardType = "item";
     pendingRewards.push(`Item: ${item.name}`);
@@ -4426,6 +4965,11 @@ async function sendReward(form) {
     rewardName = values.customName || "Título sem nome";
     patch.titles = [...(character.titles || []), { id: slug(rewardName), name: rewardName, rarity }];
     pendingRewards.push(`Título: ${rewardName}`);
+  }
+  if (values.type === "token") {
+    rewardName = values.customName || "Token sem nome";
+    patch.tokens = [...(character.tokens || []), { id: slug(`${rewardName}-${cryptoRandom()}`), name: rewardName, rarity, imageUrl: values.petImageUrl || "", icon: "✦", description: `Token concedido pelo ${ORACLE_LABEL}.` }];
+    pendingRewards.push(`Token: ${rewardName}`);
   }
   if (values.type === "pet") {
     rewardName = values.customName || "Pet sem nome";
@@ -4445,10 +4989,10 @@ async function sendReward(form) {
 
   patch.pendingGift = {
     id: cryptoRandom(),
-    message: `O Admin enviou um prêmio para você: ${pendingRewards.join(", ")}.`,
+    message: `O ${ORACLE_LABEL} enviou um prêmio para você: ${pendingRewards.join(", ")}.`,
     rewards: pendingRewards,
     createdAt: new Date().toISOString(),
-    from: state.profile?.displayName || "Admin",
+    from: state.profile?.displayName || ORACLE_LABEL,
   };
   await updateCharacter(uid, patch);
   await announceRareReward(uid, rewardName, values.type === "affinity" ? getCategory(getAffinity(values.affinityId)?.categoryId)?.rarity : rarity, rewardType);
@@ -4487,10 +5031,10 @@ async function sendAdminMail(form) {
     const patch = {};
     if (essences) patch.affinityAttempts = Number(character.affinityAttempts || 0) + essences;
     if (titleName) {
-      patch.titles = [...(character.titles || []), { id: `${slug(titleName)}-${cryptoRandom().slice(0, 6)}`, name: titleName, rarity, source: "Correio Admin" }];
+      patch.titles = [...(character.titles || []), { id: `${slug(titleName)}-${cryptoRandom().slice(0, 6)}`, name: titleName, rarity, source: `Correio ${ORACLE_LABEL}` }];
     }
     if (item) {
-      patch.inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: "Correio Admin" }];
+      patch.inventory = [...(character.inventory || []), { ...item, instanceId: cryptoRandom(), equipped: false, source: `Correio ${ORACLE_LABEL}` }];
     }
     if (affinity) {
       patch.affinityId = affinity.id;
@@ -4501,7 +5045,7 @@ async function sendAdminMail(form) {
       message: values.message || `Você recebeu: ${baseRewards.join(", ")}.`,
       rewards: baseRewards,
       createdAt: new Date().toISOString(),
-      from: state.profile?.displayName || "Admin",
+      from: state.profile?.displayName || ORACLE_LABEL,
     };
 
     await updateCharacter(uid, patch);
@@ -4630,16 +5174,61 @@ async function panicRefresh() {
     senderId: "system",
     senderName: "Sistema",
     type: "admin-alert",
-    text: "ALERTA: Admin acionou atualização emergencial da plataforma.",
+    text: `ALERTA: ${ORACLE_LABEL} acionou atualização emergencial da interface.`,
   });
   state.lastPanicVersion = version;
   toast("Pânico acionado. Players serão desconectados.");
 }
 
+async function toggleMaintenance(mode) {
+  if (state.role !== "admin") return;
+  await writeDoc("settings", "system", { maintenanceMode: mode === "true" });
+  toast(mode === "true" ? "Interface fechada para players." : "Interface aberta para players.");
+}
+
+async function startRpg() {
+  if (state.role !== "admin") return;
+  const alreadyGranted = state.settings.betaGranted;
+  await writeDoc("settings", "system", {
+    gameStarted: true,
+    betaGranted: true,
+    seasonName: "Temporada do Despertar",
+    gameStartedAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  if (!alreadyGranted) {
+    await Promise.all(state.users.filter((user) => user.role !== "admin").map(async (user) => {
+      const character = getCharacterFor(user.id);
+      const titleId = "testador-beta";
+      const tokenId = "token-testador-beta";
+      const titles = (character.titles || []).some((title) => title.id === titleId)
+        ? character.titles || []
+        : [...(character.titles || []), { id: titleId, name: "Testador Beta", rarity: "Lendário", source: "Temporada do Despertar" }];
+      const tokens = (character.tokens || []).some((token) => token.id === tokenId)
+        ? character.tokens || []
+        : [...(character.tokens || []), { id: tokenId, name: "Beta", rarity: "Lendário", icon: "β", description: "Token exclusivo de quem presenciou o despertar da interface." }];
+      await updateCharacter(user.id, {
+        titles,
+        tokens,
+        premiumPassUnlocked: true,
+        affinityAttempts: Number(character.affinityAttempts || 0) + 10,
+        pendingGift: {
+          id: cryptoRandom(),
+          message: "A Temporada do Despertar começou. Você recebeu o pacote de Testador Beta.",
+          rewards: ["Título Testador Beta", "Token Beta", "10 essências", "Passe premium liberado"],
+          createdAt: new Date().toISOString(),
+          from: ORACLE_LABEL,
+        },
+      }).catch(() => {});
+    }));
+  }
+  await addGlobalMessage({ senderId: "system", senderName: "Sistema", type: "rare", rarity: "Lendário", text: "A Temporada do Despertar começou. Os escolhidos receberam o chamado do Oráculo." });
+  toast("RPG iniciado e pacote beta entregue.");
+}
+
 function openReportModal() {
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Atalho rápido</p>
-    <h2>Reportar ao Admin</h2>
+    <h2>Reportar ao Oráculo</h2>
     <form class="form-stack" data-form="quick-report">
       <label><span>Tipo</span><select name="type"><option value="bug">Bug do site</option><option value="denuncia">Denúncia de player</option></select></label>
       <label><span>Player denunciado, se houver</span><select name="targetId"><option value="">Nenhum</option>${state.users.filter((user) => user.id !== state.user.uid).map((user) => `<option value="${esc(user.id)}">${esc(user.displayName || user.email)}</option>`).join("")}</select></label>
@@ -4656,6 +5245,10 @@ function closeModal() {
 }
 
 function wireEvents() {
+  ["pointerdown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
+    document.addEventListener(eventName, touchActivity, { passive: true });
+  });
+
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("button");
     if (!button) return;
@@ -4668,6 +5261,7 @@ function wireEvents() {
         render();
       }
       if (action === "register") await handleRegister();
+      if (action === "toggle-music") await toggleAmbientMusic();
       if (action === "demo-player") enterDemo("player");
       if (action === "demo-admin") enterDemo("admin");
       if (action === "logout") {
@@ -4689,6 +5283,8 @@ function wireEvents() {
       }
       if (action === "toggle-profile-public") await toggleProfilePublic();
       if (action === "roll-affinity") await rollAffinity(Number(button.dataset.qty || 1));
+      if (action === "choose-affinity") await chooseAffinity(button.dataset.affinityId);
+      if (action === "request-premium-pass") await requestPremiumPass();
       if (action === "equip-title") await equipTitle(button.dataset.titleId);
       if (action === "claim-gift") await claimPendingGift();
       if (action === "toggle-equip") await toggleEquip(button.dataset.itemInstance);
@@ -4753,6 +5349,8 @@ function wireEvents() {
       if (action === "recycle-missions") await resetWeeklyMissions(true);
       if (action === "mark-report") await markReport(button.dataset.reportId, button.dataset.status);
       if (action === "panic-refresh") await panicRefresh();
+      if (action === "toggle-maintenance") await toggleMaintenance(button.dataset.mode);
+      if (action === "start-rpg") await startRpg();
       if (action === "quick-approve") await quickApproveRequest(button.dataset.requestId);
     } catch (error) {
       console.error(error);
@@ -4761,6 +5359,10 @@ function wireEvents() {
   });
 
   document.addEventListener("change", (event) => {
+    if (event.target.matches("input[type='file'][data-media-field]")) {
+      previewMediaInput(event.target).catch((error) => toast(firebaseErrorMessage(error)));
+      return;
+    }
     if (event.target.dataset.action === "select-private-user") subscribePrivateChat(event.target.value);
     if (event.target.dataset.action === "codex-filter") {
       state.codexFilter = event.target.value;
@@ -4799,6 +5401,7 @@ function wireEvents() {
 
     try {
       const type = form.dataset.form;
+      await resolveFormMedia(form, mediaFolderForForm(type));
       if (type === "login") await handleLogin(form);
       if (type === "terms-accept") await acceptTerms();
       if (type === "character") await saveCharacter(form);
@@ -4848,7 +5451,7 @@ function wireEvents() {
       }
       if (type === "content-item") {
         const v = formValues(form);
-        await saveContent("items", { name: v.name, categoryId: v.categoryId, price: Number(v.price || 0), rarity: v.rarity, bonus: parseBonus(v.bonus) });
+        await saveContent("items", { name: v.name, categoryId: v.categoryId, imageUrl: v.imageUrl || "", price: Number(v.price || 0), rarity: v.rarity, bonus: parseBonus(v.bonus) });
         form.reset();
       }
       if (type === "content-mission") {
@@ -4911,6 +5514,7 @@ function wireEvents() {
           rareRateUpChance: Number(v.rareRateUpChance ?? 0.3),
           soundEnabled: v.soundEnabled !== "false",
           theme: v.theme,
+          seasonTheme: v.seasonTheme || "awakening",
           globalNotice: v.globalNotice,
           seedVersion: SEED_VERSION,
         });

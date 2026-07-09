@@ -1,6 +1,6 @@
 # Millennium RPG Support
 
-Plataforma web de suporte para Millennium RPG com Firebase Auth + Firestore.
+Plataforma web de suporte para o Millennium RPG, usando Firebase Auth + Firestore.
 
 ## Rodar local
 
@@ -10,56 +10,36 @@ py -m http.server 5173 --bind 127.0.0.1
 
 Acesse `http://127.0.0.1:5173`.
 
-## O que mudou
+## Conceito
 
-- Tela de login/cadastro com Firebase Auth.
-- Área Player separada da Área Admin.
-- Player: perfil público/privado, ficha, roleta de afinidade, inventário, chat, missões e reports.
-- Admin: painel de controle, inspeção/edição de fichas, envio de prêmios, títulos, pets, PO, essências, itens e afinidades.
-- Admin usa a Forja para criar raças, classes, categorias de afinidade, afinidades, categorias de item, itens, missões, biomas, reinos, regiões e NPCs.
-- Chat global, sussurro e privado.
-- Reports de bug e denúncia de player.
-- Aviso global, temporada e temas de cores.
-- Missões semanais com reset de segunda 00:00 quando um Admin abre o painel.
-- Ganhos raros geram anúncio no chat global.
-- Roleta 2.0 com giro 1x/10x, pity configurável, sons, histórico, prestígio e banner de evento/rate-up.
-- Grimório do player com títulos equipáveis, pets, itens em vitrine e histórico dos últimos giros.
-- Ranking da mesa por prestígio, raros e nível.
-- Correio místico do Admin para enviar pacotes, essências, títulos, itens, afinidades e mensagens para um player ou todos.
-- Presentes pendentes aparecem na home do player até ele marcar como recebido.
-- XP e nível agora dependem de aprovação do Admin em missões, treinos, poderes e técnicas.
-- Player escolhe missão, marca como concluída e envia treino/criação para validação.
-- Admin tem aba de Validações para aprovar XP/recompensas, reprovar ou pedir nerf em poder/técnica.
-- Diário de Campanha para eventos oficiais do Admin e memórias dos personagens.
-- Chat global separado de mensagem direta, com título do player, perfil clicável, jogadores online e denúncia por mensagem.
-- Mensagem direta em formato de lista lateral, com amigos, jogadores online e atalho para abrir perfil.
-- Perfis privados mostram apenas foto, nome do player, nome do personagem, título ativo e botão de amizade.
-- Correio no perfil para pedidos de amizade, convites de guilda e presentes enviados pelo Admin.
-- Sistema de guildas: criar custa 1.000 PO, limite de 10 membros, lista pública de guildas, pedido de entrada, líder edita brasão/nome/descrição, convida/remove membros, conversa no chat da guilda e monta partys de até 4 jogadores.
-- Missões de guilda têm raridade alta, recompensas maiores, envio para aprovação do Admin e reset semanal junto das missões comuns.
-- Admin consegue abrir e administrar guildas sem precisar ser membro.
-- Codex do player com afinidades, raridades, contagem de players por afinidade, raças, classes, biomas, reinos, regiões e NPCs em tempo real.
-- Formulários de ficha e edição de player mantêm rascunho local para não resetar quando chegam snapshots do Firebase.
-- Chat direto ordena mensagens no cliente, mostra erro de permissão quando o Firestore bloquear e tem botões rápidos de emoji.
-- Ficha base trava raça, classe e redução de atributos depois do primeiro salvamento.
-- Novos temas visuais e som leve de clique nos botões.
-- Tela inicial recebeu fonte medieval legível, título maior, card de login centralizado e sem aviso fixo de email Admin quando o Firebase está ativo.
-- Home do player agora mostra notícias em tempo real, players online, ranking compacto e visualizações de perfil.
-- Forja do Admin permite editar conteúdos existentes por JSON.
-- Admin tem botão de pânico para desconectar players e publicar alerta emergencial.
-- Poderes usam slots controlados pelo Admin; técnicas dependem de poder base aprovado.
-- Perfil aceita avatar/banner por URL ou GIF e descrição pública do personagem.
-- Modo app mobile com menu inferior fixo, cards compactos e textos menos empilhados.
-- Dashboard do player ganhou próximos passos, tutorial, status rápido, notificações e acesso ao termo.
-- Perfil agora tem abas de visão geral, itens, pets, poderes, histórico e conquistas.
-- Codex ganhou busca, filtros, ordenação, quadro de procurados, bestiário e facções.
-- Guia do player inclui tutorial inicial, livro de regras por capítulos, FAQ, termo e busca global.
-- Hall da Fama mostra rankings por prestígio, nível, raros e guildas.
-- Mercado inclui vitrine, leilão, crafting, cofre pessoal e passe de temporada.
-- Guildas mostram nível, reputação e mural editável pelo líder.
-- Admin ganhou Operações com auditoria, economia, balanceamento, modo manutenção e versão do termo.
-- Admin pode mutar/suspender players; denúncias de mensagem agora incluem contexto.
-- Forja épica permite criar/editar regras, FAQ, tutorial, procurados, bestiário, mercado, leilões, crafting, técnicas, conquistas, passe e reputações.
+O site funciona como a interface mística de Millennium: um suporte dentro e fora do RPG, inspirado em HUDs de progressão como Solo Leveling. A função administrativa aparece para os jogadores como `Oráculo`; internamente, o papel continua sendo `role: "admin"` para manter as regras do Firebase simples.
+
+## Recursos principais
+
+- Área Player separada da área do Oráculo.
+- Player tem perfil público/privado, ficha, roleta de afinidade, inventário, grimório, chat, guildas, mercado, missões, diário, Codex e reports.
+- Oráculo tem painel de controle, inspeção/edição de fichas, recompensas, títulos, tokens, pets, PO, essências, itens, afinidades, punições e modo manutenção.
+- Forja do Oráculo cria e edita raças, classes, categorias de afinidade, afinidades, itens, missões, biomas, reinos, regiões, NPCs, regras, FAQ, tutorial, bestiário, mercado, leilões, crafting, conquistas, passe e reputações.
+- Chat global, mensagens diretas e chat de guilda com denúncia por mensagem, emojis, jogadores online e exclusão automática para manter no máximo 60 mensagens por sala.
+- Presença fica offline ao sair e também desconecta player inativo depois de cerca de 10 minutos.
+- Missões, treinos, poderes, técnicas e passe premium passam pela fila de validação do Oráculo.
+- Antes do RPG começar, sistemas profundos ficam bloqueados; o Oráculo pode usar `Começar RPG` para liberar a Temporada do Despertar.
+- Botão de pânico desconecta players e publica alerta emergencial; modo manutenção fecha ou reabre a interface para todos exceto o Oráculo.
+- Ao começar o RPG, players atuais recebem o pacote Testador Beta: título, token, 10 essências e passe premium liberado.
+- Roleta 2.0 tem giro 1x/10x, pity, sons, histórico, prestígio, eventos/rate-up, proteção contra downgrade de raridade e escolha manual quando o giro 10x empata melhores afinidades.
+- Mercado inclui vitrine, leilão, crafting, cofre e Passe da Temporada do Despertar com trilha Free e Premium até o nível 50.
+- Passe agora tem aba própria no menu, hero da Temporada do Despertar, missões do passe e trilha Free/Premium.
+- Tema visual de temporada 2.0: `Despertar dos Heróis` já vem com runas/brilho e a estrutura aceita Vazio, Sangue, Geada, Brasa e Natureza.
+- Login foi redesenhado como tela de inicialização da Interface de Millennium, com responsividade melhor para celular.
+- Favicon próprio do Millennium em `favicon.svg`.
+- Música ambiente procedural com botão de ligar/desligar, sem depender de arquivo MP3 externo.
+- Upload/preview de imagens usando Cloudinary para avatar, banner, itens, raças, classes, afinidades, NPCs, biomas, reinos e regiões. O Firebase salva apenas as URLs.
+- Avatar e banner têm controle simples de enquadramento: centro, topo, base, esquerda ou direita.
+- Perfil aceita avatar/banner por URL ou GIF, descrição pública, abas, tokens estilo badge, títulos, pets, itens, poderes, histórico e conquistas.
+- Guildas custam 1.000 PO, têm limite de 10 membros, lista pública, pedidos de entrada, brasão, descrição, chat, mural, partys de até 4 players e missões próprias.
+- Codex do player mostra afinidades, raridades, quantidade de donos em tempo real, raças, classes, biomas, reinos, regiões, NPCs, procurados, bestiário e facções.
+- Guia inclui tutorial inicial, livro de regras por capítulos, FAQ, termo de acordo e busca global.
+- Mobile tem menu inferior rolável em formato app; desktop tem menu lateral com rolagem.
 
 ## Coleções Firestore usadas
 
@@ -97,14 +77,11 @@ Acesse `http://127.0.0.1:5173`.
 - `techniqueLibrary/{id}`
 - `achievements/{id}`
 - `seasonPass/{id}`
+- `passMissions/{id}`
 - `reputationFactions/{id}`
 - `reports/{id}`
 - `progressRequests/{id}`
 
 ## Regras
 
-Use `firestore.rules` como base de segurança. O primeiro Admin pode ser criado pelo app se o projeto estiver aberto para bootstrap; depois disso, recomendo publicar regras e ajustar o campo `role: "admin"` diretamente no documento `users/{uid}` do Admin no console do Firebase.
-
-## Admin inicial
-
-O email `mrlippe78@gmail.com` está autorizado no frontend e nas regras Firestore como Admin. A senha não fica no código; ela deve existir apenas no Firebase Authentication.
+Use `firestore.rules` como base de segurança e publique no console do Firebase depois de atualizar o site. As imagens vão para o Cloudinary usando `cloudName: cakvvuqx` e `uploadPreset: Millenium`; não é necessário ativar Firebase Storage para esta versão. O email `mrlippe78@gmail.com` está autorizado como Oráculo; a senha deve existir apenas no Firebase Authentication.

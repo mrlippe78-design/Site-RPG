@@ -13,10 +13,100 @@
   --blue: #5b90ca;
   --violet: #8f76c9;
   --shadow: 0 20px 55px rgba(0, 0, 0, 0.36);
+  --radius-lg: 22px;
+  --radius: 16px;
+  --radius-sm: 11px;
   --font-body: "Alegreya", Georgia, "Times New Roman", serif;
   --font-title: "Cinzel", "IM Fell English SC", Georgia, serif;
   --font-runic: "IM Fell English SC", "Cinzel", Georgia, serif;
   font-family: var(--font-body);
+}
+
+@media (max-width: 1120px) {
+  .auth-screen {
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+    align-content: center;
+    overflow: auto;
+  }
+
+  .auth-art {
+    min-height: 340px;
+    padding: 28px;
+  }
+
+  .auth-art h1 {
+    font-size: clamp(44px, 12vw, 82px);
+  }
+
+  .auth-card {
+    width: min(520px, 100%);
+  }
+}
+
+@media (max-width: 720px) {
+  .music-float {
+    width: 38px;
+    height: 38px;
+    top: 12px;
+    right: 12px;
+  }
+
+  .auth-screen {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .auth-art {
+    min-height: 240px;
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .auth-runes {
+    inset: 14%;
+    opacity: 0.55;
+  }
+
+  .season-chip {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .auth-art h1 {
+    font-size: clamp(38px, 15vw, 64px);
+  }
+
+  .auth-art p {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .auth-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .split-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pass-hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .pass-hero h2 {
+    font-size: clamp(34px, 11vw, 58px);
+  }
+
+  .modal-card .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card .avatar {
+    width: 118px;
+  }
 }
 
 body.theme-arcane {
@@ -133,6 +223,7 @@ button {
   border: 1px solid var(--line);
   background: rgba(25, 24, 23, 0.92);
   box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
 }
 
 .auth-art {
@@ -215,6 +306,7 @@ button {
   font-family: var(--font-runic);
   font-size: 24px;
   font-weight: 800;
+  border-radius: 14px;
 }
 
 .brand p {
@@ -259,6 +351,9 @@ label span,
 .nav-list {
   display: grid;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .nav-item,
@@ -280,6 +375,7 @@ label span,
   align-items: center;
   gap: 12px;
   text-align: left;
+  border-radius: var(--radius-sm);
 }
 
 .nav-item.active,
@@ -301,12 +397,14 @@ label span,
   margin-top: auto;
   display: grid;
   gap: 12px;
+  flex: 0 0 auto;
 }
 
 .mini-panel {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.035);
   padding: 12px;
+  border-radius: var(--radius);
 }
 
 .mini-panel strong {
@@ -553,6 +651,7 @@ label span,
   overflow: hidden;
   border: 1px solid rgba(243, 207, 122, 0.24);
   background: rgba(0, 0, 0, 0.28);
+  border-radius: 999px;
 }
 
 .pity-bar span {
@@ -599,6 +698,7 @@ select {
   color: var(--text);
   padding: 12px 13px;
   outline: none;
+  border-radius: var(--radius-sm);
 }
 
 select option {
@@ -623,6 +723,7 @@ select:focus {
   min-height: 42px;
   padding: 10px 14px;
   font-weight: 900;
+  border-radius: var(--radius-sm);
 }
 
 .primary-button {
@@ -658,6 +759,7 @@ select:focus {
   color: var(--muted);
   padding: 14px;
   line-height: 1.5;
+  border-radius: var(--radius);
 }
 
 .demo-actions {
@@ -688,6 +790,7 @@ select:focus {
 
 .profile-grid {
   grid-template-columns: 180px minmax(0, 1fr);
+  align-items: start;
 }
 
 .stat,
@@ -702,6 +805,7 @@ select:focus {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.035);
   padding: 14px;
+  border-radius: var(--radius);
 }
 
 .stat span,
@@ -1048,13 +1152,16 @@ select:focus {
   width: 180px;
   aspect-ratio: 1;
   object-fit: cover;
-  border: 1px solid rgba(216, 180, 93, 0.38);
+  border: 4px solid rgba(16, 16, 15, 0.94);
   background: #111;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(216, 180, 93, 0.42), 0 18px 32px rgba(0, 0, 0, 0.34);
 }
 
 .avatar.small {
   width: 54px;
   height: 54px;
+  border-width: 2px;
 }
 
 .profile-banner {
@@ -1064,6 +1171,13 @@ select:focus {
   border: 1px solid rgba(216, 180, 93, 0.34);
   background: rgba(0, 0, 0, 0.28);
   margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+}
+
+.profile-banner + .profile-grid {
+  margin-top: -64px;
+  padding: 0 12px 8px;
+  align-items: end;
 }
 
 .profile-description {
@@ -1078,6 +1192,46 @@ select:focus {
   object-fit: cover;
   border: 1px solid rgba(216, 180, 93, 0.38);
   background: rgba(0, 0, 0, 0.24);
+  border-radius: 18px;
+}
+
+.token-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.token-chip {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 1px solid rgba(243, 207, 122, 0.28);
+  background: rgba(255, 255, 255, 0.055);
+  border-radius: 999px;
+  color: var(--text);
+}
+
+.token-chip.muted {
+  color: var(--muted);
+}
+
+.token-chip img,
+.token-chip b {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--gold-2);
+}
+
+.token-chip small {
+  font-weight: 900;
 }
 
 .pet-image.placeholder {
@@ -1289,6 +1443,123 @@ select:focus {
   background: rgba(255, 255, 255, 0.035);
   padding: 12px;
   text-align: left;
+  border-radius: var(--radius);
+}
+
+.choice-panel,
+.season-pass-board {
+  width: min(980px, 100%);
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(243, 207, 122, 0.24);
+  background: linear-gradient(135deg, rgba(243, 207, 122, 0.09), rgba(91, 144, 202, 0.06));
+  padding: 16px;
+  border-radius: var(--radius-lg);
+}
+
+.choice-grid,
+.pass-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.choice-card {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--text);
+  padding: 12px;
+  border-radius: var(--radius);
+}
+
+.choice-card:hover {
+  border-color: rgba(243, 207, 122, 0.62);
+  transform: translateY(-1px);
+}
+
+.choice-card small {
+  color: var(--muted);
+}
+
+.season-pass-board {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.pass-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.pass-header p {
+  max-width: 72ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pass-status {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.pass-tier {
+  display: grid;
+  gap: 12px;
+  min-height: 210px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.23);
+  padding: 14px;
+  border-radius: var(--radius);
+}
+
+.pass-tier.reached {
+  border-color: rgba(76, 167, 123, 0.42);
+  background: linear-gradient(135deg, rgba(76, 167, 123, 0.12), rgba(255, 255, 255, 0.035));
+}
+
+.pass-tier strong {
+  display: block;
+  margin: 6px 0;
+  font-size: 20px;
+}
+
+.pass-tier p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.pass-rewards {
+  display: grid;
+  gap: 8px;
+  align-self: end;
+}
+
+.pass-rewards div {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pass-rewards small {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.premium-open {
+  border: 1px solid rgba(243, 207, 122, 0.42);
+}
+
+.premium-locked {
+  opacity: 0.58;
 }
 
 .result-card.rare {
@@ -1804,6 +2075,285 @@ select:focus {
   display: none !important;
 }
 
+/* Millennium interface polish */
+.music-float {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(243, 207, 122, 0.34);
+  border-radius: 999px;
+  background: rgba(16, 14, 12, 0.78);
+  color: var(--gold-2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.music-float.active {
+  background: radial-gradient(circle, rgba(243, 207, 122, 0.24), rgba(16, 14, 12, 0.86));
+  box-shadow: 0 0 24px rgba(243, 207, 122, 0.28), 0 12px 28px rgba(0, 0, 0, 0.34);
+}
+
+.auth-screen {
+  min-height: 100dvh;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+  padding: clamp(16px, 3vw, 34px);
+  gap: clamp(14px, 2vw, 24px);
+  overflow: hidden;
+}
+
+.auth-art {
+  position: relative;
+  overflow: hidden;
+  justify-content: space-between;
+  min-height: min(760px, calc(100dvh - 56px));
+}
+
+.auth-runes {
+  position: absolute;
+  inset: 8%;
+  pointer-events: none;
+  border: 1px solid rgba(243, 207, 122, 0.14);
+  border-radius: 36px;
+  transform: rotate(4deg);
+  animation: runeWake 9s ease-in-out infinite alternate;
+}
+
+.auth-runes::before,
+.auth-runes::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border: 1px solid rgba(201, 185, 255, 0.12);
+  border-radius: 28px;
+  transform: rotate(45deg);
+}
+
+.auth-runes::after {
+  inset: 28%;
+  border-radius: 999px;
+  transform: rotate(0);
+}
+
+.auth-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.season-chip {
+  display: inline-flex;
+  margin-bottom: 18px;
+  padding: 8px 12px;
+  border: 1px solid rgba(243, 207, 122, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--gold-2);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.auth-art h1 {
+  margin: 0 0 14px;
+  font-size: clamp(56px, 8vw, 118px);
+}
+
+.auth-card {
+  align-self: center;
+  padding: clamp(20px, 3vw, 28px);
+  background: rgba(20, 19, 18, 0.88);
+  backdrop-filter: blur(18px);
+}
+
+.media-field {
+  gap: 10px;
+}
+
+.media-field input[type="file"] {
+  padding: 10px;
+  border-style: dashed;
+}
+
+.media-field small {
+  color: var(--muted);
+}
+
+.media-preview {
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(243, 207, 122, 0.22);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--muted);
+}
+
+.media-preview img {
+  width: 100%;
+  height: 100%;
+  max-height: 210px;
+  object-fit: cover;
+}
+
+.modal-card {
+  padding-top: 58px;
+  overflow-x: hidden;
+}
+
+.icon-button.close {
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  background: rgba(18, 16, 13, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.modal-card .profile-banner {
+  max-height: 260px;
+  margin-bottom: 12px;
+}
+
+.modal-card .profile-banner + .profile-grid {
+  margin-top: 0;
+  padding: 0;
+  align-items: start;
+}
+
+.modal-card .profile-grid {
+  grid-template-columns: 128px minmax(0, 1fr);
+}
+
+.modal-card .avatar {
+  width: 128px;
+}
+
+.pass-view {
+  align-items: stretch;
+}
+
+.pass-hero {
+  min-height: 320px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+  gap: 18px;
+  align-items: end;
+  overflow: hidden;
+  background:
+    linear-gradient(120deg, rgba(12, 11, 10, 0.18), rgba(12, 11, 10, 0.88)),
+    radial-gradient(circle at 28% 26%, rgba(243, 207, 122, 0.28), transparent 24%),
+    radial-gradient(circle at 78% 16%, rgba(201, 185, 255, 0.18), transparent 28%),
+    linear-gradient(145deg, rgba(64, 50, 25, 0.45), rgba(14, 13, 12, 0.94));
+}
+
+.pass-hero h2 {
+  font-size: clamp(42px, 6vw, 84px);
+  line-height: 0.98;
+}
+
+.pass-hero-copy p {
+  max-width: 70ch;
+  color: #e5dac6;
+}
+
+.pass-feature-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(243, 207, 122, 0.36);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pass-feature-card span,
+.pass-mission span {
+  color: var(--gold-2);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pass-feature-card strong {
+  font-family: var(--font-title);
+  font-size: 30px;
+}
+
+.pass-mission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.pass-mission {
+  display: grid;
+  gap: 8px;
+  min-height: 164px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pass-mission p {
+  color: var(--muted);
+}
+
+body.season-theme-awakening::after,
+body.season-theme-void::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body.season-theme-awakening::after {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(243, 207, 122, 0.12), transparent 16%),
+    radial-gradient(circle at 80% 70%, rgba(201, 185, 255, 0.09), transparent 18%),
+    repeating-linear-gradient(115deg, transparent 0 70px, rgba(243, 207, 122, 0.035) 72px 73px, transparent 75px 140px);
+  animation: awakeningDrift 16s ease-in-out infinite alternate;
+}
+
+body.season-theme-void::after {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(201, 185, 255, 0.12), transparent 18%),
+    linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.1) 43%, transparent 45%);
+  animation: meteorDrift 7s linear infinite;
+}
+
+@keyframes runeWake {
+  from {
+    opacity: 0.45;
+    transform: rotate(2deg) scale(0.98);
+  }
+  to {
+    opacity: 0.95;
+    transform: rotate(5deg) scale(1.02);
+  }
+}
+
+@keyframes awakeningDrift {
+  from {
+    transform: translateY(-1%);
+  }
+  to {
+    transform: translateY(1.5%);
+  }
+}
+
+@keyframes meteorDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 420px 260px;
+  }
+}
+
 @media (max-width: 1120px) {
   .auth-screen,
   .app-shell {
@@ -1883,16 +2433,19 @@ select:focus {
     bottom: 0;
     z-index: 30;
     min-height: 68px;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
     gap: 4px;
     border-top: 1px solid var(--line);
     background: rgba(16, 16, 16, 0.96);
     backdrop-filter: blur(18px);
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    scroll-snap-type: x proximity;
   }
 
   .mobile-bottom-nav button {
+    flex: 0 0 92px;
     display: grid;
     place-items: center;
     gap: 2px;
@@ -1901,6 +2454,7 @@ select:focus {
     background: transparent;
     min-width: 0;
     padding: 4px;
+    scroll-snap-align: center;
   }
 
   .mobile-bottom-nav button.active {
@@ -2026,5 +2580,92 @@ select:focus {
   .guild-card img,
   .guild-emblem {
     width: 64px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .auth-screen {
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+    align-content: center;
+    overflow: auto;
+  }
+
+  .auth-art {
+    min-height: 340px;
+    padding: 28px;
+  }
+
+  .auth-art h1 {
+    font-size: clamp(44px, 12vw, 82px);
+  }
+
+  .auth-card {
+    width: min(520px, 100%);
+  }
+}
+
+@media (max-width: 720px) {
+  .music-float {
+    width: 38px;
+    height: 38px;
+    top: 12px;
+    right: 12px;
+  }
+
+  .auth-screen {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .auth-art {
+    min-height: 240px;
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .auth-runes {
+    inset: 14%;
+    opacity: 0.55;
+  }
+
+  .season-chip {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .auth-art h1 {
+    font-size: clamp(38px, 15vw, 64px);
+  }
+
+  .auth-art p {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .auth-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .split-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pass-hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .pass-hero h2 {
+    font-size: clamp(34px, 11vw, 58px);
+  }
+
+  .modal-card .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card .avatar {
+    width: 118px;
   }
 }
