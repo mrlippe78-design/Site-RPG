@@ -16,6 +16,14 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 
 ## Recursos principais
 
+- Atualizacao player focada em UX: modo Demo sempre visivel no login, HUD mobile com quatro atalhos + Mais, perfil com camada social, moldura visual no avatar, titulo ativo, mini status e tokens.
+- Minigames 1.1: Prova da Mira com combo, alvo raro, alvo de congelar tempo e limpeza segura ao fechar; recompensas agora mostram rank de desempenho e historico recente.
+- Pet Hunt mostra risco, duracao e loot esperado; pets podem voltar livres, feridos ou mortos em dificuldades altas, com recuperacao por Millennium Coins no cofre.
+- Tower Defense ganhou relatorio visual de defesa com mapa, ondas, rotas, score e recompensa enquanto o modo jogavel completo fica preparado para evolucao futura.
+- Mercado 2.0 separa Destaques, Millennium, Fragmentos, Passe, Leilao, Crafting e Cofre. Trocas de fragmento funcionam direto e compras comuns viram solicitacao ao Oraculo.
+- Ranking virou central de ranks: prestigio, nivel, PO, Millennium Coins, Mira, Pet Hunt, Tower, pets, itens, guildas e visualizacoes de perfil.
+- Oraculo agora edita e envia Millennium Coins, energia diaria, Fragmentos do Despertar e pets/itens direto para o cofre dimensional.
+- Musica ambiente procedural ganhou arpejos leves para ficar mais medieval e menos repetitiva, sem depender de YouTube ou MP3 externo.
 - Área Player separada da área do Oráculo.
 - Player tem perfil público/privado, ficha, roleta de afinidade, inventário, grimório, chat, guildas, mercado, missões, diário, Codex e reports.
 - Oráculo tem painel de controle, inspeção/edição de fichas, recompensas, títulos, tokens, pets, PO, essências, itens, afinidades, punições e modo manutenção.
@@ -27,6 +35,9 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - Botão de pânico desconecta players e publica alerta emergencial; modo manutenção fecha ou reabre a interface para todos exceto o Oráculo.
 - Ao começar o RPG, players atuais recebem o pacote Testador Beta: título, token, 10 essências e passe premium liberado.
 - Roleta 2.0 tem giro 1x/10x, pity, sons, histórico, prestígio, eventos/rate-up, proteção contra downgrade de raridade e escolha manual quando o giro 10x empata melhores afinidades.
+- Invocação dimensional separada da roleta: Essência continua exclusiva para afinidade, e Millennium Coins servem para banners de pets e itens.
+- Cofre invocado com pets/itens, estrelas até 7, variante Radiante, equipar, fundir duplicatas, desfazer em fragmentos e enviar para inventário/perfil sem validação manual.
+- Minigames 1.0 com energia diária, dificuldades Noob até God Slayer, Prova da Mira jogável, Pet Hunt com atividades simultâneas por pet e Tower Defense estratégico com mapas temáticos originais.
 - Mercado inclui vitrine, leilão, crafting, cofre e Passe da Temporada do Despertar com trilha Free e Premium até o nível 50.
 - Passe agora tem aba própria no menu, hero da Temporada do Despertar, missões do passe e trilha Free/Premium.
 - Tema visual de temporada 2.0: `Despertar dos Heróis` já vem com runas/brilho e a estrutura aceita Vazio, Sangue, Geada, Brasa e Natureza.
@@ -52,6 +63,10 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - `affinities/{id}`
 - `itemCategories/{id}`
 - `items/{id}`
+- `gachaPets/{id}`
+- `gachaItems/{id}`
+- `gachaShardShops/{id}`
+- `towerMaps/{id}`
 - `missionPool/{id}`
 - `weeklyMissions/{id}`
 - `biomes/{id}`

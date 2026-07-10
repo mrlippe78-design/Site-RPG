@@ -20,10 +20,31 @@ const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
 ];
 
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 const GUILD_CREATE_COST = 1000;
 const GUILD_MEMBER_LIMIT = 10;
 const CHAT_LIMIT = 60;
+const MAX_GACHA_STARS = 7;
+const GACHA_ENERGY_MAX = 30;
+const GACHA_DIFFICULTIES = [
+  { id: "noob", name: "Noob", cost: 1, multiplier: 0.7, risk: 0, minScore: 250 },
+  { id: "facil", name: "Fácil", cost: 1, multiplier: 1, risk: 0.02, minScore: 700 },
+  { id: "medio", name: "Médio", cost: 2, multiplier: 1.45, risk: 0.06, minScore: 1400 },
+  { id: "hard", name: "Hard", cost: 3, multiplier: 2.1, risk: 0.12, minScore: 2400 },
+  { id: "pesadelo", name: "Pesadelo", cost: 4, multiplier: 3.2, risk: 0.2, minScore: 3800 },
+  { id: "god-slayer", name: "God Slayer", cost: 5, multiplier: 5, risk: 0.34, minScore: 6200 },
+];
+const GACHA_RARITIES = [
+  { id: "broken", name: "Quebrado", weight: 4200, fragment: 2, score: 1, color: "#9b9488" },
+  { id: "common", name: "Comum", weight: 3000, fragment: 4, score: 2, color: "#d9d0bc" },
+  { id: "uncommon", name: "Incomum", weight: 1700, fragment: 8, score: 3, color: "#77c58d" },
+  { id: "epic", name: "Épico", weight: 780, fragment: 18, score: 4, color: "#b889ff" },
+  { id: "legendary", name: "Lendário", weight: 250, fragment: 42, score: 5, color: "#ffd36a" },
+  { id: "mythic", name: "Mítico", weight: 55, fragment: 90, score: 6, color: "#ff6a8d" },
+  { id: "cosmic", name: "Cósmico", weight: 12, fragment: 180, score: 7, color: "#80d8ff" },
+  { id: "celestial", name: "Celestial", weight: 2.9, fragment: 320, score: 8, color: "#fff5a8" },
+  { id: "secret", name: "Secret", weight: 1, fragment: 700, score: 9, color: "#ffffff" },
+];
 const IDLE_LIMIT_MS = 10 * 60 * 1000;
 const JOIN_ANNOUNCE_COOLDOWN_MS = 10 * 60 * 1000;
 const ORACLE_LABEL = "Oráculo";
@@ -36,8 +57,35 @@ const ATTRIBUTES = [
   { key: "pod", label: "Poder", short: "POD" },
 ];
 
-const RARITIES = ["Comum", "Incomum", "Raro", "Épico", "Lendário", "Cósmica"];
-const RARE_RARITIES = ["Raro", "Épico", "Lendário", "Cósmica", "Celestial"];
+const RARITIES = ["Quebrado", "Comum", "Incomum", "Raro", "Épico", "Lendário", "Mítico", "Cósmica", "Celestial", "Secret"];
+const RARE_RARITIES = ["Raro", "Épico", "Lendário", "Mítico", "Cósmica", "Celestial", "Secret"];
+
+function buildDefaultSeasonPass() {
+  const free = [
+    "50 PO", "Token: Eco Inicial", "2 essências", "Fragmentos do Despertar x20", "Título: Recém-Desperto",
+    "75 PO", "Moldura simples", "Ticket de Relíquia", "Fragmentos de Mira x35", "150 PO",
+  ];
+  const premium = [
+    "120 PO + 2 essências", "Token: Primeiro Chamado", "Ticket de Companheiro", "Fragmentos do Despertar x60", "Aura de perfil: Janela Viva",
+    "250 PO", "Traje do Despertar I", "Ticket de Relíquia x2", "Ecos de Companheiro x80", "Pet cosmético sazonal",
+  ];
+  return Array.from({ length: 50 }, (_, index) => {
+    const tier = index + 1;
+    const milestone = tier % 10 === 0;
+    const rarity = tier >= 50 ? "Cósmica" : tier >= 40 ? "Lendário" : tier >= 30 ? "Épico" : tier >= 20 ? "Raro" : tier >= 10 ? "Incomum" : "Comum";
+    return {
+      id: `despertar-${tier}`,
+      name: `Nível ${tier}`,
+      tier,
+      rarity,
+      freeReward: milestone ? free[(tier / 10) - 1] || `${tier * 10} PO` : free[index % free.length],
+      premiumReward: milestone ? premium[(tier / 10) - 1] || `${tier * 22} PO + ticket` : premium[index % premium.length],
+      description: milestone
+        ? "Marco da Temporada do Despertar, com recompensa maior para marcar progresso real."
+        : "Recompensa de avanço sazonal para manter cada nível vivo.",
+    };
+  });
+}
 const DEFAULT_GUILD_MISSIONS = [
   { id: "cerco-abissal", title: "Cerco Abissal", description: "Reunir uma party para enfrentar ameaça acima do nível da mesa.", rarity: "Épico", reward: "220 PO + 180 XP para cada membro aprovado" },
   { id: "cartografia-proibida", title: "Cartografia Proibida", description: "Mapear ruínas, facções ou território hostil com registro narrativo.", rarity: "Raro", reward: "150 PO + 120 XP por membro" },
@@ -141,6 +189,53 @@ const DEFAULT_CONTENT = {
     { id: "pocao-vida", name: "Poção de Vida", categoryId: "consumivel", price: 20, rarity: "Comum", bonus: { hp: 20 } },
     { id: "reliquia-millennium", name: "Relíquia Millennium", categoryId: "especial", price: 0, rarity: "Lendário", bonus: { pod: 2, hab: 2 } },
   ],
+  gachaPets: [
+    { id: "vigia-de-telhado", name: "Vigia de Telhado", rarity: "Quebrado", archetype: "Coletor", element: "Urbano", bonus: { hab: 1 }, td: { damage: 6, range: 70, cooldown: 1.7 }, trait: "Olhos Pequenos: +2% fragmentos em mapas urbanos.", description: "Um companheiro de beco que sobreviveu ao primeiro despertar da interface." },
+    { id: "aprendiz-da-nuvem", name: "Aprendiz da Nuvem", rarity: "Quebrado", archetype: "Suporte", element: "Vento", bonus: { vel: 1 }, td: { damage: 5, range: 82, cooldown: 1.9 }, trait: "Passo Leve: reduz levemente o risco em incursões fáceis.", description: "Corre mais do que luta, e isso às vezes basta." },
+    { id: "punho-de-bairro", name: "Punho de Bairro", rarity: "Comum", archetype: "Guerreiro", element: "Impacto", bonus: { for: 1 }, td: { damage: 10, range: 62, cooldown: 1.45 }, trait: "Combo Simples: +4% dano contra ondas comuns.", description: "Forjado em brigas pequenas, pronto para lutas maiores." },
+    { id: "arauto-do-estilingue", name: "Arauto do Estilingue", rarity: "Comum", archetype: "Atirador", element: "Precisão", bonus: { hab: 1 }, td: { damage: 8, range: 104, cooldown: 1.6 }, trait: "Mira Teimosa: +5% pontuação na Prova da Mira.", description: "Pequeno, rápido e irritantemente preciso." },
+    { id: "monge-de-brasa", name: "Monge de Brasa", rarity: "Incomum", archetype: "Mago", element: "Fogo", bonus: { pod: 1, res: 1 }, td: { damage: 13, range: 88, cooldown: 1.7 }, trait: "Brasa Interna: +6% dano contra inimigos resistentes.", description: "Respira como templo, bate como incêndio." },
+    { id: "cortadora-de-mar", name: "Cortadora de Mar", rarity: "Incomum", archetype: "Assassino", element: "Água", bonus: { vel: 1, hab: 1 }, td: { damage: 16, range: 58, cooldown: 1.15 }, trait: "Corte Fluido: +4% chance de loot raro em biomas costeiros.", description: "Uma lâmina viva atravessando ondas impossíveis." },
+    { id: "general-da-cicatriz", name: "General da Cicatriz", rarity: "Épico", archetype: "Guardião", element: "Aço", bonus: { for: 1, res: 2 }, td: { damage: 20, range: 76, cooldown: 1.75 }, trait: "Linha de Frente: reduz risco de ferimento do pet em 8%.", description: "Carrega marcas suficientes para ensinar sobrevivência." },
+    { id: "oraculo-partido", name: "Oráculo Partido", rarity: "Épico", archetype: "Suporte", element: "Sistema", bonus: { pod: 2, hab: 1 }, td: { damage: 14, range: 118, cooldown: 2.1 }, trait: "Janela Aberta: +8% Millennium Coins ao terminar incursões.", description: "Uma falha consciente da interface que decidiu ajudar." },
+    { id: "herdeiro-dos-seis-veus", name: "Herdeiro dos Seis Véus", rarity: "Lendário", archetype: "Mago", element: "Espaço", bonus: { pod: 2, vel: 2 }, td: { damage: 30, range: 130, cooldown: 1.8 }, trait: "Campo Infinito: inimigos lentos por alguns segundos ao iniciar ondas.", description: "Vê ângulos que ainda não aconteceram." },
+    { id: "rei-das-fendas", name: "Rei das Fendas", rarity: "Lendário", archetype: "Assassino", element: "Sombra", bonus: { for: 2, pod: 2 }, td: { damage: 38, range: 70, cooldown: 1.2 }, trait: "Sorriso de Ruína: +10% dano em God Slayer.", description: "Quando ele aparece, a interface fica em silêncio." },
+    { id: "sol-de-batalha", name: "Sol de Batalha", rarity: "Mítico", archetype: "Guerreiro", element: "Solar", bonus: { for: 3, res: 2 }, td: { damage: 46, range: 92, cooldown: 1.35 }, trait: "Ascensão: ganha +1% dano por onda sobrevivida.", description: "Cada derrota antiga virou combustível." },
+    { id: "capitao-do-ceu-vermelho", name: "Capitão do Céu Vermelho", rarity: "Mítico", archetype: "Invocador", element: "Vento", bonus: { vel: 2, hab: 2, pod: 1 }, td: { damage: 28, range: 120, cooldown: 1.55 }, trait: "Bando Livre: +12% fragmentos quando há outro pet em atividade.", description: "Sorri diante do impossível, como se já tivesse vencido." },
+    { id: "ceifador-da-lua-branca", name: "Ceifador da Lua Branca", rarity: "Cósmica", archetype: "Assassino", element: "Lunar", bonus: { vel: 3, pod: 3 }, td: { damage: 62, range: 108, cooldown: 1.05 }, trait: "Corte Silencioso: chance pequena de eliminar elite instantaneamente.", description: "Uma sombra clara, fria e precisa." },
+    { id: "principe-do-trovao-negro", name: "Príncipe do Trovão Negro", rarity: "Cósmica", archetype: "Atirador", element: "Raio", bonus: { hab: 3, pod: 3 }, td: { damage: 58, range: 145, cooldown: 1.25 }, trait: "Raio Encadeado: acerta alvos próximos em mapas densos.", description: "O céu rachado escolheu um nome." },
+    { id: "santo-da-promessa", name: "Santo da Promessa", rarity: "Celestial", archetype: "Suporte", element: "Luz", bonus: { res: 4, pod: 4 }, td: { damage: 42, range: 132, cooldown: 1.6 }, trait: "Juramento Vivo: impede uma morte de pet por semana.", description: "Uma benção que caminha ao lado de quem ainda não desistiu." },
+    { id: "vazio-que-ri", name: "Vazio que Ri", rarity: "Secret", archetype: "Chefe", element: "Vazio", bonus: { for: 4, vel: 4, pod: 4 }, td: { damage: 88, range: 150, cooldown: 0.95 }, trait: "Erro Primordial: +20% em todos os minigames, mas aumenta o risco em Pesadelo+.", description: "A interface nega sua existência, mas ele continua no cofre." },
+  ],
+  gachaItems: [
+    { id: "pedra-de-retorno", name: "Pedra de Retorno", rarity: "Quebrado", category: "Consumível", bonus: {}, effect: "Permite cancelar uma Hunt mantendo uma pequena parte extra do loot.", description: "Uma pedra rachada que ainda lembra o caminho para casa." },
+    { id: "luva-de-treino", name: "Luva de Treino", rarity: "Comum", category: "Equipamento", bonus: { for: 1 }, effect: "+3% pontos em minigames de reflexo.", description: "Simples, gasta, confiável." },
+    { id: "lente-de-mira", name: "Lente de Mira", rarity: "Comum", category: "Núcleo", bonus: { hab: 1 }, effect: "+5% alcance no Tower Defense.", description: "Mostra o centro do alvo antes do dedo chegar." },
+    { id: "selo-de-descanso", name: "Selo de Descanso", rarity: "Incomum", category: "Amuleto", bonus: { res: 1 }, effect: "Reduz tempo de descanso do pet após incursões.", description: "Acalma o núcleo instável dos companheiros." },
+    { id: "mapa-das-ruas-partidas", name: "Mapa das Ruas Partidas", rarity: "Incomum", category: "Relíquia", bonus: { hab: 1, vel: 1 }, effect: "+8% chance de evento em mapas urbanos.", description: "Toda esquina desenhada tem uma fuga possível." },
+    { id: "nucleo-de-brasa", name: "Núcleo de Brasa", rarity: "Épico", category: "Núcleo", bonus: { pod: 2 }, effect: "+12% dano elemental no Tower Defense.", description: "Pequeno sol preso em metal ritual." },
+    { id: "manto-do-primeiro-horizonte", name: "Manto do Primeiro Horizonte", rarity: "Épico", category: "Cosmético", bonus: { res: 1, pod: 1 }, effect: "Libera moldura do Despertar no perfil.", description: "Borda de luz para quem viu a primeira janela abrir." },
+    { id: "relogio-quebrado", name: "Relógio Quebrado", rarity: "Lendário", category: "Relíquia", bonus: { vel: 2, hab: 2 }, effect: "-10% cooldown dos pets no Tower Defense.", description: "Marca segundos que só existem para você." },
+    { id: "coroa-do-eco-solar", name: "Coroa do Eco Solar", rarity: "Lendário", category: "Artefato", bonus: { pod: 3 }, effect: "+15% Millennium Coins ao terminar Pesadelo ou maior.", description: "Uma coroa sem rei, procurando cabeça digna." },
+    { id: "chave-do-mundo-invertido", name: "Chave do Mundo Invertido", rarity: "Mítico", category: "Artefato", bonus: { hab: 2, pod: 3 }, effect: "Abre encontro raro em Labirinto, Hunt e Tower Defense.", description: "Não abre portas. Abre consequências." },
+    { id: "olho-do-sistema", name: "Olho do Sistema", rarity: "Cósmica", category: "Relíquia", bonus: { hab: 3, pod: 3 }, effect: "+0,03% chance Secret em banners de item enquanto equipado.", description: "A interface observa de volta." },
+    { id: "fragmento-do-heroi-quebrado", name: "Fragmento do Herói Quebrado", rarity: "Celestial", category: "Coleção", bonus: { for: 2, vel: 2, hab: 2, res: 2, pod: 2 }, effect: "Uma das partes para despertar o Pet Secreto da Temporada.", description: "A lenda não morreu; ela foi espalhada." },
+    { id: "contrato-da-primeira-luz", name: "Contrato da Primeira Luz", rarity: "Secret", category: "Artefato", bonus: { for: 4, vel: 4, hab: 4, res: 4, pod: 4 }, effect: "Concede passe premium e título secreto quando usado.", description: "O Oráculo assinou antes de existir tinta." },
+  ],
+  gachaShardShops: [
+    { id: "traje-despertar", name: "Traje do Despertar", shop: "Fragmentos de Mira", cost: 220, rarity: "Épico", type: "Cosmético", description: "Visual sazonal para perfil e cartão de personagem." },
+    { id: "moldura-luz-inicial", name: "Moldura Luz Inicial", shop: "Marcas de Caçada", cost: 180, rarity: "Raro", type: "Moldura", description: "Borda dourada da Temporada do Despertar." },
+    { id: "pet-heroi-quebrado", name: "Pet do Herói Quebrado", shop: "Fragmentos do Despertar", cost: 1200, rarity: "Celestial", type: "Pet", description: "Companheiro sazonal montado por partes secretas." },
+    { id: "ticket-reliquia", name: "Ticket de Relíquia", shop: "Runas Partidas", cost: 90, rarity: "Incomum", type: "Ticket", description: "Uma invocação no banner de itens." },
+    { id: "passe-premium-sazonal", name: "Passe Premium", shop: "Fragmentos do Despertar", cost: 2000, rarity: "Lendário", type: "Passe", description: "Liberação alternativa por esforço extremo nos minigames." },
+  ],
+  towerMaps: [
+    { id: "cruzamento-das-cortinas", name: "Cruzamento das Cortinas", theme: "Cidade selada", lanes: 3, difficulty: "Médio", imageUrl: "", description: "Ruas fechadas por energia ritual, vitrines quebradas e ondas surgindo entre semáforos mortos." },
+    { id: "aldeia-das-folhas-douradas", name: "Aldeia das Folhas Douradas", theme: "Vila ninja", lanes: 4, difficulty: "Fácil", imageUrl: "", description: "Telhados baixos, árvores antigas e caminhos estreitos para defesa com pets velozes." },
+    { id: "arena-das-sete-esferas", name: "Arena das Sete Esferas", theme: "Torneio celestial", lanes: 2, difficulty: "Hard", imageUrl: "", description: "Plataforma aberta onde cada onda bate como duelo de escala absurda." },
+    { id: "sociedade-das-laminas", name: "Sociedade das Lâminas", theme: "Distrito espiritual", lanes: 5, difficulty: "Pesadelo", imageUrl: "", description: "Pontes brancas, portões antigos e inimigos com resistência espiritual elevada." },
+    { id: "reino-do-pecado-partido", name: "Reino do Pecado Partido", theme: "Castelo amaldiçoado", lanes: 3, difficulty: "God Slayer", imageUrl: "", description: "Um castelo vertical onde toda vitória cobra alguma coisa." },
+  ],
   missionPool: [
     { id: "patrulha-fronteira", title: "Patrulha da Fronteira", description: "Concluir uma cena de vigília, escolta ou reconhecimento.", rarity: "Comum", reward: "30 PO" },
     { id: "treino-focado", title: "Treino Focado", description: "Registrar um treino com objetivo claro para o personagem.", rarity: "Comum", reward: "1 essência extra" },
@@ -213,18 +308,7 @@ const DEFAULT_CONTENT = {
     { id: "primeiro-raro", name: "Primeiro raro", rarity: "Raro", description: "Receber item, título ou afinidade rara." },
     { id: "fundador-guilda", name: "Fundador de guilda", rarity: "Épico", description: "Criar uma guilda com 1.000 PO." },
   ],
-  seasonPass: [
-    { id: "despertar-5", name: "Nível 5", tier: 5, rarity: "Comum", freeReward: "Título: Recém-Desperto", premiumReward: "Token: Primeiro Chamado + 3 essências", description: "Primeiro contato real com a interface de Millennium." },
-    { id: "despertar-10", name: "Nível 10", tier: 10, rarity: "Incomum", freeReward: "100 PO", premiumReward: "250 PO + 5 essências", description: "A janela do sistema deixa de ser estranha e começa a responder." },
-    { id: "despertar-15", name: "Nível 15", tier: 15, rarity: "Incomum", freeReward: "Token: Sobrevivente", premiumReward: "Título: Marcado pelos Deuses", description: "A primeira marca visível de quem sobreviveu ao chamado." },
-    { id: "despertar-20", name: "Nível 20", tier: 20, rarity: "Raro", freeReward: "Item cosmético raro", premiumReward: "Item raro + 6 essências", description: "Fragmentos da terra sagrada começam a reconhecer seu nome." },
-    { id: "despertar-25", name: "Nível 25", tier: 25, rarity: "Raro", freeReward: "150 PO + token simples", premiumReward: "400 PO + Token: Olhar do Sistema", description: "O sistema observa, calcula e registra sua existência." },
-    { id: "despertar-30", name: "Nível 30", tier: 30, rarity: "Épico", freeReward: "Título: Peregrino de Millennium", premiumReward: "Título épico + 8 essências", description: "Você já não é apenas alguém perdido em outro mundo." },
-    { id: "despertar-35", name: "Nível 35", tier: 35, rarity: "Épico", freeReward: "250 PO", premiumReward: "Pet cosmético da temporada", description: "Companheiros e sinais surgem onde antes havia apenas silêncio." },
-    { id: "despertar-40", name: "Nível 40", tier: 40, rarity: "Lendário", freeReward: "Token: Chama do Despertar", premiumReward: "Token lendário + 10 essências", description: "O despertar deixa de ser evento e vira lenda pessoal." },
-    { id: "despertar-45", name: "Nível 45", tier: 45, rarity: "Lendário", freeReward: "350 PO + item raro", premiumReward: "700 PO + item lendário sugerido", description: "As escolhas começam a pesar como juramentos." },
-    { id: "despertar-50", name: "Nível 50", tier: 50, rarity: "Cósmica", freeReward: "Título: Filho do Despertar", premiumReward: "Título cósmico + Token: Interface Viva + 15 essências", description: "Recompensa final da primeira temporada de contato com Millennium." },
-  ],
+  seasonPass: buildDefaultSeasonPass(),
   passMissions: [
     { id: "pass-login", name: "Interface inicializada", type: "Diária", xp: 80, description: "Entrar no site e conferir sua ficha durante a temporada." },
     { id: "pass-codex", name: "Ler os sinais do mundo", type: "Semanal", xp: 180, description: "Consultar o Codex e registrar uma memória no diário." },
@@ -248,6 +332,8 @@ const NAVS = {
     { id: "profile", label: "Perfil", icon: "◈" },
     { id: "character", label: "Personagem", icon: "✎" },
     { id: "roulette", label: "Roleta", icon: "✦" },
+    { id: "gacha", label: "Invocação", icon: "◇" },
+    { id: "minigames", label: "Minigames", icon: "▣" },
     { id: "inventory", label: "Inventário", icon: "◎" },
     { id: "grimoire", label: "Grimório", icon: "✧" },
     { id: "codex", label: "Codex", icon: "✥" },
@@ -285,6 +371,8 @@ const VIEW_TITLES = {
   profile: "Perfil público",
   character: "Ficha do personagem",
   roulette: "Roleta de afinidade",
+  gacha: "Invocação dimensional",
+  minigames: "Minigames do Oráculo",
   inventory: "Inventário e dinheiro",
   grimoire: "Grimório e títulos",
   codex: "Codex do mundo",
@@ -331,10 +419,18 @@ const state = {
   profileTab: "overview",
   helpTab: "tutorial",
   marketTab: "market",
+  rankingTab: "prestige",
+  gachaTab: "pets",
+  vaultTab: "all",
+  minigameTab: "hub",
+  minigameDifficulty: "facil",
+  activeAimSession: null,
   adminRequestFilter: "all",
   epicCollection: "wantedBoard",
   lastRoll: null,
   lastRollResults: [],
+  lastGachaResults: [],
+  activeGachaReveal: null,
   affinityChoices: [],
   rolling: false,
   musicOn: false,
@@ -628,6 +724,14 @@ function defaultCharacter(uid, displayName = "") {
     level: 1,
     freePoints: 0,
     gold: 100,
+    millenniumCoins: 250,
+    gachaEnergy: GACHA_ENERGY_MAX,
+    gachaEnergyUpdatedAt: new Date().toISOString(),
+    gachaFragments: {},
+    gachaVault: [],
+    gachaHistory: [],
+    activeActivities: [],
+    minigameStats: {},
     activeTitleId: "",
     pendingGift: null,
     activeMissions: [],
@@ -691,8 +795,10 @@ function getTotals(character = currentCharacter()) {
   const race = getRace(character.raceId);
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
+  const title = activeTitle(character);
   const equipmentBonus = addBonuses(...equippedItems(character).map((item) => item.bonus || {}));
-  const raw = addBonuses(character.base, race.bonus, klass.bonus, affinity?.bonus, equipmentBonus);
+  const gachaBonus = addBonuses(...equippedGachaBonuses(character));
+  const raw = addBonuses(character.base, race.bonus, klass.bonus, affinity?.bonus, equipmentBonus, gachaBonus);
   const hpMax = Math.max(0, raw.res * 5 + raw.hp);
   const ppMax = Math.max(0, raw.pod * 5 + raw.pp);
   const def = Math.ceil(raw.res / 2) + raw.def;
@@ -708,11 +814,15 @@ function rarityKey(rarity) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+  if (key.includes("secret")) return "secret";
+  if (key.includes("celestial")) return "celestial";
   if (key.includes("cosm")) return "cosmic";
+  if (key.includes("mitic") || key.includes("mythic")) return "mythic";
   if (key.includes("lend")) return "legendary";
   if (key.includes("pico")) return "epic";
   if (key.includes("raro")) return "rare";
   if (key.includes("incomum")) return "uncommon";
+  if (key.includes("quebrado")) return "broken";
   return "common";
 }
 
@@ -721,7 +831,7 @@ function rarityClass(rarity) {
 }
 
 function rarityScore(rarity) {
-  return { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, cosmic: 6 }[rarityKey(rarity)] || 1;
+  return { broken: 0.5, common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6, cosmic: 7, celestial: 8, secret: 9 }[rarityKey(rarity)] || 1;
 }
 
 function activeTitle(character = currentCharacter()) {
@@ -910,7 +1020,25 @@ async function startAmbientMusic() {
   master.gain.value = 0.16;
   master.connect(ctx.destination);
   lfo.start();
-  state.musicNodes = { ctx, master, filter, lfo, lfoGain, oscillators };
+  const melody = [220, 246.94, 261.63, 329.63, 392, 329.63, 261.63, 246.94];
+  let melodyIndex = 0;
+  const melodyTimer = window.setInterval(() => {
+    if (!state.musicOn) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const note = melody[melodyIndex % melody.length] * (melodyIndex % 5 === 0 ? 0.5 : 1);
+    melodyIndex += 1;
+    osc.type = "triangle";
+    osc.frequency.value = note;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.026, ctx.currentTime + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.45);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.5);
+  }, 2850);
+  state.musicNodes = { ctx, master, filter, lfo, lfoGain, oscillators, timers: [melodyTimer] };
   state.musicOn = true;
   localStorage.setItem("millenniumMusic", "on");
   updateMusicButton();
@@ -928,6 +1056,7 @@ function stopAmbientMusic() {
     nodes.oscillators.forEach(({ osc }) => {
       try { osc.stop(); } catch {}
     });
+    (nodes.timers || []).forEach((timer) => window.clearInterval(timer));
     try { nodes.lfo.stop(); } catch {}
     try { nodes.master.disconnect(); } catch {}
   }, 260);
@@ -947,6 +1076,10 @@ async function toggleAmbientMusic() {
 
 function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function localDayKey(date = new Date()) {
+  return date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 function weightedPick(items, weightKey = "weight") {
@@ -997,6 +1130,169 @@ function buildRollResult(pityCounter = 0) {
     pityAfter: rare ? 0 : pityCounter + 1,
     createdAt: new Date().toISOString(),
   };
+}
+
+function gachaRarityMeta(rarity) {
+  return GACHA_RARITIES.find((item) => item.name === rarity || item.id === rarityKey(rarity)) || GACHA_RARITIES[1];
+}
+
+function gachaPool(type = "pets") {
+  return type === "items" ? (state.content.gachaItems || []) : (state.content.gachaPets || []);
+}
+
+function stableNumber(seed) {
+  return String(seed).split("").reduce((sum, char) => ((sum * 31) + char.charCodeAt(0)) % 2147483647, 7);
+}
+
+function pickRotating(items, count, seed) {
+  if (!items.length) return [];
+  const picked = [];
+  let cursor = stableNumber(seed) % items.length;
+  while (picked.length < Math.min(count, items.length)) {
+    const item = items[cursor % items.length];
+    if (!picked.some((entry) => entry.id === item.id)) picked.push(item);
+    cursor += 1 + (stableNumber(`${seed}-${picked.length}`) % Math.max(1, items.length - 1));
+  }
+  return picked;
+}
+
+function activeGachaBanner(type = "pets") {
+  const pool = gachaPool(type);
+  const hour = Math.floor(Date.now() / 3600000);
+  const byRarity = (rarity) => pool.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
+  const featured = [
+    ...pickRotating(byRarity("Mítico"), 3, `${type}-mythic-${hour}`),
+    ...pickRotating(byRarity("Cósmica"), 1, `${type}-cosmic-${hour}`),
+    ...pickRotating(byRarity("Celestial"), 1, `${type}-celestial-${hour}`),
+    ...pickRotating(byRarity("Secret"), 1, `${type}-secret-${hour}`),
+  ];
+  return {
+    type,
+    hour,
+    featured,
+    endsAt: new Date((hour + 1) * 3600000),
+  };
+}
+
+function pickGachaRarity(type = "pets") {
+  const pool = gachaPool(type);
+  const available = new Set(pool.map((item) => rarityKey(item.rarity)));
+  const banner = activeGachaBanner(type);
+  const featuredRarities = new Set(banner.featured.map((item) => rarityKey(item.rarity)));
+  const weights = GACHA_RARITIES
+    .filter((rarity) => available.has(rarity.id))
+    .map((rarity) => {
+      const rateUp = featuredRarities.has(rarity.id);
+      const multiplier = rarity.id === "secret" && rateUp ? 10 : rateUp ? 2.8 : 1;
+      return { ...rarity, weight: rarity.weight * multiplier };
+    });
+  return weightedPick(weights) || GACHA_RARITIES[1];
+}
+
+function pickGachaReward(type = "pets", rarity = "Comum") {
+  const pool = gachaPool(type);
+  const rarityPool = pool.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
+  const fallback = rarityPool.length ? rarityPool : pool;
+  const bannerItems = activeGachaBanner(type).featured.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
+  if (bannerItems.length && Math.random() < 0.68) return bannerItems[Math.floor(Math.random() * bannerItems.length)];
+  return fallback[Math.floor(Math.random() * fallback.length)] || null;
+}
+
+function shinyChanceFor(rarity) {
+  const key = rarityKey(rarity);
+  return { broken: 0.025, common: 0.022, uncommon: 0.018, epic: 0.012, legendary: 0.008, mythic: 0.005, cosmic: 0.003, celestial: 0.002, secret: 0.001 }[key] || 0.015;
+}
+
+function buildGachaInstance(source, type = "pets") {
+  const shiny = Math.random() < shinyChanceFor(source.rarity);
+  return {
+    instanceId: cryptoRandom(),
+    sourceId: source.id,
+    kind: type === "items" ? "item" : "pet",
+    name: `${shiny ? "Radiante " : ""}${source.name}`,
+    baseName: source.name,
+    rarity: source.rarity || "Comum",
+    stars: 1,
+    shiny,
+    locked: false,
+    equipped: false,
+    status: "Livre",
+    activityId: "",
+    imageUrl: source.imageUrl || "",
+    archetype: source.archetype || source.category || "",
+    element: source.element || "",
+    category: source.category || "",
+    bonus: source.bonus || {},
+    td: source.td || {},
+    trait: source.trait || source.effect || "",
+    description: source.description || "",
+    obtainedAt: new Date().toISOString(),
+  };
+}
+
+function instancePower(instance) {
+  const rarity = rarityScore(instance.rarity);
+  const stars = Math.max(1, Number(instance.stars || 1));
+  const shiny = instance.shiny ? 1.18 : 1;
+  return Math.round((rarity * 100 + stars * 42) * (1 + (stars - 1) * 0.22) * shiny);
+}
+
+function scaledBonus(instance) {
+  const stars = Math.max(1, Number(instance.stars || 1));
+  const scale = (1 + (stars - 1) * 0.28) * (instance.shiny ? 1.12 : 1);
+  return Object.fromEntries(Object.entries(instance.bonus || {}).map(([key, value]) => [key, Math.max(0, Math.round(Number(value || 0) * scale))]));
+}
+
+function equippedGachaBonuses(character = currentCharacter()) {
+  return (character.gachaVault || [])
+    .filter((item) => item.equipped && (item.kind === "item" || item.kind === "pet"))
+    .map((item) => scaledBonus(item));
+}
+
+function gachaFragmentName(instanceOrType = "pets") {
+  const kind = typeof instanceOrType === "string" ? instanceOrType : instanceOrType.kind;
+  return kind === "item" || kind === "items" ? "Ecos de Relíquia" : "Ecos de Companheiro";
+}
+
+function fragmentGainFor(instance) {
+  const meta = gachaRarityMeta(instance.rarity);
+  const stars = Math.max(1, Number(instance.stars || 1));
+  return Math.max(1, Math.round(meta.fragment * stars * (instance.shiny ? 1.5 : 1)));
+}
+
+function withFragments(character, name, amount) {
+  return {
+    ...(character.gachaFragments || {}),
+    [name]: Number(character.gachaFragments?.[name] || 0) + Number(amount || 0),
+  };
+}
+
+function refreshGachaEnergy(character = currentCharacter()) {
+  const last = dateFromValue(character.gachaEnergyUpdatedAt);
+  const lastKey = last ? localDayKey(last) : "";
+  const todayKey = localDayKey();
+  if (lastKey !== todayKey) {
+    return { gachaEnergy: GACHA_ENERGY_MAX, gachaEnergyUpdatedAt: new Date().toISOString() };
+  }
+  return {};
+}
+
+function currentGachaEnergy(character = currentCharacter()) {
+  const refreshed = refreshGachaEnergy(character);
+  return Object.prototype.hasOwnProperty.call(refreshed, "gachaEnergy") ? refreshed.gachaEnergy : Number(character.gachaEnergy ?? GACHA_ENERGY_MAX);
+}
+
+function petBusy(instance) {
+  return instance.status && !["Livre", "Equipado"].includes(instance.status);
+}
+
+function petRecoveryCost(instance) {
+  const status = instance?.status || "Livre";
+  const power = Math.max(1, Math.round(instancePower(instance || {}) / 260));
+  if (status === "Morto") return 60 + power * 20;
+  if (status === "Ferido") return 18 + power * 8;
+  if (status === "Descansando") return 8 + power * 4;
+  return 0;
 }
 
 function prestigeFor(character) {
@@ -1091,10 +1387,10 @@ function showAuth() {
   $("#authScreen").hidden = false;
   $("#appShell").hidden = true;
   updateMusicButton();
-  $("#demoActions").hidden = state.firebaseReady;
-  $("#authNote").hidden = state.firebaseReady;
+  $("#demoActions").hidden = false;
+  $("#authNote").hidden = false;
   $("#authNote").textContent = state.firebaseReady
-    ? ""
+    ? "Modo demo local disponível para testar a interface sem alterar contas reais."
     : "Firebase não carregou nesta sessão. Use o modo demo local para testar a interface.";
 }
 
@@ -1460,7 +1756,15 @@ function subscribeCore() {
 function enterDemo(role) {
   state.demo = true;
   state.user = { uid: `demo-${role}`, email: `${role}@demo.local` };
-  state.profile = { id: state.user.uid, email: state.user.email, displayName: role === "admin" ? "Oráculo Demo" : "Player Demo", role };
+  state.profile = {
+    id: state.user.uid,
+    email: state.user.email,
+    displayName: role === "admin" ? "Oráculo Demo" : "Player Demo",
+    role,
+    acceptedTermsVersion: state.settings.rulesVersion || "1.0",
+    online: true,
+    lastSeen: new Date().toISOString(),
+  };
   state.role = role;
   state.view = NAVS[role][0].id;
   state.settings = { ...DEFAULT_CONTENT.settings };
@@ -1557,8 +1861,11 @@ function writeDemo(collection, id, data) {
 }
 
 async function pruneMessages(collection, messages, predicate = () => true) {
-  const scoped = [...messages].filter(predicate).sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
-  const overflow = scoped.slice(CHAT_LIMIT);
+  const scoped = [...messages]
+    .filter(predicate)
+    .filter((message) => message.id && timeValue(message.createdAt) > 0)
+    .sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
+  const overflow = scoped.slice(0, Math.max(0, scoped.length - CHAT_LIMIT));
   await Promise.all(overflow.map((message) => deleteDoc(collection, message.id).catch(() => {})));
 }
 
@@ -1688,14 +1995,37 @@ function renderQuickStatus(character) {
   return `
     <span>Nv ${Number(character.level || levelFromXp(character.xp || 0))}</span>
     <span>Ess ${Number(character.affinityAttempts ?? state.settings.defaultAffinityAttempts ?? 0)}</span>
+    <span>MC ${Number(character.millenniumCoins || 0)}</span>
+    <span>Energia ${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}</span>
     <span>Online ${state.users.filter((user) => user.role !== "admin" && isUserOnline(user)).length}</span>
   `;
 }
 
 function renderMobileBottomNav(nav) {
-  return nav
-    .map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`)
-    .join("");
+  const preferred = state.role === "admin"
+    ? ["admin-home", "admin-users", "admin-requests", "admin-reports"]
+    : ["player-home", "profile", "character", "chat"];
+  const quick = preferred.map((id) => nav.find((item) => item.id === id)).filter(Boolean);
+  const active = nav.find((item) => item.id === state.view);
+  const items = active && !quick.some((item) => item.id === active.id)
+    ? [...quick.slice(0, 3), active]
+    : quick;
+  return [
+    ...items.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`),
+    `<button type="button" data-action="open-more-nav"><span>☰</span><small>Mais</small></button>`,
+  ].join("");
+}
+
+function openMoreNav() {
+  const nav = NAVS[state.role] || NAVS.player;
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Navegação</p>
+    <h2>Escolha uma área</h2>
+    <div class="more-nav-grid">
+      ${nav.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></button>`).join("")}
+    </div>
+  `;
+  $("#modal").hidden = false;
 }
 
 function renderMaintenanceGate() {
@@ -1916,15 +2246,18 @@ function renderProfile() {
   ];
   return `
     <div class="grid">
-      <article class="panel span-12">
+      <article class="panel span-12 profile-card-social">
         ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
         <div class="profile-grid">
-          <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
+          <div class="avatar-frame ${rarityClass(title?.rarity || "Comum")}">
+            <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
+          </div>
           <div>
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">${esc(state.profile?.displayName || "Player")}</p>
+                <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online agora" : "Interface registrada"} · ${esc(state.profile?.displayName || "Player")}</p>
                 <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
+                <strong class="profile-title-line">${esc(title?.name || "Sem título equipado")}</strong>
               </div>
               <div class="action-row">
                 <button class="ghost-button" type="button" data-action="copy-profile-card">Copiar cartão</button>
@@ -1935,6 +2268,12 @@ function renderProfile() {
             </div>
             <p>${esc(race?.name)} · ${esc(klass?.name)} · ${esc(affinity?.name || "Sem afinidade")}</p>
             <p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>
+            <div class="profile-mini-stats">
+              <span>PO ${Number(character.gold || 0).toLocaleString("pt-BR")}</span>
+              <span>MC ${Number(character.millenniumCoins || 0).toLocaleString("pt-BR")}</span>
+              <span>Energia ${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}</span>
+              <span>Views ${state.profileViews.filter((view) => view.targetId === state.user?.uid).length}</span>
+            </div>
             <div class="tag-row">
               ${(character.titles || []).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
             </div>
@@ -2230,26 +2569,238 @@ function renderRoulette() {
   `;
 }
 
+function gachaCost(type = "pets", qty = 1) {
+  const one = type === "items" ? 120 : 100;
+  return qty >= 10 ? one * 9 : one;
+}
+
+function renderGacha() {
+  const character = currentCharacter();
+  const type = state.gachaTab === "items" ? "items" : "pets";
+  const banner = activeGachaBanner(type);
+  const costOne = gachaCost(type, 1);
+  const costTen = gachaCost(type, 10);
+  const coins = Number(character.millenniumCoins || 0);
+  return `
+    <div class="grid gacha-view">
+      <article class="panel span-12 gacha-hero">
+        <div>
+          <p class="eyebrow">Invocação dimensional</p>
+          <h2>${type === "pets" ? "Companheiros do Despertar" : "Relíquias do Oráculo"}</h2>
+          <p>Essência fica apenas para afinidade. Pets, itens e cosméticos usam Millennium Coins, sem pity, com estrelas, Radiante e fragmentos para tudo continuar valendo.</p>
+          <div class="tag-row">
+            <span class="tag">${coins.toLocaleString("pt-BR")} Millennium Coins</span>
+            <span class="tag">Banner muda ${esc(banner.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))}</span>
+            <span class="tag">Secret rate-up: 0,10%</span>
+          </div>
+        </div>
+        <div class="gacha-orb ${state.rolling ? "spinning" : ""}">
+          <span>${state.rolling ? "Invocando" : "Oráculo"}</span>
+        </div>
+      </article>
+
+      <article class="panel span-12">
+        <div class="tabs">
+          <button class="tab ${type === "pets" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="pets">Pets</button>
+          <button class="tab ${type === "items" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="items">Itens</button>
+        </div>
+        <div class="gacha-actions">
+          <button class="primary-button intense" type="button" data-action="invoke-gacha" data-kind="${esc(type)}" data-qty="1" ${coins >= costOne && !state.rolling ? "" : "disabled"}>Invocar 1x · ${costOne}</button>
+          <button class="primary-button" type="button" data-action="invoke-gacha" data-kind="${esc(type)}" data-qty="10" ${coins >= costTen && !state.rolling ? "" : "disabled"}>Invocar 10x · ${costTen}</button>
+        </div>
+      </article>
+
+      <article class="panel span-5">
+        <div class="panel-heading"><div><p class="eyebrow">Rate-up da hora</p><h3>Destaques do banner</h3></div></div>
+        <div class="featured-gacha">
+          ${banner.featured.map((item) => `
+            <div class="featured-card ${rarityClass(item.rarity)}">
+              <span>${esc(item.rarity)}</span>
+              <strong>${esc(item.name)}</strong>
+              <p>${esc(item.trait || item.effect || item.description || "")}</p>
+            </div>
+          `).join("") || `<div class="empty-state">Sem destaques desta raridade ainda.</div>`}
+        </div>
+      </article>
+
+      <article class="panel span-7">
+        <div class="panel-heading"><div><p class="eyebrow">Resultado</p><h3>Últimas invocações</h3></div></div>
+        <div class="gacha-results">
+          ${(state.lastGachaResults || []).map((item) => `
+            <div class="result-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}">
+              <span>${esc(item.rarity)}${item.shiny ? " · Radiante" : ""}</span>
+              <strong>${esc(item.name)}</strong>
+              <p>${"★".repeat(Number(item.stars || 1))} · Poder ${instancePower(item)} · ${esc(item.trait || item.description || "")}</p>
+            </div>
+          `).join("") || `<div class="empty-state">A próxima invocação aparece aqui com cor, raridade e estrelas.</div>`}
+        </div>
+      </article>
+
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Cofre dimensional</p><h3>Sua coleção invocada</h3></div><span class="tag">${(character.gachaVault || []).length} registro(s)</span></div>
+        <div class="gacha-vault">${renderGachaVault(character.gachaVault || [])}</div>
+      </article>
+    </div>
+  `;
+}
+
+function difficultyById(id) {
+  return GACHA_DIFFICULTIES.find((item) => item.id === id) || GACHA_DIFFICULTIES[1];
+}
+
+function freePetsForActivity(character = currentCharacter()) {
+  return (character.gachaVault || []).filter((item) => item.kind === "pet" && !petBusy(item));
+}
+
+function renderDifficultyTabs() {
+  return `<div class="difficulty-row">${GACHA_DIFFICULTIES.map((difficulty) => `
+    <button class="difficulty-chip ${state.minigameDifficulty === difficulty.id ? "active" : ""}" type="button" data-action="minigame-difficulty" data-difficulty="${esc(difficulty.id)}">
+      ${esc(difficulty.name)} <small>${difficulty.cost} energia</small>
+    </button>
+  `).join("")}</div>`;
+}
+
+function renderActivities(character = currentCharacter()) {
+  const activities = character.activeActivities || [];
+  if (!activities.length) return `<div class="empty-state">Nenhum pet em atividade. Envie um companheiro para uma incursão ou partida.</div>`;
+  return activities.map((activity) => {
+    const remaining = Math.max(0, dateFromValue(activity.endsAt)?.getTime() - Date.now());
+    const ready = remaining <= 0;
+    return `
+      <div class="activity-card ${ready ? "ready" : ""}">
+        <div>
+          <span>${esc(activity.type)} · ${esc(activity.difficultyName)}</span>
+          <strong>${esc(activity.petName)}</strong>
+          <p>${esc(activity.mapName || activity.biome || "Campo aberto")} · ${ready ? "Pronto para coleta" : `Restam ${Math.ceil(remaining / 60000)} min`} · Risco ${Math.round(Number(activity.risk || 0) * 100)}% · Loot parcial: ${(activity.loot || []).join(", ") || "em busca"}</p>
+        </div>
+        <div class="action-row">
+          <button class="primary-button" type="button" data-action="collect-activity" data-activity-id="${esc(activity.id)}" ${ready ? "" : "disabled"}>Coletar</button>
+          <button class="ghost-button" type="button" data-action="cancel-activity" data-activity-id="${esc(activity.id)}">Retornar agora</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderMinigames() {
+  const character = currentCharacter();
+  const energy = currentGachaEnergy(character);
+  const difficulty = difficultyById(state.minigameDifficulty);
+  const freePets = freePetsForActivity(character);
+  const petOptions = freePets.map((pet) => `<option value="${esc(pet.instanceId)}">${esc(pet.name)} · ${esc(pet.rarity)} · ${"★".repeat(Number(pet.stars || 1))}</option>`).join("");
+  const recentRuns = (character.minigameHistory || []).slice(0, 6);
+  return `
+    <div class="grid minigame-view">
+      <article class="panel span-12 minigame-hero">
+        <div>
+          <p class="eyebrow">Jogos do Oráculo</p>
+          <h2>Esforço sempre avança</h2>
+          <p>Minigames usam energia diária, têm dificuldades próprias, ranking por modo e drops de temporada. Sorte pode acelerar; dedicação nunca volta vazia.</p>
+        </div>
+        <div class="stat-grid compact-stat-grid">
+          ${renderStat("Energia", `${energy}/${GACHA_ENERGY_MAX}`)}
+          ${renderStat("Coins", character.millenniumCoins || 0)}
+          ${renderStat("Pets livres", freePets.length)}
+          ${renderStat("Atividades", (character.activeActivities || []).length)}
+        </div>
+      </article>
+
+      <article class="panel span-12">
+        ${renderDifficultyTabs()}
+      </article>
+
+      <article class="panel span-4">
+        <div class="panel-heading"><div><p class="eyebrow">Skill</p><h3>Prova da Mira</h3></div></div>
+        <p>Alvos rápidos, bônus raros, congelamento e pontuação por reflexo. Ideal para mobile e PC.</p>
+        <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Jogar · ${difficulty.cost} energia</button>
+      </article>
+
+      <article class="panel span-4">
+        <div class="panel-heading"><div><p class="eyebrow">Estratégia</p><h3>Pet Hunt</h3></div></div>
+        <p class="risk-line">Risco atual: ${Math.round(difficulty.risk * 100)}% · Duração base: ${Math.round(8 + difficulty.cost * 7)} min · pets raros reduzem perigo.</p>
+        <form class="form-stack compact-form" data-form="pet-hunt">
+          <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${petOptions || `<option>Nenhum pet livre</option>`}</select></label>
+          <label><span>Destino</span><select name="biome">${(state.content.biomes || []).map((biome) => `<option value="${esc(biome.id)}">${esc(biome.name)}</option>`).join("")}</select></label>
+          <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" />
+          <button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Enviar Hunt · ${difficulty.cost} energia</button>
+        </form>
+      </article>
+
+      <article class="panel span-4">
+        <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div>
+        <p class="risk-line">Protótipo tático: pontua por dano, alcance, estrelas, mapa e dificuldade enquanto a versão jogável é preparada.</p>
+        <form class="form-stack compact-form" data-form="tower-defense">
+          <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${petOptions || `<option>Nenhum pet livre</option>`}</select></label>
+          <label><span>Mapa</span><select name="mapId">${(state.content.towerMaps || []).map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
+          <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" />
+          <button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Iniciar partida · ${difficulty.cost} energia</button>
+        </form>
+      </article>
+
+      <article class="panel span-7">
+        <div class="panel-heading"><div><p class="eyebrow">Companheiros em campo</p><h3>Atividades simultâneas</h3></div></div>
+        <div class="activity-list">${renderActivities(character)}</div>
+      </article>
+
+      <article class="panel span-5">
+        <div class="panel-heading"><div><p class="eyebrow">Lojas de fragmentos</p><h3>Temporada do Despertar</h3></div></div>
+        <div class="shop-list">
+          ${(state.content.gachaShardShops || []).map((item) => `
+            <div class="shop-card ${rarityClass(item.rarity)}">
+              <span>${esc(item.shop)} · ${Number(item.cost || 0)}</span>
+              <strong>${esc(item.name)}</strong>
+              <p>${esc(item.type || "Recompensa")} · ${esc(item.description || "")}</p>
+              <button class="ghost-button" type="button" data-action="redeem-shard-shop" data-shop-id="${esc(item.id)}">Trocar fragmentos</button>
+            </div>
+          `).join("") || `<div class="empty-state">Nenhuma loja publicada.</div>`}
+        </div>
+      </article>
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Histórico</p><h3>Últimas runs</h3></div><span class="tag">Rank por desempenho</span></div>
+        <div class="run-history">
+          ${recentRuns.map((run) => `
+            <div class="run-card">
+              <span>${esc(run.difficultyName || run.difficultyId)} · ${esc(run.mode)}</span>
+              <strong>Rank ${esc(run.grade || "-")} · ${Number(run.score || 0)} pts</strong>
+              <p>${Number(run.coins || 0)} MC · ${Number(run.fragments || 0)} ${esc(run.fragmentName || "fragmentos")}</p>
+            </div>
+          `).join("") || `<div class="empty-state compact">Jogue uma partida para registrar seu primeiro resultado.</div>`}
+        </div>
+      </article>
+    </div>
+  `;
+}
+
 function renderInventory() {
   const character = currentCharacter();
+  const energy = currentGachaEnergy(character);
   return `
     <div class="grid">
       <article class="panel span-12">
         <div class="stat-grid">
           ${renderStat("Peças de Ouro", character.gold || 0)}
+          ${renderStat("Millennium Coins", character.millenniumCoins || 0)}
+          ${renderStat("Energia", `${energy}/${GACHA_ENERGY_MAX}`)}
+          ${renderStat("Essências", character.affinityAttempts ?? state.settings.defaultAffinityAttempts)}
           ${renderStat("XP", character.xp || 0)}
           ${renderStat("Nível", character.level || levelFromXp(character.xp || 0))}
-          ${renderStat("Itens", (character.inventory || []).length)}
+          ${renderStat("Cofre", (character.gachaVault || []).length)}
           ${renderStat("Títulos", (character.titles || []).length)}
-          ${renderStat("Pets", (character.pets || []).length)}
         </div>
       </article>
-      <article class="panel span-8">
+      <article class="panel span-7">
         <div class="panel-heading"><div><p class="eyebrow">Inventário</p><h3>Itens do personagem</h3></div></div>
         <div class="inventory-grid">${renderInventoryItems(character.inventory || [], true)}</div>
       </article>
-      <article class="panel span-4">
-        <p class="eyebrow">Títulos e pets</p>
+      <article class="panel span-5">
+        <p class="eyebrow">Cofre invocado</p>
+        <div class="tabs compact-tabs">
+          ${["all", "pet", "item"].map((tab) => `<button class="tab ${state.vaultTab === tab ? "active" : ""}" type="button" data-action="vault-tab" data-tab="${tab}">${tab === "all" ? "Todos" : tab === "pet" ? "Pets" : "Itens"}</button>`).join("")}
+        </div>
+        <div class="gacha-vault compact">${renderGachaVault((character.gachaVault || []).filter((item) => state.vaultTab === "all" || item.kind === state.vaultTab), { compact: true })}</div>
+      </article>
+      <article class="panel span-12">
+        <p class="eyebrow">Títulos e pets exibidos no perfil</p>
         <div class="list">
           ${(character.titles || []).map((title) => `<div class="item-row"><strong>${esc(title.name)}</strong><span>${esc(title.rarity || "Título")}</span></div>`).join("") || `<div class="empty-state">Sem títulos.</div>`}
           ${renderPets(character.pets || [])}
@@ -2274,12 +2825,43 @@ function renderInventoryItems(items, withEquip) {
 function renderPets(pets) {
   if (!pets.length) return `<div class="empty-state">Nenhum pet exibido.</div>`;
   return pets.map((pet) => `
-    <div class="pet-card">
+    <div class="pet-card ${rarityClass(pet.rarity)}">
       ${pet.imageUrl ? `<img class="pet-image" src="${esc(pet.imageUrl)}" alt="${esc(pet.name)}" />` : `<div class="pet-image placeholder">PET</div>`}
       <strong>${esc(pet.name)}</strong>
-      <p>${esc(pet.rarity || "Pet")}</p>
+      <p>${esc(pet.rarity || "Pet")} ${pet.stars ? `· ${"★".repeat(Math.min(MAX_GACHA_STARS, Number(pet.stars || 1)))}` : ""}</p>
     </div>
   `).join("");
+}
+
+function renderGachaVault(items, options = {}) {
+  if (!items.length) return `<div class="empty-state">Nada no cofre ainda. Faça invocações para encher esta coleção.</div>`;
+  return items.map((item) => {
+    const busy = petBusy(item);
+    const recoveryCost = petRecoveryCost(item);
+    return `
+      <article class="vault-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}">
+        <div class="vault-art">${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : `<span>${esc(item.kind === "pet" ? "PET" : "ITEM")}</span>`}</div>
+        <div class="vault-body">
+          <span>${esc(item.rarity || "Comum")} ${item.shiny ? "· Radiante" : ""}</span>
+          <h3>${esc(item.name)}</h3>
+          <p>${esc(item.trait || item.description || "Sem efeito registrado.")}</p>
+          <div class="tag-row">
+            <span class="tag">${"★".repeat(Math.max(1, Math.min(MAX_GACHA_STARS, Number(item.stars || 1))))}</span>
+            <span class="tag">Poder ${instancePower(item)}</span>
+            <span class="tag">${esc(item.status || "Livre")}</span>
+          </div>
+          ${options.compact ? "" : `<small>${esc(bonusToText(scaledBonus(item)))} · ${esc(item.archetype || item.category || "Coleção")}</small>`}
+          <div class="action-row">
+            <button class="ghost-button" type="button" data-action="toggle-vault-equip" data-instance-id="${esc(item.instanceId)}" ${busy ? "disabled" : ""}>${item.equipped ? "Desequipar" : "Equipar"}</button>
+            <button class="ghost-button" type="button" data-action="fuse-vault-item" data-instance-id="${esc(item.instanceId)}" ${Number(item.stars || 1) >= MAX_GACHA_STARS || busy ? "disabled" : ""}>Fundir</button>
+            <button class="ghost-button" type="button" data-action="send-vault-main" data-instance-id="${esc(item.instanceId)}" ${item.exported ? "disabled" : ""}>Inventário</button>
+            ${item.kind === "pet" && recoveryCost ? `<button class="ghost-button" type="button" data-action="recover-pet" data-instance-id="${esc(item.instanceId)}">Recuperar · ${recoveryCost} MC</button>` : ""}
+            <button class="ghost-button danger" type="button" data-action="shard-vault-item" data-instance-id="${esc(item.instanceId)}" ${item.locked || busy ? "disabled" : ""}>Desfazer</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderTokens(tokens) {
@@ -2354,31 +2936,47 @@ function renderGrimoire() {
 }
 
 function renderRanking() {
-  const rows = leaderboard().slice(0, 30);
+  const tabs = [
+    ["prestige", "Prestígio"],
+    ["level", "Nível"],
+    ["gold", "PO"],
+    ["coins", "Millennium"],
+    ["aim", "Mira"],
+    ["hunt", "Pet Hunt"],
+    ["tower", "Tower"],
+    ["pets", "Pets"],
+    ["items", "Itens"],
+    ["guilds", "Guildas"],
+    ["views", "Perfis"],
+  ];
+  const tab = state.rankingTab || "prestige";
+  const rows = rankRows(tab).slice(0, 30);
   return `
     <div class="grid">
       <article class="panel span-12">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Ranking</p>
-            <h2>Prestígio da mesa</h2>
+            <h2>Ranks vivos de Millennium</h2>
           </div>
-          <span class="tag">Raros + giros + nível</span>
+          <span class="tag">Temporada e todos os tempos</span>
         </div>
+        <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}">${label}</button>`).join("")}</div>
         <div class="ranking-list">
-          ${rows.map((char, index) => {
+          ${rows.map((row, index) => {
+            const char = row.character || {};
             const title = activeTitle(char);
             const affinity = getAffinity(char.affinityId);
             return `
-              <div class="ranking-row ${char.ownerId === state.user?.uid ? "self" : ""}">
+              <div class="ranking-row ${row.uid === state.user?.uid || char.ownerId === state.user?.uid ? "self" : ""}">
                 <strong class="ranking-place">#${index + 1}</strong>
                 <div>
-                  <h3>${esc(char.characterName || char.displayName || getUserName(char.ownerId))}</h3>
-                  <p>${title ? esc(title.name) : "Sem título"} · ${esc(affinity?.name || "Sem afinidade")}</p>
+                  <h3>${esc(row.name || char.characterName || char.displayName || getUserName(char.ownerId || row.uid))}</h3>
+                  <p>${esc(row.detail || `${title ? title.name : "Sem título"} · ${affinity?.name || "Sem afinidade"}`)}</p>
                 </div>
                 <div class="ranking-score">
-                  <strong>${prestigeFor(char)}</strong>
-                  <span>${Number(char.totalRares || 0)} raros</span>
+                  <strong>${esc(row.scoreText || row.score)}</strong>
+                  <span>${esc(row.sub || "pontos")}</span>
                 </div>
               </div>
             `;
@@ -2387,6 +2985,43 @@ function renderRanking() {
       </article>
     </div>
   `;
+}
+
+function rankRows(tab) {
+  const chars = [...state.characters].filter((char) => char.profilePublic !== false);
+  const byChar = (score, sub = "pontos", detailFn = null) => chars
+    .map((character) => ({
+      uid: character.ownerId,
+      character,
+      name: character.characterName || character.displayName || getUserName(character.ownerId),
+      score: Math.round(Number(score(character) || 0)),
+      scoreText: Math.round(Number(score(character) || 0)).toLocaleString("pt-BR"),
+      sub,
+      detail: detailFn ? detailFn(character) : "",
+    }))
+    .filter((row) => row.score > 0 || ["prestige", "level"].includes(tab))
+    .sort((a, b) => b.score - a.score);
+
+  if (tab === "level") return byChar((char) => Number(char.level || levelFromXp(char.xp || 0)), "nível");
+  if (tab === "gold") return byChar((char) => Number(char.gold || 0), "PO");
+  if (tab === "coins") return byChar((char) => Number(char.millenniumCoins || 0), "MC");
+  if (tab === "aim") return byChar((char) => Number(char.minigameStats?.aim?.bestScore || 0), "melhor score");
+  if (tab === "hunt") return byChar((char) => Number(char.minigameStats?.hunt?.bestScore || 0), "melhor score");
+  if (tab === "tower") return byChar((char) => Number(char.minigameStats?.tower?.bestScore || 0), "melhor score");
+  if (tab === "pets") return byChar((char) => Math.max(0, ...(char.gachaVault || []).filter((item) => item.kind === "pet").map(instancePower)), "poder pet");
+  if (tab === "items") return byChar((char) => Math.max(0, ...(char.gachaVault || []).filter((item) => item.kind === "item").map(instancePower)), "poder item");
+  if (tab === "views") return byChar((char) => state.profileViews.filter((view) => view.targetId === char.ownerId).length, "visualizações");
+  if (tab === "guilds") {
+    return [...state.guilds].map((guild) => ({
+      uid: guild.leaderId,
+      name: guild.name,
+      score: Number(guild.level || 1) * 100 + Number(guild.xp || 0) + (guild.memberIds || []).length * 25,
+      scoreText: (Number(guild.level || 1) * 100 + Number(guild.xp || 0) + (guild.memberIds || []).length * 25).toLocaleString("pt-BR"),
+      sub: `${(guild.memberIds || []).length}/${GUILD_MEMBER_LIMIT} membros`,
+      detail: guild.description || "Guilda ativa",
+    })).sort((a, b) => b.score - a.score);
+  }
+  return byChar(prestigeFor, "prestígio", (char) => `${Number(char.totalRares || 0)} raros · ${Number(char.totalRolls || 0)} giros`);
 }
 
 function renderCodex() {
@@ -2573,23 +3208,44 @@ function renderGlobalSearchPanel() {
 }
 
 function renderMarket() {
+  const character = currentCharacter();
   const tabs = [
-    ["market", "Mercado"],
+    ["market", "Destaques"],
+    ["coins", "Millennium"],
+    ["fragments", "Fragmentos"],
+    ["pass", "Passe"],
     ["auction", "Leilão"],
     ["crafting", "Crafting"],
     ["vault", "Cofre"],
   ];
   const tab = state.marketTab || "market";
   const cards = {
-    market: () => marketCards(state.content.marketListings, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`),
-    auction: () => marketCards(state.content.auctionListings, (item) => `Lance mínimo ${Number(item.minBid || 0)} PO · termina ${item.endsAt || "a definir"} · ${item.description || ""}`),
-    crafting: () => marketCards(state.content.craftingRecipes, (item) => `${item.materials || "Materiais a definir"} → ${item.result || ""}`),
-    vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO no bolso", currentCharacter().gold || 0)}${renderStat("Itens", (currentCharacter().inventory || []).length)}${renderStat("Raros", currentCharacter().totalRares || 0)}</div><p class="hint">Cofre pessoal visual. Movimentações raras ainda passam pelo Oráculo.</p></article>`,
+    market: () => marketCards(state.content.marketListings, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"),
+    coins: () => marketCards(state.content.gachaItems || [], (item) => `${esc(item.category || "Relíquia")} · usado com gacha/cofre · ${item.description || ""}`, "Millennium Coins"),
+    fragments: () => (state.content.gachaShardShops || []).map((item) => `
+      <div class="content-card market-card ${rarityClass(item.rarity)}">
+        ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
+        <span>${esc(item.shop)} · ${Number(item.cost || 0)}</span>
+        <h3>${esc(item.name)}</h3>
+        <p>${esc(item.type || "Recompensa")} · ${esc(item.description || "")}</p>
+        <button class="primary-button" type="button" data-action="redeem-shard-shop" data-shop-id="${esc(item.id)}">Trocar agora</button>
+      </div>
+    `).join("") || `<div class="empty-state">Nenhuma troca de fragmentos publicada.</div>`,
+    pass: () => renderSeasonPass(),
+    auction: () => marketCards(state.content.auctionListings, (item) => `Lance mínimo ${Number(item.minBid || 0)} PO · termina ${item.endsAt || "a definir"} · ${item.description || ""}`, "Leilão"),
+    crafting: () => marketCards(state.content.craftingRecipes, (item) => `${item.materials || "Materiais a definir"} → ${item.result || ""}`, "Crafting"),
+    vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO", character.gold || 0)}${renderStat("Millennium Coins", character.millenniumCoins || 0)}${renderStat("Fragmentos", Object.values(character.gachaFragments || {}).reduce((sum, value) => sum + Number(value || 0), 0))}${renderStat("Cofre dimensional", (character.gachaVault || []).length)}</div><p class="hint">O cofre dimensional guarda pets e itens invocados. Você pode equipar, fundir, recuperar pets, desfazer por fragmentos ou enviar para o inventário/perfil.</p>${renderGachaVault(character.gachaVault || [], { compact: true })}</article>`,
   };
   return `
     <div class="grid">
-      <article class="panel span-12">
+      <article class="panel span-12 market-hero">
         <div class="panel-heading"><div><p class="eyebrow">Economia</p><h2>Mercado, leilão, crafting e cofre</h2></div><span class="tag">Oráculo controla recompensas</span></div>
+        <div class="stat-grid compact-stat-grid">
+          ${renderStat("PO", character.gold || 0)}
+          ${renderStat("Millennium Coins", character.millenniumCoins || 0)}
+          ${renderStat("Energia", `${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}`)}
+          ${renderStat("Fragmentos", Object.values(character.gachaFragments || {}).reduce((sum, value) => sum + Number(value || 0), 0))}
+        </div>
         <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="market-tab" data-tab="${id}">${label}</button>`).join("")}</div>
       </article>
       ${tab === "vault" ? cards.vault() : `<article class="panel span-12"><div class="content-grid">${cards[tab]?.() || cards.market()}</div></article>`}
@@ -2597,14 +3253,17 @@ function renderMarket() {
   `;
 }
 
-function marketCards(items, detail) {
+function marketCards(items, detail, currency = "PO") {
   return sortByName(items).map((item) => `
     <div class="content-card market-card">
       ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
       <span>${esc(item.rarity || item.category || "Mercado")}</span>
       <h3>${esc(item.name)}</h3>
       <p>${esc(detail(item))}</p>
-      <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("Solicite ao Oráculo pelo chat/correio para comprar, dar lance ou fabricar este registro.")}">Como usar?</button>
+      <div class="action-row">
+        <button class="primary-button" type="button" data-action="request-market-item" data-market-id="${esc(item.id)}" data-market-currency="${esc(currency)}">Solicitar</button>
+        <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("A solicitação vai para a fila do Oráculo com contexto de compra, lance ou crafting.")}">Como usar?</button>
+      </div>
     </div>
   `).join("") || `<div class="empty-state">Nada publicado aqui ainda.</div>`;
 }
@@ -3277,6 +3936,9 @@ function renderAdminUsers() {
             <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Oráculo</option></select></label>
             <label><span>Status</span><select name="status"><option value="active" ${draftValue(draft, "status", selectedUser.status || "active") === "active" ? "selected" : ""}>Ativo</option><option value="muted" ${draftValue(draft, "status", selectedUser.status || "active") === "muted" ? "selected" : ""}>Mutado</option><option value="suspended" ${draftValue(draft, "status", selectedUser.status || "active") === "suspended" ? "selected" : ""}>Suspenso</option></select></label>
             <label><span>PO</span><input name="gold" type="number" value="${Number(draftValue(draft, "gold", character.gold || 0))}" /></label>
+            <label><span>Millennium Coins</span><input name="millenniumCoins" type="number" value="${Number(draftValue(draft, "millenniumCoins", character.millenniumCoins || 0))}" /></label>
+            <label><span>Energia diária</span><input name="gachaEnergy" type="number" min="0" max="${GACHA_ENERGY_MAX}" value="${Number(draftValue(draft, "gachaEnergy", currentGachaEnergy(character)))}" /></label>
+            <label><span>Fragmentos do Despertar</span><input name="awakeningFragments" type="number" min="0" value="${Number(draftValue(draft, "awakeningFragments", character.gachaFragments?.["Fragmentos do Despertar"] || 0))}" /></label>
             <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(draftValue(draft, "affinityAttempts", character.affinityAttempts || 0))}" /></label>
             <label><span>Pity atual</span><input name="pityCounter" type="number" min="0" value="${Number(draftValue(draft, "pityCounter", character.pityCounter || 0))}" /></label>
             <label><span>Prestígio</span><input name="prestige" type="number" min="0" value="${Number(draftValue(draft, "prestige", prestigeFor(character)))}" /></label>
@@ -3487,6 +4149,10 @@ function renderContentEditor() {
       ["achievements", "Conquistas"],
       ["seasonPass", "Passe de temporada"],
       ["passMissions", "Missões do passe"],
+      ["gachaPets", "Pets de gacha"],
+      ["gachaItems", "Itens de gacha"],
+      ["gachaShardShops", "Lojas de fragmentos"],
+      ["towerMaps", "Mapas Tower Defense"],
       ["reputationFactions", "Reputações/facções"],
     ];
     const selected = state.epicCollection || "wantedBoard";
@@ -3558,15 +4224,21 @@ function renderAdminRewards() {
           <label><span>Player</span><select name="uid">${players.map((user) => `<option value="${esc(user.id)}">${esc(user.displayName || user.email)}</option>`).join("")}</select></label>
           <label><span>Tipo</span><select name="type">
             <option value="gold">PO</option>
+            <option value="coins">Millennium Coins</option>
+            <option value="energy">Energia diária</option>
+            <option value="fragments">Fragmentos do Despertar</option>
             <option value="item">Item</option>
+            <option value="gachaPet">Pet de cofre</option>
+            <option value="gachaItem">Item de cofre</option>
             <option value="title">Título</option>
             <option value="token">Token</option>
             <option value="affinity">Afinidade</option>
             <option value="pet">Pet</option>
             <option value="attempts">Essências de roleta</option>
           </select></label>
-          <label><span>Quantidade de PO / essências</span><input name="amount" type="number" value="0" /></label>
+          <label><span>Quantidade</span><input name="amount" type="number" value="0" /></label>
           <label><span>Item</span><select name="itemId"><option value="">Nenhum</option>${optionList(state.content.items)}</select></label>
+          <label><span>Pet/Item de gacha</span><select name="gachaId"><option value="">Nenhum</option>${[...(state.content.gachaPets || []), ...(state.content.gachaItems || [])].map((item) => `<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.rarity)}</option>`).join("")}</select></label>
           <label><span>Afinidade</span><select name="affinityId"><option value="">Nenhuma</option>${optionList(state.content.affinities)}</select></label>
           <label><span>Nome do título ou pet</span><input name="customName" /></label>
           <label><span>Imagem do pet</span><input name="petImageUrl" /></label>
@@ -3812,6 +4484,8 @@ const VIEW_RENDERERS = {
   profile: renderProfile,
   character: renderCharacterForm,
   roulette: renderRoulette,
+  gacha: renderGacha,
+  minigames: renderMinigames,
   inventory: renderInventory,
   grimoire: renderGrimoire,
   codex: renderCodex,
@@ -4109,6 +4783,458 @@ async function toggleEquip(instanceId) {
   await updateCharacter(state.user.uid, { inventory });
 }
 
+async function invokeGacha(type = "pets", qty = 1) {
+  const character = currentCharacter();
+  const kind = type === "items" ? "items" : "pets";
+  const amount = Math.max(1, Math.min(10, Number(qty || 1)));
+  const cost = gachaCost(kind, amount);
+  if (state.rolling) return;
+  if (Number(character.millenniumCoins || 0) < cost) {
+    toast("Millennium Coins insuficientes para esta invocação.");
+    return;
+  }
+  if (!gachaPool(kind).length) {
+    toast("O Oráculo ainda não publicou recompensas para este banner.");
+    return;
+  }
+  state.rolling = true;
+  state.lastGachaResults = [];
+  render();
+  playSound("rolling");
+  await delay(amount >= 10 ? 2600 : 1600);
+  const results = [];
+  for (let index = 0; index < amount; index += 1) {
+    const rarity = pickGachaRarity(kind);
+    const source = pickGachaReward(kind, rarity.name);
+    if (source) results.push(buildGachaInstance(source, kind));
+  }
+  const history = [
+    ...(character.gachaHistory || []),
+    ...results.map((item) => ({
+      id: item.instanceId,
+      kind: item.kind,
+      name: item.name,
+      rarity: item.rarity,
+      shiny: item.shiny,
+      stars: item.stars,
+      createdAt: new Date().toISOString(),
+    })),
+  ].slice(-120);
+  await updateCharacter(state.user.uid, {
+    millenniumCoins: Number(character.millenniumCoins || 0) - cost,
+    gachaVault: [...(character.gachaVault || []), ...results],
+    gachaHistory: history,
+  });
+  state.lastGachaResults = results;
+  state.rolling = false;
+  const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
+  if (rare) {
+    playSound("rare");
+    await announceRareReward(state.user.uid, rare.name, rare.rarity, rare.kind === "pet" ? "pet invocado" : "item invocado");
+  }
+  toast(`${results.length} invocação(ões) concluída(s).`);
+  render();
+}
+
+async function toggleVaultEquip(instanceId) {
+  const character = currentCharacter();
+  const vault = (character.gachaVault || []).map((item) => {
+    if (item.instanceId !== instanceId || petBusy(item)) return item;
+    return { ...item, equipped: !item.equipped, status: item.equipped ? "Livre" : "Equipado" };
+  });
+  await updateCharacter(state.user.uid, { gachaVault: vault });
+}
+
+async function fuseVaultItem(instanceId) {
+  const character = currentCharacter();
+  const vault = [...(character.gachaVault || [])];
+  const item = vault.find((entry) => entry.instanceId === instanceId);
+  if (!item || petBusy(item)) return;
+  if (Number(item.stars || 1) >= MAX_GACHA_STARS) {
+    toast("Este registro já está no máximo de estrelas.");
+    return;
+  }
+  const duplicate = vault.find((entry) => entry.instanceId !== instanceId
+    && entry.sourceId === item.sourceId
+    && entry.kind === item.kind
+    && !entry.locked
+    && !petBusy(entry));
+  if (!duplicate) {
+    toast("Você precisa de uma duplicata livre para fundir.");
+    return;
+  }
+  const next = vault
+    .filter((entry) => entry.instanceId !== duplicate.instanceId)
+    .map((entry) => entry.instanceId === instanceId ? { ...entry, stars: Math.min(MAX_GACHA_STARS, Number(entry.stars || 1) + 1) } : entry);
+  await updateCharacter(state.user.uid, { gachaVault: next });
+  toast(`${item.name} subiu para ${Number(item.stars || 1) + 1} estrela(s).`);
+}
+
+async function shardVaultItem(instanceId) {
+  const character = currentCharacter();
+  const item = (character.gachaVault || []).find((entry) => entry.instanceId === instanceId);
+  if (!item || item.locked || petBusy(item)) return;
+  const fragmentName = gachaFragmentName(item);
+  const amount = fragmentGainFor(item);
+  await updateCharacter(state.user.uid, {
+    gachaVault: (character.gachaVault || []).filter((entry) => entry.instanceId !== instanceId),
+    gachaFragments: withFragments(character, fragmentName, amount),
+  });
+  toast(`${item.name} virou ${amount} ${fragmentName}.`);
+}
+
+async function sendVaultMain(instanceId) {
+  const character = currentCharacter();
+  const item = (character.gachaVault || []).find((entry) => entry.instanceId === instanceId);
+  if (!item) return;
+  const vault = (character.gachaVault || []).map((entry) => entry.instanceId === instanceId ? { ...entry, exported: true } : entry);
+  if (item.kind === "pet") {
+    await updateCharacter(state.user.uid, {
+      pets: [...(character.pets || []), { ...item, id: item.instanceId, source: "Cofre dimensional" }],
+      gachaVault: vault,
+    });
+    toast("Pet enviado para a vitrine do perfil.");
+    return;
+  }
+  await updateCharacter(state.user.uid, {
+    inventory: [...(character.inventory || []), {
+      ...item,
+      instanceId: cryptoRandom(),
+      categoryId: "especial",
+      source: "Cofre dimensional",
+      equipped: false,
+    }],
+    gachaVault: vault,
+  });
+  toast("Item enviado para o inventário principal.");
+}
+
+async function recoverPet(instanceId) {
+  const character = currentCharacter();
+  const item = (character.gachaVault || []).find((entry) => entry.instanceId === instanceId && entry.kind === "pet");
+  const cost = petRecoveryCost(item);
+  if (!item || !cost) return;
+  if (Number(character.millenniumCoins || 0) < cost) {
+    toast(`Você precisa de ${cost} Millennium Coins para recuperar este pet.`);
+    return;
+  }
+  const vault = (character.gachaVault || []).map((entry) => entry.instanceId === instanceId
+    ? { ...entry, status: "Livre", activityId: "", injuredAt: "", recoveredAt: new Date().toISOString() }
+    : entry);
+  await updateCharacter(state.user.uid, {
+    millenniumCoins: Number(character.millenniumCoins || 0) - cost,
+    gachaVault: vault,
+  });
+  toast(`${item.name} voltou a ficar livre.`);
+}
+
+async function redeemShardShop(shopId) {
+  const character = currentCharacter();
+  const shopItem = (state.content.gachaShardShops || []).find((item) => item.id === shopId);
+  if (!shopItem) return;
+  const fragmentName = shopItem.shop || "Fragmentos do Despertar";
+  const cost = Number(shopItem.cost || 0);
+  const balance = Number(character.gachaFragments?.[fragmentName] || 0);
+  if (balance < cost) {
+    toast(`Você precisa de ${cost} ${fragmentName}.`);
+    return;
+  }
+  const fragments = { ...(character.gachaFragments || {}), [fragmentName]: balance - cost };
+  const rewardType = String(shopItem.type || "").toLowerCase();
+  const patch = {
+    gachaFragments: fragments,
+    shopHistory: [
+      {
+        id: cryptoRandom(),
+        name: shopItem.name,
+        shop: fragmentName,
+        cost,
+        type: shopItem.type || "Recompensa",
+        createdAt: new Date().toISOString(),
+      },
+      ...(character.shopHistory || []),
+    ].slice(0, 30),
+  };
+  if (rewardType.includes("passe")) {
+    patch.premiumPassUnlocked = true;
+  } else if (rewardType.includes("título") || rewardType.includes("titulo")) {
+    patch.titles = [...(character.titles || []), { id: cryptoRandom(), name: shopItem.name, rarity: shopItem.rarity || "Comum", description: shopItem.description || "Obtido na loja de fragmentos." }];
+  } else if (rewardType.includes("token")) {
+    patch.tokens = [...(character.tokens || []), { id: cryptoRandom(), name: shopItem.name, rarity: shopItem.rarity || "Comum", description: shopItem.description || "Obtido na loja de fragmentos." }];
+  } else {
+    patch.inventory = [...(character.inventory || []), {
+      id: shopItem.id,
+      instanceId: cryptoRandom(),
+      name: shopItem.name,
+      rarity: shopItem.rarity || "Comum",
+      categoryId: "sazonal",
+      description: shopItem.description || "",
+      source: fragmentName,
+      equipped: false,
+    }];
+  }
+  await updateCharacter(state.user.uid, patch);
+  toast(`${shopItem.name} resgatado.`);
+}
+
+function minigameGrade(score, difficulty) {
+  const ratio = Number(score || 0) / Math.max(1, Number(difficulty.minScore || 1));
+  if (ratio >= 1.6) return { id: "s", label: "S", multiplier: 1.45, passed: true };
+  if (ratio >= 1.15) return { id: "a", label: "A", multiplier: 1.22, passed: true };
+  if (ratio >= 0.75) return { id: "b", label: "B", multiplier: 1, passed: true };
+  if (ratio >= 0.42) return { id: "c", label: "C", multiplier: 0.72, passed: false };
+  return { id: "d", label: "D", multiplier: 0.42, passed: false };
+}
+
+function minigameReward(difficultyId, score = 0, mode = "aim") {
+  const difficulty = difficultyById(difficultyId);
+  const grade = minigameGrade(score, difficulty);
+  const passed = grade.passed;
+  const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier));
+  const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : "Fragmentos de Mira";
+  const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier));
+  const rareDrop = passed && Math.random() < 0.012 * difficulty.multiplier * grade.multiplier;
+  const loot = [`${baseCoins} Millennium Coins`, `${fragments} ${fragmentName}`];
+  if (rareDrop) loot.push("Fragmento do Herói Quebrado");
+  return { passed, grade: grade.label, coins: baseCoins, fragmentName, fragments, loot, rareDrop };
+}
+
+function stopActiveAimGame() {
+  const session = state.activeAimSession;
+  if (!session) return;
+  session.finished = true;
+  (session.timers || []).forEach((timer) => window.clearTimeout(timer));
+  state.activeAimSession = null;
+}
+
+async function spendGachaEnergy(cost) {
+  const character = currentCharacter();
+  const refresh = refreshGachaEnergy(character);
+  const energy = Object.prototype.hasOwnProperty.call(refresh, "gachaEnergy") ? refresh.gachaEnergy : Number(character.gachaEnergy ?? GACHA_ENERGY_MAX);
+  if (energy < cost) {
+    toast("Energia insuficiente para este desafio.");
+    return null;
+  }
+  return { ...refresh, gachaEnergy: energy - cost, gachaEnergyUpdatedAt: new Date().toISOString() };
+}
+
+async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {}) {
+  const character = currentCharacter();
+  const difficulty = difficultyById(difficultyId);
+  const energyPatch = await spendGachaEnergy(difficulty.cost);
+  if (!energyPatch) return null;
+  const reward = minigameReward(difficultyId, score, mode);
+  const fragments = withFragments(character, reward.fragmentName, reward.fragments);
+  if (reward.rareDrop) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + 1;
+  await updateCharacter(state.user.uid, {
+    ...energyPatch,
+    millenniumCoins: Number(character.millenniumCoins || 0) + reward.coins,
+    gachaFragments: fragments,
+    minigameStats: {
+      ...(character.minigameStats || {}),
+      [mode]: {
+        bestScore: Math.max(Number(character.minigameStats?.[mode]?.bestScore || 0), score),
+        plays: Number(character.minigameStats?.[mode]?.plays || 0) + 1,
+        [`${difficulty.id}Best`]: Math.max(Number(character.minigameStats?.[mode]?.[`${difficulty.id}Best`] || 0), score),
+      },
+    },
+    minigameHistory: [
+      {
+        id: cryptoRandom(),
+        mode,
+        difficultyId: difficulty.id,
+        difficultyName: difficulty.name,
+        score,
+        grade: reward.grade,
+        coins: reward.coins,
+        fragments: reward.fragments,
+        fragmentName: reward.fragmentName,
+        rareDrop: reward.rareDrop,
+        createdAt: new Date().toISOString(),
+      },
+      ...(character.minigameHistory || []),
+    ].slice(0, 30),
+    ...extraPatch,
+  });
+  if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
+  toast(`${reward.passed ? "Desafio concluído" : "Falha parcial"} · Rank ${reward.grade}: ${reward.loot.join(" · ")}`);
+  return reward;
+}
+
+function startAimGame(difficultyId) {
+  const difficulty = difficultyById(difficultyId);
+  if (currentGachaEnergy() < difficulty.cost) {
+    toast("Energia insuficiente para a Prova da Mira.");
+    return;
+  }
+  stopActiveAimGame();
+  const seconds = 35;
+  let score = 0;
+  let remaining = seconds;
+  let streak = 0;
+  const session = { timers: [], finished: false };
+  state.activeAimSession = session;
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p>
+    <h2>Acerte os ecos antes que sumam</h2>
+    <div class="aim-hud"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-time>${seconds}s</span></div>
+    <div class="aim-arena" data-aim-arena></div>
+    <div class="hint">Alvo dourado pontua. Alvo branco vale mais. Alvo azul congela o tempo por alguns segundos.</div>
+    <button class="ghost-button" type="button" data-action="close-modal">Encerrar sem recompensa</button>
+  `;
+  $("#modal").hidden = false;
+  const arena = $("[data-aim-arena]");
+  const scoreEl = $("[data-aim-score]");
+  const comboEl = $("[data-aim-combo]");
+  const timeEl = $("[data-aim-time]");
+  const finish = async () => {
+    if (session.finished) return;
+    session.finished = true;
+    session.timers.forEach((timerId) => window.clearTimeout(timerId));
+    await applyMinigameReward("aim", difficulty.id, score);
+    state.activeAimSession = null;
+    closeModal();
+  };
+  const addTarget = () => {
+    if (!arena || session.finished) return;
+    const roll = Math.random();
+    const type = roll < 0.08 ? "freeze" : roll < 0.2 ? "rare" : "normal";
+    const target = document.createElement("button");
+    target.type = "button";
+    target.className = `aim-target ${type}`;
+    target.style.left = `${Math.random() * 82 + 4}%`;
+    target.style.top = `${Math.random() * 74 + 8}%`;
+    target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : "•";
+    target.addEventListener("pointerdown", () => {
+      streak += 1;
+      const streakBonus = Math.min(2.2, 1 + streak * 0.04);
+      if (type === "freeze") {
+        remaining = Math.min(seconds, remaining + 4);
+        score += Math.round(95 * difficulty.multiplier * streakBonus);
+      } else {
+        score += Math.round((type === "rare" ? 230 : 75) * difficulty.multiplier * streakBonus);
+      }
+      scoreEl.textContent = `${score} pontos`;
+      comboEl.textContent = `Combo ${streak}`;
+      timeEl.textContent = `${remaining}s`;
+      target.remove();
+    }, { once: true });
+    arena.appendChild(target);
+    const life = type === "rare" ? 760 : type === "freeze" ? 650 : 1150;
+    const removeTimer = window.setTimeout(() => {
+      if (target.isConnected) {
+        streak = 0;
+        comboEl.textContent = "Combo 0";
+        target.remove();
+      }
+    }, life);
+    session.timers.push(removeTimer);
+  };
+  const timer = window.setInterval(() => {
+    if (session.finished) return;
+    remaining -= 1;
+    timeEl.textContent = `${remaining}s`;
+    if (remaining <= 0) finish();
+  }, 1000);
+  const spawn = window.setInterval(addTarget, Math.max(230, 880 - difficulty.multiplier * 110));
+  session.timers.push(timer, spawn);
+}
+
+async function startPetHunt(form) {
+  const values = formValues(form);
+  const character = currentCharacter();
+  const difficulty = difficultyById(values.difficulty || state.minigameDifficulty);
+  const energyPatch = await spendGachaEnergy(difficulty.cost);
+  if (!energyPatch) return;
+  const pet = (character.gachaVault || []).find((item) => item.instanceId === values.petId && item.kind === "pet");
+  if (!pet || petBusy(pet)) {
+    toast("Escolha um pet livre para a Hunt.");
+    return;
+  }
+  const biome = (state.content.biomes || []).find((item) => item.id === values.biome) || state.content.biomes?.[0] || {};
+  const duration = Math.round((8 + difficulty.cost * 7) * 60000);
+  const risk = difficulty.risk * Math.max(0.18, 1.15 - rarityScore(pet.rarity) * 0.08 - Number(pet.stars || 1) * 0.035);
+  const activity = {
+    id: cryptoRandom(),
+    type: "Pet Hunt",
+    petId: pet.instanceId,
+    petName: pet.name,
+    difficultyId: difficulty.id,
+    difficultyName: difficulty.name,
+    biome: biome.name || "Campo desconhecido",
+    risk,
+    startedAt: new Date().toISOString(),
+    endsAt: new Date(Date.now() + duration).toISOString(),
+    loot: ["rastros", difficulty.id === "god-slayer" ? "chance secreta" : "materiais"],
+  };
+  const vault = (character.gachaVault || []).map((item) => item.instanceId === pet.instanceId ? { ...item, status: "Em Hunt", activityId: activity.id, equipped: false } : item);
+  await updateCharacter(state.user.uid, {
+    ...energyPatch,
+    gachaVault: vault,
+    activeActivities: [...(character.activeActivities || []), activity],
+  });
+  form.reset();
+  toast(`${pet.name} partiu para ${activity.biome}.`);
+}
+
+async function completeActivity(activityId, cancelled = false) {
+  const character = currentCharacter();
+  const activity = (character.activeActivities || []).find((item) => item.id === activityId);
+  if (!activity) return;
+  const ready = Date.now() >= (dateFromValue(activity.endsAt)?.getTime() || 0);
+  const difficulty = difficultyById(activity.difficultyId);
+  const pet = (character.gachaVault || []).find((item) => item.instanceId === activity.petId);
+  const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier);
+  const reward = minigameReward(activity.difficultyId, score, "hunt");
+  const danger = Number(activity.risk || difficulty.risk);
+  const deathRisk = cancelled ? danger * 0.08 : danger * (difficulty.id === "god-slayer" ? 0.34 : difficulty.id === "pesadelo" ? 0.18 : 0.08);
+  const injuryRisk = cancelled ? danger * 0.25 : danger;
+  const died = Math.random() < deathRisk && ["hard", "pesadelo", "god-slayer"].includes(difficulty.id);
+  const fell = !died && Math.random() < injuryRisk && difficulty.id !== "noob";
+  const status = died ? "Morto" : fell ? "Ferido" : "Livre";
+  const fragments = withFragments(character, reward.fragmentName, reward.fragments + (cancelled ? 0 : 2));
+  if (reward.rareDrop) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + 1;
+  const vault = (character.gachaVault || []).map((item) => item.instanceId === activity.petId ? { ...item, status, activityId: "", injuredAt: fell ? new Date().toISOString() : item.injuredAt || "" } : item);
+  await updateCharacter(state.user.uid, {
+    gachaVault: vault,
+    activeActivities: (character.activeActivities || []).filter((item) => item.id !== activityId),
+    millenniumCoins: Number(character.millenniumCoins || 0) + (cancelled ? Math.floor(reward.coins * 0.35) : reward.coins),
+    gachaFragments: fragments,
+  });
+  if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
+  toast(`${activity.petName} voltou${died ? " morto" : fell ? " ferido" : ""}: ${reward.loot.join(" · ")}`);
+}
+
+async function startTowerDefense(form) {
+  const values = formValues(form);
+  const character = currentCharacter();
+  const pet = (character.gachaVault || []).find((item) => item.instanceId === values.petId && item.kind === "pet");
+  if (!pet || petBusy(pet)) {
+    toast("Escolha um pet livre para a partida.");
+    return;
+  }
+  const map = (state.content.towerMaps || []).find((item) => item.id === values.mapId) || {};
+  const difficulty = difficultyById(values.difficulty || state.minigameDifficulty);
+  const td = pet.td || {};
+  const score = Math.round((Number(td.damage || 10) * 80 + Number(td.range || 80) * 8) * difficulty.multiplier * (1 + (Number(pet.stars || 1) - 1) * 0.22));
+  const reward = await applyMinigameReward("tower", difficulty.id, score);
+  form.reset();
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p>
+    <h2>${esc(pet.name)} defendeu ${esc(map.name || "o mapa")}</h2>
+    <div class="tower-report">
+      <div>${renderStat("Score", score)}</div>
+      <div>${renderStat("Ondas", Math.max(3, Math.round(difficulty.multiplier * 3)))}</div>
+      <div>${renderStat("Rotas", map.lanes || 3)}</div>
+      <div>${renderStat("Rank", reward?.grade || "-")}</div>
+    </div>
+    <p>${esc(map.description || "A defesa foi calculada pelo poder tático do pet enquanto o modo jogável é preparado.")}</p>
+    <p class="hint">${esc((reward?.loot || []).join(" · "))}</p>
+  `;
+  $("#modal").hidden = false;
+  toast(`${pet.name} defendeu ${map.name || "o mapa"} com ${score} pontos.`);
+}
+
 async function requestPremiumPass() {
   const character = currentCharacter();
   if (character.premiumPassUnlocked) {
@@ -4136,6 +5262,37 @@ async function requestPremiumPass() {
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   toast("Pedido de passe premium enviado ao Oráculo.");
+}
+
+async function requestMarketItem(itemId, currency = "PO") {
+  const pools = [
+    ...(state.content.marketListings || []),
+    ...(state.content.auctionListings || []),
+    ...(state.content.craftingRecipes || []),
+    ...(state.content.gachaItems || []),
+  ];
+  const item = pools.find((entry) => entry.id === itemId);
+  if (!item) return;
+  const alreadyPending = pendingProgressRequests().some((request) => request.type === "market" && request.marketId === itemId);
+  if (alreadyPending) {
+    toast("Essa solicitação de mercado já está aguardando o Oráculo.");
+    return;
+  }
+  await addDoc("progressRequests", {
+    uid: state.user.uid,
+    playerName: state.profile?.displayName || state.user.email,
+    characterName: currentCharacter().characterName || "",
+    type: "market",
+    status: "pendente",
+    marketId: item.id,
+    title: `Mercado - ${item.name}`,
+    description: `Pedido de ${item.name}. Moeda sugerida: ${currency}. ${item.description || item.result || ""}`,
+    rarity: item.rarity || item.category || "Mercado",
+    reward: item.name,
+    xp: 0,
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  toast("Pedido enviado ao Oráculo.");
 }
 
 async function startMission(missionId) {
@@ -4780,6 +5937,13 @@ async function saveAdminUser(form) {
   await updateCharacter(uid, {
     displayName: values.displayName,
     gold: Number(values.gold || 0),
+    millenniumCoins: Number(values.millenniumCoins || 0),
+    gachaEnergy: Math.max(0, Math.min(GACHA_ENERGY_MAX, Number(values.gachaEnergy || 0))),
+    gachaEnergyUpdatedAt: new Date().toISOString(),
+    gachaFragments: {
+      ...(getCharacterFor(uid).gachaFragments || {}),
+      "Fragmentos do Despertar": Number(values.awakeningFragments || 0),
+    },
     affinityAttempts: Number(values.affinityAttempts || 0),
     pityCounter: Number(values.pityCounter || 0),
     prestige: Number(values.prestige || 0),
@@ -4947,6 +6111,25 @@ async function sendReward(form) {
     rewardName = `${amount} PO`;
     pendingRewards.push(rewardName);
   }
+  if (values.type === "coins") {
+    const amount = Number(values.amount || 0);
+    patch.millenniumCoins = Number(character.millenniumCoins || 0) + amount;
+    rewardName = `${amount} Millennium Coins`;
+    pendingRewards.push(rewardName);
+  }
+  if (values.type === "energy") {
+    const amount = Number(values.amount || 0);
+    patch.gachaEnergy = Math.max(0, Math.min(GACHA_ENERGY_MAX, currentGachaEnergy(character) + amount));
+    patch.gachaEnergyUpdatedAt = new Date().toISOString();
+    rewardName = `${amount} energia`;
+    pendingRewards.push(rewardName);
+  }
+  if (values.type === "fragments") {
+    const amount = Number(values.amount || 0);
+    patch.gachaFragments = withFragments(character, "Fragmentos do Despertar", amount);
+    rewardName = `${amount} Fragmentos do Despertar`;
+    pendingRewards.push(rewardName);
+  }
   if (values.type === "attempts") {
     const amount = Number(values.amount || 0);
     patch.affinityAttempts = Number(character.affinityAttempts || 0) + amount;
@@ -4960,6 +6143,16 @@ async function sendReward(form) {
     rewardName = item.name;
     rewardType = "item";
     pendingRewards.push(`Item: ${item.name}`);
+  }
+  if (values.type === "gachaPet" || values.type === "gachaItem") {
+    const pool = values.type === "gachaPet" ? (state.content.gachaPets || []) : (state.content.gachaItems || []);
+    const source = pool.find((item) => item.id === values.gachaId);
+    if (!source) return;
+    const instance = buildGachaInstance(source, values.type === "gachaPet" ? "pets" : "items");
+    patch.gachaVault = [...(character.gachaVault || []), { ...instance, source: `Prêmio ${ORACLE_LABEL}` }];
+    rewardName = instance.name;
+    rewardType = values.type === "gachaPet" ? "pet de cofre" : "item de cofre";
+    pendingRewards.push(`${values.type === "gachaPet" ? "Pet" : "Item"} de cofre: ${instance.name}`);
   }
   if (values.type === "title") {
     rewardName = values.customName || "Título sem nome";
@@ -5240,6 +6433,7 @@ function openReportModal() {
 }
 
 function closeModal() {
+  stopActiveAimGame();
   $("#modal").hidden = true;
   $("#modalContent").innerHTML = "";
 }
@@ -5258,6 +6452,7 @@ function wireEvents() {
     try {
       if (button.dataset.nav) {
         state.view = button.dataset.nav;
+        if (button.closest("#modal")) closeModal();
         render();
       }
       if (action === "register") await handleRegister();
@@ -5273,6 +6468,7 @@ function wireEvents() {
         showAuth();
       }
       if (action === "open-report") openReportModal();
+      if (action === "open-more-nav") openMoreNav();
       if (action === "close-modal") closeModal();
       if (action === "add-emoji") {
         const textarea = button.closest("form")?.querySelector("textarea[name='text']");
@@ -5284,6 +6480,28 @@ function wireEvents() {
       if (action === "toggle-profile-public") await toggleProfilePublic();
       if (action === "roll-affinity") await rollAffinity(Number(button.dataset.qty || 1));
       if (action === "choose-affinity") await chooseAffinity(button.dataset.affinityId);
+      if (action === "gacha-tab") {
+        state.gachaTab = button.dataset.tab;
+        render();
+      }
+      if (action === "vault-tab") {
+        state.vaultTab = button.dataset.tab;
+        render();
+      }
+      if (action === "invoke-gacha") await invokeGacha(button.dataset.kind, Number(button.dataset.qty || 1));
+      if (action === "toggle-vault-equip") await toggleVaultEquip(button.dataset.instanceId);
+      if (action === "fuse-vault-item") await fuseVaultItem(button.dataset.instanceId);
+      if (action === "shard-vault-item") await shardVaultItem(button.dataset.instanceId);
+      if (action === "send-vault-main") await sendVaultMain(button.dataset.instanceId);
+      if (action === "recover-pet") await recoverPet(button.dataset.instanceId);
+      if (action === "redeem-shard-shop") await redeemShardShop(button.dataset.shopId);
+      if (action === "minigame-difficulty") {
+        state.minigameDifficulty = button.dataset.difficulty;
+        render();
+      }
+      if (action === "start-aim-game") startAimGame(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "collect-activity") await completeActivity(button.dataset.activityId, false);
+      if (action === "cancel-activity") await completeActivity(button.dataset.activityId, true);
       if (action === "request-premium-pass") await requestPremiumPass();
       if (action === "equip-title") await equipTitle(button.dataset.titleId);
       if (action === "claim-gift") await claimPendingGift();
@@ -5329,6 +6547,10 @@ function wireEvents() {
         state.marketTab = button.dataset.tab;
         render();
       }
+      if (action === "ranking-tab") {
+        state.rankingTab = button.dataset.tab;
+        render();
+      }
       if (action === "request-filter") {
         state.adminRequestFilter = button.dataset.filter;
         render();
@@ -5340,6 +6562,7 @@ function wireEvents() {
       if (action === "edit-content") openContentEdit(button.dataset.collection, button.dataset.id);
       if (action === "copy-profile-card") await copyProfileCard();
       if (action === "open-help-text") openHelpText(button.dataset.title, button.dataset.text);
+      if (action === "request-market-item") await requestMarketItem(button.dataset.marketId, button.dataset.marketCurrency);
       if (action === "compare-item") openItemCompare(button.dataset.itemInstance);
       if (action === "codex-tab") {
         state.codexTab = button.dataset.tab;
@@ -5408,6 +6631,8 @@ function wireEvents() {
       if (type === "global-chat") await sendGlobalChat(form);
       if (type === "private-chat") await sendPrivateChat(form);
       if (type === "diary-entry") await saveDiaryEntry(form);
+      if (type === "pet-hunt") await startPetHunt(form);
+      if (type === "tower-defense") await startTowerDefense(form);
       if (type === "create-guild") await createGuild(form);
       if (type === "guild-settings") await saveGuildSettings(form);
       if (type === "guild-invite") await sendGuildInvite(form);
