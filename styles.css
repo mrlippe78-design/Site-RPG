@@ -316,14 +316,77 @@
   }
 
   .mobile-bottom-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
     min-height: 74px;
     padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
     background: rgba(12, 12, 12, 0.98);
+    overflow: hidden;
   }
 
   .mobile-bottom-nav button {
-    flex: 0 0 76px;
-    border-radius: 16px;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    flex: none !important;
+    border-radius: 12px;
+  }
+
+  .mobile-bottom-nav small {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .auth-art {
+    min-height: 196px;
+    padding: 18px;
+  }
+
+  .auth-art h1 {
+    margin: 0 0 12px;
+    font-size: 42px;
+    line-height: 1;
+  }
+
+  .auth-art p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .auth-card {
+    padding: 16px 18px;
+  }
+
+  .auth-card .form-stack {
+    gap: 8px;
+  }
+
+  .auth-card .split-actions,
+  .auth-card .demo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .auth-card .split-actions button,
+  .auth-card .demo-actions button {
+    min-height: 44px;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .auth-card .auth-note {
+    margin-top: 10px;
+    min-height: 0;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .auth-card .demo-actions {
+    margin-top: 10px;
   }
 
   .modal {
@@ -351,6 +414,607 @@
   .pass-tier {
     flex: 0 0 82vw;
     scroll-snap-align: start;
+  }
+}
+
+/* Mega update: cohesive app shell, social profiles, economy and compact seasonal progression. */
+body:has(#authScreen:not([hidden])) {
+  overflow: hidden;
+}
+
+.auth-screen {
+  box-sizing: border-box;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.auth-art {
+  min-height: 0;
+  height: 100%;
+}
+
+.auth-art h1 {
+  font-size: 100px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.auth-card {
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+}
+
+.music-control {
+  position: fixed;
+  z-index: 20;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-control .music-float {
+  position: static;
+}
+
+.music-volume {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 180ms ease, opacity 180ms ease;
+}
+
+.music-control:hover .music-volume,
+.music-control:focus-within .music-volume {
+  width: 128px;
+  opacity: 1;
+}
+
+.music-volume span {
+  display: none;
+}
+
+.music-volume input {
+  width: 100%;
+  accent-color: var(--gold);
+}
+
+.profile-card-social {
+  position: relative;
+  background: linear-gradient(135deg, rgba(27, 24, 22, 0.98), rgba(15, 16, 20, 0.94));
+}
+
+.profile-card-social .profile-grid {
+  align-items: center;
+}
+
+.profile-online-dot {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #171513;
+  border-radius: 50%;
+  background: #766f65;
+}
+
+.profile-online-dot.online {
+  background: #47bd8a;
+  box-shadow: 0 0 14px rgba(71, 189, 138, 0.58);
+}
+
+.profile-social-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 14px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.profile-social-line span::before {
+  content: "•";
+  margin-right: 6px;
+  color: var(--gold);
+}
+
+.profile-preview-card {
+  overflow: hidden;
+  border: 1px solid rgba(216, 180, 93, 0.3);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(18, 17, 17, 0.88);
+}
+
+.profile-preview-card .profile-banner {
+  width: calc(100% + 36px);
+  height: 170px;
+  margin: -18px -18px 18px;
+  object-fit: cover;
+}
+
+.gacha-market-grid,
+.gacha-market-card,
+.guild-market-card {
+  display: grid;
+  gap: 14px;
+}
+
+.gacha-market-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gacha-market-card,
+.guild-market-card {
+  min-height: 220px;
+  align-content: start;
+  padding: 20px;
+  border: 1px solid rgba(216, 180, 93, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(54, 43, 27, 0.32), rgba(20, 19, 18, 0.88));
+}
+
+.gacha-market-card > span,
+.guild-market-card > span {
+  color: var(--gold-2);
+  font-size: 12px;
+  font-family: var(--display);
+  text-transform: uppercase;
+}
+
+.pass-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 280px);
+  grid-template-columns: none;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 6px 2px 12px;
+  scroll-snap-type: x mandatory;
+  scrollbar-color: rgba(216, 180, 93, 0.6) transparent;
+}
+
+.pass-tier {
+  min-height: 178px;
+  scroll-snap-align: start;
+}
+
+.pass-tier-top {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.pass-tier-level {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(216, 180, 93, 0.54);
+  border-radius: 13px;
+  color: var(--gold-2);
+  font-family: var(--display);
+  font-size: 20px;
+}
+
+.pass-tier p {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.pass-claim-button {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 8px;
+  border: 1px solid rgba(216, 180, 93, 0.5);
+  border-radius: 8px;
+  color: var(--gold-2);
+  background: rgba(216, 180, 93, 0.09);
+  font-family: var(--display);
+  font-size: 12px;
+}
+
+.pass-claim-button:disabled {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: not-allowed;
+}
+
+.bazaar-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(260px, 0.7fr) minmax(0, 1.6fr);
+  gap: 14px;
+}
+
+.bazaar-intro,
+.bazaar-form,
+.bazaar-trade-panel {
+  align-self: start;
+  padding: 18px;
+  border: 1px solid rgba(216, 180, 93, 0.25);
+  border-radius: 16px;
+  background: rgba(20, 19, 18, 0.64);
+}
+
+.bazaar-intro span,
+.bazaar-listing > span,
+.trade-row span {
+  color: var(--gold-2);
+  font-family: var(--display);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.bazaar-intro h3 {
+  margin: 8px 0;
+}
+
+.bazaar-listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.bazaar-listing {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 208px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.035), rgba(12, 12, 13, 0.54));
+}
+
+.bazaar-listing h3,
+.bazaar-listing p {
+  margin: 0;
+}
+
+.trade-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.trade-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.trade-row strong,
+.trade-row p {
+  display: block;
+  margin: 3px 0 0;
+}
+
+.trade-row p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ranking-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+
+.range-chip {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.range-chip.active {
+  border-color: rgba(216, 180, 93, 0.7);
+  color: #1c160e;
+  background: var(--gold);
+}
+
+.economy-hero {
+  background: linear-gradient(135deg, rgba(82, 62, 23, 0.35), rgba(18, 18, 20, 0.94));
+}
+
+.economy-player-list,
+.admin-vault-list {
+  display: grid;
+  gap: 8px;
+}
+
+.economy-player-row,
+.admin-vault-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(140px, auto);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.economy-player-row:hover {
+  border-color: rgba(216, 180, 93, 0.54);
+  background: rgba(216, 180, 93, 0.08);
+}
+
+.economy-player-row strong,
+.admin-vault-row strong {
+  display: block;
+}
+
+.economy-player-row small,
+.admin-vault-row span,
+.admin-vault-row p {
+  display: block;
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.economy-player-row > div:last-child {
+  text-align: right;
+}
+
+.admin-vault-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.forge-visual-panel {
+  background: linear-gradient(160deg, rgba(34, 29, 24, 0.98), rgba(18, 18, 19, 0.96));
+}
+
+.forge-fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.forge-fieldset legend {
+  padding: 0 6px;
+  color: var(--gold-2);
+  font-family: var(--display);
+}
+
+.forge-bonus-grid,
+.forge-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.forge-choice-grid label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1120px) {
+  body:has(#authScreen:not([hidden])) {
+    overflow: auto;
+  }
+
+  .auth-screen {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .auth-art {
+    min-height: 340px;
+    height: auto;
+  }
+
+  .auth-art h1 {
+    font-size: 64px;
+  }
+}
+
+@media (max-width: 760px) {
+  .music-control {
+    top: 10px;
+    right: 10px;
+  }
+
+  .music-control:focus-within .music-volume,
+  .music-control:hover .music-volume {
+    width: 86px;
+  }
+
+  .auth-screen {
+    align-content: start;
+  }
+
+  .auth-art {
+    min-height: 196px;
+    padding: 18px;
+  }
+
+  .auth-art h1 {
+    margin: 0 0 12px;
+    font-size: 42px;
+    line-height: 1;
+    word-break: break-word;
+  }
+
+  .auth-art p {
+    max-width: calc(100% - 8px);
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .auth-card {
+    max-height: none;
+    overflow: visible;
+    padding: 16px 18px;
+  }
+
+  .auth-card .form-stack {
+    gap: 8px;
+  }
+
+  .auth-card .split-actions,
+  .auth-card .demo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auth-card .split-actions {
+    gap: 8px;
+  }
+
+  .auth-card .split-actions button,
+  .auth-card .demo-actions button {
+    min-height: 44px;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .auth-card .auth-note {
+    margin-top: 10px;
+    min-height: 0;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .auth-card .demo-actions {
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .mobile-bottom-nav button {
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    flex: none;
+    border-radius: 12px;
+  }
+
+  .mobile-bottom-nav small {
+    font-size: 9px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav span {
+    font-size: 16px;
+  }
+
+  .content {
+    padding-bottom: 88px;
+  }
+
+  .profile-card-social .profile-grid {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .profile-card-social .avatar-frame,
+  .profile-card-social .avatar {
+    width: 78px;
+    height: 78px;
+  }
+
+  .profile-card-social .panel-heading {
+    align-items: flex-start;
+  }
+
+  .profile-card-social .panel-heading .action-row {
+    flex-wrap: wrap;
+  }
+
+  .profile-card-social .action-row .ghost-button {
+    min-height: 34px;
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .profile-mini-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gacha-market-grid,
+  .forge-bonus-grid,
+  .forge-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gacha-market-card,
+  .guild-market-card {
+    min-height: 0;
+  }
+
+  .bazaar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-row {
+    display: grid;
+  }
+
+  .pass-track {
+    grid-auto-columns: minmax(242px, 76vw);
+  }
+
+  .pass-tier {
+    min-height: 174px;
+  }
+
+  .ranking-range-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .range-chip {
+    flex: 0 0 auto;
+  }
+
+  .economy-player-row,
+  .admin-vault-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .economy-player-row > div:last-child {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .admin-vault-row .action-row {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
   }
 }
 
@@ -760,14 +1424,77 @@
   }
 
   .mobile-bottom-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 4px;
     min-height: 74px;
     padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
     background: rgba(12, 12, 12, 0.98);
+    overflow: hidden !important;
   }
 
   .mobile-bottom-nav button {
-    flex: 0 0 76px;
-    border-radius: 16px;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    flex: none !important;
+    border-radius: 12px;
+  }
+
+  .mobile-bottom-nav small {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .auth-art {
+    min-height: 196px;
+    padding: 18px;
+  }
+
+  .auth-art h1 {
+    margin: 0 0 12px;
+    font-size: 42px;
+    line-height: 1;
+  }
+
+  .auth-art p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .auth-card {
+    padding: 16px 18px;
+  }
+
+  .auth-card .form-stack {
+    gap: 8px;
+  }
+
+  .auth-card .split-actions,
+  .auth-card .demo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .auth-card .split-actions button,
+  .auth-card .demo-actions button {
+    min-height: 44px;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .auth-card .auth-note {
+    margin-top: 10px;
+    min-height: 0;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .auth-card .demo-actions {
+    margin-top: 10px;
   }
 
   .topbar h1 {
@@ -3413,14 +4140,77 @@ body.season-theme-void::after {
   }
 
   .mobile-bottom-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 4px;
     min-height: 74px;
     padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
     background: rgba(12, 12, 12, 0.98);
+    overflow: hidden !important;
   }
 
   .mobile-bottom-nav button {
-    flex: 0 0 76px;
-    border-radius: 16px;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    flex: none !important;
+    border-radius: 12px;
+  }
+
+  .mobile-bottom-nav small {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .auth-art {
+    min-height: 196px;
+    padding: 18px;
+  }
+
+  .auth-art h1 {
+    margin: 0 0 12px;
+    font-size: 42px;
+    line-height: 1;
+  }
+
+  .auth-art p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .auth-card {
+    padding: 16px 18px;
+  }
+
+  .auth-card .form-stack {
+    gap: 8px;
+  }
+
+  .auth-card .split-actions,
+  .auth-card .demo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .auth-card .split-actions button,
+  .auth-card .demo-actions button {
+    min-height: 44px;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .auth-card .auth-note {
+    margin-top: 10px;
+    min-height: 0;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .auth-card .demo-actions {
+    margin-top: 10px;
   }
 
   .modal {

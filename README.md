@@ -20,14 +20,14 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - Minigames 1.1: Prova da Mira com combo, alvo raro, alvo de congelar tempo e limpeza segura ao fechar; recompensas agora mostram rank de desempenho e historico recente.
 - Pet Hunt mostra risco, duracao e loot esperado; pets podem voltar livres, feridos ou mortos em dificuldades altas, com recuperacao por Millennium Coins no cofre.
 - Tower Defense ganhou relatorio visual de defesa com mapa, ondas, rotas, score e recompensa enquanto o modo jogavel completo fica preparado para evolucao futura.
-- Mercado 2.0 separa Destaques, Millennium, Fragmentos, Passe, Leilao, Crafting e Cofre. Trocas de fragmento funcionam direto e compras comuns viram solicitacao ao Oraculo.
-- Ranking virou central de ranks: prestigio, nivel, PO, Millennium Coins, Mira, Pet Hunt, Tower, pets, itens, guildas e visualizacoes de perfil.
+- Mercado 3.0 separa Destaques, Bazar, Passe, Cosmeticos, Fragmentos, Invocacao, Guilda, Leilao, Crafting e Cofre. Compras oficiais com PO, trocas de fragmento, resgates do passe e negociacoes entre players funcionam sem fila do Oraculo.
+- Ranking virou central de ranks com filtros diario, semanal, temporada e todos os tempos: prestigio, nivel, PO, Millennium Coins, afinidades, missoes, giros, minigames, pets, itens, guildas, perfil, passe, colecoes e raridades altas.
 - Oraculo agora edita e envia Millennium Coins, energia diaria, Fragmentos do Despertar e pets/itens direto para o cofre dimensional.
 - Musica ambiente procedural ganhou arpejos leves para ficar mais medieval e menos repetitiva, sem depender de YouTube ou MP3 externo.
 - Área Player separada da área do Oráculo.
 - Player tem perfil público/privado, ficha, roleta de afinidade, inventário, grimório, chat, guildas, mercado, missões, diário, Codex e reports.
 - Oráculo tem painel de controle, inspeção/edição de fichas, recompensas, títulos, tokens, pets, PO, essências, itens, afinidades, punições e modo manutenção.
-- Forja do Oráculo cria e edita raças, classes, categorias de afinidade, afinidades, itens, missões, biomas, reinos, regiões, NPCs, regras, FAQ, tutorial, bestiário, mercado, leilões, crafting, conquistas, passe e reputações.
+- Forja do Oráculo cria e edita raças, classes, categorias de afinidade, afinidades, itens, missões, biomas, reinos, regiões, NPCs, regras, FAQ, tutorial, bestiário, mercado, leilões, crafting, conquistas, passe e reputações. Pets, itens de gacha, lojas de fragmentos, banners/rate-up e mapas Tower usam formulários visuais em vez de JSON.
 - Chat global, mensagens diretas e chat de guilda com denúncia por mensagem, emojis, jogadores online e exclusão automática para manter no máximo 60 mensagens por sala.
 - Presença fica offline ao sair e também desconecta player inativo depois de cerca de 10 minutos.
 - Missões, treinos, poderes, técnicas e passe premium passam pela fila de validação do Oráculo.
@@ -39,7 +39,7 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - Cofre invocado com pets/itens, estrelas até 7, variante Radiante, equipar, fundir duplicatas, desfazer em fragmentos e enviar para inventário/perfil sem validação manual.
 - Minigames 1.0 com energia diária, dificuldades Noob até God Slayer, Prova da Mira jogável, Pet Hunt com atividades simultâneas por pet e Tower Defense estratégico com mapas temáticos originais.
 - Mercado inclui vitrine, leilão, crafting, cofre e Passe da Temporada do Despertar com trilha Free e Premium até o nível 50.
-- Passe agora tem aba própria no menu, hero da Temporada do Despertar, missões do passe e trilha Free/Premium.
+- Passe agora tem aba própria no menu, hero da Temporada do Despertar, missões e trilha horizontal Free/Premium até o nivel 50. Recompensas desbloqueadas sao coletadas diretamente pelo player.
 - Tema visual de temporada 2.0: `Despertar dos Heróis` já vem com runas/brilho e a estrutura aceita Vazio, Sangue, Geada, Brasa e Natureza.
 - Login foi redesenhado como tela de inicialização da Interface de Millennium, com responsividade melhor para celular.
 - Favicon próprio do Millennium em `favicon.svg`.
@@ -50,7 +50,7 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - Guildas custam 1.000 PO, têm limite de 10 membros, lista pública, pedidos de entrada, brasão, descrição, chat, mural, partys de até 4 players e missões próprias.
 - Codex do player mostra afinidades, raridades, quantidade de donos em tempo real, raças, classes, biomas, reinos, regiões, NPCs, procurados, bestiário e facções.
 - Guia inclui tutorial inicial, livro de regras por capítulos, FAQ, termo de acordo e busca global.
-- Mobile tem menu inferior rolável em formato app; desktop tem menu lateral com rolagem.
+- Mobile tem HUD fixo com cinco atalhos e Mais, sem cortar a largura; desktop tem menu lateral com rolagem.
 
 ## Coleções Firestore usadas
 

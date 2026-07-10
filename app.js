@@ -236,6 +236,24 @@ const DEFAULT_CONTENT = {
     { id: "sociedade-das-laminas", name: "Sociedade das Lâminas", theme: "Distrito espiritual", lanes: 5, difficulty: "Pesadelo", imageUrl: "", description: "Pontes brancas, portões antigos e inimigos com resistência espiritual elevada." },
     { id: "reino-do-pecado-partido", name: "Reino do Pecado Partido", theme: "Castelo amaldiçoado", lanes: 3, difficulty: "God Slayer", imageUrl: "", description: "Um castelo vertical onde toda vitória cobra alguma coisa." },
   ],
+  gachaBanners: [
+    {
+      id: "despertar-companheiros",
+      name: "Chamado dos Companheiros",
+      type: "pets",
+      enabled: true,
+      featuredIds: "sol-de-batalha,capitao-do-ceu-vermelho,ceifador-da-lua-branca,principe-do-trovao-negro,santo-da-promessa,vazio-que-ri",
+      description: "Banner inaugural da Temporada do Despertar. Os ecos escolhidos recebem rate-up enquanto a interface está aberta.",
+    },
+    {
+      id: "despertar-reliquias",
+      name: "Relíquias da Primeira Janela",
+      type: "items",
+      enabled: true,
+      featuredIds: "relogio-quebrado,chave-do-mundo-invertido,olho-do-sistema,fragmento-do-heroi-quebrado,contrato-da-primeira-luz",
+      description: "Relíquias que surgiram no instante em que Millennium despertou.",
+    },
+  ],
   missionPool: [
     { id: "patrulha-fronteira", title: "Patrulha da Fronteira", description: "Concluir uma cena de vigília, escolta ou reconhecimento.", rarity: "Comum", reward: "30 PO" },
     { id: "treino-focado", title: "Treino Focado", description: "Registrar um treino com objetivo claro para o personagem.", rarity: "Comum", reward: "1 essência extra" },
@@ -292,10 +310,13 @@ const DEFAULT_CONTENT = {
     { id: "sentinela-de-vidro", name: "Sentinela de Vidro", rarity: "Raro", region: "Deserto de Vidro", description: "Construto antigo que reflete magia e protege ruínas vitrificadas." },
   ],
   marketListings: [
-    { id: "kit-aventureiro", name: "Kit Aventureiro", rarity: "Comum", price: 75, description: "Pacote base de consumíveis e ferramentas. Compra depende de aprovação do Oráculo." },
+    { id: "kit-aventureiro", name: "Kit Aventureiro", rarity: "Comum", price: 75, description: "Pacote base de consumíveis e ferramentas. Compra imediata com PO." },
   ],
+  playerListings: [],
+  marketTrades: [],
+  auctionBids: [],
   auctionListings: [
-    { id: "lamina-celeste", name: "Lâmina Celeste", rarity: "Épico", minBid: 500, endsAt: "Domingo 22:00", description: "Leilão semanal controlado pelo Oráculo." },
+    { id: "lamina-celeste", name: "Lâmina Celeste", rarity: "Épico", minBid: 500, endsAt: "2026-07-12T22:00:00-03:00", description: "Leilão semanal da Interface. O maior lance pode coletar a relíquia após o encerramento." },
   ],
   craftingRecipes: [
     { id: "amuleto-guarda", name: "Amuleto de Guarda", rarity: "Incomum", materials: "Cristal menor + tecido ritual", result: "Acessório defensivo aprovado pelo Oráculo." },
@@ -320,7 +341,7 @@ const DEFAULT_CONTENT = {
   ],
 };
 
-const CONTENT_COLLECTIONS = Object.keys(DEFAULT_CONTENT).filter((key) => key !== "settings");
+const CONTENT_COLLECTIONS = Object.keys(DEFAULT_CONTENT).filter((key) => key !== "settings" && key !== "marketTrades");
 
 function defaultContentState() {
   return Object.fromEntries(CONTENT_COLLECTIONS.map((collection) => [collection, [...DEFAULT_CONTENT[collection]]]));
@@ -353,6 +374,7 @@ const NAVS = {
     { id: "admin-users", label: "Usuários", icon: "◈" },
     { id: "admin-content", label: "Forja", icon: "✚" },
     { id: "admin-rewards", label: "Prêmios", icon: "✦" },
+    { id: "admin-economy", label: "Economia", icon: "◈" },
     { id: "admin-mail", label: "Correio", icon: "@" },
     { id: "admin-requests", label: "Validações", icon: "✓" },
     { id: "admin-ops", label: "Operações", icon: "◆" },
@@ -390,6 +412,7 @@ const VIEW_TITLES = {
   "admin-users": "Usuários e fichas",
   "admin-content": "Forja do Oráculo",
   "admin-rewards": "Enviar prêmios",
+  "admin-economy": "Economia, cofre e minigames",
   "admin-mail": "Correio místico",
   "admin-requests": "Validações e nerf",
   "admin-ops": "Operações e auditoria",
@@ -420,6 +443,7 @@ const state = {
   helpTab: "tutorial",
   marketTab: "market",
   rankingTab: "prestige",
+  rankingRange: "season",
   gachaTab: "pets",
   vaultTab: "all",
   minigameTab: "hub",
@@ -434,6 +458,7 @@ const state = {
   affinityChoices: [],
   rolling: false,
   musicOn: false,
+  musicVolume: 0.16,
   musicNodes: null,
   settings: { ...DEFAULT_CONTENT.settings },
   content: defaultContentState(),
@@ -454,6 +479,7 @@ const state = {
   reports: [],
   progressRequests: [],
   profileViews: [],
+  marketTrades: [],
   presenceTimer: null,
   idleTimer: null,
   lastActivityAt: Date.now(),
@@ -857,6 +883,13 @@ function dateFromValue(value) {
   return null;
 }
 
+function dateTimeLocalValue(value) {
+  const date = dateFromValue(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
 function isUserOnline(user) {
   if (!user?.online) return false;
   const lastSeen = dateFromValue(user.lastSeen);
@@ -974,6 +1007,19 @@ function updateMusicButton() {
   button.textContent = state.musicOn ? "♪" : "♫";
   button.title = state.musicOn ? "Desligar música ambiente" : "Ligar música ambiente";
   button.setAttribute("aria-label", button.title);
+  button.dataset.state = state.musicOn ? "ligada" : "desligada";
+  const volume = $("#musicVolume");
+  if (volume) volume.value = String(Math.round(state.musicVolume * 100));
+}
+
+function setAmbientVolume(value) {
+  const volume = Math.max(0, Math.min(1, Number(value) / 100));
+  state.musicVolume = volume;
+  if (state.musicNodes?.master && state.musicNodes?.ctx) {
+    state.musicNodes.master.gain.setTargetAtTime(Math.max(0.0001, volume), state.musicNodes.ctx.currentTime, 0.06);
+  }
+  localStorage.setItem("millenniumMusicVolume", String(volume));
+  updateMusicButton();
 }
 
 function ambientContext() {
@@ -1017,7 +1063,7 @@ async function startAmbientMusic() {
   lfo.connect(lfoGain);
   lfoGain.connect(filter.frequency);
   filter.connect(master);
-  master.gain.value = 0.16;
+  master.gain.value = Math.max(0.0001, state.musicVolume);
   master.connect(ctx.destination);
   lfo.start();
   const melody = [220, 246.94, 261.63, 329.63, 392, 329.63, 261.63, 246.94];
@@ -1159,6 +1205,31 @@ function pickRotating(items, count, seed) {
 function activeGachaBanner(type = "pets") {
   const pool = gachaPool(type);
   const hour = Math.floor(Date.now() / 3600000);
+  const configured = (state.content.gachaBanners || []).find((banner) => {
+    if (!banner.enabled || banner.type !== type) return false;
+    const startsAt = dateFromValue(banner.startsAt)?.getTime() || 0;
+    const endsAt = dateFromValue(banner.endsAt)?.getTime() || Number.MAX_SAFE_INTEGER;
+    return Date.now() >= startsAt && Date.now() <= endsAt;
+  });
+  if (configured) {
+    const featuredIds = Array.isArray(configured.featuredIds)
+      ? configured.featuredIds
+      : String(configured.featuredIds || "").split(",").map((id) => id.trim()).filter(Boolean);
+    const featured = featuredIds
+      .map((id) => pool.find((item) => item.id === id))
+      .filter(Boolean);
+    if (featured.length) {
+      return {
+        type,
+        hour,
+        name: configured.name || "Banner do Oráculo",
+        description: configured.description || "Rate-up configurado pelo Oráculo.",
+        featured,
+        endsAt: dateFromValue(configured.endsAt) || new Date((hour + 1) * 3600000),
+        configured: true,
+      };
+    }
+  }
   const byRarity = (rarity) => pool.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
   const featured = [
     ...pickRotating(byRarity("Mítico"), 3, `${type}-mythic-${hour}`),
@@ -1169,6 +1240,8 @@ function activeGachaBanner(type = "pets") {
   return {
     type,
     hour,
+    name: "Rate-up rotativo",
+    description: "Destaques automáticos alternam a cada hora.",
     featured,
     endsAt: new Date((hour + 1) * 3600000),
   };
@@ -1746,6 +1819,13 @@ function subscribeCore() {
     render();
   }, (q) => q.limit(20));
 
+  subscribeCollection("marketTrades", (trades) => {
+    state.marketTrades = trades.sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
+    render();
+  }, (q) => state.role === "admin"
+    ? q.orderBy("createdAt", "desc").limit(160)
+    : q.where("participants", "array-contains", state.user.uid).limit(120));
+
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
   startPresence();
@@ -2003,16 +2083,12 @@ function renderQuickStatus(character) {
 
 function renderMobileBottomNav(nav) {
   const preferred = state.role === "admin"
-    ? ["admin-home", "admin-users", "admin-requests", "admin-reports"]
-    : ["player-home", "profile", "character", "chat"];
+    ? ["admin-home", "admin-users", "admin-economy", "admin-requests", "admin-reports"]
+    : ["player-home", "profile", "gacha", "chat", "missions"];
   const quick = preferred.map((id) => nav.find((item) => item.id === id)).filter(Boolean);
-  const active = nav.find((item) => item.id === state.view);
-  const items = active && !quick.some((item) => item.id === active.id)
-    ? [...quick.slice(0, 3), active]
-    : quick;
   return [
-    ...items.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`),
-    `<button type="button" data-action="open-more-nav"><span>☰</span><small>Mais</small></button>`,
+    ...quick.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`),
+    `<button class="${quick.some((item) => item.id === state.view) ? "" : "active"}" type="button" data-action="open-more-nav"><span>☰</span><small>Mais</small></button>`,
   ].join("");
 }
 
@@ -2236,6 +2312,7 @@ function renderProfile() {
   const race = getRace(character.raceId);
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
+  const title = activeTitle(character);
   const tabs = [
     ["overview", "Visão"],
     ["inventory", "Itens"],
@@ -2249,17 +2326,19 @@ function renderProfile() {
       <article class="panel span-12 profile-card-social">
         ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
         <div class="profile-grid">
-          <div class="avatar-frame ${rarityClass(title?.rarity || "Comum")}">
+          <div class="avatar-frame ${rarityClass(title?.rarity || "Comum")}" title="Moldura da raridade do título equipado">
             <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
+            <span class="profile-online-dot ${isUserOnline(state.profile || {}) ? "online" : ""}" aria-label="${isUserOnline(state.profile || {}) ? "Online" : "Offline"}"></span>
           </div>
           <div>
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online agora" : "Interface registrada"} · ${esc(state.profile?.displayName || "Player")}</p>
+                <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online agora" : "Offline"} · ${esc(state.profile?.displayName || "Player")}</p>
                 <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
-                <strong class="profile-title-line">${esc(title?.name || "Sem título equipado")}</strong>
+                <strong class="profile-title-line ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Sem título equipado")}</strong>
               </div>
               <div class="action-row">
+                <button class="ghost-button" type="button" data-action="preview-profile-card">Prévia pública</button>
                 <button class="ghost-button" type="button" data-action="copy-profile-card">Copiar cartão</button>
                 <button class="ghost-button" type="button" data-action="toggle-profile-public">
                   ${character.profilePublic ? "Deixar privado" : "Deixar público"}
@@ -2273,6 +2352,11 @@ function renderProfile() {
               <span>MC ${Number(character.millenniumCoins || 0).toLocaleString("pt-BR")}</span>
               <span>Energia ${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}</span>
               <span>Views ${state.profileViews.filter((view) => view.targetId === state.user?.uid).length}</span>
+            </div>
+            <div class="profile-social-line">
+              <span>${(character.gachaVault || []).filter((item) => item.kind === "pet").length} companheiro(s) no cofre</span>
+              <span>${(character.achievements || derivedAchievementIds(character).size)} conquista(s)</span>
+              <span>${character.profilePublic ? "Cartão público" : "Cartão privado"}</span>
             </div>
             <div class="tag-row">
               ${(character.titles || []).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
@@ -2941,6 +3025,9 @@ function renderRanking() {
     ["level", "Nível"],
     ["gold", "PO"],
     ["coins", "Millennium"],
+    ["affinity", "Afinidades"],
+    ["missions", "Missões"],
+    ["rolls", "Giros"],
     ["aim", "Mira"],
     ["hunt", "Pet Hunt"],
     ["tower", "Tower"],
@@ -2948,9 +3035,14 @@ function renderRanking() {
     ["items", "Itens"],
     ["guilds", "Guildas"],
     ["views", "Perfis"],
+    ["achievements", "Conquistas"],
+    ["pass", "Passe"],
+    ["collection", "Coleções"],
+    ["secrets", "Secret+"],
   ];
   const tab = state.rankingTab || "prestige";
-  const rows = rankRows(tab).slice(0, 30);
+  const range = state.rankingRange || "season";
+  const rows = rankRows(tab, range).slice(0, 30);
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -2959,9 +3051,12 @@ function renderRanking() {
             <p class="eyebrow">Ranking</p>
             <h2>Ranks vivos de Millennium</h2>
           </div>
-          <span class="tag">Temporada e todos os tempos</span>
+          <span class="tag">${range === "daily" ? "Últimas 24h" : range === "weekly" ? "Últimos 7 dias" : range === "all" ? "Todos os tempos" : "Temporada atual"}</span>
         </div>
         <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}">${label}</button>`).join("")}</div>
+        <div class="ranking-range-row" role="group" aria-label="Período do ranking">
+          ${[["daily", "Diário"], ["weekly", "Semanal"], ["season", "Temporada"], ["all", "Todos"]].map(([id, label]) => `<button class="range-chip ${range === id ? "active" : ""}" type="button" data-action="ranking-range" data-range="${id}">${label}</button>`).join("")}
+        </div>
         <div class="ranking-list">
           ${rows.map((row, index) => {
             const char = row.character || {};
@@ -2987,7 +3082,18 @@ function renderRanking() {
   `;
 }
 
-function rankRows(tab) {
+function rankingRangeStart(range) {
+  if (range === "daily") return Date.now() - 24 * 60 * 60 * 1000;
+  if (range === "weekly") return Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return 0;
+}
+
+function isWithinRankingRange(item, range, field = "createdAt") {
+  const start = rankingRangeStart(range);
+  return !start || timeValue(item?.[field]) >= start;
+}
+
+function rankRows(tab, range = "season") {
   const chars = [...state.characters].filter((char) => char.profilePublic !== false);
   const byChar = (score, sub = "pontos", detailFn = null) => chars
     .map((character) => ({
@@ -3002,15 +3108,28 @@ function rankRows(tab) {
     .filter((row) => row.score > 0 || ["prestige", "level"].includes(tab))
     .sort((a, b) => b.score - a.score);
 
+  const runs = (char, mode) => (char.minigameHistory || []).filter((run) => run.mode === mode && isWithinRankingRange(run, range));
+  const bestRun = (char, mode) => Math.max(0, ...runs(char, mode).map((run) => Number(run.score || 0)));
+  const approved = (char) => state.progressRequests.filter((request) => request.uid === char.ownerId && request.status === "aprovado" && isWithinRankingRange(request, range, "reviewedAt"));
+  const rollCount = (char) => [...(char.rollHistory || []), ...(char.gachaHistory || [])].filter((roll) => isWithinRankingRange(roll, range)).length;
+  const collectionItems = (char) => (char.gachaVault || []).filter((item) => isWithinRankingRange(item, range, "obtainedAt"));
+
   if (tab === "level") return byChar((char) => Number(char.level || levelFromXp(char.xp || 0)), "nível");
   if (tab === "gold") return byChar((char) => Number(char.gold || 0), "PO");
   if (tab === "coins") return byChar((char) => Number(char.millenniumCoins || 0), "MC");
-  if (tab === "aim") return byChar((char) => Number(char.minigameStats?.aim?.bestScore || 0), "melhor score");
-  if (tab === "hunt") return byChar((char) => Number(char.minigameStats?.hunt?.bestScore || 0), "melhor score");
-  if (tab === "tower") return byChar((char) => Number(char.minigameStats?.tower?.bestScore || 0), "melhor score");
+  if (tab === "affinity") return byChar((char) => rarityScore(getCategory(getAffinity(char.affinityId)?.categoryId)?.rarity || "Quebrado"), "raridade", (char) => getAffinity(char.affinityId)?.name || "Sem afinidade");
+  if (tab === "missions") return byChar((char) => approved(char).filter((request) => ["mission", "guildMission", "training"].includes(request.type)).length, "aprovações", (char) => `${approved(char).length} validação(ões) no período`);
+  if (tab === "rolls") return byChar(rollCount, "giros", (char) => `${Number(char.totalRares || 0)} raros registrados`);
+  if (tab === "aim") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.aim?.bestScore || 0) : bestRun(char, "aim"), "melhor score");
+  if (tab === "hunt") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.hunt?.bestScore || 0) : bestRun(char, "hunt"), "melhor score");
+  if (tab === "tower") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.tower?.bestScore || 0) : bestRun(char, "tower"), "melhor score");
   if (tab === "pets") return byChar((char) => Math.max(0, ...(char.gachaVault || []).filter((item) => item.kind === "pet").map(instancePower)), "poder pet");
   if (tab === "items") return byChar((char) => Math.max(0, ...(char.gachaVault || []).filter((item) => item.kind === "item").map(instancePower)), "poder item");
   if (tab === "views") return byChar((char) => state.profileViews.filter((view) => view.targetId === char.ownerId).length, "visualizações");
+  if (tab === "achievements") return byChar((char) => derivedAchievementIds(char).size, "conquistas");
+  if (tab === "pass") return byChar((char) => Number(char.level || levelFromXp(char.xp || 0)), "níveis do passe", (char) => char.premiumPassUnlocked ? "Premium ativo" : "Trilha Free");
+  if (tab === "collection") return byChar((char) => collectionItems(char).length || (range === "all" || range === "season" ? (char.gachaVault || []).length : 0), "registros no cofre");
+  if (tab === "secrets") return byChar((char) => collectionItems(char).filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length || ((range === "all" || range === "season") ? (char.gachaVault || []).filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length : 0), "Celestial/Secret");
   if (tab === "guilds") {
     return [...state.guilds].map((guild) => ({
       uid: guild.leaderId,
@@ -3211,17 +3330,27 @@ function renderMarket() {
   const character = currentCharacter();
   const tabs = [
     ["market", "Destaques"],
-    ["coins", "Millennium"],
-    ["fragments", "Fragmentos"],
+    ["bazaar", "Bazar"],
     ["pass", "Passe"],
+    ["cosmetics", "Cosméticos"],
+    ["fragments", "Fragmentos"],
+    ["gacha", "Invocação"],
+    ["guild", "Guilda"],
     ["auction", "Leilão"],
     ["crafting", "Crafting"],
     ["vault", "Cofre"],
   ];
   const tab = state.marketTab || "market";
+  const allCosmetics = [
+    ...(state.content.gachaItems || []).filter((item) => normalize(`${item.category || ""} ${item.effect || ""}`).match(/cosmet|moldura|banner|efeito|perfil/)),
+    ...(state.content.gachaShardShops || []).filter((item) => normalize(`${item.type || ""} ${item.name || ""}`).match(/cosmet|moldura|banner|token|titulo/)),
+  ];
+  const petBanner = activeGachaBanner("pets");
+  const itemBanner = activeGachaBanner("items");
   const cards = {
     market: () => marketCards(state.content.marketListings, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"),
-    coins: () => marketCards(state.content.gachaItems || [], (item) => `${esc(item.category || "Relíquia")} · usado com gacha/cofre · ${item.description || ""}`, "Millennium Coins"),
+    bazaar: () => renderPlayerBazaar(character),
+    cosmetics: () => marketCards(allCosmetics, (item) => `${item.type || item.category || "Cosmético"} · ${item.description || item.effect || "Coleção visual para o perfil."}`, "Coleção"),
     fragments: () => (state.content.gachaShardShops || []).map((item) => `
       <div class="content-card market-card ${rarityClass(item.rarity)}">
         ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
@@ -3232,14 +3361,38 @@ function renderMarket() {
       </div>
     `).join("") || `<div class="empty-state">Nenhuma troca de fragmentos publicada.</div>`,
     pass: () => renderSeasonPass(),
-    auction: () => marketCards(state.content.auctionListings, (item) => `Lance mínimo ${Number(item.minBid || 0)} PO · termina ${item.endsAt || "a definir"} · ${item.description || ""}`, "Leilão"),
+    gacha: () => `
+      <div class="gacha-market-grid">
+        ${[petBanner, itemBanner].map((banner) => `
+          <section class="gacha-market-card">
+            <span>${banner.type === "pets" ? "Companheiros" : "Relíquias"} · ${banner.configured ? "rate-up do Oráculo" : "rotação horária"}</span>
+            <h3>${esc(banner.name || "Banner dimensional")}</h3>
+            <p>${esc(banner.description || "Destaques com chance elevada nesta janela.")}</p>
+            <div class="tag-row">${banner.featured.slice(0, 4).map((item) => `<span class="tag ${rarityClass(item.rarity)}">${esc(item.name)}</span>`).join("") || `<span class="tag">Sem destaques</span>`}</div>
+            <button class="primary-button" type="button" data-nav="gacha">Abrir invocação</button>
+          </section>
+        `).join("")}
+      </div>
+    `,
+    guild: () => {
+      const guild = guildForUser();
+      return `
+        <div class="guild-market-card">
+          <span>Economia coletiva</span>
+          <h3>${esc(guild?.name || "Salão de guildas")}</h3>
+          <p>${guild ? "Use o cofre, missões de party e a reputação do grupo para conquistar recompensas que não cabem em um inventário só." : "Entre em uma guilda para liberar missões de party, mural, chat interno e futuras melhorias coletivas."}</p>
+          <button class="primary-button" type="button" data-nav="guild">${guild ? "Abrir minha guilda" : "Ver guildas"}</button>
+        </div>
+      `;
+    },
+    auction: () => renderAuctionMarket(),
     crafting: () => marketCards(state.content.craftingRecipes, (item) => `${item.materials || "Materiais a definir"} → ${item.result || ""}`, "Crafting"),
     vault: () => `<article class="panel span-12"><div class="stat-grid">${renderStat("PO", character.gold || 0)}${renderStat("Millennium Coins", character.millenniumCoins || 0)}${renderStat("Fragmentos", Object.values(character.gachaFragments || {}).reduce((sum, value) => sum + Number(value || 0), 0))}${renderStat("Cofre dimensional", (character.gachaVault || []).length)}</div><p class="hint">O cofre dimensional guarda pets e itens invocados. Você pode equipar, fundir, recuperar pets, desfazer por fragmentos ou enviar para o inventário/perfil.</p>${renderGachaVault(character.gachaVault || [], { compact: true })}</article>`,
   };
   return `
     <div class="grid">
       <article class="panel span-12 market-hero">
-        <div class="panel-heading"><div><p class="eyebrow">Economia</p><h2>Mercado, leilão, crafting e cofre</h2></div><span class="tag">Oráculo controla recompensas</span></div>
+        <div class="panel-heading"><div><p class="eyebrow">Economia da Interface</p><h2>Mercado, passe, invocação e cofre</h2></div><span class="tag">Sem dinheiro real</span></div>
         <div class="stat-grid compact-stat-grid">
           ${renderStat("PO", character.gold || 0)}
           ${renderStat("Millennium Coins", character.millenniumCoins || 0)}
@@ -3261,17 +3414,98 @@ function marketCards(items, detail, currency = "PO") {
       <h3>${esc(item.name)}</h3>
       <p>${esc(detail(item))}</p>
       <div class="action-row">
-        <button class="primary-button" type="button" data-action="request-market-item" data-market-id="${esc(item.id)}" data-market-currency="${esc(currency)}">Solicitar</button>
-        <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc("A solicitação vai para a fila do Oráculo com contexto de compra, lance ou crafting.")}">Como usar?</button>
+        <button class="primary-button" type="button" data-action="${currency === "PO" ? "buy-market-item" : "request-market-item"}" data-market-id="${esc(item.id)}" data-market-currency="${esc(currency)}">${currency === "PO" ? "Comprar agora" : currency === "Coleção" ? "Ver coleção" : "Solicitar"}</button>
+        <button class="ghost-button" type="button" data-action="open-help-text" data-title="${esc(item.name)}" data-text="${esc(currency === "PO" ? "Itens oficiais com preço em PO entram imediatamente no inventário. Itens especiais, leilões e crafting podem ter regras próprias." : currency === "Coleção" ? "Este item aparece na sua coleção, no cofre ou em trocas de fragmentos. O Oráculo pode liberar versões especiais por evento." : "A solicitação vai para a fila do Oráculo com contexto de compra, lance ou crafting.")}">Como usar?</button>
       </div>
     </div>
   `).join("") || `<div class="empty-state">Nada publicado aqui ainda.</div>`;
+}
+
+function renderPlayerBazaar(character) {
+  const listings = (state.content.playerListings || []).filter((listing) => listing.status === "active");
+  const ownItems = (character.inventory || []).filter((item) => !item.marketListed);
+  const ownTrades = (state.marketTrades || []).filter((trade) => trade.buyerId === state.user.uid || trade.sellerId === state.user.uid);
+  return `
+    <section class="bazaar-layout">
+      <div class="bazaar-intro">
+        <span>Comércio entre escolhidos</span>
+        <h3>Bazar de Millennium</h3>
+        <p>Você anuncia um item, o comprador coloca a moeda em garantia e ambos concluem a troca sem fila do Oráculo. O histórico permanece disponível para auditoria em caso de conflito.</p>
+      </div>
+      <form class="form-stack bazaar-form" data-form="player-listing">
+        <p class="eyebrow">Anunciar item</p>
+        <label><span>Item do inventário</span><select name="itemInstance">${ownItems.map((item) => `<option value="${esc(item.instanceId || item.id)}">${esc(item.name)} · ${esc(item.rarity || "Comum")}</option>`).join("") || `<option value="">Nenhum item disponível</option>`}</select></label>
+        <label><span>Preço</span><input name="price" type="number" min="1" value="50" /></label>
+        <label><span>Moeda</span><select name="currency"><option value="gold">PO</option><option value="coins">Millennium Coins</option></select></label>
+        <button class="primary-button" type="submit" ${ownItems.length ? "" : "disabled"}>Publicar anúncio</button>
+      </form>
+      <div class="bazaar-listing-grid">
+        ${listings.map((listing) => `
+          <article class="bazaar-listing ${rarityClass(listing.itemSnapshot?.rarity || "Comum")}">
+            ${listing.itemSnapshot?.imageUrl ? `<img class="content-image" src="${esc(listing.itemSnapshot.imageUrl)}" alt="${esc(listing.itemSnapshot.name)}" />` : ""}
+            <span>${esc(listing.itemSnapshot?.rarity || "Comum")} · ${esc(listing.currency === "coins" ? "Millennium Coins" : "PO")}</span>
+            <h3>${esc(listing.itemSnapshot?.name || listing.name || "Item")}</h3>
+            <p>Vendido por ${esc(getUserName(listing.sellerId))} · ${Number(listing.price || 0).toLocaleString("pt-BR")}</p>
+            ${listing.sellerId === state.user.uid ? `<span class="tag">Seu anúncio</span>` : `<button class="primary-button" type="button" data-action="fund-market-trade" data-listing-id="${esc(listing.id)}">Reservar com garantia</button>`}
+          </article>
+        `).join("") || `<div class="empty-state">Nenhum anúncio ativo. O primeiro item da praça pode ser o seu.</div>`}
+      </div>
+      <div class="bazaar-trade-panel">
+        <p class="eyebrow">Minhas negociações</p>
+        <div class="trade-list">
+          ${ownTrades.map((trade) => {
+            const isSeller = trade.sellerId === state.user.uid;
+            const label = isSeller ? `Compra de ${getUserName(trade.buyerId)}` : `Venda de ${getUserName(trade.sellerId)}`;
+            const action = trade.status === "funded" && isSeller
+              ? `<button class="primary-button" type="button" data-action="accept-market-trade" data-trade-id="${esc(trade.id)}">Entregar e receber</button><button class="ghost-button" type="button" data-action="decline-market-trade" data-trade-id="${esc(trade.id)}">Recusar</button>`
+              : trade.status === "ready" && !isSeller
+                ? `<button class="primary-button" type="button" data-action="collect-market-trade" data-trade-id="${esc(trade.id)}">Coletar item</button>`
+                : trade.status === "rejected" && !isSeller
+                  ? `<button class="ghost-button" type="button" data-action="refund-market-trade" data-trade-id="${esc(trade.id)}">Reaver garantia</button>`
+                  : "";
+            return `<div class="trade-row"><div><span>${esc(trade.status === "funded" ? "Garantia depositada" : trade.status === "ready" ? "Item pronto para coleta" : trade.status === "completed" ? "Troca concluída" : trade.status === "rejected" ? "Venda recusada" : trade.status)}</span><strong>${esc(trade.itemSnapshot?.name || "Item")}</strong><p>${esc(label)} · ${Number(trade.price || 0)} ${trade.currency === "coins" ? "MC" : "PO"}</p></div><div class="action-row">${action}</div></div>`;
+          }).join("") || `<div class="empty-state compact">Nenhuma negociação em andamento.</div>`}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function auctionHighestBid(auctionId) {
+  return [...(state.content.auctionBids || [])]
+    .filter((bid) => bid.auctionId === auctionId)
+    .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0) || timeValue(b.createdAt) - timeValue(a.createdAt))[0] || null;
+}
+
+function renderAuctionMarket() {
+  return (state.content.auctionListings || []).map((auction) => {
+    const highest = auctionHighestBid(auction.id);
+    const end = dateFromValue(auction.endsAt);
+    const ended = Boolean(end && Date.now() >= end.getTime());
+    const winner = highest?.bidderId === state.user.uid;
+    const claimed = highest?.status === "claimed";
+    return `
+      <article class="content-card market-card auction-card ${rarityClass(auction.rarity)}">
+        ${auction.imageUrl ? `<img class="content-image" src="${esc(auction.imageUrl)}" alt="${esc(auction.name)}" />` : ""}
+        <span>${esc(auction.rarity || "Leilão")} · ${ended ? "Encerrado" : "Aberto"}</span>
+        <h3>${esc(auction.name)}</h3>
+        <p>${esc(auction.description || "")}</p>
+        <div class="auction-bid-line"><small>Lance mínimo</small><strong>${Number(auction.minBid || 0).toLocaleString("pt-BR")} PO</strong></div>
+        <div class="auction-bid-line"><small>Maior lance</small><strong>${highest ? `${Number(highest.amount || 0).toLocaleString("pt-BR")} PO · ${esc(getUserName(highest.bidderId))}` : "Sem lances"}</strong></div>
+        <p class="hint">${end ? `${ended ? "Encerrado em" : "Encerra em"} ${end.toLocaleString("pt-BR")}` : "Defina uma data ISO na Forja para liberar a coleta automática."}</p>
+        <div class="action-row">
+          ${!ended ? `<button class="primary-button" type="button" data-action="open-auction-bid" data-auction-id="${esc(auction.id)}">Dar lance</button>` : winner && !claimed ? `<button class="primary-button" type="button" data-action="claim-auction" data-auction-id="${esc(auction.id)}">Coletar vitória</button>` : `<span class="tag">${claimed ? "Coletado" : winner ? "Aguardando coleta" : "Resultado definido"}</span>`}
+        </div>
+      </article>
+    `;
+  }).join("") || `<div class="empty-state">Nenhum leilão ativo nesta temporada.</div>`;
 }
 
 function renderSeasonPass() {
   const character = currentCharacter();
   const level = Number(character.level || levelFromXp(character.xp || 0));
   const hasPremium = character.premiumPassUnlocked === true;
+  const claims = character.passClaims || { free: [], premium: [] };
   const pendingPremium = pendingProgressRequests().some((request) => request.type === "premiumPass");
   const canRequest = !hasPremium && !pendingPremium && Number(character.gold || 0) >= 1000;
   return `
@@ -3290,17 +3524,22 @@ function renderSeasonPass() {
       <div class="pass-track">
         ${sortByTier(state.content.seasonPass).map((item) => {
           const reached = level >= Number(item.tier || 0);
+          const freeClaimed = (claims.free || []).includes(item.id);
+          const premiumClaimed = (claims.premium || []).includes(item.id);
           return `
             <div class="pass-tier ${reached ? "reached" : ""}">
-              <div>
-                <span class="${rarityClass(item.rarity)}">${esc(item.rarity || "Temporada")}</span>
-                <strong>${esc(item.name || `Nível ${item.tier || "?"}`)}</strong>
-                <p>${esc(item.description || "")}</p>
+              <div class="pass-tier-top">
+                <span class="pass-tier-level">${Number(item.tier || 0)}</span>
+                <div>
+                  <span class="${rarityClass(item.rarity)}">${esc(item.rarity || "Temporada")}</span>
+                  <strong>${esc(item.name || `Nível ${item.tier || "?"}`)}</strong>
+                </div>
               </div>
               <div class="pass-rewards">
-                <div><small>Free</small><b>${esc(item.freeReward || item.reward || "Recompensa a definir")}</b></div>
-                <div class="${hasPremium ? "premium-open" : "premium-locked"}"><small>Premium</small><b>${esc(item.premiumReward || "Recompensa premium a definir")}</b></div>
+                <div><small>Free</small><b>${esc(item.freeReward || item.reward || "Recompensa a definir")}</b><button class="pass-claim-button" type="button" data-action="claim-pass-reward" data-tier-id="${esc(item.id)}" data-track="free" ${reached && !freeClaimed ? "" : "disabled"}>${freeClaimed ? "Coletado" : reached ? "Coletar" : "Bloqueado"}</button></div>
+                <div class="${hasPremium ? "premium-open" : "premium-locked"}"><small>Premium</small><b>${esc(item.premiumReward || "Recompensa premium a definir")}</b><button class="pass-claim-button" type="button" data-action="claim-pass-reward" data-tier-id="${esc(item.id)}" data-track="premium" ${reached && hasPremium && !premiumClaimed ? "" : "disabled"}>${premiumClaimed ? "Coletado" : hasPremium && reached ? "Coletar" : "Bloqueado"}</button></div>
               </div>
+              <p>${esc(item.description || "")}</p>
             </div>
           `;
         }).join("") || `<div class="empty-state">Nenhum passe publicado.</div>`}
@@ -3867,6 +4106,8 @@ function renderAdminHome() {
   const pendingRequests = state.progressRequests.filter((request) => request.status === "pendente").length;
   const totalRolls = state.characters.reduce((sum, char) => sum + Number(char.totalRolls || 0), 0);
   const totalRares = state.characters.reduce((sum, char) => sum + Number(char.totalRares || 0), 0);
+  const totalCoins = state.characters.reduce((sum, char) => sum + Number(char.millenniumCoins || 0), 0);
+  const activePets = state.characters.reduce((sum, char) => sum + (char.activeActivities || []).length, 0);
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -3878,6 +4119,8 @@ function renderAdminHome() {
           ${renderStat("Giros totais", totalRolls)}
           ${renderStat("Raros", totalRares)}
           ${renderStat("Missões semanais", state.weeklyMissions.length)}
+          ${renderStat("MC na mesa", totalCoins)}
+          ${renderStat("Pets em campo", activePets)}
         </div>
       </article>
       <article class="panel span-7">
@@ -3896,6 +4139,61 @@ function renderAdminHome() {
       <article class="panel span-5">
         <div class="panel-heading"><div><p class="eyebrow">Eventos</p><h3>Ganhos raros</h3></div></div>
         <div class="scroll-list">${renderMessages(state.globalMessages.filter((message) => message.type === "rare").slice(-8))}</div>
+      </article>
+    </div>
+  `;
+}
+
+function renderAdminEconomy() {
+  const players = state.users.filter((user) => user.role !== "admin");
+  const characters = players.map((user) => ({ user, character: getCharacterFor(user.id) }));
+  const totalCoins = characters.reduce((sum, entry) => sum + Number(entry.character.millenniumCoins || 0), 0);
+  const totalEnergy = characters.reduce((sum, entry) => sum + currentGachaEnergy(entry.character), 0);
+  const totalFragments = characters.reduce((sum, entry) => sum + Object.values(entry.character.gachaFragments || {}).reduce((inner, amount) => inner + Number(amount || 0), 0), 0);
+  const vaultItems = characters.flatMap((entry) => entry.character.gachaVault || []);
+  const injured = vaultItems.filter((item) => item.status === "Ferido" || item.status === "Morto").length;
+  const activeActivities = characters.flatMap((entry) => entry.character.activeActivities || []);
+  const recentRuns = characters.flatMap(({ user, character }) => (character.minigameHistory || []).map((run) => ({ ...run, player: user.displayName || user.email, uid: user.id }))).sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt)).slice(0, 12);
+  return `
+    <div class="grid">
+      <article class="panel span-12 economy-hero">
+        <div class="panel-heading"><div><p class="eyebrow">Economia viva</p><h2>Millennium Coins, cofre e esforço</h2></div><span class="tag">Visão do Oráculo</span></div>
+        <div class="stat-grid compact-stat-grid">
+          ${renderStat("Millennium Coins", totalCoins.toLocaleString("pt-BR"))}
+          ${renderStat("Energia na mesa", `${totalEnergy}/${Math.max(1, players.length) * GACHA_ENERGY_MAX}`)}
+          ${renderStat("Fragmentos", totalFragments.toLocaleString("pt-BR"))}
+          ${renderStat("Cofres", vaultItems.length)}
+          ${renderStat("Pets feridos", injured)}
+          ${renderStat("Atividades", activeActivities.length)}
+        </div>
+      </article>
+      <article class="panel span-7">
+        <div class="panel-heading"><div><p class="eyebrow">Jogadores</p><h3>Quem precisa de atenção</h3></div><span class="tag">Clique para abrir a ficha</span></div>
+        <div class="economy-player-list">
+          ${characters.map(({ user, character }) => {
+            const vault = character.gachaVault || [];
+            const hurt = vault.filter((item) => item.status === "Ferido" || item.status === "Morto").length;
+            return `
+              <button class="economy-player-row" type="button" data-action="open-admin-user" data-user-id="${esc(user.id)}">
+                <span class="online-dot ${isUserOnline(user) ? "online" : ""}"></span>
+                <div><strong>${esc(character.characterName || user.displayName || user.email)}</strong><small>${esc(user.displayName || user.email)} · ${vault.length} registro(s) no cofre</small></div>
+                <div><b>${Number(character.millenniumCoins || 0)} MC</b><small>${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX} energia · ${hurt ? `${hurt} pet(s) ferido(s)` : "cofre estável"}</small></div>
+              </button>
+            `;
+          }).join("") || `<div class="empty-state">Nenhum player para observar.</div>`}
+        </div>
+      </article>
+      <article class="panel span-5">
+        <div class="panel-heading"><div><p class="eyebrow">Runs recentes</p><h3>Auditoria de minigames</h3></div></div>
+        <div class="run-history">
+          ${recentRuns.map((run) => `<div class="run-card"><span>${esc(run.player)} · ${esc(run.mode)} · ${esc(run.difficultyName || run.difficultyId)}</span><strong>Rank ${esc(run.grade || "-")} · ${Number(run.score || 0)} pts</strong><p>${Number(run.coins || 0)} MC · ${Number(run.fragments || 0)} ${esc(run.fragmentName || "fragmentos")}</p></div>`).join("") || `<div class="empty-state">Nenhuma run registrada ainda.</div>`}
+        </div>
+      </article>
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Incursões em andamento</p><h3>Pets fora do cofre</h3></div></div>
+        <div class="content-grid">
+          ${activeActivities.map((activity) => `<div class="content-card"><span>${esc(activity.difficultyName)} · ${esc(activity.type)}</span><h3>${esc(activity.petName)}</h3><p>${esc(activity.biome || activity.mapName || "Sem destino")} · risco ${Math.round(Number(activity.risk || 0) * 100)}%</p><button class="ghost-button" type="button" data-action="open-admin-user" data-user-id="${esc(characters.find((entry) => (entry.character.activeActivities || []).some((entryActivity) => entryActivity.id === activity.id))?.user.id || "")}">Abrir ficha</button></div>`).join("") || `<div class="empty-state">Nenhuma atividade em andamento.</div>`}
+        </div>
       </article>
     </div>
   `;
@@ -3949,7 +4247,7 @@ function renderAdminUsers() {
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
-          <div class="grid" style="margin-top:18px">
+           <div class="grid" style="margin-top:18px">
             <div class="panel span-6">
               <p class="eyebrow">Adicionar item</p>
               <form class="form-stack" data-form="admin-add-item">
@@ -3969,9 +4267,34 @@ function renderAdminUsers() {
                   </div>
                 `).join("") || `<div class="empty-state">Sem itens.</div>`}
               </div>
-            </div>
-          </div>
-        ` : `<div class="empty-state">Selecione um usuário.</div>`}
+             </div>
+           </div>
+           <div class="grid admin-vault-grid" style="margin-top:18px">
+             <div class="panel span-7">
+               <div class="panel-heading"><div><p class="eyebrow">Cofre dimensional</p><h3>Pets, itens e cosméticos invocados</h3></div><span class="tag">${(character.gachaVault || []).length} registro(s)</span></div>
+               <div class="admin-vault-list">
+                 ${(character.gachaVault || []).map((item) => `
+                   <div class="admin-vault-row ${rarityClass(item.rarity)}">
+                     <div><span>${esc(item.kind === "pet" ? "Pet" : "Item")} · ${esc(item.rarity || "Comum")}${item.shiny ? " · Radiante" : ""}</span><strong>${esc(item.name)}</strong><p>${"★".repeat(Math.max(1, Number(item.stars || 1)))} · ${esc(item.status || "Livre")} · Poder ${instancePower(item)}</p></div>
+                     <div class="action-row">
+                       <button class="ghost-button" type="button" data-action="admin-vault-star" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}" ${Number(item.stars || 1) >= MAX_GACHA_STARS ? "disabled" : ""}>+ estrela</button>
+                       <button class="ghost-button" type="button" data-action="admin-vault-radiant" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}" ${item.shiny ? "disabled" : ""}>Radiante</button>
+                       ${(item.status === "Ferido" || item.status === "Morto") ? `<button class="primary-button" type="button" data-action="admin-vault-heal" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}">Curar</button>` : ""}
+                       <button class="danger-button" type="button" data-action="admin-vault-remove" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}">Remover</button>
+                     </div>
+                   </div>
+                 `).join("") || `<div class="empty-state">Cofre vazio.</div>`}
+               </div>
+             </div>
+             <div class="panel span-5">
+               <div class="panel-heading"><div><p class="eyebrow">Atividades</p><h3>Incursões e descansos</h3></div></div>
+               <div class="scroll-list">
+                 ${(character.activeActivities || []).map((activity) => `<div class="item-row"><span>${esc(activity.type)} · ${esc(activity.difficultyName)}</span><strong>${esc(activity.petName)}</strong><p>${esc(activity.biome || activity.mapName || "Sem destino")}</p><button class="ghost-button" type="button" data-action="admin-clear-activity" data-user-id="${esc(selectedId)}" data-activity-id="${esc(activity.id)}">Liberar pet</button></div>`).join("") || `<div class="empty-state">Nenhuma atividade ativa.</div>`}
+                 ${(character.gachaVault || []).filter((item) => item.status === "Ferido" || item.status === "Morto").map((item) => `<div class="item-row"><span>${esc(item.status)}</span><strong>${esc(item.name)}</strong><p>${item.status === "Morto" ? "Pet precisa de recuperação antes de voltar ao cofre." : "Pet ferido não pode entrar em uma incursão."}</p><button class="primary-button" type="button" data-action="admin-vault-heal" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}">Restaurar</button></div>`).join("")}
+               </div>
+             </div>
+           </div>
+         ` : `<div class="empty-state">Selecione um usuário.</div>`}
       </article>
     </div>
   `;
@@ -3996,12 +4319,107 @@ function renderAdminContent() {
             ["rules", "Regras"],
             ["faq", "FAQ"],
             ["tutorial", "Tutorial"],
+            ["gacha", "Gacha e mapas"],
             ["epic", "Épicos"],
           ].map(([id, label]) => `<button class="tab ${state.contentTab === id ? "active" : ""}" type="button" data-action="content-tab" data-tab="${id}">${label}</button>`).join("")}
         </div>
       </article>
       ${renderContentEditor()}
     </div>
+  `;
+}
+
+const VISUAL_FORGE_COLLECTIONS = new Set(["gachaPets", "gachaItems", "gachaShardShops", "towerMaps", "gachaBanners", "marketListings", "auctionListings", "craftingRecipes"]);
+
+function forgeBonusInputs(item = {}) {
+  const bonus = item.bonus || {};
+  return `
+    <div class="forge-bonus-grid">
+      ${ATTRIBUTES.map((attribute) => `<label><span>${attribute.short}</span><input name="bonus_${attribute.key}" type="number" value="${Number(bonus[attribute.key] || 0)}" /></label>`).join("")}
+      <label><span>DEF</span><input name="bonus_def" type="number" value="${Number(bonus.def || 0)}" /></label>
+    </div>
+  `;
+}
+
+function forgeRaritySelect(value = "Comum") {
+  return `<select name="rarity">${RARITIES.map((rarity) => `<option value="${rarity}" ${value === rarity ? "selected" : ""}>${rarity}</option>`).join("")}</select>`;
+}
+
+function forgeVisualFields(collection, item = {}) {
+  const common = `
+    <label><span>Nome</span><input name="name" value="${esc(item.name || "")}" required /></label>
+    ${mediaInput("imageUrl", "Imagem exibida", item.imageUrl || "", { hint: "Anexe imagem, GIF ou cole um link. A prévia mostra o enquadramento usado no site." })}
+    <label><span>Raridade</span>${forgeRaritySelect(item.rarity || "Comum")}</label>
+  `;
+  if (collection === "gachaPets") {
+    return `${common}
+      <label><span>Arquétipo</span><input name="archetype" value="${esc(item.archetype || "")}" placeholder="Ex: Guardião" /></label>
+      <label><span>Elemento</span><input name="element" value="${esc(item.element || "")}" placeholder="Ex: Solar" /></label>
+      <label class="wide"><span>Passiva / traço</span><textarea name="trait" rows="3">${esc(item.trait || "")}</textarea></label>
+      <fieldset class="forge-fieldset wide"><legend>Bônus de atributo</legend>${forgeBonusInputs(item)}</fieldset>
+      <fieldset class="forge-fieldset wide"><legend>Tower Defense</legend><div class="forge-bonus-grid"><label><span>Dano</span><input name="td_damage" type="number" min="0" value="${Number(item.td?.damage || 10)}" /></label><label><span>Alcance</span><input name="td_range" type="number" min="0" value="${Number(item.td?.range || 80)}" /></label><label><span>Cooldown</span><input name="td_cooldown" type="number" min="0.1" step="0.1" value="${Number(item.td?.cooldown || 1.5)}" /></label></div></fieldset>
+      <label class="wide"><span>Descrição</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+  }
+  if (collection === "gachaItems") {
+    return `${common}
+      <label><span>Categoria</span><select name="category"><option value="Equipamento" ${item.category === "Equipamento" ? "selected" : ""}>Equipamento</option><option value="Relíquia" ${item.category === "Relíquia" ? "selected" : ""}>Relíquia</option><option value="Cosmético" ${item.category === "Cosmético" ? "selected" : ""}>Cosmético</option><option value="Moldura" ${item.category === "Moldura" ? "selected" : ""}>Moldura</option><option value="Banner" ${item.category === "Banner" ? "selected" : ""}>Banner</option><option value="Artefato" ${item.category === "Artefato" ? "selected" : ""}>Artefato</option></select></label>
+      <label class="wide"><span>Efeito no sistema</span><textarea name="effect" rows="3">${esc(item.effect || "")}</textarea></label>
+      <fieldset class="forge-fieldset wide"><legend>Bônus de atributo</legend>${forgeBonusInputs(item)}</fieldset>
+      <label class="wide"><span>Descrição</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+  }
+  if (collection === "gachaShardShops") {
+    return `${common}
+      <label><span>Moeda de fragmento</span><select name="shop"><option value="Fragmentos de Mira" ${item.shop === "Fragmentos de Mira" ? "selected" : ""}>Fragmentos de Mira</option><option value="Marcas de Caçada" ${item.shop === "Marcas de Caçada" ? "selected" : ""}>Marcas de Caçada</option><option value="Runas Partidas" ${item.shop === "Runas Partidas" ? "selected" : ""}>Runas Partidas</option><option value="Fragmentos do Despertar" ${item.shop === "Fragmentos do Despertar" ? "selected" : ""}>Fragmentos do Despertar</option></select></label>
+      <label><span>Custo</span><input name="cost" type="number" min="1" value="${Number(item.cost || 100)}" /></label>
+      <label><span>Entrega</span><select name="type"><option value="Cosmético" ${item.type === "Cosmético" ? "selected" : ""}>Cosmético</option><option value="Moldura" ${item.type === "Moldura" ? "selected" : ""}>Moldura</option><option value="Token" ${item.type === "Token" ? "selected" : ""}>Token</option><option value="Título" ${item.type === "Título" ? "selected" : ""}>Título</option><option value="Passe" ${item.type === "Passe" ? "selected" : ""}>Passe</option><option value="Item" ${item.type === "Item" ? "selected" : ""}>Item</option></select></label>
+      <label class="wide"><span>Descrição</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+  }
+  if (collection === "towerMaps") {
+    return `${common}
+      <label><span>Tema do mapa</span><input name="theme" value="${esc(item.theme || "")}" placeholder="Ex: Cidade selada" /></label>
+      <label><span>Rotas</span><input name="lanes" type="number" min="1" max="8" value="${Number(item.lanes || 3)}" /></label>
+      <label><span>Dificuldade indicada</span><select name="difficulty">${GACHA_DIFFICULTIES.map((difficulty) => `<option value="${difficulty.name}" ${item.difficulty === difficulty.name ? "selected" : ""}>${difficulty.name}</option>`).join("")}</select></label>
+      <label class="wide"><span>Descrição do cenário</span><textarea name="description" rows="5">${esc(item.description || "")}</textarea></label>`;
+  }
+  if (collection === "gachaBanners") {
+    const type = item.type || "pets";
+    const selected = new Set(Array.isArray(item.featuredIds) ? item.featuredIds : String(item.featuredIds || "").split(",").map((id) => id.trim()));
+    const pool = type === "items" ? state.content.gachaItems : state.content.gachaPets;
+    return `
+      <label><span>Nome do banner</span><input name="name" value="${esc(item.name || "")}" required /></label>
+      <label><span>Tipo</span><select name="bannerType"><option value="pets" ${type === "pets" ? "selected" : ""}>Pets</option><option value="items" ${type === "items" ? "selected" : ""}>Itens</option></select></label>
+      <label><span>Estado</span><select name="enabled"><option value="true" ${item.enabled !== false ? "selected" : ""}>Ativo</option><option value="false" ${item.enabled === false ? "selected" : ""}>Pausado</option></select></label>
+      <label><span>Início (opcional)</span><input name="startsAt" type="datetime-local" value="${esc(dateTimeLocalValue(item.startsAt))}" /></label>
+      <label><span>Fim (opcional)</span><input name="endsAt" type="datetime-local" value="${esc(dateTimeLocalValue(item.endsAt))}" /></label>
+      <fieldset class="forge-fieldset wide"><legend>Destaques em rate-up</legend><div class="forge-choice-grid">${pool.map((entry) => `<label><input data-featured-choice type="checkbox" value="${esc(entry.id)}" ${selected.has(entry.id) ? "checked" : ""} /> <span>${esc(entry.name)} · ${esc(entry.rarity)}</span></label>`).join("") || "<p>Cadastre pets ou itens antes de criar o banner.</p>"}</div></fieldset>
+      <label class="wide"><span>Texto do banner</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+  }
+  if (collection === "marketListings" || collection === "auctionListings" || collection === "craftingRecipes") {
+    const auction = collection === "auctionListings";
+    const crafting = collection === "craftingRecipes";
+    return `${common}
+      ${auction ? `<label><span>Lance mínimo (PO)</span><input name="minBid" type="number" min="0" value="${Number(item.minBid || 0)}" /></label><label><span>Encerra em</span><input name="endsAt" type="datetime-local" value="${esc(dateTimeLocalValue(item.endsAt))}" /></label>` : crafting ? `<label class="wide"><span>Materiais</span><input name="materials" value="${esc(item.materials || "")}" /></label><label class="wide"><span>Resultado</span><input name="result" value="${esc(item.result || "")}" /></label>` : `<label><span>Preço (PO)</span><input name="price" type="number" min="0" value="${Number(item.price || 0)}" /></label>`}
+      <label class="wide"><span>Descrição</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+  }
+  return common;
+}
+
+function renderVisualForge(collection) {
+  const labels = { gachaPets: "Pet de gacha", gachaItems: "Item de gacha", gachaShardShops: "Loja de fragmentos", towerMaps: "Mapa Tower Defense", gachaBanners: "Banner e rate-up", marketListings: "Oferta do mercado", auctionListings: "Leilão", craftingRecipes: "Receita de crafting" };
+  return `
+    <article class="panel span-5 forge-visual-panel">
+      <p class="eyebrow">Forja visual</p>
+      <h3>${esc(labels[collection] || "Novo conteúdo")}</h3>
+      <p class="hint">Campos guiados: sem JSON, com imagem, prévia e parâmetros do sistema organizados.</p>
+      <form class="form-stack" data-form="content-forge-visual">
+        <input type="hidden" name="collection" value="${esc(collection)}" />
+        ${forgeVisualFields(collection)}
+        <button class="primary-button" type="submit">Criar na Forja</button>
+      </form>
+    </article>
+    <article class="panel span-7">
+      <div class="content-grid">${contentCards(state.content[collection] || [], (item) => `${item.rarity || item.theme || item.shop || ""} · ${item.description || item.trait || item.effect || item.result || ""}`, collection)}</div>
+    </article>
   `;
 }
 
@@ -4136,6 +4554,26 @@ function renderContentEditor() {
         <label><span>Descrição</span><textarea name="description" rows="6"></textarea></label>
       `)}</article>
       <article class="panel span-7"><div class="content-grid">${contentCards(state.content.tutorialSteps, (item) => `${item.order || 0} · ${item.description || ""}`, "tutorialSteps")}</div></article>
+    `;
+  }
+  if (tab === "gacha") {
+    const collections = [
+      ["gachaPets", "Pets"],
+      ["gachaItems", "Itens"],
+      ["gachaShardShops", "Fragmentos"],
+      ["towerMaps", "Mapas Tower"],
+      ["gachaBanners", "Banners"],
+      ["marketListings", "Mercado"],
+      ["auctionListings", "Leilão"],
+      ["craftingRecipes", "Crafting"],
+    ];
+    const selected = VISUAL_FORGE_COLLECTIONS.has(state.epicCollection) ? state.epicCollection : "gachaPets";
+    return `
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Sistemas de invocação</p><h3>Gacha, lojas, banners e mapas sem JSON</h3></div><span class="tag">Forja visual</span></div>
+        <div class="tabs codex-tabs">${collections.map(([id, label]) => `<button class="tab ${selected === id ? "active" : ""}" type="button" data-action="epic-collection" data-collection="${id}">${label}</button>`).join("")}</div>
+      </article>
+      ${renderVisualForge(selected)}
     `;
   }
   if (tab === "epic") {
@@ -4503,6 +4941,7 @@ const VIEW_RENDERERS = {
   "admin-users": renderAdminUsers,
   "admin-content": renderAdminContent,
   "admin-rewards": renderAdminRewards,
+  "admin-economy": renderAdminEconomy,
   "admin-mail": renderAdminMail,
   "admin-requests": renderAdminRequests,
   "admin-ops": renderAdminOps,
@@ -5235,6 +5674,64 @@ async function startTowerDefense(form) {
   toast(`${pet.name} defendeu ${map.name || "o mapa"} com ${score} pontos.`);
 }
 
+function passRewardPatch(character, rewardText, tier) {
+  const reward = String(rewardText || "Recompensa do passe");
+  const patch = {};
+  const gold = Number(reward.match(/(\d+)\s*PO/i)?.[1] || 0);
+  const essences = Number(reward.match(/(\d+)\s*ess[eê]ncias?/i)?.[1] || 0);
+  const awakening = Number(reward.match(/Fragmentos do Despertar\s*x?(\d+)/i)?.[1] || 0);
+  const aimFragments = Number(reward.match(/Fragmentos de Mira\s*x?(\d+)/i)?.[1] || 0);
+  const companionFragments = Number(reward.match(/Ecos de Companheiro\s*x?(\d+)/i)?.[1] || 0);
+  if (gold) patch.gold = Number(character.gold || 0) + gold;
+  if (essences) patch.affinityAttempts = Number(character.affinityAttempts || 0) + essences;
+  if (awakening || aimFragments || companionFragments) {
+    const fragments = { ...(character.gachaFragments || {}) };
+    if (awakening) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + awakening;
+    if (aimFragments) fragments["Fragmentos de Mira"] = Number(fragments["Fragmentos de Mira"] || 0) + aimFragments;
+    if (companionFragments) fragments["Ecos de Companheiro"] = Number(fragments["Ecos de Companheiro"] || 0) + companionFragments;
+    patch.gachaFragments = fragments;
+  }
+  const token = reward.match(/Token:\s*([^+]+)/i)?.[1]?.trim();
+  const title = reward.match(/T[ií]tulo:\s*([^+]+)/i)?.[1]?.trim();
+  const isCosmetic = /moldura|aura|traje|ticket|pet cosm[eé]tico/i.test(reward);
+  if (token) patch.tokens = [...(character.tokens || []), { id: cryptoRandom(), name: token, rarity: tier.rarity || "Comum", description: `Recompensa do Passe do Despertar - nível ${tier.tier}.` }];
+  if (title) patch.titles = [...(character.titles || []), { id: cryptoRandom(), name: title, rarity: tier.rarity || "Comum", description: `Recompensa do Passe do Despertar - nível ${tier.tier}.` }];
+  if (isCosmetic) {
+    const cosmetic = { id: `passe-${tier.id}-${cryptoRandom()}`, instanceId: cryptoRandom(), name: reward, rarity: tier.rarity || "Comum", categoryId: "sazonal", bonus: {}, equipped: false, source: "Passe do Despertar", description: "Recompensa coletada automaticamente pelo passe." };
+    patch.inventory = [...(character.inventory || []), cosmetic];
+  }
+  return patch;
+}
+
+async function claimPassReward(tierId, track) {
+  const character = currentCharacter();
+  const tier = (state.content.seasonPass || []).find((item) => item.id === tierId);
+  if (!tier || !["free", "premium"].includes(track)) return;
+  const level = Number(character.level || levelFromXp(character.xp || 0));
+  const claims = character.passClaims || { free: [], premium: [] };
+  if (level < Number(tier.tier || 0)) {
+    toast("Alcance esse nível antes de coletar a recompensa.");
+    return;
+  }
+  if (track === "premium" && !character.premiumPassUnlocked) {
+    toast("Esta recompensa pertence à trilha Premium.");
+    return;
+  }
+  if ((claims[track] || []).includes(tierId)) {
+    toast("Essa recompensa já foi coletada.");
+    return;
+  }
+  const rewardText = track === "premium" ? tier.premiumReward : (tier.freeReward || tier.reward);
+  const patch = passRewardPatch(character, rewardText, tier);
+  const nextClaims = { free: [...(claims.free || [])], premium: [...(claims.premium || [])] };
+  nextClaims[track].push(tierId);
+  patch.passClaims = nextClaims;
+  patch.prestige = prestigeFor({ ...character, ...patch });
+  await updateCharacter(state.user.uid, patch);
+  if (isRareReward(tier.rarity)) await announceRareReward(state.user.uid, rewardText, tier.rarity, "recompensa do passe");
+  toast(`Recompensa ${track === "premium" ? "Premium" : "Free"} coletada: ${rewardText}.`);
+}
+
 async function requestPremiumPass() {
   const character = currentCharacter();
   if (character.premiumPassUnlocked) {
@@ -5293,6 +5790,205 @@ async function requestMarketItem(itemId, currency = "PO") {
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   toast("Pedido enviado ao Oráculo.");
+}
+
+async function buyOfficialMarketItem(itemId) {
+  const listing = (state.content.marketListings || []).find((item) => item.id === itemId);
+  if (!listing) return;
+  const character = currentCharacter();
+  const price = Math.max(0, Number(listing.price || 0));
+  if (Number(character.gold || 0) < price) {
+    toast("PO insuficiente para esta compra.");
+    return;
+  }
+  const item = {
+    id: listing.id,
+    instanceId: cryptoRandom(),
+    name: listing.name,
+    rarity: listing.rarity || "Comum",
+    categoryId: listing.categoryId || "especial",
+    description: listing.description || "Compra oficial do Mercado Millennium.",
+    bonus: listing.bonus || {},
+    equipped: false,
+    source: "Mercado Millennium",
+  };
+  await updateCharacter(state.user.uid, {
+    gold: Number(character.gold || 0) - price,
+    inventory: [...(character.inventory || []), item],
+    marketHistory: [{ id: cryptoRandom(), type: "compra oficial", name: item.name, price, currency: "PO", createdAt: new Date().toISOString() }, ...(character.marketHistory || [])].slice(0, 50),
+  });
+  if (isRareReward(item.rarity)) await announceRareReward(state.user.uid, item.name, item.rarity, "compra do mercado");
+  toast(`${item.name} entrou no seu inventário.`);
+}
+
+async function publishPlayerListing(form) {
+  const values = formValues(form);
+  const character = currentCharacter();
+  const item = (character.inventory || []).find((entry) => (entry.instanceId || entry.id) === values.itemInstance && !entry.marketListed);
+  const price = Math.max(1, Number(values.price || 0));
+  if (!item || !price) {
+    toast("Escolha um item disponível e informe um preço válido.");
+    return;
+  }
+  const listing = {
+    sellerId: state.user.uid,
+    sellerName: state.profile?.displayName || state.user.email,
+    itemSnapshot: { ...item, equipped: false, marketListed: false },
+    price,
+    currency: values.currency === "coins" ? "coins" : "gold",
+    status: "active",
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  };
+  const inventory = (character.inventory || []).map((entry) => (entry.instanceId || entry.id) === (item.instanceId || item.id) ? { ...entry, marketListed: true, equipped: false } : entry);
+  await addDoc("playerListings", listing);
+  await updateCharacter(state.user.uid, { inventory });
+  form.reset();
+  toast("Anúncio publicado no Bazar.");
+}
+
+async function fundMarketTrade(listingId) {
+  const listing = (state.content.playerListings || []).find((entry) => entry.id === listingId && entry.status === "active");
+  const character = currentCharacter();
+  if (!listing || listing.sellerId === state.user.uid) return;
+  const price = Number(listing.price || 0);
+  const balance = listing.currency === "coins" ? Number(character.millenniumCoins || 0) : Number(character.gold || 0);
+  if (balance < price) {
+    toast(`${listing.currency === "coins" ? "Millennium Coins" : "PO"} insuficiente para reservar esta troca.`);
+    return;
+  }
+  const alreadyOpen = (state.marketTrades || []).some((trade) => trade.listingId === listingId && trade.buyerId === state.user.uid && ["funded", "ready"].includes(trade.status));
+  if (alreadyOpen) {
+    toast("Você já deixou uma garantia para este anúncio.");
+    return;
+  }
+  const patch = listing.currency === "coins"
+    ? { millenniumCoins: balance - price }
+    : { gold: balance - price };
+  await updateCharacter(state.user.uid, patch);
+  await addDoc("marketTrades", {
+    listingId: listing.id,
+    buyerId: state.user.uid,
+    sellerId: listing.sellerId,
+    participants: [state.user.uid, listing.sellerId],
+    itemSnapshot: listing.itemSnapshot,
+    price,
+    currency: listing.currency,
+    status: "funded",
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  toast("Garantia depositada. O vendedor pode entregar o item agora.");
+}
+
+async function acceptMarketTrade(tradeId) {
+  const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
+  const listing = (state.content.playerListings || []).find((entry) => entry.id === trade?.listingId);
+  const character = currentCharacter();
+  if (!trade || !listing || trade.sellerId !== state.user.uid || trade.status !== "funded") return;
+  const itemId = trade.itemSnapshot?.instanceId || trade.itemSnapshot?.id;
+  const inventory = (character.inventory || []).filter((item) => (item.instanceId || item.id) !== itemId);
+  const patch = trade.currency === "coins"
+    ? { inventory, millenniumCoins: Number(character.millenniumCoins || 0) + Number(trade.price || 0) }
+    : { inventory, gold: Number(character.gold || 0) + Number(trade.price || 0) };
+  await updateCharacter(state.user.uid, patch);
+  await writeDoc("playerListings", listing.id, { status: "sold", soldAt: state.demo ? new Date().toISOString() : nowValue(), buyerId: trade.buyerId });
+  await writeDoc("marketTrades", trade.id, { status: "ready", acceptedAt: state.demo ? new Date().toISOString() : nowValue() });
+  toast("Item entregue. A garantia foi liberada para você e o comprador pode coletar.");
+}
+
+async function declineMarketTrade(tradeId) {
+  const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
+  if (!trade || trade.sellerId !== state.user.uid || trade.status !== "funded") return;
+  await writeDoc("marketTrades", trade.id, { status: "rejected", rejectedAt: state.demo ? new Date().toISOString() : nowValue() });
+  toast("Venda recusada. O comprador já pode reaver a garantia.");
+}
+
+async function collectMarketTrade(tradeId) {
+  const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
+  const character = currentCharacter();
+  if (!trade || trade.buyerId !== state.user.uid || trade.status !== "ready") return;
+  const item = { ...trade.itemSnapshot, instanceId: cryptoRandom(), marketListed: false, equipped: false, source: `Bazar de ${getUserName(trade.sellerId)}` };
+  await updateCharacter(state.user.uid, { inventory: [...(character.inventory || []), item] });
+  await writeDoc("marketTrades", trade.id, { status: "completed", collectedAt: state.demo ? new Date().toISOString() : nowValue() });
+  if (isRareReward(item.rarity)) await announceRareReward(state.user.uid, item.name, item.rarity, "troca do Bazar");
+  toast("Item coletado no seu inventário.");
+}
+
+async function refundMarketTrade(tradeId) {
+  const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
+  const character = currentCharacter();
+  if (!trade || trade.buyerId !== state.user.uid || trade.status !== "rejected") return;
+  const patch = trade.currency === "coins"
+    ? { millenniumCoins: Number(character.millenniumCoins || 0) + Number(trade.price || 0) }
+    : { gold: Number(character.gold || 0) + Number(trade.price || 0) };
+  await updateCharacter(state.user.uid, patch);
+  await writeDoc("marketTrades", trade.id, { status: "refunded", refundedAt: state.demo ? new Date().toISOString() : nowValue() });
+  toast("Garantia devolvida para sua carteira.");
+}
+
+function openAuctionBid(auctionId) {
+  const auction = (state.content.auctionListings || []).find((item) => item.id === auctionId);
+  const highest = auctionHighestBid(auctionId);
+  if (!auction) return;
+  const minimum = Math.max(Number(auction.minBid || 0), Number(highest?.amount || 0) + 1);
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Leilão da Interface</p>
+    <h2>${esc(auction.name)}</h2>
+    <p>Lance mínimo atual: <strong>${minimum.toLocaleString("pt-BR")} PO</strong>. O maior lance pode coletar o item quando o relógio encerrar.</p>
+    <form class="form-stack" data-form="auction-bid">
+      <input type="hidden" name="auctionId" value="${esc(auctionId)}" />
+      <label><span>Seu lance em PO</span><input name="amount" type="number" min="${minimum}" value="${minimum}" required /></label>
+      <button class="primary-button" type="submit">Confirmar lance</button>
+    </form>
+  `;
+  $("#modal").hidden = false;
+}
+
+async function placeAuctionBid(form) {
+  const values = formValues(form);
+  const auction = (state.content.auctionListings || []).find((item) => item.id === values.auctionId);
+  const highest = auctionHighestBid(values.auctionId);
+  const character = currentCharacter();
+  if (!auction || (dateFromValue(auction.endsAt)?.getTime() || 0) <= Date.now()) {
+    toast("Este leilão já foi encerrado.");
+    return;
+  }
+  const minimum = Math.max(Number(auction.minBid || 0), Number(highest?.amount || 0) + 1);
+  const amount = Number(values.amount || 0);
+  if (amount < minimum || Number(character.gold || 0) < amount) {
+    toast(`Seu lance precisa ser de pelo menos ${minimum} PO e caber na sua carteira.`);
+    return;
+  }
+  await addDoc("auctionBids", {
+    auctionId: auction.id,
+    auctionName: auction.name,
+    bidderId: state.user.uid,
+    bidderName: state.profile?.displayName || state.user.email,
+    amount,
+    status: "active",
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  closeModal();
+  toast("Lance registrado. Você pode aumentar a oferta enquanto o leilão estiver aberto.");
+}
+
+async function claimAuction(auctionId) {
+  const auction = (state.content.auctionListings || []).find((item) => item.id === auctionId);
+  const highest = auctionHighestBid(auctionId);
+  const character = currentCharacter();
+  if (!auction || !highest || highest.bidderId !== state.user.uid || highest.status === "claimed") return;
+  if ((dateFromValue(auction.endsAt)?.getTime() || Number.MAX_SAFE_INTEGER) > Date.now()) {
+    toast("A coleta só abre depois do encerramento do leilão.");
+    return;
+  }
+  if (Number(character.gold || 0) < Number(highest.amount || 0)) {
+    toast("Você não tem mais PO suficiente para cobrir o lance vencedor.");
+    return;
+  }
+  const item = { id: auction.id, instanceId: cryptoRandom(), name: auction.name, rarity: auction.rarity || "Raro", categoryId: "leilao", description: auction.description || "Relíquia conquistada em leilão.", bonus: auction.bonus || {}, equipped: false, source: "Leilão da Interface" };
+  await updateCharacter(state.user.uid, { gold: Number(character.gold || 0) - Number(highest.amount || 0), inventory: [...(character.inventory || []), item] });
+  await writeDoc("auctionBids", highest.id, { status: "claimed", claimedAt: state.demo ? new Date().toISOString() : nowValue() });
+  await announceRareReward(state.user.uid, item.name, item.rarity, "leilão vencido");
+  toast("Vitória confirmada. A relíquia entrou no seu inventário.");
 }
 
 async function startMission(missionId) {
@@ -5862,6 +6558,37 @@ async function copyProfileCard() {
   toast("Cartão do personagem copiado.");
 }
 
+function openProfilePreview() {
+  const character = currentCharacter();
+  const title = activeTitle(character);
+  const race = getRace(character.raceId);
+  const klass = getClass(character.classId);
+  const affinity = getAffinity(character.affinityId);
+  const totals = getTotals(character);
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Prévia pública</p>
+    <h2>Como sua presença aparece na Interface</h2>
+    <article class="profile-preview-card ${character.profilePublic ? "public" : "private"}">
+      ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
+      <div class="profile-grid">
+        <div class="avatar-frame ${rarityClass(title?.rarity || "Comum")}"><img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" /></div>
+        <div>
+          <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online" : "Offline"} · ${esc(state.profile?.displayName || "Player")}</p>
+          <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
+          <strong class="profile-title-line ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Sem título equipado")}</strong>
+          <p>${esc(race?.name || "Raça não definida")} · ${esc(klass?.name || "Classe não definida")} · ${esc(affinity?.name || "Sem afinidade")}</p>
+          <div class="token-row">${renderTokens(character.tokens || [])}</div>
+        </div>
+      </div>
+      ${character.profilePublic ? `
+        <p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>
+        <div class="profile-mini-stats">${renderStat("Nível", character.level || levelFromXp(character.xp || 0))}${renderStat("Prestígio", prestigeFor(character))}${renderStat("PV", totals.hpMax)}${renderStat("PP", totals.ppMax)}</div>
+      ` : `<div class="empty-state">Os outros players veem avatar, nome, título, tokens e os botões sociais. Os detalhes da ficha continuam ocultos.</div>`}
+    </article>
+  `;
+  $("#modal").hidden = false;
+}
+
 function openHelpText(title, text) {
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Ajuda rápida</p>
@@ -5902,6 +6629,10 @@ function openContentEdit(collection, id) {
     toast("Conteúdo não encontrado.");
     return;
   }
+  if (VISUAL_FORGE_COLLECTIONS.has(collection)) {
+    openVisualContentEdit(collection, item);
+    return;
+  }
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Forja</p>
     <h2>Editar ${esc(item.name || item.title || id)}</h2>
@@ -5910,6 +6641,20 @@ function openContentEdit(collection, id) {
       <input type="hidden" name="id" value="${esc(id)}" />
       <label><span>JSON do conteúdo</span><textarea name="json" rows="14" required>${esc(JSON.stringify(item, null, 2))}</textarea></label>
       <button class="primary-button" type="submit">Salvar edição</button>
+    </form>
+  `;
+  $("#modal").hidden = false;
+}
+
+function openVisualContentEdit(collection, item) {
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Forja visual</p>
+    <h2>Editar ${esc(item.name || item.title || item.id)}</h2>
+    <form class="form-stack" data-form="content-forge-visual">
+      <input type="hidden" name="collection" value="${esc(collection)}" />
+      <input type="hidden" name="id" value="${esc(item.id)}" />
+      ${forgeVisualFields(collection, item)}
+      <button class="primary-button" type="submit">Salvar alterações</button>
     </form>
   `;
   $("#modal").hidden = false;
@@ -5928,6 +6673,62 @@ async function saveContentEdit(form) {
   await writeDoc(values.collection, id, { ...payload, id });
   closeModal();
   toast("Conteúdo atualizado.");
+}
+
+function forgeBonusFromValues(values) {
+  return {
+    ...Object.fromEntries(ATTRIBUTES.map((attribute) => [attribute.key, Number(values[`bonus_${attribute.key}`] || 0)])),
+    def: Number(values.bonus_def || 0),
+  };
+}
+
+async function saveForgeVisual(form) {
+  const values = formValues(form);
+  const collection = values.collection;
+  if (!VISUAL_FORGE_COLLECTIONS.has(collection)) return;
+  const existing = values.id ? state.content[collection]?.find((item) => item.id === values.id) : null;
+  const base = { ...(existing || {}), name: values.name || existing?.name || "Novo registro", imageUrl: values.imageUrl || "", rarity: values.rarity || existing?.rarity || "Comum" };
+  let payload = base;
+  if (collection === "gachaPets") {
+    payload = { ...base, archetype: values.archetype || "", element: values.element || "", trait: values.trait || "", description: values.description || "", bonus: forgeBonusFromValues(values), td: { damage: Number(values.td_damage || 0), range: Number(values.td_range || 0), cooldown: Number(values.td_cooldown || 1) } };
+  }
+  if (collection === "gachaItems") {
+    payload = { ...base, category: values.category || "Equipamento", effect: values.effect || "", description: values.description || "", bonus: forgeBonusFromValues(values) };
+  }
+  if (collection === "gachaShardShops") {
+    payload = { ...base, shop: values.shop || "Fragmentos do Despertar", cost: Math.max(1, Number(values.cost || 1)), type: values.type || "Item", description: values.description || "" };
+  }
+  if (collection === "towerMaps") {
+    payload = { ...base, theme: values.theme || "", lanes: Math.max(1, Number(values.lanes || 1)), difficulty: values.difficulty || "Fácil", description: values.description || "" };
+  }
+  if (collection === "gachaBanners") {
+    payload = {
+      ...existing,
+      id: values.id || slug(values.name),
+      name: values.name,
+      type: values.bannerType || "pets",
+      enabled: values.enabled === "true",
+      startsAt: values.startsAt ? new Date(values.startsAt).toISOString() : "",
+      endsAt: values.endsAt ? new Date(values.endsAt).toISOString() : "",
+      featuredIds: Array.from(form.querySelectorAll("[data-featured-choice]:checked")).map((input) => input.value),
+      description: values.description || "",
+    };
+  }
+  if (collection === "marketListings") {
+    payload = { ...base, price: Math.max(0, Number(values.price || 0)), description: values.description || "" };
+  }
+  if (collection === "auctionListings") {
+    payload = { ...base, minBid: Math.max(0, Number(values.minBid || 0)), endsAt: values.endsAt ? new Date(values.endsAt).toISOString() : "", description: values.description || "" };
+  }
+  if (collection === "craftingRecipes") {
+    payload = { ...base, materials: values.materials || "", result: values.result || "", description: values.description || "" };
+  }
+  const id = values.id || payload.id || slug(payload.name || payload.title);
+  await writeDoc(collection, id, { ...payload, id });
+  state.epicCollection = collection;
+  if (!$("#modal").hidden) closeModal();
+  form.reset();
+  toast("Registro salvo pela Forja visual.");
 }
 
 async function saveAdminUser(form) {
@@ -5973,6 +6774,59 @@ async function adminRemoveItem(uid, instanceId) {
   const inventory = (character.inventory || []).filter((item) => (item.instanceId || item.id) !== instanceId);
   await updateCharacter(uid, { inventory });
   toast("Item removido.");
+}
+
+async function adminUpdateVaultItem(uid, instanceId, update) {
+  const character = getCharacterFor(uid);
+  const target = (character.gachaVault || []).find((item) => item.instanceId === instanceId);
+  if (!target) {
+    toast("Registro de cofre não encontrado.");
+    return;
+  }
+  const gachaVault = (character.gachaVault || []).map((item) => item.instanceId === instanceId ? { ...item, ...update } : item);
+  await updateCharacter(uid, { gachaVault });
+}
+
+async function adminAddVaultStar(uid, instanceId) {
+  const character = getCharacterFor(uid);
+  const item = (character.gachaVault || []).find((entry) => entry.instanceId === instanceId);
+  if (!item || Number(item.stars || 1) >= MAX_GACHA_STARS) return;
+  await adminUpdateVaultItem(uid, instanceId, { stars: Math.min(MAX_GACHA_STARS, Number(item.stars || 1) + 1) });
+  toast("Estrela adicionada ao registro do cofre.");
+}
+
+async function adminSetVaultRadiant(uid, instanceId) {
+  const character = getCharacterFor(uid);
+  const gachaVault = (character.gachaVault || []).map((item) => {
+    if (item.instanceId !== instanceId) return item;
+    const baseName = item.baseName || String(item.name || "").replace(/^Radiante\s+/, "");
+    return { ...item, shiny: true, baseName, name: item.name?.startsWith("Radiante ") ? item.name : `Radiante ${baseName}` };
+  });
+  await updateCharacter(uid, { gachaVault });
+  toast("Registro transformado em Radiante.");
+}
+
+async function adminHealVaultPet(uid, instanceId) {
+  await adminUpdateVaultItem(uid, instanceId, { status: "Livre", activityId: "", injuredAt: "", recoveredBy: ORACLE_LABEL, recoveredAt: new Date().toISOString() });
+  toast("Pet restaurado e liberado.");
+}
+
+async function adminRemoveVaultItem(uid, instanceId) {
+  const character = getCharacterFor(uid);
+  const gachaVault = (character.gachaVault || []).filter((item) => item.instanceId !== instanceId);
+  const activeActivities = (character.activeActivities || []).filter((activity) => activity.petId !== instanceId);
+  await updateCharacter(uid, { gachaVault, activeActivities });
+  toast("Registro removido do cofre.");
+}
+
+async function adminClearActivity(uid, activityId) {
+  const character = getCharacterFor(uid);
+  const activity = (character.activeActivities || []).find((entry) => entry.id === activityId);
+  if (!activity) return;
+  const activeActivities = (character.activeActivities || []).filter((entry) => entry.id !== activityId);
+  const gachaVault = (character.gachaVault || []).map((item) => item.instanceId === activity.petId ? { ...item, status: "Livre", activityId: "" } : item);
+  await updateCharacter(uid, { activeActivities, gachaVault });
+  toast("Atividade removida e pet liberado.");
 }
 
 async function reviewProgressRequest(form) {
@@ -6494,6 +7348,7 @@ function wireEvents() {
       if (action === "shard-vault-item") await shardVaultItem(button.dataset.instanceId);
       if (action === "send-vault-main") await sendVaultMain(button.dataset.instanceId);
       if (action === "recover-pet") await recoverPet(button.dataset.instanceId);
+      if (action === "preview-profile-card") openProfilePreview();
       if (action === "redeem-shard-shop") await redeemShardShop(button.dataset.shopId);
       if (action === "minigame-difficulty") {
         state.minigameDifficulty = button.dataset.difficulty;
@@ -6503,6 +7358,7 @@ function wireEvents() {
       if (action === "collect-activity") await completeActivity(button.dataset.activityId, false);
       if (action === "cancel-activity") await completeActivity(button.dataset.activityId, true);
       if (action === "request-premium-pass") await requestPremiumPass();
+      if (action === "claim-pass-reward") await claimPassReward(button.dataset.tierId, button.dataset.track);
       if (action === "equip-title") await equipTitle(button.dataset.titleId);
       if (action === "claim-gift") await claimPendingGift();
       if (action === "toggle-equip") await toggleEquip(button.dataset.itemInstance);
@@ -6530,7 +7386,17 @@ function wireEvents() {
         state.selectedUserId = button.dataset.userId;
         render();
       }
+      if (action === "open-admin-user") {
+        state.selectedUserId = button.dataset.userId;
+        state.view = "admin-users";
+        render();
+      }
       if (action === "admin-remove-item") await adminRemoveItem(button.dataset.userId, button.dataset.itemInstance);
+      if (action === "admin-vault-star") await adminAddVaultStar(button.dataset.userId, button.dataset.instanceId);
+      if (action === "admin-vault-radiant") await adminSetVaultRadiant(button.dataset.userId, button.dataset.instanceId);
+      if (action === "admin-vault-heal") await adminHealVaultPet(button.dataset.userId, button.dataset.instanceId);
+      if (action === "admin-vault-remove") await adminRemoveVaultItem(button.dataset.userId, button.dataset.instanceId);
+      if (action === "admin-clear-activity") await adminClearActivity(button.dataset.userId, button.dataset.activityId);
       if (action === "content-tab") {
         state.contentTab = button.dataset.tab;
         render();
@@ -6551,6 +7417,10 @@ function wireEvents() {
         state.rankingTab = button.dataset.tab;
         render();
       }
+      if (action === "ranking-range") {
+        state.rankingRange = button.dataset.range;
+        render();
+      }
       if (action === "request-filter") {
         state.adminRequestFilter = button.dataset.filter;
         render();
@@ -6563,6 +7433,14 @@ function wireEvents() {
       if (action === "copy-profile-card") await copyProfileCard();
       if (action === "open-help-text") openHelpText(button.dataset.title, button.dataset.text);
       if (action === "request-market-item") await requestMarketItem(button.dataset.marketId, button.dataset.marketCurrency);
+      if (action === "buy-market-item") await buyOfficialMarketItem(button.dataset.marketId);
+      if (action === "fund-market-trade") await fundMarketTrade(button.dataset.listingId);
+      if (action === "accept-market-trade") await acceptMarketTrade(button.dataset.tradeId);
+      if (action === "decline-market-trade") await declineMarketTrade(button.dataset.tradeId);
+      if (action === "collect-market-trade") await collectMarketTrade(button.dataset.tradeId);
+      if (action === "refund-market-trade") await refundMarketTrade(button.dataset.tradeId);
+      if (action === "open-auction-bid") openAuctionBid(button.dataset.auctionId);
+      if (action === "claim-auction") await claimAuction(button.dataset.auctionId);
       if (action === "compare-item") openItemCompare(button.dataset.itemInstance);
       if (action === "codex-tab") {
         state.codexTab = button.dataset.tab;
@@ -6604,6 +7482,10 @@ function wireEvents() {
   });
 
   document.addEventListener("input", (event) => {
+    if (event.target.dataset.action === "music-volume") {
+      setAmbientVolume(event.target.value);
+      return;
+    }
     if (event.target.dataset.action === "codex-search") {
       state.codexSearch = event.target.value;
       render();
@@ -6632,6 +7514,8 @@ function wireEvents() {
       if (type === "private-chat") await sendPrivateChat(form);
       if (type === "diary-entry") await saveDiaryEntry(form);
       if (type === "pet-hunt") await startPetHunt(form);
+      if (type === "player-listing") await publishPlayerListing(form);
+      if (type === "auction-bid") await placeAuctionBid(form);
       if (type === "tower-defense") await startTowerDefense(form);
       if (type === "create-guild") await createGuild(form);
       if (type === "guild-settings") await saveGuildSettings(form);
@@ -6649,6 +7533,7 @@ function wireEvents() {
       }
       if (type === "content-edit-json") await saveContentEdit(form);
       if (type === "content-generic") await saveGenericContent(form);
+      if (type === "content-forge-visual") await saveForgeVisual(form);
       if (type === "content-race") {
         const v = formValues(form);
         await saveContent("races", { name: v.name, imageUrl: v.imageUrl || "", bonus: parseBonus(v.bonus), passive: v.passive, description: v.description || "" });
@@ -6752,6 +7637,13 @@ function wireEvents() {
   });
 }
 
+try {
+  const storedMusicVolume = localStorage.getItem("millenniumMusicVolume");
+  const savedMusicVolume = storedMusicVolume === null ? NaN : Number(storedMusicVolume);
+  if (Number.isFinite(savedMusicVolume) && savedMusicVolume >= 0 && savedMusicVolume <= 1) state.musicVolume = savedMusicVolume;
+} catch {
+  // The site still works when browser storage is unavailable.
+}
 wireEvents();
 window.addEventListener("beforeunload", () => {
   setPresence(false);
