@@ -52,6 +52,11 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - Guia inclui tutorial inicial, livro de regras por capítulos, FAQ, termo de acordo e busca global.
 - Mobile tem HUD fixo com cinco atalhos e Mais, sem cortar a largura; desktop tem menu lateral com rolagem.
 
+- Mega update Dark Fantasy: login "Primeiro Despertar" com arte original em `assets/first-awakening-portal.png`, PWA instalavel, Service Worker com navegacao sempre atualizada e icone do Millennium.
+- Invocacao ganhou revelacao fullscreen com cartas em sequencia, sons sintetizados por raridade, resultados para print e pool ampliado de pets Quebrados, Comuns, Incomuns, Epicos e Lendarios.
+- Evolucao de estrelas agora exige duas copias livres do mesmo registro, mesma raridade, mesmo estado Radiante e mesma quantidade de estrelas antes da fusao.
+- Minigames 2.0: Mira inclui armadilhas, alvos moveis, erros e tela final; Hunt mostra linha do tempo de eventos; Tower Defense e uma partida real em canvas com runas, ondas, vidas, inimigos, elites, essencia e upgrades.
+
 ## Coleções Firestore usadas
 
 - `users/{uid}`
@@ -98,5 +103,7 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 - `progressRequests/{id}`
 
 ## Regras
+
+Depois desta mega atualizacao, publique novamente `firestore.rules`: os campos `lastAimRun` e `lastTowerRun` precisam estar liberados para que resultados reais de minigames sejam salvos.
 
 Use `firestore.rules` como base de segurança e publique no console do Firebase depois de atualizar o site. As imagens vão para o Cloudinary usando `cloudName: cakvvuqx` e `uploadPreset: Millenium`; não é necessário ativar Firebase Storage para esta versão. O email `mrlippe78@gmail.com` está autorizado como Oráculo; a senha deve existir apenas no Firebase Authentication.

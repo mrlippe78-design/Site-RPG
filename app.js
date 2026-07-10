@@ -27,12 +27,12 @@ const CHAT_LIMIT = 60;
 const MAX_GACHA_STARS = 7;
 const GACHA_ENERGY_MAX = 30;
 const GACHA_DIFFICULTIES = [
-  { id: "noob", name: "Noob", cost: 1, multiplier: 0.7, risk: 0, minScore: 250 },
-  { id: "facil", name: "Fácil", cost: 1, multiplier: 1, risk: 0.02, minScore: 700 },
-  { id: "medio", name: "Médio", cost: 2, multiplier: 1.45, risk: 0.06, minScore: 1400 },
-  { id: "hard", name: "Hard", cost: 3, multiplier: 2.1, risk: 0.12, minScore: 2400 },
-  { id: "pesadelo", name: "Pesadelo", cost: 4, multiplier: 3.2, risk: 0.2, minScore: 3800 },
-  { id: "god-slayer", name: "God Slayer", cost: 5, multiplier: 5, risk: 0.34, minScore: 6200 },
+  { id: "noob", name: "Noob", cost: 1, multiplier: 0.7, risk: 0, minScore: 850 },
+  { id: "facil", name: "Fácil", cost: 1, multiplier: 1, risk: 0.03, minScore: 1900 },
+  { id: "medio", name: "Médio", cost: 2, multiplier: 1.45, risk: 0.08, minScore: 3600 },
+  { id: "hard", name: "Hard", cost: 3, multiplier: 2.1, risk: 0.15, minScore: 6000 },
+  { id: "pesadelo", name: "Pesadelo", cost: 4, multiplier: 3.2, risk: 0.25, minScore: 9300 },
+  { id: "god-slayer", name: "God Slayer", cost: 5, multiplier: 5, risk: 0.42, minScore: 14500 },
 ];
 const GACHA_RARITIES = [
   { id: "broken", name: "Quebrado", weight: 4200, fragment: 2, score: 1, color: "#9b9488" },
@@ -192,14 +192,28 @@ const DEFAULT_CONTENT = {
   gachaPets: [
     { id: "vigia-de-telhado", name: "Vigia de Telhado", rarity: "Quebrado", archetype: "Coletor", element: "Urbano", bonus: { hab: 1 }, td: { damage: 6, range: 70, cooldown: 1.7 }, trait: "Olhos Pequenos: +2% fragmentos em mapas urbanos.", description: "Um companheiro de beco que sobreviveu ao primeiro despertar da interface." },
     { id: "aprendiz-da-nuvem", name: "Aprendiz da Nuvem", rarity: "Quebrado", archetype: "Suporte", element: "Vento", bonus: { vel: 1 }, td: { damage: 5, range: 82, cooldown: 1.9 }, trait: "Passo Leve: reduz levemente o risco em incursões fáceis.", description: "Corre mais do que luta, e isso às vezes basta." },
+    { id: "escriba-sem-tinta", name: "Escriba Sem Tinta", rarity: "Quebrado", archetype: "Suporte", element: "Papel", bonus: { hab: 1 }, td: { damage: 4, range: 94, cooldown: 2.1 }, trait: "Última Nota: +1 fragmento em falha parcial.", description: "Ele anota lendas mesmo quando ninguém acredita nelas." },
+    { id: "escudeiro-de-lata", name: "Escudeiro de Lata", rarity: "Quebrado", archetype: "Guardião", element: "Ferro", bonus: { res: 1 }, td: { damage: 7, range: 52, cooldown: 1.9 }, trait: "Tampa Amassada: reduz um ponto de dano na primeira onda.", description: "A armadura é velha. A coragem não." },
+    { id: "andarilha-do-beco", name: "Andarilha do Beco", rarity: "Quebrado", archetype: "Assassino", element: "Sombra", bonus: { vel: 1 }, td: { damage: 7, range: 66, cooldown: 1.6 }, trait: "Fuga Certa: +2% moedas ao retornar cedo de uma Hunt.", description: "Ninguém a viu chegar ao mundo novo." },
     { id: "punho-de-bairro", name: "Punho de Bairro", rarity: "Comum", archetype: "Guerreiro", element: "Impacto", bonus: { for: 1 }, td: { damage: 10, range: 62, cooldown: 1.45 }, trait: "Combo Simples: +4% dano contra ondas comuns.", description: "Forjado em brigas pequenas, pronto para lutas maiores." },
     { id: "arauto-do-estilingue", name: "Arauto do Estilingue", rarity: "Comum", archetype: "Atirador", element: "Precisão", bonus: { hab: 1 }, td: { damage: 8, range: 104, cooldown: 1.6 }, trait: "Mira Teimosa: +5% pontuação na Prova da Mira.", description: "Pequeno, rápido e irritantemente preciso." },
+    { id: "ferreiro-das-pontes", name: "Ferreiro das Pontes", rarity: "Comum", archetype: "Guardião", element: "Metal", bonus: { res: 1 }, td: { damage: 11, range: 58, cooldown: 1.6 }, trait: "Rebite Firme: +3% vida de base no Tower Defense.", description: "Constrói passagem onde só havia queda." },
+    { id: "novica-da-lanterna", name: "Noviça da Lanterna", rarity: "Comum", archetype: "Suporte", element: "Luz", bonus: { pod: 1 }, td: { damage: 7, range: 98, cooldown: 1.8 }, trait: "Luz Baixa: +2% chance de evento em Hunt noturna.", description: "Sua chama é pequena, mas se recusa a apagar." },
+    { id: "corredor-de-cinzas", name: "Corredor de Cinzas", rarity: "Comum", archetype: "Assassino", element: "Fogo", bonus: { vel: 1 }, td: { damage: 12, range: 68, cooldown: 1.32 }, trait: "Passos Quentes: ganha velocidade após cada alvo abatido.", description: "Vem de uma rua que já não existe." },
+    { id: "guardiao-do-cais", name: "Guardião do Cais", rarity: "Comum", archetype: "Guerreiro", element: "Água", bonus: { for: 1 }, td: { damage: 12, range: 74, cooldown: 1.5 }, trait: "Maré Curta: +3% materiais em biomas costeiros.", description: "Aprendeu a lutar contra correntezas e dívidas." },
     { id: "monge-de-brasa", name: "Monge de Brasa", rarity: "Incomum", archetype: "Mago", element: "Fogo", bonus: { pod: 1, res: 1 }, td: { damage: 13, range: 88, cooldown: 1.7 }, trait: "Brasa Interna: +6% dano contra inimigos resistentes.", description: "Respira como templo, bate como incêndio." },
     { id: "cortadora-de-mar", name: "Cortadora de Mar", rarity: "Incomum", archetype: "Assassino", element: "Água", bonus: { vel: 1, hab: 1 }, td: { damage: 16, range: 58, cooldown: 1.15 }, trait: "Corte Fluido: +4% chance de loot raro em biomas costeiros.", description: "Uma lâmina viva atravessando ondas impossíveis." },
+    { id: "arqueira-de-vidro", name: "Arqueira de Vidro", rarity: "Incomum", archetype: "Atirador", element: "Cristal", bonus: { hab: 2 }, td: { damage: 15, range: 126, cooldown: 1.5 }, trait: "Refração: cada quinto disparo atravessa dois inimigos.", description: "Seus tiros cantam antes de quebrar o silêncio." },
+    { id: "tecelã-de-brumas", name: "Tecelã de Brumas", rarity: "Incomum", archetype: "Suporte", element: "Névoa", bonus: { vel: 1, pod: 1 }, td: { damage: 10, range: 112, cooldown: 1.64 }, trait: "Véu Frio: inimigos atingidos chegam mais lentos ao portal.", description: "Amarra tempestades no próprio cabelo." },
+    { id: "batedor-da-cripta", name: "Batedor da Cripta", rarity: "Incomum", archetype: "Guerreiro", element: "Osso", bonus: { for: 1, res: 1 }, td: { damage: 18, range: 72, cooldown: 1.48 }, trait: "Sem Medo: +5% dano contra chefes.", description: "Perdeu o medo junto com a primeira vida." },
+    { id: "cronista-do-trovao", name: "Cronista do Trovão", rarity: "Incomum", archetype: "Mago", element: "Raio", bonus: { pod: 2 }, td: { damage: 14, range: 106, cooldown: 1.42 }, trait: "Página Carregada: encadeia o dano para um alvo próximo.", description: "Escreve cada tempestade como uma confissão." },
     { id: "general-da-cicatriz", name: "General da Cicatriz", rarity: "Épico", archetype: "Guardião", element: "Aço", bonus: { for: 1, res: 2 }, td: { damage: 20, range: 76, cooldown: 1.75 }, trait: "Linha de Frente: reduz risco de ferimento do pet em 8%.", description: "Carrega marcas suficientes para ensinar sobrevivência." },
     { id: "oraculo-partido", name: "Oráculo Partido", rarity: "Épico", archetype: "Suporte", element: "Sistema", bonus: { pod: 2, hab: 1 }, td: { damage: 14, range: 118, cooldown: 2.1 }, trait: "Janela Aberta: +8% Millennium Coins ao terminar incursões.", description: "Uma falha consciente da interface que decidiu ajudar." },
+    { id: "dama-do-ultimo-sino", name: "Dama do Último Sino", rarity: "Épico", archetype: "Mago", element: "Som", bonus: { pod: 2, vel: 1 }, td: { damage: 25, range: 116, cooldown: 1.42 }, trait: "Badalar Final: congela uma horda por um breve instante.", description: "A cidade inteira sabe quando ela decidiu lutar." },
+    { id: "cavaleiro-da-chuva-cinzenta", name: "Cavaleiro da Chuva Cinzenta", rarity: "Épico", archetype: "Guerreiro", element: "Água", bonus: { for: 2, res: 1 }, td: { damage: 27, range: 78, cooldown: 1.36 }, trait: "Juramento Molhado: recupera uma vida de base ao vencer um chefe.", description: "Ele jura fidelidade apenas à tempestade." },
     { id: "herdeiro-dos-seis-veus", name: "Herdeiro dos Seis Véus", rarity: "Lendário", archetype: "Mago", element: "Espaço", bonus: { pod: 2, vel: 2 }, td: { damage: 30, range: 130, cooldown: 1.8 }, trait: "Campo Infinito: inimigos lentos por alguns segundos ao iniciar ondas.", description: "Vê ângulos que ainda não aconteceram." },
     { id: "rei-das-fendas", name: "Rei das Fendas", rarity: "Lendário", archetype: "Assassino", element: "Sombra", bonus: { for: 2, pod: 2 }, td: { damage: 38, range: 70, cooldown: 1.2 }, trait: "Sorriso de Ruína: +10% dano em God Slayer.", description: "Quando ele aparece, a interface fica em silêncio." },
+    { id: "matriarca-das-fagulhas", name: "Matriarca das Fagulhas", rarity: "Lendário", archetype: "Atirador", element: "Fogo", bonus: { hab: 2, pod: 2 }, td: { damage: 34, range: 142, cooldown: 1.26 }, trait: "Chuva de Cinzas: cada eliminação amplia o alcance por alguns segundos.", description: "Sua corteira é feita de brasas que lembram nomes." },
     { id: "sol-de-batalha", name: "Sol de Batalha", rarity: "Mítico", archetype: "Guerreiro", element: "Solar", bonus: { for: 3, res: 2 }, td: { damage: 46, range: 92, cooldown: 1.35 }, trait: "Ascensão: ganha +1% dano por onda sobrevivida.", description: "Cada derrota antiga virou combustível." },
     { id: "capitao-do-ceu-vermelho", name: "Capitão do Céu Vermelho", rarity: "Mítico", archetype: "Invocador", element: "Vento", bonus: { vel: 2, hab: 2, pod: 1 }, td: { damage: 28, range: 120, cooldown: 1.55 }, trait: "Bando Livre: +12% fragmentos quando há outro pet em atividade.", description: "Sorri diante do impossível, como se já tivesse vencido." },
     { id: "ceifador-da-lua-branca", name: "Ceifador da Lua Branca", rarity: "Cósmica", archetype: "Assassino", element: "Lunar", bonus: { vel: 3, pod: 3 }, td: { damage: 62, range: 108, cooldown: 1.05 }, trait: "Corte Silencioso: chance pequena de eliminar elite instantaneamente.", description: "Uma sombra clara, fria e precisa." },
@@ -821,7 +835,6 @@ function getTotals(character = currentCharacter()) {
   const race = getRace(character.raceId);
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
-  const title = activeTitle(character);
   const equipmentBonus = addBonuses(...equippedItems(character).map((item) => item.bonus || {}));
   const gachaBonus = addBonuses(...equippedGachaBonuses(character));
   const raw = addBonuses(character.base, race.bonus, klass.bonus, affinity?.bonus, equipmentBonus, gachaBonus);
@@ -968,35 +981,38 @@ function isCharacterBanned(character = currentCharacter()) {
 
 function playSound(kind) {
   if (state.settings.soundEnabled === false) return;
-  if (kind === "click") {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = playSound.ctx || new AudioCtx();
-      playSound.ctx = ctx;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = playSound.ctx || new AudioCtx();
+    playSound.ctx = ctx;
+    ctx.resume?.().catch(() => {});
+    const profiles = {
+      click: { notes: [510], duration: 0.05, volume: 0.018, type: "triangle" },
+      rolling: { notes: [92, 138, 184], duration: 0.72, volume: 0.035, type: "sine", rise: true },
+      common: { notes: [220], duration: 0.12, volume: 0.025, type: "triangle" },
+      rare: { notes: [261.63, 329.63], duration: 0.42, volume: 0.048, type: "sine" },
+      legendary: { notes: [220, 329.63, 440], duration: 0.72, volume: 0.06, type: "triangle", rise: true },
+      secret: { notes: [130.81, 261.63, 523.25], duration: 1.1, volume: 0.072, type: "sine", rise: true },
+      fail: { notes: [155.56], duration: 0.32, volume: 0.035, type: "sawtooth" },
+    };
+    const profile = profiles[kind] || profiles.common;
+    profile.notes.forEach((note, index) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = 520;
-      gain.gain.value = 0.025;
+      osc.type = profile.type;
+      osc.frequency.setValueAtTime(note, ctx.currentTime + index * 0.025);
+      if (profile.rise) osc.frequency.exponentialRampToValueAtTime(note * 1.45, ctx.currentTime + profile.duration * 0.7);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + index * 0.02);
+      gain.gain.exponentialRampToValueAtTime(profile.volume / Math.max(1, profile.notes.length), ctx.currentTime + 0.025 + index * 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + profile.duration);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
-      osc.stop(ctx.currentTime + 0.05);
-    } catch {
-      // noop
-    }
-    return;
-  }
-  const src = { rolling: "medieval/rolling.mp3", rare: "medieval/raro.mp3", fail: "medieval/fail.mp3" }[kind];
-  if (!src) return;
-  try {
-    const audio = new Audio(src);
-    audio.volume = kind === "rolling" ? 0.34 : 0.56;
-    audio.play().catch(() => {});
+      osc.start(ctx.currentTime + index * 0.02);
+      osc.stop(ctx.currentTime + profile.duration + 0.03);
+    });
   } catch {
-    // Audio can be blocked until the first user gesture.
+    // Audio can be blocked until the first gesture.
   }
 }
 
@@ -1256,7 +1272,7 @@ function pickGachaRarity(type = "pets") {
     .filter((rarity) => available.has(rarity.id))
     .map((rarity) => {
       const rateUp = featuredRarities.has(rarity.id);
-      const multiplier = rarity.id === "secret" && rateUp ? 10 : rateUp ? 2.8 : 1;
+        const multiplier = rarity.id === "secret" && rateUp ? 10 : rateUp ? 1.65 : 1;
       return { ...rarity, weight: rarity.weight * multiplier };
     });
   return weightedPick(weights) || GACHA_RARITIES[1];
@@ -1267,7 +1283,7 @@ function pickGachaReward(type = "pets", rarity = "Comum") {
   const rarityPool = pool.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
   const fallback = rarityPool.length ? rarityPool : pool;
   const bannerItems = activeGachaBanner(type).featured.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
-  if (bannerItems.length && Math.random() < 0.68) return bannerItems[Math.floor(Math.random() * bannerItems.length)];
+  if (bannerItems.length && Math.random() < 0.52) return bannerItems[Math.floor(Math.random() * bannerItems.length)];
   return fallback[Math.floor(Math.random() * fallback.length)] || null;
 }
 
@@ -2095,11 +2111,14 @@ function renderMobileBottomNav(nav) {
 function openMoreNav() {
   const nav = NAVS[state.role] || NAVS.player;
   $("#modalContent").innerHTML = `
-    <p class="eyebrow">Navegação</p>
-    <h2>Escolha uma área</h2>
-    <div class="more-nav-grid">
+    <div class="app-drawer-head">
+      <div><p class="eyebrow">Navegação rápida</p><h2>Seu grimório</h2></div>
+      <span class="tag">${state.role === "admin" ? ORACLE_LABEL : "Escolhido"}</span>
+    </div>
+    <div class="more-nav-grid app-drawer-grid">
       ${nav.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></button>`).join("")}
     </div>
+    <button class="drawer-logout" type="button" data-action="logout"><span>↪</span> Sair da interface</button>
   `;
   $("#modal").hidden = false;
 }
@@ -2313,6 +2332,11 @@ function renderProfile() {
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
   const title = activeTitle(character);
+  const equippedFrame = (character.inventory || []).find((item) => item.equipped && /moldura|aura|perfil/i.test(normalize(`${item.name || ""} ${item.category || ""} ${item.categoryId || ""}`)));
+  const showcasePets = [...(character.gachaVault || [])]
+    .filter((item) => item.kind === "pet")
+    .sort((a, b) => instancePower(b) - instancePower(a))
+    .slice(0, 3);
   const tabs = [
     ["overview", "Visão"],
     ["inventory", "Itens"],
@@ -2326,7 +2350,7 @@ function renderProfile() {
       <article class="panel span-12 profile-card-social">
         ${character.bannerUrl ? `<img class="profile-banner" style="object-position:${esc(objectPosition(character.bannerPosition))}" src="${esc(character.bannerUrl)}" alt="Banner do personagem" />` : ""}
         <div class="profile-grid">
-          <div class="avatar-frame ${rarityClass(title?.rarity || "Comum")}" title="Moldura da raridade do título equipado">
+          <div class="avatar-frame ${rarityClass(equippedFrame?.rarity || title?.rarity || "Comum")}" title="${esc(equippedFrame?.name || "Moldura da raridade do título equipado")}">
             <img class="avatar" style="object-position:${esc(objectPosition(character.avatarPosition))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="Avatar do personagem" />
             <span class="profile-online-dot ${isUserOnline(state.profile || {}) ? "online" : ""}" aria-label="${isUserOnline(state.profile || {}) ? "Online" : "Offline"}"></span>
           </div>
@@ -2362,7 +2386,19 @@ function renderProfile() {
               ${(character.titles || []).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
             </div>
             <div class="token-row">${renderTokens(character.tokens || [])}</div>
+            <div class="profile-presence">
+              <span class="presence-mark">${equippedFrame ? "✦" : "◇"}</span>
+              <span>${esc(equippedFrame?.name || "Nenhuma moldura equipada")}</span>
+              <span class="presence-separator">•</span>
+              <span>${showcasePets.length ? `${showcasePets.length} companheiro(s) em destaque` : "Cofre aguardando um companheiro"}</span>
+            </div>
           </div>
+        </div>
+      </article>
+      <article class="panel span-12 profile-showcase-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Vitrine do despertar</p><h3>Companheiros que carregam seu nome</h3></div><span class="tag">Poder do cofre</span></div>
+        <div class="profile-showcase-grid">
+          ${showcasePets.map((pet) => `<div class="profile-showcase-pet ${rarityClass(pet.rarity)}">${pet.imageUrl ? `<img src="${esc(pet.imageUrl)}" alt="${esc(pet.name)}" />` : `<span class="profile-showcase-mark">${esc((pet.name || "P").slice(0, 1))}</span>`}<div><small>${esc(pet.rarity)} · ${"★".repeat(Number(pet.stars || 1))}</small><strong>${esc(pet.name)}</strong><p>${esc(pet.trait || pet.description || "Companheiro dimensional.")}</p></div><b>${instancePower(pet)}</b></div>`).join("") || `<div class="empty-state">Quando um companheiro aceitar seu chamado, ele aparecerá aqui.</div>`}
         </div>
       </article>
       <article class="panel span-12">
@@ -2750,12 +2786,19 @@ function renderActivities(character = currentCharacter()) {
   return activities.map((activity) => {
     const remaining = Math.max(0, dateFromValue(activity.endsAt)?.getTime() - Date.now());
     const ready = remaining <= 0;
+    const total = Math.max(1, (dateFromValue(activity.endsAt)?.getTime() || Date.now()) - (dateFromValue(activity.startedAt)?.getTime() || Date.now()));
+    const elapsed = Math.max(0, Math.min(1, 1 - remaining / total));
+    const stages = ["Partiu", "Rastros", "Confronto", "Retorno"];
+    const stage = ready ? 4 : Math.min(3, Math.floor(elapsed * 4) + 1);
+    const eventText = (activity.events || ["Rastros apagados", "Vento estranho", "Sinais no caminho"])[Math.max(0, stage - 1)] || "O caminho muda a cada passo.";
     return `
       <div class="activity-card ${ready ? "ready" : ""}">
         <div>
           <span>${esc(activity.type)} · ${esc(activity.difficultyName)}</span>
           <strong>${esc(activity.petName)}</strong>
-          <p>${esc(activity.mapName || activity.biome || "Campo aberto")} · ${ready ? "Pronto para coleta" : `Restam ${Math.ceil(remaining / 60000)} min`} · Risco ${Math.round(Number(activity.risk || 0) * 100)}% · Loot parcial: ${(activity.loot || []).join(", ") || "em busca"}</p>
+          <p>${esc(activity.mapName || activity.biome || "Campo aberto")} · ${ready ? "Pronto para coleta" : `Restam ${Math.ceil(remaining / 60000)} min`} · Risco ${Math.round(Number(activity.risk || 0) * 100)}%</p>
+          <div class="hunt-timeline">${stages.map((label, index) => `<span class="${index < stage ? "done" : ""}">${esc(label)}</span>`).join("")}</div>
+          <p class="hunt-event">${esc(eventText)} · Possíveis achados: ${(activity.loot || []).join(", ") || "materiais"}</p>
         </div>
         <div class="action-row">
           <button class="primary-button" type="button" data-action="collect-activity" data-activity-id="${esc(activity.id)}" ${ready ? "" : "disabled"}>Coletar</button>
@@ -2812,7 +2855,7 @@ function renderMinigames() {
 
       <article class="panel span-4">
         <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div>
-        <p class="risk-line">Protótipo tático: pontua por dano, alcance, estrelas, mapa e dificuldade enquanto a versão jogável é preparada.</p>
+        <p class="risk-line">Posicione o pet em uma runa, sobreviva às ondas, derrube elites para obter essência e melhore a defesa durante a partida.</p>
         <form class="form-stack compact-form" data-form="tower-defense">
           <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${petOptions || `<option>Nenhum pet livre</option>`}</select></label>
           <label><span>Mapa</span><select name="mapId">${(state.content.towerMaps || []).map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
@@ -5240,7 +5283,7 @@ async function invokeGacha(type = "pets", qty = 1) {
   state.lastGachaResults = [];
   render();
   playSound("rolling");
-  await delay(amount >= 10 ? 2600 : 1600);
+  await delay(amount >= 10 ? 1100 : 780);
   const results = [];
   for (let index = 0; index < amount; index += 1) {
     const rarity = pickGachaRarity(kind);
@@ -5268,11 +5311,55 @@ async function invokeGacha(type = "pets", qty = 1) {
   state.rolling = false;
   const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
   if (rare) {
-    playSound("rare");
     await announceRareReward(state.user.uid, rare.name, rare.rarity, rare.kind === "pet" ? "pet invocado" : "item invocado");
   }
-  toast(`${results.length} invocação(ões) concluída(s).`);
   render();
+  openGachaReveal(results, kind);
+}
+
+function gachaRevealSound(item) {
+  const score = rarityScore(item?.rarity || "Quebrado");
+  if (score >= rarityScore("Celestial") || item?.shiny) return "secret";
+  if (score >= rarityScore("Mítico")) return "legendary";
+  if (score >= rarityScore("Épico")) return "rare";
+  return "common";
+}
+
+function openGachaReveal(results, kind) {
+  const rarest = [...results].sort((a, b) => instancePower(b) - instancePower(a))[0];
+  const isGreat = rarest && (rarityScore(rarest.rarity) >= rarityScore("Mítico") || rarest.shiny);
+  const title = isGreat ? "O portal respondeu." : "O portal deixou ecos.";
+  $("#modalContent").innerHTML = `
+    <section class="gacha-reveal ${isGreat ? "great-reveal" : ""}">
+      <div class="gacha-reveal-sky" aria-hidden="true"></div>
+      <p class="eyebrow">${kind === "items" ? "Relíquias invocadas" : "Companheiros invocados"}</p>
+      <h2>${title}</h2>
+      <p class="gacha-reveal-copy">Cada eco foi registrado no seu cofre dimensional.</p>
+      <div class="gacha-reveal-results ${results.length > 1 ? "tenfold" : ""}">
+        ${results.map((item, index) => `
+          <article class="gacha-reveal-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}" data-reveal-index="${index}">
+            <div class="gacha-card-veil"></div>
+            <div class="gacha-reveal-art">${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : `<span>${esc((item.name || "M").slice(0, 1))}</span>`}</div>
+            <small>${esc(item.rarity)}${item.shiny ? " · Radiante" : ""}</small>
+            <strong>${esc(item.name)}</strong>
+            <p>${"★".repeat(Number(item.stars || 1))} · Poder ${instancePower(item)}</p>
+          </article>
+        `).join("")}
+      </div>
+      <div class="gacha-reveal-footer">
+        <span>${isGreat ? "Uma presença rara atravessou a interface." : "O cofre dimensional foi atualizado."}</span>
+        <button class="primary-button intense" type="button" data-action="close-modal">Guardar no cofre</button>
+      </div>
+    </section>
+  `;
+  $("#modal").hidden = false;
+  (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
+  state.gachaRevealTimers = results.map((item, index) => window.setTimeout(() => {
+    const card = document.querySelector(`[data-reveal-index="${index}"]`);
+    if (!card) return;
+    card.classList.add("revealed");
+    playSound(gachaRevealSound(item));
+  }, 280 + index * (results.length > 1 ? 240 : 0)));
 }
 
 async function toggleVaultEquip(instanceId) {
@@ -5296,10 +5383,13 @@ async function fuseVaultItem(instanceId) {
   const duplicate = vault.find((entry) => entry.instanceId !== instanceId
     && entry.sourceId === item.sourceId
     && entry.kind === item.kind
+    && rarityKey(entry.rarity) === rarityKey(item.rarity)
+    && Number(entry.stars || 1) === Number(item.stars || 1)
+    && Boolean(entry.shiny) === Boolean(item.shiny)
     && !entry.locked
     && !petBusy(entry));
   if (!duplicate) {
-    toast("Você precisa de uma duplicata livre para fundir.");
+    toast(`Você precisa de outro ${item.baseName || item.name} com ${Number(item.stars || 1)} estrela(s) e a mesma raridade.`);
     return;
   }
   const next = vault
@@ -5507,63 +5597,89 @@ function startAimGame(difficultyId) {
     return;
   }
   stopActiveAimGame();
-  const seconds = 35;
+  const seconds = difficulty.id === "god-slayer" ? 42 : 38;
   let score = 0;
   let remaining = seconds;
   let streak = 0;
-  const session = { timers: [], finished: false };
+  let misses = 0;
+  const session = { timers: [], finished: false, difficulty };
   state.activeAimSession = session;
   $("#modalContent").innerHTML = `
-    <p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p>
-    <h2>Acerte os ecos antes que sumam</h2>
-    <div class="aim-hud"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-time>${seconds}s</span></div>
-    <div class="aim-arena" data-aim-arena></div>
-    <div class="hint">Alvo dourado pontua. Alvo branco vale mais. Alvo azul congela o tempo por alguns segundos.</div>
-    <button class="ghost-button" type="button" data-action="close-modal">Encerrar sem recompensa</button>
+    <section class="aim-session difficulty-${esc(difficulty.id)}">
+      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p><h2>O portal atira de volta.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="aim-hud"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${seconds}s</span></div>
+      <div class="aim-arena" data-aim-arena aria-label="Arena de mira"></div>
+      <div class="aim-legend"><span><b>•</b> eco</span><span><b>✦</b> raro</span><span><b>⌁</b> tempo</span>${difficulty.id !== "noob" ? "<span class=\"danger\"><b>×</b> armadilha</span>" : ""}</div>
+    </section>
   `;
   $("#modal").hidden = false;
   const arena = $("[data-aim-arena]");
   const scoreEl = $("[data-aim-score]");
   const comboEl = $("[data-aim-combo]");
+  const missesEl = $("[data-aim-misses]");
   const timeEl = $("[data-aim-time]");
+  const refreshHud = () => {
+    scoreEl.textContent = `${Math.max(0, score)} pontos`;
+    comboEl.textContent = `Combo ${streak}`;
+    missesEl.textContent = `Erros ${misses}`;
+    timeEl.textContent = `${remaining}s`;
+  };
   const finish = async () => {
     if (session.finished) return;
     session.finished = true;
     session.timers.forEach((timerId) => window.clearTimeout(timerId));
-    await applyMinigameReward("aim", difficulty.id, score);
+    const reward = await applyMinigameReward("aim", difficulty.id, Math.max(0, score), { lastAimRun: { score: Math.max(0, score), streak, misses, difficultyId: difficulty.id, createdAt: new Date().toISOString() } });
     state.activeAimSession = null;
-    closeModal();
+    showMinigameResult({ mode: "Prova da Mira", difficulty, score: Math.max(0, score), reward, detail: `${misses} erro(s) · Melhor combo ${streak}` });
   };
+  const breakCombo = (penalty = 0) => {
+    streak = 0;
+    misses += 1;
+    score = Math.max(0, score - penalty);
+    refreshHud();
+    playSound("fail");
+  };
+  arena.addEventListener("pointerdown", (event) => {
+    if (event.target === arena) breakCombo(Math.round(28 * difficulty.multiplier));
+  });
   const addTarget = () => {
     if (!arena || session.finished) return;
     const roll = Math.random();
-    const type = roll < 0.08 ? "freeze" : roll < 0.2 ? "rare" : "normal";
+    const dangerChance = difficulty.id === "noob" ? 0 : Math.min(0.22, 0.035 + difficulty.multiplier * 0.035);
+    const type = roll < dangerChance ? "trap" : roll < dangerChance + 0.07 ? "freeze" : roll < dangerChance + 0.2 ? "rare" : "normal";
     const target = document.createElement("button");
     target.type = "button";
     target.className = `aim-target ${type}`;
     target.style.left = `${Math.random() * 82 + 4}%`;
     target.style.top = `${Math.random() * 74 + 8}%`;
-    target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : "•";
-    target.addEventListener("pointerdown", () => {
-      streak += 1;
-      const streakBonus = Math.min(2.2, 1 + streak * 0.04);
-      if (type === "freeze") {
-        remaining = Math.min(seconds, remaining + 4);
-        score += Math.round(95 * difficulty.multiplier * streakBonus);
-      } else {
-        score += Math.round((type === "rare" ? 230 : 75) * difficulty.multiplier * streakBonus);
+    const size = Math.max(24, 50 - difficulty.multiplier * 5 - (type === "rare" ? 4 : 0));
+    target.style.setProperty("--aim-size", `${size}px`);
+    target.style.setProperty("--aim-drift", `${Math.max(0.6, 2.6 - difficulty.multiplier * 0.22)}s`);
+    target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : type === "trap" ? "×" : "•";
+    target.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+      if (type === "trap") {
+        breakCombo(Math.round(120 * difficulty.multiplier));
+        target.remove();
+        return;
       }
-      scoreEl.textContent = `${score} pontos`;
-      comboEl.textContent = `Combo ${streak}`;
-      timeEl.textContent = `${remaining}s`;
+      streak += 1;
+      const streakBonus = Math.min(2.5, 1 + streak * 0.055);
+      if (type === "freeze") {
+        remaining = Math.min(seconds + 5, remaining + 3);
+        score += Math.round(100 * difficulty.multiplier * streakBonus);
+      } else {
+        score += Math.round((type === "rare" ? 250 : 78) * difficulty.multiplier * streakBonus);
+      }
+      refreshHud();
+      playSound(type === "rare" ? "rare" : "common");
       target.remove();
     }, { once: true });
     arena.appendChild(target);
-    const life = type === "rare" ? 760 : type === "freeze" ? 650 : 1150;
+    const life = Math.max(280, (type === "rare" ? 780 : type === "freeze" ? 680 : type === "trap" ? 940 : 1220) - difficulty.multiplier * 130);
     const removeTimer = window.setTimeout(() => {
       if (target.isConnected) {
-        streak = 0;
-        comboEl.textContent = "Combo 0";
+        if (type !== "trap") breakCombo(0);
         target.remove();
       }
     }, life);
@@ -5575,8 +5691,28 @@ function startAimGame(difficultyId) {
     timeEl.textContent = `${remaining}s`;
     if (remaining <= 0) finish();
   }, 1000);
-  const spawn = window.setInterval(addTarget, Math.max(230, 880 - difficulty.multiplier * 110));
+  const spawn = window.setInterval(addTarget, Math.max(165, 720 - difficulty.multiplier * 82));
   session.timers.push(timer, spawn);
+}
+
+function showMinigameResult({ mode, difficulty, score, reward, detail = "" }) {
+  $("#modalContent").innerHTML = `
+    <section class="minigame-result ${reward?.passed ? "victory" : "partial"}">
+      <p class="eyebrow">${esc(mode)} · ${esc(difficulty.name)}</p>
+      <span class="minigame-grade">${esc(reward?.grade || "D")}</span>
+      <h2>${reward?.passed ? "Você sobreviveu ao desafio." : "O portal cobrou seu preço."}</h2>
+      <p>${esc(detail)}</p>
+      <div class="result-reward-grid">
+        ${renderStat("Score", score)}
+        ${renderStat("Millennium Coins", reward?.coins || 0)}
+        ${renderStat(reward?.fragmentName || "Fragmentos", reward?.fragments || 0)}
+      </div>
+      <p class="result-loot">${esc((reward?.loot || ["Nenhuma recompensa"]).join(" · "))}</p>
+      <button class="primary-button intense" type="button" data-action="close-modal">Voltar ao grimório</button>
+    </section>
+  `;
+  $("#modal").hidden = false;
+  playSound(reward?.passed ? (reward.grade === "S" ? "legendary" : "rare") : "fail");
 }
 
 async function startPetHunt(form) {
@@ -5605,6 +5741,12 @@ async function startPetHunt(form) {
     startedAt: new Date().toISOString(),
     endsAt: new Date(Date.now() + duration).toISOString(),
     loot: ["rastros", difficulty.id === "god-slayer" ? "chance secreta" : "materiais"],
+    events: [
+      `Saiu por ${biome.name || "uma rota desconhecida"}`,
+      difficulty.id === "god-slayer" ? "A presença de um chefe foi sentida." : "Pegadas recentes cruzam o caminho.",
+      Math.random() < 0.28 ? "Um baú antigo foi avistado entre as ruínas." : "Algo observa entre as sombras.",
+      "A rota de retorno já pode ser traçada.",
+    ],
   };
   const vault = (character.gachaVault || []).map((item) => item.instanceId === pet.instanceId ? { ...item, status: "Em Hunt", activityId: activity.id, equipped: false } : item);
   await updateCharacter(state.user.uid, {
@@ -5654,24 +5796,313 @@ async function startTowerDefense(form) {
   }
   const map = (state.content.towerMaps || []).find((item) => item.id === values.mapId) || {};
   const difficulty = difficultyById(values.difficulty || state.minigameDifficulty);
-  const td = pet.td || {};
-  const score = Math.round((Number(td.damage || 10) * 80 + Number(td.range || 80) * 8) * difficulty.multiplier * (1 + (Number(pet.stars || 1) - 1) * 0.22));
-  const reward = await applyMinigameReward("tower", difficulty.id, score);
-  form.reset();
+  if (currentGachaEnergy(character) < difficulty.cost) {
+    toast("Energia insuficiente para iniciar a defesa.");
+    return;
+  }
+  stopActiveTowerDefense();
+  const slots = [{ x: 160, y: 310 }, { x: 310, y: 238 }, { x: 500, y: 190 }, { x: 635, y: 126 }];
+  const session = {
+    pet,
+    map,
+    difficulty,
+    slots,
+    selectedSlot: 0,
+    wave: 0,
+    targetWaves: Math.min(8, 3 + Math.ceil(difficulty.multiplier)),
+    lives: 3,
+    essence: 3,
+    upgrade: 0,
+    kills: 0,
+    escaped: 0,
+    enemies: [],
+    spawning: false,
+    running: false,
+    looping: false,
+    waveTargetCount: 0,
+    waveSpawned: 0,
+    waveStartKills: 0,
+    waveStartEscaped: 0,
+    finished: false,
+    lastShotAt: 0,
+    lastFrame: performance.now(),
+    animationFrame: null,
+    spawnTimers: [],
+    flash: 0,
+  };
+  state.activeTowerSession = session;
   $("#modalContent").innerHTML = `
-    <p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p>
-    <h2>${esc(pet.name)} defendeu ${esc(map.name || "o mapa")}</h2>
-    <div class="tower-report">
-      <div>${renderStat("Score", score)}</div>
-      <div>${renderStat("Ondas", Math.max(3, Math.round(difficulty.multiplier * 3)))}</div>
-      <div>${renderStat("Rotas", map.lanes || 3)}</div>
-      <div>${renderStat("Rank", reward?.grade || "-")}</div>
-    </div>
-    <p>${esc(map.description || "A defesa foi calculada pelo poder tático do pet enquanto o modo jogável é preparado.")}</p>
-    <p class="hint">${esc((reward?.loot || []).join(" · "))}</p>
+    <section class="tower-session">
+      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p><h2>${esc(map.name || "Território sem nome")}</h2><p>${esc(pet.name)} segura a rota. Toque em uma runa para posicioná-lo antes da onda.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <canvas class="tower-canvas" data-tower-canvas width="760" height="420" aria-label="Mapa jogável do Tower Defense"></canvas>
+      <div class="tower-hud" data-tower-hud></div>
+      <div class="tower-controls">
+        <button class="primary-button intense" type="button" data-action="tower-start-wave">${session.wave ? "Próxima onda" : "Iniciar defesa"}</button>
+        <button class="ghost-button" type="button" data-action="tower-upgrade">Elevar runa · 1 essência</button>
+      </div>
+    </section>
   `;
   $("#modal").hidden = false;
-  toast(`${pet.name} defendeu ${map.name || "o mapa"} com ${score} pontos.`);
+  const canvas = $("[data-tower-canvas]");
+  const ctx = canvas?.getContext("2d");
+  session.canvas = canvas;
+  session.ctx = ctx;
+  canvas?.addEventListener("pointerdown", (event) => selectTowerSlot(event, session));
+  drawTowerDefense(session);
+  form.reset();
+}
+
+function stopActiveTowerDefense() {
+  const session = state.activeTowerSession;
+  if (!session) return;
+  session.finished = true;
+  if (session.animationFrame) window.cancelAnimationFrame(session.animationFrame);
+  (session.spawnTimers || []).forEach((timer) => window.clearTimeout(timer));
+  state.activeTowerSession = null;
+}
+
+function towerPetStats(session) {
+  const td = session.pet.td || {};
+  const starScale = 1 + (Number(session.pet.stars || 1) - 1) * 0.18;
+  const upgradeScale = 1 + session.upgrade * 0.25;
+  return {
+    damage: Math.max(4, Number(td.damage || 8) * starScale * upgradeScale),
+    range: Math.max(84, Number(td.range || 70) * 1.45 * (1 + session.upgrade * 0.1)),
+    cooldown: Math.max(0.35, Number(td.cooldown || 1.5) * (1 - session.upgrade * 0.06)),
+  };
+}
+
+function selectTowerSlot(event, session) {
+  if (!session || session.running || session.finished || !session.canvas) return;
+  const box = session.canvas.getBoundingClientRect();
+  const x = (event.clientX - box.left) * (session.canvas.width / box.width);
+  const y = (event.clientY - box.top) * (session.canvas.height / box.height);
+  let closest = 0;
+  let distance = Infinity;
+  session.slots.forEach((slot, index) => {
+    const current = Math.hypot(slot.x - x, slot.y - y);
+    if (current < distance) {
+      closest = index;
+      distance = current;
+    }
+  });
+  if (distance < 86) {
+    session.selectedSlot = closest;
+    playSound("click");
+    drawTowerDefense(session);
+  }
+}
+
+function updateTowerHud(session) {
+  const hud = $("[data-tower-hud]");
+  if (!hud) return;
+  hud.innerHTML = `
+    <span>Onda <b>${session.wave}/${session.targetWaves}</b></span>
+    <span>Vidas <b>${"✦".repeat(session.lives)}</b></span>
+    <span>Essência <b>${session.essence}</b></span>
+    <span>Abates <b>${session.kills}</b></span>
+  `;
+}
+
+function drawTowerDefense(session) {
+  if (!session?.ctx || session.finished) return;
+  const { ctx, canvas } = session;
+  const petStats = towerPetStats(session);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const sky = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  sky.addColorStop(0, "#101a22");
+  sky.addColorStop(0.55, "#18201d");
+  sky.addColorStop(1, "#090a0c");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(225, 192, 110, 0.12)";
+  for (let index = 0; index < 42; index += 1) {
+    const x = (index * 83) % canvas.width;
+    const y = (index * 47) % canvas.height;
+    ctx.fillRect(x, y, 2, 2);
+  }
+  ctx.strokeStyle = "rgba(224, 205, 165, 0.36)";
+  ctx.lineWidth = 36;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-20, 215);
+  ctx.bezierCurveTo(170, 215, 210, 110, 365, 215);
+  ctx.bezierCurveTo(510, 320, 560, 215, 780, 215);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(16, 14, 12, 0.84)";
+  ctx.lineWidth = 24;
+  ctx.stroke();
+  session.slots.forEach((slot, index) => {
+    ctx.beginPath();
+    ctx.arc(slot.x, slot.y, 28, 0, Math.PI * 2);
+    ctx.fillStyle = index === session.selectedSlot ? "rgba(243, 207, 122, 0.42)" : "rgba(255,255,255,0.08)";
+    ctx.fill();
+    ctx.strokeStyle = index === session.selectedSlot ? "#f3cf7a" : "rgba(243,207,122,0.34)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+  const tower = session.slots[session.selectedSlot];
+  ctx.beginPath();
+  ctx.arc(tower.x, tower.y, petStats.range, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(243,207,122,0.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(tower.x, tower.y, 18 + session.upgrade * 2, 0, Math.PI * 2);
+  ctx.fillStyle = "#d8b45d";
+  ctx.fill();
+  ctx.fillStyle = "#17120d";
+  ctx.font = "bold 17px Cinzel";
+  ctx.textAlign = "center";
+  ctx.fillText(String((session.pet.name || "P").slice(0, 1)).toUpperCase(), tower.x, tower.y + 6);
+  session.enemies.forEach((enemy) => {
+    const radius = enemy.elite ? 15 : 10;
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = enemy.elite ? "#d96478" : "#6d7a8c";
+    ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.62)";
+    ctx.fillRect(enemy.x - 16, enemy.y - radius - 10, 32, 4);
+    ctx.fillStyle = enemy.elite ? "#ffe197" : "#ddedf0";
+    ctx.fillRect(enemy.x - 16, enemy.y - radius - 10, 32 * Math.max(0, enemy.hp / enemy.maxHp), 4);
+  });
+  if (session.flash > 0) {
+    ctx.strokeStyle = "rgba(255,246,181,0.88)";
+    ctx.lineWidth = 2;
+    const target = session.enemies.find((enemy) => Math.hypot(enemy.x - tower.x, enemy.y - tower.y) <= petStats.range);
+    if (target) {
+      ctx.beginPath();
+      ctx.moveTo(tower.x, tower.y);
+      ctx.lineTo(target.x, target.y);
+      ctx.stroke();
+    }
+  }
+  updateTowerHud(session);
+}
+
+function startTowerWave() {
+  const session = state.activeTowerSession;
+  if (!session || session.running || session.finished) return;
+  if (session.wave >= session.targetWaves) return;
+  session.wave += 1;
+  session.running = true;
+  const waveButton = document.querySelector("button[data-action='tower-start-wave']");
+  if (waveButton) {
+    waveButton.disabled = true;
+    waveButton.textContent = "Onda em curso";
+  }
+  const count = 3 + session.wave + Math.round(session.difficulty.multiplier);
+  session.waveTargetCount = count;
+  session.waveSpawned = 0;
+  session.waveStartKills = session.kills;
+  session.waveStartEscaped = session.escaped;
+  const baseHp = 36 * session.difficulty.multiplier * (1 + session.wave * 0.32);
+  for (let index = 0; index < count; index += 1) {
+    const timer = window.setTimeout(() => {
+      if (session.finished) return;
+      session.waveSpawned += 1;
+      const elite = session.wave > 1 && index === count - 1;
+      session.enemies.push({
+        x: -24,
+        y: 215,
+        progress: 0,
+        hp: Math.round(baseHp * (elite ? 2.05 : 1)),
+        maxHp: Math.round(baseHp * (elite ? 2.05 : 1)),
+        speed: (55 + session.difficulty.multiplier * 8 + session.wave * 3) * (elite ? 0.78 : 1),
+        elite,
+      });
+    }, index * Math.max(380, 760 - session.difficulty.multiplier * 58));
+    session.spawnTimers.push(timer);
+  }
+  if (!session.looping) {
+    session.looping = true;
+    session.lastFrame = performance.now();
+    runTowerFrame(session);
+  }
+}
+
+function runTowerFrame(session) {
+  if (!session || session.finished) return;
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - session.lastFrame) / 1000);
+  session.lastFrame = now;
+  const stats = towerPetStats(session);
+  const tower = session.slots[session.selectedSlot];
+  session.enemies.forEach((enemy) => {
+    enemy.progress += enemy.speed * dt;
+    const t = Math.min(1.04, enemy.progress / 800);
+    enemy.x = -20 + t * 800;
+    enemy.y = 215 + Math.sin(t * Math.PI * 2) * 80;
+  });
+  const target = session.enemies.find((enemy) => Math.hypot(enemy.x - tower.x, enemy.y - tower.y) <= stats.range);
+  if (target && now - session.lastShotAt >= stats.cooldown * 1000) {
+    target.hp -= stats.damage;
+    session.lastShotAt = now;
+    session.flash = 0.12;
+    playSound("common");
+  }
+  session.flash = Math.max(0, session.flash - dt);
+  const escaped = session.enemies.filter((enemy) => enemy.progress >= 800);
+  if (escaped.length) {
+    session.escaped += escaped.length;
+    session.lives = Math.max(0, session.lives - escaped.length);
+  }
+  const killed = session.enemies.filter((enemy) => enemy.hp <= 0);
+  if (killed.length) {
+    session.kills += killed.length;
+    session.essence += killed.filter((enemy) => enemy.elite).length;
+  }
+  session.enemies = session.enemies.filter((enemy) => enemy.hp > 0 && enemy.progress < 800);
+  if (session.lives <= 0) {
+    finishTowerDefense(session, false);
+    return;
+  }
+  const resolvedThisWave = (session.kills - session.waveStartKills) + (session.escaped - session.waveStartEscaped);
+  if (session.running && session.waveSpawned >= session.waveTargetCount && session.enemies.length === 0 && resolvedThisWave >= session.waveTargetCount) {
+    session.running = false;
+    if (session.wave >= session.targetWaves) {
+      finishTowerDefense(session, true);
+      return;
+    }
+    const waveButton = document.querySelector("button[data-action='tower-start-wave']");
+    if (waveButton) {
+      waveButton.disabled = false;
+      waveButton.textContent = "Próxima onda";
+    }
+  }
+  drawTowerDefense(session);
+  session.animationFrame = window.requestAnimationFrame(() => runTowerFrame(session));
+}
+
+function upgradeTowerDefense() {
+  const session = state.activeTowerSession;
+  if (!session || session.finished || session.essence < 1 || session.upgrade >= 4) {
+    toast(session?.upgrade >= 4 ? "A runa já está no limite desta partida." : "Derrote inimigos de elite para obter essência.");
+    return;
+  }
+  session.essence -= 1;
+  session.upgrade += 1;
+  playSound("rare");
+  drawTowerDefense(session);
+}
+
+async function finishTowerDefense(session, victory) {
+  if (!session || session.finished) return;
+  session.finished = true;
+  if (session.animationFrame) window.cancelAnimationFrame(session.animationFrame);
+  (session.spawnTimers || []).forEach((timer) => window.clearTimeout(timer));
+  const score = Math.round((session.kills * 110 + session.wave * 240 + session.lives * 180 + session.upgrade * 150) * session.difficulty.multiplier);
+  const reward = await applyMinigameReward("tower", session.difficulty.id, score, {
+    lastTowerRun: { mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, createdAt: new Date().toISOString() },
+  });
+  state.activeTowerSession = null;
+  showMinigameResult({
+    mode: "Tower Defense",
+    difficulty: session.difficulty,
+    score,
+    reward,
+    detail: `${victory ? "Fortaleza preservada" : "A rota foi rompida"} · ${session.kills} abates · ${session.wave}/${session.targetWaves} ondas · ${session.lives} vida(s)`,
+  });
 }
 
 function passRewardPatch(character, rewardText, tier) {
@@ -7288,6 +7719,9 @@ function openReportModal() {
 
 function closeModal() {
   stopActiveAimGame();
+  stopActiveTowerDefense();
+  (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
+  state.gachaRevealTimers = [];
   $("#modal").hidden = true;
   $("#modalContent").innerHTML = "";
 }
@@ -7355,6 +7789,8 @@ function wireEvents() {
         render();
       }
       if (action === "start-aim-game") startAimGame(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "tower-start-wave") startTowerWave();
+      if (action === "tower-upgrade") upgradeTowerDefense();
       if (action === "collect-activity") await completeActivity(button.dataset.activityId, false);
       if (action === "cancel-activity") await completeActivity(button.dataset.activityId, true);
       if (action === "request-premium-pass") await requestPremiumPass();
