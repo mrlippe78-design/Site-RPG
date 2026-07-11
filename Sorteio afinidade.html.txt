@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteio de Afinidades</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ccc; display: none; background-color: #f9f9f9; }
+        h3 { margin-top: 0; }
+        p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+    <h2>Sorteador de Afinidades</h2>
+    <p>Clique no botão abaixo para sortear uma afinidade com base nas chances definidas pelas categorias.</p>
+    <button onclick="sortearAfinidade()">Sortear Afinidade</button>
+
+    <div id="resultado">
+        <h3 id="res-categoria"></h3>
+        <h4 id="res-nome"></h4>
+        <p><strong>Bônus:</strong> <span id="res-bonus"></span></p>
+        <p><strong>Passiva:</strong> <span id="res-passiva"></span></p>
+    </div>
+
+    <script>
+        const afinidades = {
+            "Elementais": [
+                { nome: "🔥 Fogo", bonus: "+2 Poder", passiva: "Espírito Ardente: Todo dano causado por técnicas de Fogo é aplicado em ×2." },
+                { nome: "🌊 Água", bonus: "+1 Resistência e +1 Poder", passiva: "Fluxo Contínuo: Toda recuperação de PP é aplicada em ×2." },
+                { nome: "🪨 Terra", bonus: "+2 Resistência", passiva: "Corpo de Pedra: Toda redução de dano é aplicada em ×2." },
+                { nome: "🌪️ Ar", bonus: "+2 Velocidade", passiva: "Vento Favorável: Todos os bônus em Esquiva são aplicados em ×2." }
+            ],
+            "Sub-Elementais": [
+                { nome: "⚡ Relâmpago", bonus: "+1 Velocidade e +1 Habilidade", passiva: "Reflexos Elétricos: Todos os bônus em Iniciativa são aplicados em ×2." },
+                { nome: "❄️ Gelo", bonus: "+1 Resistência e +1 Habilidade", passiva: "Frieza Absoluta: Todos os bônus para resistir a efeitos de controle são aplicados em ×2." },
+                { nome: "🌋 Magma", bonus: "+1 Força e +1 Poder", passiva: "Pele Incandescente: Todo dano refletido ao atacante é aplicado em ×2." },
+                { nome: "🌫️ Névoa", bonus: "+1 Velocidade e +1 Habilidade", passiva: "Forma Nebulosa: Todos os bônus em Furtividade são aplicados em ×2." },
+                { nome: "☣️ Veneno", bonus: "+1 Poder e +1 Resistência", passiva: "Toxina Natural: Todo dano contínuo causado por você é aplicado em ×2." },
+                { nome: "💎 Cristal", bonus: "+1 Resistência e +1 Habilidade", passiva: "Estrutura Cristalina: Toda resistência de barreiras e construções criadas por você é aplicada em ×2." },
+                { nome: "🧲 Metal", bonus: "+1 Força e +1 Resistência", passiva: "Corpo Temperado: Todos os bônus para resistir a agarrões, empurrões e desarmes são aplicados em ×2." },
+                { nome: "🌱 Natureza", bonus: "+1 Resistência e +1 Poder", passiva: "Vitalidade Natural: Toda recuperação de PV é aplicada em ×2." },
+                { nome: "🏜️ Areia", bonus: "+1 Poder e +1 Habilidade", passiva: "Tempestade de Poeira: Todas as penalidades causadas por você em Percepção são aplicados em ×2." }
+            ],
+            "Espirituais": [
+                { nome: "👻 Espírito", bonus: "+2 Poder", passiva: "Percepção Espiritual: Todos os bônus para detectar espíritos, magia e presenças sobrenaturais são aplicados em ×2." },
+                { nome: "🧠 Psíquica", bonus: "+1 Poder e +1 Habilidade", passiva: "Mente Serena: Todos os bônus contra ilusões e efeitos mentais são aplicados em ×2." },
+                { nome: "🌑 Sombras", bonus: "+1 Velocidade e +1 Poder", passiva: "Caminho Sombrio: Todos os bônus em ambientes escuros são aplicados em ×2." },
+                { nome: "☀️ Luz", bonus: "+1 Poder e +1 Habilidade", passiva: "Aura Purificadora: Todos os bônus contra maldições, corrupção e trevas são aplicados em ×2." },
+                { nome: "🩸 Sangue", bonus: "+2 Resistência", passiva: "Instinto Primordial: Todos os bônus concedidos quando estiver abaixo de 50% dos PV são aplicados em ×2." },
+                { nome: "🔮 Arcana", bonus: "+2 Poder", passiva: "Condutor Arcano: Toda redução de custo de PP é aplicada em ×2." }
+            ],
+            "Celestiais": [
+                { nome: "😇 Celestial", bonus: "+1 Poder e +1 Resistência", passiva: "Bênção Divina: Todos os bônus para resistir a efeitos negativos são aplicados em ×2." },
+                { nome: "🌙 Lunar", bonus: "+1 Velocidade e +1 Poder", passiva: "Serenidade da Lua: Toda recuperação de PV e PP durante descansos é aplicada em ×2." },
+                { nome: "☀️ Solar", bonus: "+1 Força e +1 Poder", passiva: "Luz Radiante: Toda penetração de defesa concedida por suas técnicas é aplicada em ×2." },
+                { nome: "⭐ Estelar", bonus: "+1 Habilidade e +1 Poder", passiva: "Guia das Estrelas: Todos os bônus em testes de Percepção são aplicados em ×2." }
+            ],
+            "Cósmicas": [
+                { nome: "🌌 Éter", bonus: "+2 Poder", passiva: "Energia Universal: Todo aumento máximo de PP recebido é aplicado em ×2." },
+                { nome: "🌠 Gravidade", bonus: "+1 Força e +1 Poder", passiva: "Peso Esmagador: Todos os bônus em agarrões, empurrões e derrubadas são aplicados em ×2." },
+                { nome: "🕳️ Vazio", bonus: "+1 Velocidade e +1 Poder", passiva: "Presença Inexistente: Todos os bônus em Furtividade e Ocultação são aplicados em ×2." },
+                { nome: "☄️ Meteoro", bonus: "+1 Força e +1 Habilidade", passiva: "Impacto Devastador: Todo dano adicional causado por acertos críticos é aplicado em ×2." },
+                { nome: "⏳ Tempo", bonus: "+1 Velocidade e +1 Habilidade", passiva: "Percepção Temporal: Todos os bônus em Iniciativa são aplicados em ×2." },
+                { nome: "🌌 Espaço", bonus: "+1 Habilidade e +1 Poder", passiva: "Dobra Espacial: Todo deslocamento adicional concedido por habilidades ou técnicas é aplicado em ×2." }
+            ]
+        };
+
+        function sortearAfinidade() {
+            const rand = Math.random() * 100;
+            let categoriaEscolhada = "";
+
+            if (rand < 50) {
+                categoriaEscolhada = "Elementais";
+            } else if (rand < 75) {
+                categoriaEscolhada = "Sub-Elementais";
+            } else if (rand < 85) {
+                categoriaEscolhada = "Espirituais";
+            } else if (rand < 95) {
+                categoriaEscolhada = "Celestiais";
+            } else {
+                categoriaEscolhada = "Cósmicas";
+            }
+
+            const lista = afinidades[categoriaEscolhada];
+            const itemSorteado = lista[Math.floor(Math.random() * lista.length)];
+
+            document.getElementById("res-categoria").innerText = "Categoria: " + categoriaEscolhada;
+            document.getElementById("res-nome").innerText = itemSorteado.nome;
+            document.getElementById("res-bonus").innerText = itemSorteado.bonus;
+            document.getElementById("res-passiva").innerText = itemSorteado.passiva;
+            
+            document.getElementById("resultado").style.display = "block";
+        }
+    </script>
+</body>
+</html>S
