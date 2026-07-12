@@ -1,0 +1,527 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function own(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userRecord() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function hasAdminProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? userRecord().data.get("role", "") == "admin"
+        : false;
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        || hasAdminProfile()
+      );
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function shortText(value, maximum) {
+      return value is string && value.size() <= maximum;
+    }
+
+    function validAudit(auditId, targetId) {
+      return auditId is string && auditId.size() >= 12
+        && existsAfter(/databases/$(database)/documents/auditLogs/$(auditId))
+        ? getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.adminId == request.auth.uid
+          && getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.targetId == targetId
+          && shortText(getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.reason, 500)
+        : false;
+    }
+
+    function auditedAdminMutation(targetId) {
+      let auditId = request.resource.data.get("lastAuditId", "");
+      return isAdmin()
+        ? auditId != resource.data.get("lastAuditId", "") && validAudit(auditId, targetId)
+        : false;
+    }
+
+    function validBase(base) {
+      return base is map
+        && base.keys().hasOnly(["for", "vel", "hab", "res", "pod"])
+        && base["for"] is int && base["for"] >= 2 && base["for"] <= 6
+        && base.vel is int && base.vel >= 2 && base.vel <= 6
+        && base.hab is int && base.hab >= 2 && base.hab <= 6
+        && base.res is int && base.res >= 2 && base.res <= 6
+        && base.pod is int && base.pod >= 2 && base.pod <= 6
+        && base["for"] + base.vel + base.hab + base.res + base.pod == 20;
+    }
+
+    function safeInitialEconomy(data) {
+      return data.gold == 100
+        && data.millenniumCoins == 250
+        && data.gachaEnergy == 30
+        && data.affinityAttempts >= 0 && data.affinityAttempts <= 10
+        && data.pityCounter == 0
+        && data.totalRolls == 0
+        && data.totalRares == 0
+        && data.prestige == 0
+        && data.xp == 0
+        && data.level == 1
+        && data.freePoints == 0
+        && data.seasonPassXp == 0
+        && data.premiumPassUnlocked == false
+        && data.affinityId == ""
+        && data.gachaVault is list && data.gachaVault.size() == 0
+        && data.inventory is list && data.inventory.size() == 0
+        && data.pets is list && data.pets.size() == 0
+        && data.titles is list && data.titles.size() == 0
+        && data.tokens is list && data.tokens.size() == 0
+        && data.powers is list && data.powers.size() == 0
+        && data.techniques is list && data.techniques.size() == 0
+        && data.rollHistory is list && data.rollHistory.size() == 0
+        && data.activeActivities is list && data.activeActivities.size() == 0;
+    }
+
+    function ownerCharacterCreate(uid) {
+      let data = request.resource.data;
+      return own(uid)
+        && data.ownerId == uid
+        && data.keys().hasOnly([
+          "id", "ownerId", "displayName", "profilePublic", "playerName", "characterName",
+          "characterAge", "characterDescription", "pronouns", "originType", "apparentAge",
+          "realAge", "cultureId", "culture", "kingdomId", "regionId", "professionId", "profession", "objective", "fear",
+          "playerLimits", "currentLocation", "physicalState", "essenceState", "creationLocked",
+          "creationStatus", "technicalCreationComplete", "narrativeCreationComplete",
+          "bannerUrl", "raceId", "classId", "factionId", "factionReputation",
+          "factionJoinedAt", "affinityId", "affinityAttempts", "pityCounter", "totalRolls",
+          "totalRares", "prestige", "base", "development", "xp", "level", "freePoints",
+          "gold", "millenniumCoins", "gachaEnergy", "gachaEnergyUpdatedAt", "gachaFragments",
+          "gachaVault", "gachaHistory", "activeActivities", "minigameStats", "activeTitleId",
+          "pendingGift", "activeMissions", "premiumPassUnlocked", "seasonPassXp",
+          "passMissionClaims", "rollHistory", "titles", "tokens", "pets", "inventory",
+          "power", "powers", "powerSlots", "techniques", "story", "personality", "avatarUrl",
+          "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY", "avatarZoom",
+          "bannerFocusX", "bannerFocusY", "bannerZoom", "createdAt", "updatedAt"
+        ])
+        && data.creationLocked == false
+        && validBase(data.base)
+        && data.development == {"for": 0, "vel": 0, "hab": 0, "res": 0, "pod": 0}
+        && safeInitialEconomy(data);
+    }
+
+    function technicalCreationUpdate() {
+      let data = request.resource.data;
+      let changed = data.diff(resource.data).affectedKeys();
+      return resource.data.creationLocked == false
+        && data.creationLocked == true
+        && validBase(data.base)
+        && shortText(data.playerName, 80)
+        && shortText(data.characterName, 80)
+        && shortText(data.raceId, 80)
+        && shortText(data.classId, 80)
+        && changed.hasOnly([
+          "playerName", "displayName", "characterName", "characterAge", "pronouns",
+          "originType", "apparentAge", "realAge", "raceId", "classId", "kingdomId",
+          "regionId", "cultureId", "culture", "professionId", "profession",
+          "currentLocation", "characterDescription", "avatarUrl", "bannerUrl",
+          "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY",
+          "avatarZoom", "bannerFocusX", "bannerFocusY", "bannerZoom", "base",
+          "creationLocked", "creationStatus", "technicalCreationComplete", "updatedAt"
+        ]);
+    }
+
+    function ownerProfileUpdate() {
+      return changedOnly([
+        "playerName", "displayName", "characterName", "characterAge", "pronouns",
+        "originType", "apparentAge", "realAge", "cultureId", "culture",
+        "professionId", "profession", "kingdomId", "regionId", "currentLocation",
+        "characterDescription", "objective", "fear", "playerLimits", "story",
+        "personality", "profilePublic", "activeTitleId", "avatarUrl", "bannerUrl",
+        "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY",
+        "avatarZoom", "bannerFocusX", "bannerFocusY", "bannerZoom",
+        "mediaFocus", "activeMissions", "narrativeCreationComplete", "updatedAt"
+      ])
+      && shortText(request.resource.data.get("playerName", ""), 80)
+      && shortText(request.resource.data.get("characterName", ""), 80)
+      && shortText(request.resource.data.get("characterDescription", ""), 1000)
+      && request.resource.data.get("activeMissions", []) is list
+      && request.resource.data.get("activeMissions", []).size() <= 10;
+    }
+
+    function developmentPointUpdate() {
+      let oldDevelopment = resource.data.get("development", {"for": 0, "vel": 0, "hab": 0, "res": 0, "pod": 0});
+      let nextDevelopment = request.resource.data.development;
+      let oldTotal = oldDevelopment["for"] + oldDevelopment.vel + oldDevelopment.hab + oldDevelopment.res + oldDevelopment.pod;
+      let nextTotal = nextDevelopment["for"] + nextDevelopment.vel + nextDevelopment.hab + nextDevelopment.res + nextDevelopment.pod;
+      return changedOnly(["development", "freePoints", "updatedAt"])
+        && nextDevelopment is map
+        && nextDevelopment.keys().hasOnly(["for", "vel", "hab", "res", "pod"])
+        && nextTotal == oldTotal + 1
+        && request.resource.data.freePoints == resource.data.freePoints - 1
+        && request.resource.data.freePoints >= 0
+        && nextDevelopment["for"] >= oldDevelopment["for"]
+        && nextDevelopment.vel >= oldDevelopment.vel
+        && nextDevelopment.hab >= oldDevelopment.hab
+        && nextDevelopment.res >= oldDevelopment.res
+        && nextDevelopment.pod >= oldDevelopment.pod;
+    }
+
+    function validReportCreate() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          "type", "status", "reporterId", "reporterName", "targetId", "title",
+          "category", "description", "steps", "expected", "actual", "device",
+          "browser", "attachmentUrl", "build", "route", "viewport", "userAgent",
+          "messageId", "source", "friendlyId", "createdAt"
+        ])
+        && data.reporterId == request.auth.uid
+        && data.status in ["recebido", "aberto"]
+        && shortText(data.type, 40)
+        && shortText(data.get("title", ""), 160)
+        && shortText(data.description, 5000)
+        && shortText(data.get("targetId", ""), 128)
+        && data.createdAt == request.time;
+    }
+
+    function validDirectMessage(data) {
+      return data.keys().hasOnly([
+          "senderId", "senderName", "targetId", "targetName", "participants",
+          "text", "type", "clientId", "createdAt"
+        ])
+        && data.senderId == request.auth.uid
+        && data.targetId is string
+        && data.targetId != request.auth.uid
+        && data.participants is list
+        && data.participants.size() == 2
+        && request.auth.uid in data.participants
+        && data.targetId in data.participants
+        && shortText(data.text, 2000)
+        && data.text.size() > 0
+        && data.createdAt == request.time;
+    }
+
+    match /admins/{uid} {
+      allow read: if own(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if own(uid)
+        && request.resource.data.role == "player"
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if own(uid)
+        && changedOnly([
+          "displayName", "online", "lastSeen", "lastAnnouncedAt", "acceptedTermsVersion",
+          "acceptedTermsAt", "tutorialSeenVersion", "panicOfflineAt", "updatedAt"
+        ]);
+      allow update: if auditedAdminMutation(uid);
+      allow delete: if false;
+    }
+
+    match /characters/{uid} {
+      allow read: if own(uid) || isAdmin();
+      allow create: if ownerCharacterCreate(uid);
+      allow create: if isAdmin()
+        && request.resource.data.ownerId == uid
+        && validAudit(request.resource.data.lastAuditId, uid);
+      allow update: if own(uid)
+        && (technicalCreationUpdate() || ownerProfileUpdate() || developmentPointUpdate());
+      allow update: if auditedAdminMutation(uid);
+      allow delete: if false;
+
+      match /lore/{docId} {
+        allow read: if own(uid) || isAdmin();
+        allow create, update: if own(uid)
+          && request.resource.data.keys().hasOnly([
+            "description", "personality", "virtues", "flaws", "habits", "beliefs",
+            "history", "originWorld", "milestones", "importantPeople", "traumas",
+            "secrets", "primaryGoal", "secondaryGoal", "fear", "desire",
+            "internalConflict", "speech", "moralLimits", "initialRelations",
+            "publicPhrase", "playerLimits", "warningThemes", "consentThemes",
+            "forbiddenThemes", "progress", "updatedAt"
+          ]);
+        allow create, update: if isAdmin();
+        allow delete: if own(uid) || isAdmin();
+      }
+
+      match /developmentLogs/{logId} {
+        allow read: if own(uid) || isAdmin();
+        allow create: if own(uid)
+          && request.resource.data.keys().hasOnly(["ownerId", "attribute", "amount", "before", "after", "createdAt"])
+          && request.resource.data.ownerId == uid
+          && request.resource.data.attribute in ["for", "vel", "hab", "res", "pod"]
+          && request.resource.data.amount == 1
+          && request.resource.data.after == request.resource.data.before + 1
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+
+      match /inventory/{instanceId} {
+        allow read: if own(uid) || isAdmin();
+        allow update: if own(uid)
+          && changedOnly(["equipped", "slot", "marketListed", "updatedAt"]);
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin();
+      }
+
+      match /pets/{instanceId} {
+        allow read: if own(uid) || isAdmin();
+        allow update: if own(uid)
+          && changedOnly(["equipped", "featured", "updatedAt"]);
+        allow create, delete, update: if isAdmin();
+      }
+
+      match /titles/{titleId} {
+        allow read: if own(uid) || isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /powers/{powerId} {
+        allow read: if own(uid) || isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /techniques/{techniqueId} {
+        allow read: if own(uid) || isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /activities/{activityId} {
+        allow read: if own(uid) || isAdmin();
+        allow create: if own(uid)
+          && request.resource.data.ownerId == uid
+          && request.resource.data.state in ["preparing", "running"];
+        allow update: if own(uid)
+          && resource.data.ownerId == uid
+          && request.resource.data.state in ["running", "paused", "cancelled", "failed"]
+          && changedOnly(["state", "progress", "pausedAt", "cancelledAt", "updatedAt"]);
+        allow create, update, delete: if isAdmin();
+      }
+
+      match /{subcollection}/{docId} {
+        allow read: if own(uid) || isAdmin();
+        allow write: if isAdmin()
+          && subcollection in [
+            "missions", "achievements", "discoveries", "history", "rewards", "minigameRuns"
+          ];
+      }
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if own(uid)
+        && request.resource.data.ownerId == uid
+        && request.resource.data.keys().hasOnly([
+          "ownerId", "name", "player", "avatar", "banner", "title", "race",
+          "class", "affinity", "culture", "profession", "kingdom", "region",
+          "guild", "location", "publicPhrase", "privacy", "updatedAt"
+        ]);
+      allow write: if isAdmin();
+    }
+
+    match /auditLogs/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.adminId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          "adminId", "targetId", "field", "previousValue", "nextValue", "reason", "createdAt"
+        ])
+        && shortText(request.resource.data.reason, 500)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /operationRequests/{operationId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.type in [
+          "affinity-roll", "gacha", "pass-claim", "market-buy", "market-trade",
+          "auction-bid", "craft", "guild-create", "minigame-reward", "pet-recovery"
+        ]
+        && request.resource.data.keys().hasOnly([
+          "ownerId", "type", "status", "payload", "idempotencyKey", "createdAt"
+        ])
+        && shortText(request.resource.data.idempotencyKey, 160)
+        && request.resource.data.createdAt == request.time;
+      allow read: if isAdmin() || resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /operationReceipts/{receiptId} {
+      allow read: if isAdmin() || resource.data.ownerId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn() && validReportCreate();
+      allow read: if isAdmin() || resource.data.reporterId == request.auth.uid;
+      allow update: if auditedAdminMutation(reportId)
+        && changedOnly(["status", "reviewedBy", "reviewedAt", "adminNote", "lastAuditId", "updatedAt"]);
+      allow delete: if false;
+    }
+
+    match /globalMessages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.type == "global"
+        && shortText(request.resource.data.text, 2000)
+        && request.resource.data.text.size() > 0
+        && request.resource.data.createdAt == request.time;
+      allow create, delete: if isAdmin();
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.senderId == request.auth.uid;
+    }
+
+    match /directMessages/{messageId} {
+      allow create: if signedIn() && validDirectMessage(request.resource.data);
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow update: if false;
+      allow delete: if isAdmin() || (signedIn() && resource.data.senderId == request.auth.uid);
+    }
+
+    match /conversations/{conversationId} {
+      allow create: if signedIn()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 2
+        && request.auth.uid in request.resource.data.participantIds;
+      allow read: if signedIn() && request.auth.uid in resource.data.participantIds;
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participantIds
+        && changedOnly(["lastMessage", "lastMessageAt", "unreadCounts", "updatedAt"]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow create: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && validDirectMessage(request.resource.data);
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+        allow update: if false;
+        allow delete: if isAdmin() || (signedIn() && resource.data.senderId == request.auth.uid);
+      }
+    }
+
+    match /progressRequests/{requestId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == "pendente"
+        && request.resource.data.type in ["mission", "training", "power", "technique", "guildMission", "market"];
+      allow read: if isAdmin()
+        || resource.data.uid == request.auth.uid
+        || (resource.data.get("partyIds", []) is list && request.auth.uid in resource.data.get("partyIds", []));
+      allow update: if auditedAdminMutation(requestId);
+      allow delete: if false;
+    }
+
+    match /socialRequests/{requestId} {
+      allow create: if signedIn()
+        && request.resource.data.fromId == request.auth.uid
+        && request.resource.data.status == "pendente"
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() == 2
+        && request.auth.uid in request.resource.data.participants;
+      allow read: if isAdmin() || request.auth.uid in resource.data.participants;
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.toId
+        && changedOnly(["status", "respondedAt", "updatedAt"])
+        && request.resource.data.status in ["aceito", "recusado"];
+      allow update, delete: if isAdmin();
+    }
+
+    match /guilds/{guildId} {
+      allow read: if signedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow update: if signedIn()
+        && resource.data.leaderId == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() <= 10
+        && changedOnly(["name", "imageUrl", "description", "mural", "memberIds", "activeMission", "updatedAt"]);
+      allow delete: if isAdmin();
+    }
+
+    match /guildMessages/{messageId} {
+      allow create: if signedIn()
+        && request.resource.data.senderId == request.auth.uid
+        && request.auth.uid in request.resource.data.memberIds
+        && shortText(request.resource.data.text, 2000)
+        && request.resource.data.createdAt == request.time;
+      allow read: if isAdmin() || (signedIn() && request.auth.uid in resource.data.memberIds);
+      allow update: if false;
+      allow delete: if isAdmin() || (signedIn() && resource.data.senderId == request.auth.uid);
+    }
+
+    match /campaignDiary/{entryId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && shortText(request.resource.data.title, 160)
+        && shortText(request.resource.data.text, 8000)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
+
+    match /profileViews/{viewId} {
+      allow read: if isAdmin() || resource.data.targetId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.viewerId == request.auth.uid
+        && request.resource.data.targetId != request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /playerListings/{listingId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /marketTrades/{tradeId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid in resource.data.participants);
+      allow write: if isAdmin();
+    }
+
+    match /auctionBids/{bidId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /rankings/{rankingId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /{collection}/{docId} {
+      allow read: if signedIn() && collection in [
+        "races", "classes", "affinityCategories", "affinities", "itemCategories", "items",
+        "gachaPets", "gachaItems", "gachaShardShops", "towerMaps", "gachaBanners",
+        "missionPool", "weeklyMissions", "guildMissions", "biomes", "kingdoms", "regions",
+        "cultures", "professions", "npcs", "rulesChapters", "faqEntries", "tutorialSteps",
+        "wantedBoard", "bestiary", "marketListings", "auctionListings", "craftingRecipes",
+        "techniqueLibrary", "achievements", "seasonPass", "passMissions", "reputationFactions",
+        "worldLore", "worldEvents", "campaignPosts"
+      ];
+      allow write: if isAdmin() && collection in [
+        "races", "classes", "affinityCategories", "affinities", "itemCategories", "items",
+        "gachaPets", "gachaItems", "gachaShardShops", "towerMaps", "gachaBanners",
+        "missionPool", "weeklyMissions", "guildMissions", "biomes", "kingdoms", "regions",
+        "cultures", "professions", "npcs", "rulesChapters", "faqEntries", "tutorialSteps",
+        "wantedBoard", "bestiary", "marketListings", "auctionListings", "craftingRecipes",
+        "techniqueLibrary", "achievements", "seasonPass", "passMissions", "reputationFactions",
+        "worldLore", "worldEvents", "campaignPosts"
+      ];
+    }
+  }
+}

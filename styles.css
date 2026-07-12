@@ -1,3 +1,4 @@
+/* Millennium build 3.1.0 */
 :root {
   color-scheme: dark;
   --bg: #10100f;
@@ -427,7 +428,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("assets/first-awakening-portal.png") center/cover no-repeat;
+    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
 }
 .auth-portal-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(9, 10, 12, 0.62)); pointer-events: none; }
 .auth-brand, .auth-copy, .auth-whisper { position: relative; z-index: 2; }
@@ -470,7 +471,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("assets/first-awakening-portal.png") center/cover no-repeat;
+    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
 }
 
 .auth-portal-shade {
@@ -532,7 +533,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("assets/first-awakening-portal.png") center/cover no-repeat;
+    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
 }
 
 .auth-portal-shade {
@@ -2377,6 +2378,37 @@ label span,
   padding-right: 4px;
 }
 
+.nav-group {
+  display: grid;
+  gap: 5px;
+}
+
+.nav-group + .nav-group {
+  margin-top: 5px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(216, 180, 93, 0.1);
+}
+
+.nav-group-label {
+  padding: 0 10px;
+  color: var(--muted);
+  font: 700 10px/1.4 var(--font-title);
+  text-transform: uppercase;
+}
+
+.nav-group-items {
+  display: grid;
+  gap: 4px;
+}
+
+.app-drawer-grid .nav-group {
+  grid-column: 1 / -1;
+}
+
+.app-drawer-grid .nav-group-items {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .nav-item,
 .icon-button,
 .tab,
@@ -4090,6 +4122,90 @@ select:focus {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+.build-badge {
+  display: block;
+  color: var(--muted);
+  font: 500 11px/1.4 var(--font-body);
+  text-align: center;
+}
+
+.draft-status {
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.update-notice {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 80;
+  width: min(520px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(216, 180, 93, 0.55);
+  border-radius: 8px;
+  background: rgba(16, 14, 12, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.update-notice[hidden] {
+  display: none;
+}
+
+.update-notice div,
+.update-notice strong,
+.update-notice span {
+  min-width: 0;
+}
+
+.update-notice strong,
+.update-notice span {
+  display: block;
+}
+
+.update-notice span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .draft-status {
+    display: none;
+  }
+
+  .app-drawer-grid .nav-group-items {
+    grid-template-columns: 1fr;
+  }
+
+  .update-notice {
+    right: 10px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: calc(100vw - 20px);
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .update-notice .primary-button {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .update-notice .icon-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .toast {
+    bottom: calc(82px + env(safe-area-inset-bottom));
+  }
 }
 
 .hidden {
