@@ -163,7 +163,16 @@ body.season-theme-awakening::before,
 }
 .image-fallback-applied { filter: saturate(0.72) contrast(1.04); }
 
-.aim-target { min-width: var(--op4-touch); min-height: var(--op4-touch); }
+.aim-target {
+  min-width: var(--op4-touch);
+  min-height: var(--op4-touch);
+  z-index: 4;
+  opacity: 1;
+  visibility: visible;
+  -webkit-appearance: none;
+  appearance: none;
+  transform: translateZ(0);
+}
 .aim-hud, .tower-hud { font-variant-numeric: tabular-nums; }
 .tower-canvas {
   display: block;

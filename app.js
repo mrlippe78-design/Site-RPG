@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.0", commit: "dev", cacheName: "millennium-shell-v3.1.0" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.1", commit: "dev", cacheName: "millennium-shell-v3.1.1" };
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -2147,7 +2147,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "Permissão negada no Firestore. Publique as regras atualizadas do arquivo firestore.rules.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Atualize o site e as regras para o Hotfix 3.1.1.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -8441,8 +8441,12 @@ function startAimGame(difficultyId) {
     refreshHud();
     if (remaining <= 0) finish();
   }, 1000);
+  // Spawn immediately on real mobile browsers. Waiting for the first interval left
+  // some devices with an apparently empty arena while misses accumulated.
+  addTarget();
+  const firstWave = window.setTimeout(addTarget, 140);
   const spawn = window.setInterval(addTarget, Math.max(190, 720 - difficulty.multiplier * 76));
-  session.timers.push(timer, spawn);
+  session.timers.push(timer, firstWave, spawn);
 }
 
 function showMinigameResult({ mode, difficulty, score, reward, detail = "" }) {
