@@ -1,6 +1,11 @@
-name: Verify Millennium Pages
+name: Verify Millennium 3.1
 
 on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "fix/**"
   workflow_dispatch:
   schedule:
     - cron: "17 9 * * *"
@@ -9,7 +14,20 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  quality:
+    name: Syntax, build and core regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Operation 1 checks
+        run: npm test
+
+  verify-published:
+    name: Verify published GitHub Pages build
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

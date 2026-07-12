@@ -8,6 +8,37 @@ const firebaseConfig = {
 };
 
 const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.0", commit: "dev", cacheName: "millennium-shell-v3.1.0" };
+const STABILITY = window.MILLENNIUM_STABILITY_31 || {
+  mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
+  shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
+  createLatestTask: (callback, delay = 160) => {
+    let timer = 0;
+    let sequence = 0;
+    return {
+      schedule(payload) {
+        window.clearTimeout(timer);
+        const current = ++sequence;
+        timer = window.setTimeout(() => { if (current === sequence) callback(payload, current); }, delay);
+      },
+      cancel() { sequence += 1; window.clearTimeout(timer); timer = 0; },
+      flush() { return Promise.resolve(false); },
+    };
+  },
+  replaceHtmlIfChanged: (element, html) => {
+    if (!element || element.innerHTML === html) return false;
+    element.innerHTML = html;
+    return true;
+  },
+  boundedHistory: (history, entry, maximum = 30) => [...(history || []), entry].slice(-maximum),
+};
+const POLISH = window.MILLENNIUM_POLISH_31 || {
+  createLifecycle: () => ({ state: "running", terminal: false, can: () => false, transition: () => "running", history: [] }),
+  visualFor: (item = {}, options = {}) => ({ hero: item.imageUrl || "", thumbnail: item.imageUrl || "", fallback: "", alt: item.altText || item.name || item.id || options.kind || "Registro", focusX: 50, focusY: 50, zoom: 1 }),
+  codexPresentation: (_tab, item = {}) => ({ title: item.name || item.title || item.id || "Registro", summary: item.summary || item.description || "Registro preservado pelo Codex.", meta: [] }),
+  diagnosticSnapshot: (input = {}) => input,
+  installImageFallback: () => () => {},
+};
+
 const UPDATE_DRAFT_KEY = "millennium:3.1:update-draft";
 const LOCAL_DRAFT_PREFIX = "millennium:3.1:form-draft";
 
@@ -17,24 +48,42 @@ const CLOUDINARY_CONFIG = {
 };
 
 const SEASON_ART = {
-  login: "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708409/millennium/millennium-first-awakening-portal.png",
+  login: "assets/first-awakening-portal.webp",
   pets: {
-    "vigia-de-telhado": "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708445/millennium/fwajphaoxodhyel77cty.png",
-    "novica-da-lanterna": "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708449/millennium/o1ewznmhiaotovkirgen.png",
-    "cronista-do-trovao": "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708453/millennium/ror1guegopfyt6vfbmjy.png",
-    "vigia-de-ferro": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783719044/millennium/pets/ysxc3u9zn1vuaqhq0atm.png",
-    "cronista-de-vidro": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783719048/millennium/pets/acsnrvo9bjuy0f8qypsf.png",
-    "filha-da-cinza": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783719052/millennium/pets/meex62ifbpq8n9csmzny.png",
-    "porteiro-sem-rosto": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783718980/millennium/pets/fl7bv93ckxy2exaajni2.png",
-    "dama-da-vitrine": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783718984/millennium/pets/frgqudovnnl9g8iwqw17.png",
-    "santo-da-promessa": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_768,c_limit/v1783718988/millennium/pets/fhusfsksgo8slqg8jjkd.png",
+    "vigia-de-telhado": "assets/pets/vigia-de-telhado.webp",
+    "novica-da-lanterna": "assets/pets/novica-da-lanterna.webp",
+    "cronista-do-trovao": "assets/pets/cronista-do-trovao.webp",
+    "vigia-de-ferro": "assets/pets/vigia-de-ferro.webp",
+    "cronista-de-vidro": "assets/pets/cronista-de-vidro.webp",
+    "filha-da-cinza": "assets/pets/filha-da-cinza.webp",
+    "porteiro-sem-rosto": "assets/pets/porteiro-sem-rosto.webp",
+    "dama-da-vitrine": "assets/pets/dama-da-vitrine.webp",
+    "santo-da-promessa": "assets/pets/santo-da-promessa.webp",
+  },
+  petThumbs: {
+    "vigia-de-telhado": "assets/pets/vigia-de-telhado-thumb.webp",
+    "novica-da-lanterna": "assets/pets/novica-da-lanterna-thumb.webp",
+    "cronista-do-trovao": "assets/pets/cronista-do-trovao-thumb.webp",
+    "vigia-de-ferro": "assets/pets/vigia-de-ferro-thumb.webp",
+    "cronista-de-vidro": "assets/pets/cronista-de-vidro-thumb.webp",
+    "filha-da-cinza": "assets/pets/filha-da-cinza-thumb.webp",
+    "porteiro-sem-rosto": "assets/pets/porteiro-sem-rosto-thumb.webp",
+    "dama-da-vitrine": "assets/pets/dama-da-vitrine-thumb.webp",
+    "santo-da-promessa": "assets/pets/santo-da-promessa-thumb.webp",
   },
   maps: {
-    "cruzamento-das-cortinas": "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708457/millennium/i0msz6obtytilj8hdoc1.png",
-    "aldeia-das-folhas-douradas": "https://res.cloudinary.com/cakvvuqx/image/upload/v1783708461/millennium/drgbcvntcsiizl1jttkm.png",
-    "arena-das-sete-esferas": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719057/millennium/maps/un0qeu7czwnglelaowc9.png",
-    "sociedade-das-laminas": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719061/millennium/maps/zefcknkprt8h7uhzzmkd.png",
-    "reino-do-pecado-partido": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719065/millennium/maps/vlxlggz8ud2lvg1js83k.png",
+    "cruzamento-das-cortinas": "assets/maps/cruzamento-das-cortinas.webp",
+    "aldeia-das-folhas-douradas": "assets/maps/aldeia-das-folhas-douradas.webp",
+    "arena-das-sete-esferas": "assets/maps/arena-das-sete-esferas.webp",
+    "sociedade-das-laminas": "assets/maps/sociedade-das-laminas.webp",
+    "reino-do-pecado-partido": "assets/maps/reino-do-pecado-partido.webp",
+  },
+  mapThumbs: {
+    "cruzamento-das-cortinas": "assets/maps/cruzamento-das-cortinas-thumb.webp",
+    "aldeia-das-folhas-douradas": "assets/maps/aldeia-das-folhas-douradas-thumb.webp",
+    "arena-das-sete-esferas": "assets/maps/arena-das-sete-esferas-thumb.webp",
+    "sociedade-das-laminas": "assets/maps/sociedade-das-laminas-thumb.webp",
+    "reino-do-pecado-partido": "assets/maps/reino-do-pecado-partido-thumb.webp",
   },
 };
 
@@ -495,6 +544,8 @@ const NAVS = {
     { id: "inventory", label: "Inventário", icon: "◎" },
     { id: "grimoire", label: "Grimório", icon: "✧" },
     { id: "codex", label: "Codex", icon: "✥" },
+    { id: "cultures", label: "Culturas", icon: "◉" },
+    { id: "professions", label: "Ofícios", icon: "⚒" },
     { id: "help", label: "Guia", icon: "?" },
     { id: "market", label: "Mercado", icon: "$" },
     { id: "pass", label: "Passe", icon: "◆" },
@@ -537,6 +588,8 @@ const VIEW_TITLES = {
   inventory: "Inventário e dinheiro",
   grimoire: "Grimório e títulos",
   codex: "Codex do mundo",
+  cultures: "Culturas de Millennium",
+  professions: "Ofícios e conhecimentos",
   help: "Guia, regras e tutorial",
   market: "Mercado e Forja",
   pass: "Passe do Despertar",
@@ -576,8 +629,13 @@ const state = {
   contentTab: "race",
   codexTab: "world",
   codexSearch: "",
+  cultureSearch: "",
+  cultureFilter: "all",
+  professionSearch: "",
+  professionFilter: "all",
   codexFilter: "all",
   codexSort: "name",
+  codexScrollByTab: {},
   profileTab: "overview",
   chatTab: "global",
   helpTab: "tutorial",
@@ -592,6 +650,10 @@ const state = {
   minigameTab: "hub",
   minigameDifficulty: "facil",
   activeAimSession: null,
+  activeTowerSession: null,
+  resolvingActivityIds: new Set(),
+  modalReturnFocus: null,
+  imageFallbackCleanup: null,
   adminRequestFilter: "all",
   epicCollection: "wantedBoard",
   lastRoll: null,
@@ -614,15 +676,28 @@ const state = {
   diaryEntries: [],
   globalMessages: [],
   directMessages: [],
+  conversations: [],
+  conversationMessages: [],
   privateMessages: [],
   privateChatError: "",
+  activeConversationId: "",
+  conversationOldestDoc: null,
+  conversationHasMore: false,
+  conversationLoading: false,
+  optimisticMessages: [],
+  messageSending: false,
   socialRequests: [],
   guilds: [],
   guildMessages: [],
   guildMissions: [...DEFAULT_GUILD_MISSIONS],
   selectedGuildId: "",
   reports: [],
+  reportTab: "bug",
+  reportFilter: "all",
   progressRequests: [],
+  creationFilter: "all",
+  creationDraftRequestId: "",
+  migrationPreview: null,
   profileViews: [],
   marketTrades: [],
   presenceTimer: null,
@@ -640,6 +715,9 @@ const state = {
   forceChatBottom: "",
   renderFrame: 0,
   pendingInputRender: false,
+  pendingRenderRequest: null,
+  renderReason: "initial",
+  searchTask: null,
   searchUpdateTimer: 0,
   searchUpdateSequence: 0,
   searchComposing: false,
@@ -652,6 +730,7 @@ const state = {
   unsubs: [],
   routeUnsubs: [],
   routeSubscriptionKey: "",
+  routeSubscriptionNames: [],
   privateUnsub: null,
   renderContext: null,
   diagnostics: {
@@ -661,6 +740,9 @@ const state = {
     listenerCount: 0,
     documentsRead: 0,
     writes: 0,
+    lastFocusedElement: "",
+    lastReason: "",
+    renderHistory: [],
   },
   serviceWorkerRegistration: null,
   waitingServiceWorker: null,
@@ -672,7 +754,7 @@ const state = {
 const NAV_GROUPS = {
   player: [
     { label: "Jornada", ids: ["character", "roulette", "missions", "creations", "character-life", "diary"] },
-    { label: "Mundo", ids: ["player-home", "codex", "help"] },
+    { label: "Mundo", ids: ["player-home", "codex", "cultures", "professions", "help"] },
     { label: "Comunidade", ids: ["profile", "chat", "guild", "hall"] },
     { label: "Coleção", ids: ["gacha", "inventory", "grimoire", "pass"] },
     { label: "Atividades", ids: ["minigames", "market", "ranking"] },
@@ -1972,9 +2054,12 @@ function syncPrivateMessages() {
     state.privateMessages = [];
     return;
   }
-  state.privateMessages = state.directMessages
-    .filter((message) => (message.participants || []).includes(state.user.uid) && (message.participants || []).includes(state.selectedPrivateUserId))
-    .sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
+  const legacy = state.directMessages
+    .filter((message) => (message.participants || []).includes(state.user.uid) && (message.participants || []).includes(state.selectedPrivateUserId));
+  state.privateMessages = window.MILLENNIUM_BACKEND_31.mergeMessages(
+    [...legacy, ...(state.conversationMessages || [])],
+    state.optimisticMessages || [],
+  );
 }
 
 function profileViewsFor(uid = state.user?.uid) {
@@ -2121,6 +2206,16 @@ function cleanupListeners() {
   state.idleTimer = null;
   if (state.renderFrame) window.cancelAnimationFrame(state.renderFrame);
   state.renderFrame = 0;
+  if (state.renderTimer) window.clearTimeout(state.renderTimer);
+  state.renderTimer = null;
+  if (state.searchTimer) window.clearTimeout(state.searchTimer);
+  state.searchTimer = null;
+  if (state.searchUpdateTimer) window.clearTimeout(state.searchUpdateTimer);
+  state.searchUpdateTimer = 0;
+  state.searchTask?.cancel?.();
+  state.searchTask = null;
+  state.pendingRenderRequest = null;
+  state.renderReason = "";
 }
 
 async function setPresence(online) {
@@ -2242,7 +2337,7 @@ function subscribeDoc(path, id, cb) {
     cb(snap.exists ? { id: snap.id, ...snap.data() } : null);
   }, (error) => console.error(`Listener ${path}/${id}:`, error));
   state.unsubs.push(unsub);
-  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + (state.privateUnsub ? 1 : 0);
 }
 
 function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsubs) {
@@ -2270,20 +2365,23 @@ function clearRouteSubscriptions() {
     try { unsubscribe(); } catch { /* no-op */ }
   });
   state.routeUnsubs = [];
+  state.routeSubscriptionNames = [];
   state.routeSubscriptionKey = "";
   state.diagnostics.listenerCount = state.unsubs.length;
 }
 
-function routeCollection(path, cb, queryBuilder = null) {
+function routeCollection(path, cb, queryBuilder = null, name = path) {
   subscribeCollection(path, cb, queryBuilder, state.routeUnsubs);
+  state.routeSubscriptionNames.push(name);
 }
 
-function routeDocument(path, id, cb) {
+function routeDocument(path, id, cb, name = `${path}/${id}`) {
   const unsub = state.db.collection(path).doc(id).onSnapshot((snapshot) => {
     state.diagnostics.documentsRead += snapshot.exists ? 1 : 0;
     cb(snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null);
   }, (error) => console.error(`Listener ${path}/${id}:`, error));
   state.routeUnsubs.push(unsub);
+  state.routeSubscriptionNames.push(name);
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
 }
 
@@ -2295,7 +2393,7 @@ function subscribeUserDirectory() {
   routeCollection("publicProfiles", (profiles) => {
     state.publicProfiles = profiles;
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
-  }, (query) => query.limit(30));
+  }, (query) => state.role === "admin" ? query.limit(30) : query.where("privacy", "==", "public").limit(30));
 }
 
 function subscribeOwnRequests() {
@@ -2314,7 +2412,7 @@ function activateRouteSubscriptions(view = state.view) {
   clearRouteSubscriptions();
   state.routeSubscriptionKey = key;
 
-  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops"].includes(view);
+  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports"].includes(view);
   if (needsDirectory) subscribeUserDirectory();
 
   if (["admin-home", "admin-users", "admin-ops"].includes(view) && state.role === "admin") {
@@ -2339,14 +2437,18 @@ function activateRouteSubscriptions(view = state.view) {
   }
 
   if (["chat", "admin-chat"].includes(view)) {
+    routeCollection("conversations", (conversations) => {
+      state.conversations = conversations;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.where("participantIds", "array-contains", state.user.uid).orderBy("lastMessageAt", "desc").limit(30), "conversation-summaries");
     routeCollection("directMessages", (messages) => {
       state.directMessages = messages.reverse();
       syncPrivateMessages();
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
+    }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30), "legacy-direct-messages");
   }
 
-  if (["player-home", "missions", "guild", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
+  if (["player-home", "missions", "guild", "creations", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
 
   if (view === "character-life") {
     routeDocument(`characters/${state.user.uid}/lore`, "main", (lore) => {
@@ -2420,7 +2522,7 @@ function activateRouteSubscriptions(view = state.view) {
 function hasActiveTextEntry() {
   const active = document.activeElement;
   if (!(active instanceof HTMLElement) || !active.closest("#viewHost, #modalContent")) return false;
-  if (active.matches("textarea, [contenteditable='true']")) return true;
+  if (active.isContentEditable || active.matches("textarea")) return true;
   if (!active.matches("input")) return false;
   return !["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"].includes(active.type);
 }
@@ -2428,7 +2530,8 @@ function hasActiveTextEntry() {
 function captureRenderContext(options = {}) {
   const active = document.activeElement;
   const form = active?.closest?.("form[data-form]");
-  const context = {
+  const fields = form ? [...form.elements] : [];
+  return {
     preserveFocus: options.preserveFocus !== false,
     preserveScroll: options.preserveScroll !== false,
     scrollX: window.scrollX,
@@ -2436,10 +2539,12 @@ function captureRenderContext(options = {}) {
     formType: form?.dataset.form || "",
     fieldName: active?.name || "",
     fieldId: active?.id || "",
+    fieldAction: active?.dataset?.action || "",
+    focusKey: active?.dataset?.focusKey || "",
+    fieldIndex: form && active ? fields.indexOf(active) : -1,
     selectionStart: typeof active?.selectionStart === "number" ? active.selectionStart : null,
     selectionEnd: typeof active?.selectionEnd === "number" ? active.selectionEnd : null,
   };
-  return context;
 }
 
 function restoreRenderContext(context) {
@@ -2448,51 +2553,131 @@ function restoreRenderContext(context) {
   if (!context.preserveFocus) return;
   const formSelector = context.formType ? `form[data-form="${CSS.escape(context.formType)}"]` : "";
   const root = formSelector ? document.querySelector(formSelector) : document;
-  const field = context.fieldId
-    ? document.getElementById(context.fieldId)
-    : context.fieldName && root?.querySelector?.(`[name="${CSS.escape(context.fieldName)}"]`);
-  if (!field || field.disabled) return;
+  const selectors = [
+    context.fieldId ? `#${CSS.escape(context.fieldId)}` : "",
+    context.focusKey ? `[data-focus-key="${CSS.escape(context.focusKey)}"]` : "",
+    context.fieldName ? `[name="${CSS.escape(context.fieldName)}"]` : "",
+    context.fieldAction ? `[data-action="${CSS.escape(context.fieldAction)}"]` : "",
+  ].filter(Boolean);
+  let field = selectors.map((selector) => root?.querySelector?.(selector) || document.querySelector(selector)).find(Boolean);
+  if (!field && context.fieldIndex >= 0 && root?.elements) field = root.elements[context.fieldIndex];
+  if (!field || field.disabled || !field.isConnected) return;
   field.focus({ preventScroll: true });
   if (context.selectionStart !== null && field.setSelectionRange) {
-    field.setSelectionRange(context.selectionStart, context.selectionEnd ?? context.selectionStart);
+    const maximum = typeof field.value === "string" ? field.value.length : context.selectionEnd ?? context.selectionStart;
+    field.setSelectionRange(Math.min(context.selectionStart, maximum), Math.min(context.selectionEnd ?? context.selectionStart, maximum));
   }
 }
 
-function scheduleRender(views = null, options = {}) {
+function updateLiveShell() {
+  if (!state.user || $("#appShell")?.hidden) return;
+  const character = currentCharacter();
+  const money = $("#moneyPill strong");
+  if (money) money.textContent = Number(character.gold || 0);
+  const quickStatus = $("#quickStatus");
+  if (quickStatus) STABILITY.replaceHtmlIfChanged(quickStatus, renderQuickStatus(character));
+  const notifications = notificationCount();
+  const notifyCount = $("#notifyCount");
+  if (notifyCount) {
+    notifyCount.hidden = notifications < 1;
+    notifyCount.textContent = notifications;
+  }
+  const notice = $("#globalNotice");
+  if (notice) {
+    notice.classList.toggle("show", Boolean(state.settings.globalNotice));
+    notice.textContent = state.settings.globalNotice || "";
+  }
+}
+
+function normalizeRenderRequest(views, options = {}) {
   if (views && !Array.isArray(views) && typeof views === "object") {
     options = views;
     views = options.views || null;
   }
-  if (options.route && options.route !== state.view) return;
-  if (Array.isArray(views) && !views.includes(state.view)) return;
-  if (state.activeTowerSession || state.activeAimSession) {
-    state.pendingLiveRender = true;
-    return;
-  }
-  if (!options.critical && (hasActiveTextEntry() || hasDirtyForm())) {
+  return {
+    critical: Boolean(options.critical),
+    preserveFocus: options.preserveFocus !== false,
+    preserveScroll: options.preserveScroll !== false,
+    route: options.route || "",
+    reason: options.reason || "state-update",
+    views: Array.isArray(views) ? views : null,
+  };
+}
+
+function renderRequestMatches(request) {
+  if (request.route && request.route !== state.view) return false;
+  if (Array.isArray(request.views) && !request.views.includes(state.view)) return false;
+  return true;
+}
+
+function scheduleRender(views = null, options = {}) {
+  const request = normalizeRenderRequest(views, options);
+  if (!renderRequestMatches(request)) return;
+
+  const decision = STABILITY.shouldDeferRender({
+    critical: request.critical,
+    activeText: hasActiveTextEntry() || state.textComposing || state.searchComposing,
+    dirtyForm: hasDirtyForm(),
+    liveSession: Boolean(state.activeTowerSession || state.activeAimSession),
+  });
+
+  if (decision.defer) {
+    state.pendingRenderRequest = STABILITY.mergeRenderRequests(state.pendingRenderRequest, request);
     state.pendingInputRender = true;
+    if (decision.reason === "live-session") state.pendingLiveRender = true;
+    updateLiveShell();
     return;
   }
-  if (options.critical && state.renderFrame) {
+
+  state.pendingRenderRequest = STABILITY.mergeRenderRequests(state.pendingRenderRequest, request);
+  if (request.critical && state.renderFrame) {
     window.cancelAnimationFrame(state.renderFrame);
     state.renderFrame = 0;
   }
   if (state.renderFrame) return;
-  const critical = Boolean(options.critical);
-  const context = captureRenderContext(options);
-  if (critical && hasActiveTextEntry()) {
-    saveUpdateDrafts();
-    state.updateDraftRestored = false;
-  }
+
   state.renderFrame = window.requestAnimationFrame(() => {
     state.renderFrame = 0;
-    if (!critical && (hasActiveTextEntry() || hasDirtyForm())) {
+    const pending = state.pendingRenderRequest || request;
+    state.pendingRenderRequest = null;
+    if (!renderRequestMatches(pending)) return;
+
+    const recheck = STABILITY.shouldDeferRender({
+      critical: pending.critical,
+      activeText: hasActiveTextEntry() || state.textComposing || state.searchComposing,
+      dirtyForm: hasDirtyForm(),
+      liveSession: Boolean(state.activeTowerSession || state.activeAimSession),
+    });
+    if (recheck.defer) {
+      state.pendingRenderRequest = STABILITY.mergeRenderRequests(state.pendingRenderRequest, pending);
       state.pendingInputRender = true;
+      updateLiveShell();
       return;
     }
-    state.renderContext = context;
+
+    if (pending.critical && (hasActiveTextEntry() || hasDirtyForm())) {
+      persistDirtyForms();
+      saveUpdateDrafts();
+      state.updateDraftRestored = false;
+    }
+    state.pendingInputRender = false;
+    state.renderContext = captureRenderContext(pending);
+    state.renderReason = pending.reason || "state-update";
     render();
   });
+}
+
+function flushDeferredRender(options = {}) {
+  if (!state.pendingRenderRequest) return false;
+  const pending = state.pendingRenderRequest;
+  state.pendingRenderRequest = null;
+  state.pendingInputRender = false;
+  scheduleRender({
+    ...pending,
+    critical: Boolean(options.force || pending.critical),
+    reason: options.reason || pending.reason || "deferred-flush",
+  });
+  return true;
 }
 
 function profileRenderKey(profile = {}) {
@@ -2626,11 +2811,38 @@ function enterDemo(role) {
   render();
 }
 
-async function writeDoc(collection, id, data) {
+function adminAuditReason(collection, data = {}, customReason = "") {
+  if (customReason) return String(customReason).slice(0, 500);
+  const fields = Object.keys(data).filter((key) => !["updatedAt", "lastAuditId"].includes(key)).slice(0, 8).join(", ");
+  return `Alteração administrativa em ${collection}${fields ? `: ${fields}` : ""}.`;
+}
+
+async function writeDoc(collection, id, data, options = {}) {
   if (state.demo) {
     writeDemo(collection, id, data);
     state.diagnostics.writes += 1;
     render();
+    return;
+  }
+  const auditedCollections = new Set(["characters", "users", "reports", "progressRequests"]);
+  const needsAudit = state.role === "admin" && auditedCollections.has(collection) && options.audit !== false;
+  if (needsAudit) {
+    const auditId = `audit-${cryptoRandom()}`;
+    const targetRef = state.db.collection(collection).doc(id);
+    const auditRef = state.db.collection("auditLogs").doc(auditId);
+    const batch = state.db.batch();
+    batch.set(auditRef, {
+      adminId: state.user.uid,
+      targetId: id,
+      field: Object.keys(data).filter((key) => !["updatedAt", "lastAuditId"].includes(key)).join(",").slice(0, 300) || "registro",
+      previousValue: options.previousValue ?? null,
+      nextValue: options.nextValue ?? data,
+      reason: adminAuditReason(collection, data, options.reason),
+      createdAt: nowValue(),
+    });
+    batch.set(targetRef, { ...data, lastAuditId: auditId, updatedAt: nowValue() }, { merge: true });
+    await batch.commit();
+    state.diagnostics.writes += 2;
     return;
   }
   await state.db.collection(collection).doc(id).set({ ...data, updatedAt: nowValue() }, { merge: true });
@@ -2697,8 +2909,19 @@ function writeDemo(collection, id, data) {
   }
   if (collection === "guildMessages") state.guildMessages.push({ ...data, id });
   if (collection === "guildMissions") state.guildMissions = state.guildMissions.filter((item) => item.id !== id).concat({ ...data, id });
-  if (collection === "reports") state.reports.unshift({ ...data, id });
-  if (collection === "progressRequests") state.progressRequests = state.progressRequests.filter((item) => item.id !== id).concat({ ...data, id });
+  if (collection === "reports") {
+    const current = state.reports.find((item) => item.id === id) || {};
+    state.reports = state.reports.filter((item) => item.id !== id);
+    state.reports.unshift({ ...current, ...data, id });
+  }
+  if (collection === "progressRequests") {
+    const current = state.progressRequests.find((item) => item.id === id) || {};
+    state.progressRequests = state.progressRequests.filter((item) => item.id !== id).concat({ ...current, ...data, id });
+  }
+  if (collection === "conversations") {
+    const current = state.conversations.find((item) => item.id === id) || {};
+    state.conversations = state.conversations.filter((item) => item.id !== id).concat({ ...current, ...data, id });
+  }
 }
 
 async function pruneMessages(collection, messages, predicate = () => true) {
@@ -2767,8 +2990,20 @@ function finishRender(startedAt) {
   state.diagnostics.renders += 1;
   state.diagnostics.lastRenderMs = Math.round((performance.now() - startedAt) * 100) / 100;
   state.diagnostics.lastRoute = state.view;
+  state.diagnostics.lastReason = state.renderReason || "direct-render";
   restoreRenderContext(state.renderContext);
+  const focused = document.activeElement;
+  state.diagnostics.lastFocusedElement = focused?.id || focused?.name || focused?.dataset?.action || focused?.tagName || "";
+  state.diagnostics.renderHistory = STABILITY.boundedHistory(state.diagnostics.renderHistory, {
+    at: new Date().toISOString(),
+    route: state.view,
+    reason: state.diagnostics.lastReason,
+    durationMs: state.diagnostics.lastRenderMs,
+    focused: state.diagnostics.lastFocusedElement,
+    listeners: state.diagnostics.listenerCount,
+  });
   state.renderContext = null;
+  state.renderReason = "direct-render";
 }
 
 function render() {
@@ -2800,38 +3035,33 @@ function render() {
   $("#seasonLabel").textContent = state.settings.seasonName || `Temporada ${state.settings.seasonNumber || 1}`;
   $("#contextLabel").textContent = state.role === "admin" ? "Oráculo da interface" : "Suporte do personagem";
   $("#viewTitle").textContent = VIEW_TITLES[state.view] || "Painel";
-  $("#navList").innerHTML = renderGroupedNavigation(nav);
+  STABILITY.replaceHtmlIfChanged($("#navList"), renderGroupedNavigation(nav));
 
   const character = currentCharacter();
   $("#moneyPill").hidden = state.role === "admin";
   $("#moneyPill strong").textContent = Number(character.gold || 0);
-  $("#quickStatus").innerHTML = renderQuickStatus(character);
-  const notifications = notificationCount();
-  $("#notifyCount").hidden = notifications < 1;
-  $("#notifyCount").textContent = notifications;
-  $("#mobileBottomNav").innerHTML = renderMobileBottomNav(nav);
-  $("#globalNotice").classList.toggle("show", Boolean(state.settings.globalNotice));
-  $("#globalNotice").textContent = state.settings.globalNotice || "";
+  updateLiveShell();
+  STABILITY.replaceHtmlIfChanged($("#mobileBottomNav"), renderMobileBottomNav(nav));
 
   if (state.role !== "admin" && ["suspended", "banned"].includes(state.profile?.status)) {
-    $("#viewHost").innerHTML = renderSuspendedGate();
+    STABILITY.replaceHtmlIfChanged($("#viewHost"), renderSuspendedGate());
     finishRender(startedAt);
     return;
   }
   if (state.role !== "admin" && state.settings.maintenanceMode) {
-    $("#viewHost").innerHTML = renderMaintenanceGate();
+    STABILITY.replaceHtmlIfChanged($("#viewHost"), renderMaintenanceGate());
     finishRender(startedAt);
     return;
   }
   if (state.role !== "admin" && !hasAcceptedTerms()) {
-    $("#viewHost").innerHTML = renderTermsGate();
+    STABILITY.replaceHtmlIfChanged($("#viewHost"), renderTermsGate());
     finishRender(startedAt);
     return;
   }
 
   const chatScroll = captureChatScroll();
   const renderer = VIEW_RENDERERS[state.view] || renderPlayerHome;
-  $("#viewHost").innerHTML = renderer();
+  STABILITY.replaceHtmlIfChanged($("#viewHost"), renderer());
   restoreChatScroll(chatScroll);
   restoreUpdateDrafts();
   restoreLocalFormDrafts();
@@ -2847,22 +3077,12 @@ function applyThemeClasses(settings = state.settings) {
   ].filter(Boolean).join(" ");
 }
 
-const ONBOARDING_DESTINATIONS = [
-  { nav: "player-home", label: "Átrio do Oráculo" },
-  { nav: "character", label: "Registro do Escolhido" },
-  { nav: "roulette", label: "Portal da Ressonância" },
-  { nav: "profile", label: "Espelho da Alma" },
-  { nav: "chat", label: "Rede de Ecos" },
-  { nav: "missions", label: "Missões e treino" },
-  { nav: "codex", label: "Arquivo dos Deuses Mortos" },
-  { nav: "market", label: "Mercado e Forja" },
-  { nav: "minigames", label: "Provas da Interface" },
-];
-
 function onboardingSteps() {
-  return sortByOrder(state.content.tutorialSteps || []).map((entry, index) => ({
+  const progress = currentJourney();
+  return progress.steps.map((entry) => ({
     ...entry,
-    ...(ONBOARDING_DESTINATIONS[Math.min(index, ONBOARDING_DESTINATIONS.length - 1)] || ONBOARDING_DESTINATIONS[0]),
+    name: entry.label,
+    label: entry.done ? `${entry.label} · concluído` : entry.label,
   }));
 }
 
@@ -2879,16 +3099,17 @@ function openOnboarding(index = 0) {
   const safeIndex = Math.max(0, Math.min(steps.length - 1, Number(index || 0)));
   state.onboardingStep = safeIndex;
   const step = steps[safeIndex];
-  const progress = Math.round(((safeIndex + 1) / steps.length) * 100);
+  const journey = currentJourney();
+  const progress = journey.percentage;
   $("#modalContent").innerHTML = `
     <section class="onboarding-ritual">
       <div class="onboarding-visual"><span>${String(safeIndex + 1).padStart(2, "0")}</span><div><small>Primeiro Despertar</small><strong>${esc(step.label)}</strong></div></div>
       <div class="onboarding-copy">
         <div class="onboarding-progress"><i style="width:${progress}%"></i></div>
-        <p class="eyebrow">Passo ${safeIndex + 1} de ${steps.length}</p>
+        <p class="eyebrow">${journey.completed} de ${journey.total} etapas essenciais concluídas · visão ${safeIndex + 1}</p>
         <h2>${esc(step.name)}</h2>
         <p>${esc(step.description || "A Interface aguarda sua próxima escolha.")}</p>
-        <div class="onboarding-rule"><span>Regra desta etapa</span><strong>${safeIndex === 0 ? "O site registra; o WhatsApp vive a história." : safeIndex === 1 ? "Sua base é protegida depois do primeiro registro." : safeIndex === 2 ? "Raridade nunca substitui coerência." : "Autonomia primeiro; Oráculo quando realmente necessário."}</strong></div>
+        <div class="onboarding-rule"><span>${step.done ? "Etapa reconhecida" : "Próxima orientação"}</span><strong>${step.done ? "A Interface já encontrou este registro." : step.description}</strong></div>
         <div class="onboarding-actions">
           <button class="ghost-button" type="button" data-action="onboarding-prev" ${safeIndex === 0 ? "disabled" : ""}>Voltar</button>
           <button class="ghost-button" type="button" data-action="onboarding-visit" data-nav-target="${esc(step.nav)}">Ver esta área</button>
@@ -3060,29 +3281,33 @@ function renderPlayerHome() {
   const topRank = leaderboard().slice(0, 5);
   const news = recentNews();
   const nextSteps = playerNextSteps(character);
+  const journey = currentJourney(character);
+  const narrative = window.MILLENNIUM_JOURNEY_31.narrativeProgress(characterLifeSource());
+  const nextEssential = journey.next || { label: "Explorar Millennium", nav: "codex", description: "A Interface aguarda seu próximo registro." };
+  const pendencies = [
+    character.pendingGift ? "Recompensa no correio" : "",
+    pendingProgressRequests().length ? `${pendingProgressRequests().length} solicitação(ões) em análise` : "",
+    pendingIncomingRequests().length ? `${pendingIncomingRequests().length} convite(s) ou pedido(s)` : "",
+    state.privateMessages.some((message) => message.senderId !== state.user?.uid && !message.readAt) ? "Mensagem direta não lida" : "",
+  ].filter(Boolean);
   const activeWorldEvent = (state.content.worldEvents || []).find((event) => normalize(event.status) === "ativo");
   return `
     <div class="grid">
-      <article class="first-awakening-guide span-12">
-        <div><p class="eyebrow">Primeiro Despertar</p><h2>${character.creationLocked ? "A Interface conhece seu nome." : "Comece por aqui, Escolhido."}</h2><p>${character.creationLocked ? "Consulte seu próximo passo, o estado do mundo e os registros que exigem sua atenção." : "Em poucos passos você registra a ficha, revela a afinidade e aprende onde cada parte da sua jornada vive."}</p></div>
-        <div class="action-row"><button class="primary-button intense" type="button" data-action="open-onboarding">Tutorial guiado</button><button class="ghost-button" type="button" data-nav="help">Livro do Player</button></div>
+      <article class="first-awakening-guide span-12 ${newPlayerMode(character) ? "new-player-mode" : "journey-complete"}">
+        <div><p class="eyebrow">Seu Primeiro Despertar</p><h2>${journey.complete ? "A Interface reconhece sua jornada." : `${journey.completed} de ${journey.total} etapas essenciais`}</h2><p>${journey.complete ? "O registro inicial está completo. Continue desenvolvendo seu personagem sem transformar números em vitória automática." : nextEssential.description}</p><div class="journey-home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${journey.percentage}"><i style="width:${journey.percentage}%"></i></div></div>
+        <div class="action-row"><button class="primary-button intense" type="button" data-nav="${esc(nextEssential.nav)}">${esc(nextEssential.label)}</button><button class="ghost-button" type="button" data-action="open-onboarding">Ver jornada completa</button></div>
       </article>
-      <article class="panel span-12 news-ticker">
-        <span>Notícias</span>
-        <div><p>${news.map((item) => esc(item.text || item.senderName || "Movimento registrado")).join(" • ") || "Nenhuma notícia recente de Millennium."}</p></div>
-      </article>
-      <article class="panel span-12">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Próximos passos</p>
-            <h2>Seu painel de ação</h2>
-          </div>
-          <button class="ghost-button" type="button" data-action="open-onboarding">Rever tutorial</button>
+      <article class="today-dashboard span-12">
+        <header><div><p class="eyebrow">Hoje em Millennium</p><h2>${esc(character.characterName || "Escolhido sem registro")}</h2></div><span class="tag">Dar Vida ${narrative.percentage}%</span></header>
+        <div class="today-dashboard-grid">
+          <section><span>Estado atual</span><strong>${character.technicalCreationComplete || character.creationLocked ? "Registro técnico concluído" : "Registro técnico pendente"}</strong><p>${esc(character.currentLocation || "Limiar das Cortinas")} · ${esc(character.physicalState || "Íntegro")} · ${esc(character.essenceState || "Plena")}</p></section>
+          <section class="today-primary-action"><span>Próximo passo</span><strong>${esc(nextEssential.label)}</strong><p>${esc(nextEssential.description)}</p><button class="primary-button" type="button" data-nav="${esc(nextEssential.nav)}">Continuar</button></section>
+          <section><span>O mundo se moveu</span>${news.slice(-3).reverse().map((item) => `<p>${esc(item.text || item.senderName || "Movimento registrado")}</p>`).join("") || `<p>Nenhum acontecimento recente foi registrado.</p>`}</section>
+          <section><span>Pendências</span>${pendencies.map((item) => `<p>• ${esc(item)}</p>`).join("") || `<p>Nenhuma pendência imediata.</p>`}</section>
         </div>
-        <div class="next-step-grid">
-          ${nextSteps.map(renderNextStep).join("")}
-        </div>
+        <nav class="today-shortcuts" aria-label="Atalhos de jornada"><button type="button" data-nav="character">Personagem</button><button type="button" data-nav="roulette">Afinidade</button><button type="button" data-nav="codex">Mapa e Codex</button><button type="button" data-nav="missions">Missões</button><button type="button" data-nav="chat">Mensagens</button></nav>
       </article>
+      <div class="span-12">${renderManifestationPanel(character)}</div>
       ${activeWorldEvent ? `
         <article class="world-event-banner span-12">
           ${activeWorldEvent.imageUrl ? `<img src="${esc(activeWorldEvent.imageUrl)}" alt="" />` : ""}
@@ -3296,6 +3521,7 @@ function renderProfile() {
           </div>
         </div>
       </article>
+      <div class="span-12 profile-manifestation-grid">${renderManifestationPanel(character)}${renderPotentialProfile(character)}</div>
       <article class="panel span-12 profile-showcase-panel">
         <div class="panel-heading"><div><p class="eyebrow">Vitrine do despertar</p><h3>Companheiros que carregam seu nome</h3></div><span class="tag">Poder do cofre</span></div>
         <div class="profile-showcase-grid">
@@ -3625,6 +3851,250 @@ function characterCatalogEntry(collection, id) {
   return (state.content[collection] || []).find((entry) => entry.id === id) || null;
 }
 
+function journeyContext() {
+  let premiseSeen = state.characterIntroSeen;
+  let creationsVisited = false;
+  let codexVisited = false;
+  let profileReviewed = false;
+  try {
+    const uid = state.user?.uid || "anonymous";
+    premiseSeen ||= localStorage.getItem(`${LOCAL_DRAFT_PREFIX}:${uid}:character-intro`) === "seen";
+    creationsVisited = localStorage.getItem(`${LOCAL_DRAFT_PREFIX}:${uid}:visited:creations`) === "true";
+    codexVisited = localStorage.getItem(`${LOCAL_DRAFT_PREFIX}:${uid}:visited:codex`) === "true";
+    profileReviewed = localStorage.getItem(`${LOCAL_DRAFT_PREFIX}:${uid}:visited:profile`) === "true";
+  } catch { /* storage may be unavailable */ }
+  return {
+    premiseSeen,
+    tutorialSeen: Boolean(state.profile?.tutorialSeenVersion),
+    creationsVisited,
+    codexVisited,
+    profileReviewed,
+    lore: characterLifeSource(),
+  };
+}
+
+function currentJourney(character = currentCharacter()) {
+  return window.MILLENNIUM_JOURNEY_31.journeyProgress(character, journeyContext());
+}
+
+function newPlayerMode(character = currentCharacter()) {
+  return !currentJourney(character).complete;
+}
+
+function recordJourneyVisit(view) {
+  if (!["profile", "codex", "creations"].includes(view)) return;
+  try {
+    localStorage.setItem(`${LOCAL_DRAFT_PREFIX}:${state.user?.uid || "anonymous"}:visited:${view}`, "true");
+  } catch { /* storage may be unavailable */ }
+}
+
+function manifestationSnapshot(character = currentCharacter()) {
+  const stats = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content);
+  const enriched = {
+    ...character,
+    prestige: prestigeFor(character),
+    approvedMissionCount: state.progressRequests.filter((request) => request.uid === character.ownerId && request.status === "aprovado" && ["mission", "guildMission"].includes(request.type)).length,
+    approvedPowerCount: approvedPowerCount(character),
+    approvedTechniqueCount: (character.techniques || []).filter((entry) => entry?.name && entry.status !== "reprovado").length,
+  };
+  const grade = window.MILLENNIUM_CORE_31.manifestationGrade(enriched, stats);
+  const potential = window.MILLENNIUM_CORE_31.potentialProfile(stats);
+  return { stats, grade, potential };
+}
+
+function renderManifestationPanel(character = currentCharacter(), options = {}) {
+  const { grade, potential } = manifestationSnapshot(character);
+  const compact = Boolean(options.compact);
+  return `
+    <article class="manifestation-panel ${compact ? "compact" : ""}">
+      <div class="manifestation-seal" aria-hidden="true"><span>${esc(grade.name.slice(0, 1))}</span></div>
+      <div class="manifestation-copy">
+        <p class="eyebrow">Grau de Manifestação</p>
+        <h3>${esc(grade.name)}</h3>
+        <p>O Grau representa desenvolvimento registrado. Estratégia, condições, contexto e interpretação continuam determinando resultados narrativos.</p>
+        <div class="manifestation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Number(grade.progress || 0)}"><i style="width:${Number(grade.progress || 0)}%"></i></div>
+        <div class="manifestation-meta"><span>${Number(grade.progress || 0)}% do marco</span><strong>${esc(window.MILLENNIUM_JOURNEY_31.nextMilestone(grade))}</strong></div>
+      </div>
+      ${compact ? "" : `<div class="potential-brief"><span>Característica dominante</span><strong>${esc(potential.dominant)}</strong><small>Em desenvolvimento: ${esc(potential.developing)}</small></div>`}
+    </article>`;
+}
+
+function renderPotentialProfile(character = currentCharacter()) {
+  const { potential } = manifestationSnapshot(character);
+  const labels = { potency: "Potência", mobility: "Mobilidade", control: "Controle", survival: "Sobrevivência", versatility: "Versatilidade" };
+  const values = Object.values(potential.values || {});
+  const ceiling = Math.max(10, ...values);
+  return `
+    <section class="potential-profile">
+      <div class="panel-heading"><div><p class="eyebrow">Perfil de Potencial</p><h3>${esc(potential.dominant)} em destaque</h3></div><span class="tag">Leitura derivada</span></div>
+      <p>Este perfil organiza os registros oficiais. Não é uma sentença de vitória nem substitui interpretação.</p>
+      <div class="potential-bars">${Object.entries(potential.values).map(([key, value]) => `<div><span>${esc(labels[key])}</span><div><i style="width:${Math.min(100, Math.round((Number(value || 0) / ceiling) * 100))}%"></i></div><strong>${Number(value || 0)}</strong></div>`).join("")}</div>
+      <small>Área em desenvolvimento: ${esc(potential.developing)}</small>
+    </section>`;
+}
+
+function catalogEntryDetails(entry, type) {
+  if (!entry) return "";
+  const rows = type === "culture" ? [
+    ["Criação", entry.upbringing], ["Costumes", entry.customs], ["Valores", (entry.values || []).join(" · ")],
+    ["Idiomas", (entry.languages || []).join(" · ")], ["Regras sociais", entry.socialRules], ["Práticas funerárias", entry.funeraryPractices],
+    ["Conhecimento inicial", (entry.startingKnowledge || []).join(" · ")], ["Conflitos", entry.conflicts],
+  ] : [
+    ["Atividades", (entry.activities || []).join(" · ")], ["Conhecimentos", (entry.knowledge || []).join(" · ")],
+    ["Ferramentas", (entry.tools || []).join(" · ")], ["Itens iniciais", (entry.startingItems || []).join(" · ")],
+    ["Limitações", entry.limitations], ["Progressão", entry.progression],
+  ];
+  return rows.filter(([, value]) => String(value || "").trim()).map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("");
+}
+
+function renderCatalogCard(entry, type) {
+  const image = entry.imageThumbnail || entry.imageHero || entry.emblemUrl || "";
+  const category = type === "culture" ? characterCatalogEntry("kingdoms", entry.kingdomId)?.name || "Cultura independente" : entry.category || "Ofício";
+  const keywords = type === "culture" ? entry.keywords || [] : entry.knowledge || [];
+  return `
+    <article class="journey-catalog-card" data-catalog-entry="${esc(entry.id)}">
+      <div class="journey-catalog-thumb">${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" loading="lazy" />` : `<span aria-hidden="true">${esc(entry.name.slice(0, 1))}</span>`}</div>
+      <div><small>${esc(category)}</small><h3>${esc(entry.name)}</h3><p>${esc(entry.summary || "Registro em preparação.")}</p><div class="keyword-row">${keywords.slice(0, 4).map((word) => `<span>${esc(word)}</span>`).join("")}</div></div>
+      <button class="ghost-button" type="button" data-action="catalog-details" data-catalog-type="${type}" data-catalog-id="${esc(entry.id)}">Abrir registro</button>
+    </article>`;
+}
+
+function renderCultureCatalog() {
+  const cultures = window.MILLENNIUM_JOURNEY_31.catalogSearch(state.content.cultures || [], state.cultureSearch, state.cultureFilter);
+  const kingdoms = state.content.kingdoms || [];
+  return `
+    <div class="grid journey-catalog-view">
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Mundo · Culturas</p><h2>Quem criou o personagem?</h2><p>Raça é herança. Cultura é formação, idioma, costume, contato e familiaridade. Cultura nunca concede atributo automático.</p></div><button class="primary-button" type="button" data-nav="character">Usar na ficha</button></article>
+      <article class="panel span-12 catalog-toolbar"><label><span>Buscar cultura</span><input data-action="culture-search" data-focus-key="culture-search" autocomplete="off" value="${esc(state.cultureSearch)}" placeholder="Costumes, reino, valores..." /></label><label><span>Reino</span><select data-action="culture-filter"><option value="all">Todos</option>${kingdoms.map((entry) => `<option value="${esc(entry.id)}" ${state.cultureFilter === entry.id ? "selected" : ""}>${esc(entry.name)}</option>`).join("")}</select></label><span class="tag" data-catalog-count="cultures">${cultures.length} registro(s)</span></article>
+      <section class="span-12 journey-catalog-grid" data-search-results="cultures">${cultures.map((entry) => renderCatalogCard(entry, "culture")).join("") || `<div class="empty-state">Nenhuma cultura corresponde à busca.</div>`}</section>
+    </div>`;
+}
+
+function renderProfessionCatalog() {
+  const professions = window.MILLENNIUM_JOURNEY_31.catalogSearch(state.content.professions || [], state.professionSearch, state.professionFilter);
+  const categories = [...new Set((state.content.professions || []).map((entry) => entry.category).filter(Boolean))].sort();
+  return `
+    <div class="grid journey-catalog-view">
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Mundo · Ofícios</p><h2>O que você sabe fazer?</h2><p>Ofício concede conhecimento, ferramentas, contatos e acesso narrativo. Não concede atributo nem sucesso automático.</p></div><button class="primary-button" type="button" data-nav="character">Usar na ficha</button></article>
+      <article class="panel span-12 catalog-toolbar"><label><span>Buscar ofício</span><input data-action="profession-search" data-focus-key="profession-search" autocomplete="off" value="${esc(state.professionSearch)}" placeholder="Ferramenta, atividade, conhecimento..." /></label><label><span>Categoria</span><select data-action="profession-filter"><option value="all">Todas</option>${categories.map((entry) => `<option value="${esc(entry)}" ${state.professionFilter === entry ? "selected" : ""}>${esc(entry)}</option>`).join("")}</select></label><span class="tag" data-catalog-count="professions">${professions.length} registro(s)</span></article>
+      <section class="span-12 journey-catalog-grid" data-search-results="professions">${professions.map((entry) => renderCatalogCard(entry, "profession")).join("") || `<div class="empty-state">Nenhum ofício corresponde à busca.</div>`}</section>
+    </div>`;
+}
+
+function openCatalogDetails(type, id) {
+  const collection = type === "culture" ? "cultures" : "professions";
+  const entry = characterCatalogEntry(collection, id);
+  if (!entry) return;
+  const image = entry.imageHero || entry.imageThumbnail || entry.emblemUrl || "";
+  $("#modalContent").innerHTML = `
+    <article class="catalog-detail-modal">
+      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" />` : `<div class="catalog-detail-fallback" aria-hidden="true">${esc(entry.name.slice(0, 1))}</div>`}
+      <div><p class="eyebrow">${type === "culture" ? "Cultura" : "Ofício"}</p><h2>${esc(entry.name)}</h2><p>${esc(entry.summary || "")}</p><dl>${catalogEntryDetails(entry, type)}</dl><div class="review-warning"><strong>Sem bônus automático de atributo.</strong><span>${type === "culture" ? "Cultura concede idioma, costumes, contatos e familiaridade narrativa." : "Ofício concede conhecimento, ferramentas, receitas e experiência narrativa."}</span></div></div>
+    </article>`;
+  $("#modal").hidden = false;
+}
+
+function creationRequestDetails(request = {}) {
+  const fields = [
+    ["Conceito", request.concept], ["Função", request.function], ["Manifestação", request.manifestation],
+    ["Alcance", request.range], ["Duração", request.duration], ["Custo", request.cost],
+    ["Limitações", request.limitations], ["Contramedidas", request.countermeasures], ["Riscos", request.risks],
+  ].filter(([, value]) => String(value || "").trim());
+  return fields.map(([label, value]) => `<div><strong>${esc(label)}</strong><p>${esc(value)}</p></div>`).join("");
+}
+
+function creationRequestStatus(request = {}) {
+  return window.MILLENNIUM_BACKEND_31.creationStatusLabel(request.status);
+}
+
+function renderCreationsIntroduction() {
+  const character = currentCharacter();
+  if (!characterRegistrationLocked(character)) return `<section class="locked-route"><span aria-hidden="true">⌁</span><p class="eyebrow">Poderes e Técnicas</p><h2>Disponível após concluir o registro técnico</h2><p>A Interface precisa conhecer sua herança, formação e atributos antes de receber uma criação.</p><button class="primary-button" type="button" data-nav="character">Registrar o Escolhido</button></section>`;
+  const requests = state.progressRequests
+    .filter((request) => request.uid === state.user?.uid && ["power", "technique"].includes(request.type))
+    .sort((a, b) => timeValue(b.updatedAt || b.createdAt) - timeValue(a.updatedAt || a.createdAt));
+  const filter = state.creationFilter || "all";
+  const filtered = requests.filter((request) => filter === "all" || creationRequestStatus(request) === filter);
+  const editRequest = requests.find((request) => request.id === state.creationDraftRequestId && window.MILLENNIUM_BACKEND_31.canResubmitCreation(request)) || {};
+  const approvedPowers = (character.powers || []).filter((power) => power.status !== "reprovado");
+  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
+  const statuses = ["all", "pendente", "em análise", "nerf solicitado", "aprovado", "reprovado"];
+  const value = (field) => esc(editRequest[field] || "");
+  return `
+    <div class="grid creation-workbench">
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Jornada · Criações</p><h2>Poderes e Técnicas</h2><p>Envie uma proposta completa, receba análise do Oráculo e reenvie a mesma solicitação quando houver pedido de ajuste. Aprovação nunca concede vitória automática.</p></div><div class="creation-summary-grid"><span class="tag">Poderes ${approvedPowers.length}/${powerSlots}</span><span class="tag">Afinidade ${esc(getAffinity(character.affinityId)?.name || "não revelada")}</span><span class="tag">${requests.length} registro(s)</span></div></article>
+      <article class="panel span-7">
+        <div class="panel-heading"><div><p class="eyebrow">${editRequest.id ? "Reenvio após nerf" : "Nova proposta"}</p><h3>${editRequest.id ? esc(editRequest.title) : "Registrar criação"}</h3></div>${editRequest.id ? `<button class="ghost-button" type="button" data-action="cancel-creation-edit">Cancelar reenvio</button>` : ""}</div>
+        <form class="creation-form-grid" data-form="creation-request">
+          <input type="hidden" name="previousRequestId" value="${esc(editRequest.id || "")}" />
+          <input type="hidden" name="revision" value="${editRequest.id ? Number(editRequest.revision || 1) + 1 : 1}" />
+          <label><span>Tipo</span><select name="type"><option value="power" ${editRequest.type === "power" ? "selected" : ""}>Poder</option><option value="technique" ${editRequest.type === "technique" ? "selected" : ""}>Técnica</option></select></label>
+          <label><span>Nome</span><input name="title" maxlength="120" value="${value("title")}" required /></label>
+          <label class="wide"><span>Conceito</span><textarea name="concept" rows="3" maxlength="1200" required>${value("concept")}</textarea></label>
+          <label><span>Função</span><input name="function" maxlength="500" value="${value("function")}" placeholder="Ataque, defesa, suporte, mobilidade..." required /></label>
+          <label><span>Afinidade</span><select name="affinityId"><option value="${esc(character.affinityId || "")}">${esc(getAffinity(character.affinityId)?.name || "Afinidade da ficha")}</option></select></label>
+          <label class="wide"><span>Manifestação</span><textarea name="manifestation" rows="3" maxlength="1200" required>${value("manifestation")}</textarea></label>
+          <label><span>Alcance</span><input name="range" maxlength="300" value="${value("range")}" required /></label>
+          <label><span>Duração</span><input name="duration" maxlength="300" value="${value("duration")}" required /></label>
+          <label><span>Custo</span><textarea name="cost" rows="3" maxlength="1200" required>${value("cost")}</textarea></label>
+          <label><span>Limitações</span><textarea name="limitations" rows="3" maxlength="1200" required>${value("limitations")}</textarea></label>
+          <label><span>Contramedidas</span><textarea name="countermeasures" rows="3" maxlength="1200" required>${value("countermeasures")}</textarea></label>
+          <label><span>Riscos</span><textarea name="risks" rows="3" maxlength="1200" required>${value("risks")}</textarea></label>
+          <label class="wide"><span>Descrição completa</span><textarea name="description" rows="5" maxlength="5000" required>${value("description")}</textarea></label>
+          <label><span>Poder-base da técnica</span><select name="basePowerId"><option value="">Não se aplica / escolha</option>${approvedPowers.map((power) => `<option value="${esc(power.id || power.name)}" ${editRequest.basePowerId === (power.id || power.name) ? "selected" : ""}>${esc(power.name)}</option>`).join("")}</select></label>
+          <label><span>Exemplo de uso</span><textarea name="example" rows="3" maxlength="1200">${value("example")}</textarea></label>
+          <button class="primary-button wide" type="submit">${editRequest.id ? "Reenviar para análise" : "Enviar para análise"}</button>
+        </form>
+      </article>
+      <article class="panel span-5"><p class="eyebrow">Critérios de análise</p><h3>O que o Oráculo verifica</h3><div class="list"><div class="item-row"><strong>Função clara</strong><p>O poder precisa ter um papel legível.</p></div><div class="item-row"><strong>Custo real</strong><p>Limites e riscos precisam afetar o uso.</p></div><div class="item-row"><strong>Contrajogo</strong><p>Outro personagem deve possuir formas narrativas de responder.</p></div><div class="item-row"><strong>Consentimento</strong><p>Controle mental, memória, sangue, dor e sonho exigem limites explícitos.</p></div></div></article>
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Fila pessoal</p><h3>Solicitações e revisões</h3></div><div class="creation-tabs">${statuses.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="creation-filter" data-filter="${esc(status)}">${status === "all" ? "Todas" : esc(status)}</button>`).join("")}</div></div><div class="content-grid">${filtered.map((request) => { const status = creationRequestStatus(request); return `<article class="creation-status-card" data-status="${esc(status)}"><span>${esc(progressTypeLabel(request.type))} · revisão ${Number(request.revision || 1)}</span><h3>${esc(request.title || "Criação sem nome")}</h3><p>${esc(request.description || "")}</p><div class="creation-field-list">${creationRequestDetails(request)}</div>${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}<div class="action-row"><span class="tag">${esc(status)}</span>${window.MILLENNIUM_BACKEND_31.canResubmitCreation(request) ? `<button class="primary-button" type="button" data-action="edit-creation-request" data-request-id="${esc(request.id)}">Ajustar e reenviar</button>` : ""}</div></article>`; }).join("") || `<div class="empty-state">Nenhuma solicitação neste filtro.</div>`}</div></article>
+    </div>`;
+}
+
+function renderOriginCompletionForm(character) {
+  const missing = !character.kingdomId || !character.regionId || !(character.cultureId || character.culture) || !(character.professionId || character.profession);
+  if (!missing) return "";
+  const regions = state.content.regions || [];
+  return `
+    <article class="panel span-12 origin-completion-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Compatibilidade com ficha antiga</p><h3>Complete a origem sem alterar sua base</h3></div><span class="tag">Opcional</span></div>
+      <p>Este formulário adiciona reino, região, cultura e ofício à ficha existente. Raça, classe e atributos permanecem intocados.</p>
+      <form class="origin-completion-form" data-form="character-origin-completion">
+        <label><span>Reino</span><select name="kingdomId" required><option value="">Escolha</option>${optionList(state.content.kingdoms, character.kingdomId)}</select></label>
+        <label><span>Região</span><select name="regionId" required><option value="">Escolha</option>${optionList(regions, character.regionId)}</select></label>
+        <label><span>Cultura</span><select name="cultureId" required><option value="">Escolha</option>${optionList(state.content.cultures, character.cultureId)}<option value="custom">Cultura personalizada</option></select></label>
+        <label><span>Ofício</span><select name="professionId" required><option value="">Escolha</option><option value="none">Sem ofício</option>${optionList(state.content.professions, character.professionId)}<option value="custom">Outro ofício</option></select></label>
+        <details><summary>Dados personalizados</summary><label><span>Nome da cultura</span><input name="customCultureName" maxlength="80" /></label><label><span>Resumo da cultura</span><textarea name="customCultureSummary" maxlength="800"></textarea></label><label><span>Nome do ofício</span><input name="customProfessionName" maxlength="80" /></label><label><span>Resumo do ofício</span><textarea name="customProfessionSummary" maxlength="800"></textarea></label></details>
+        <button class="primary-button" type="submit">Salvar somente a origem</button>
+      </form>
+    </article>`;
+}
+
+async function saveOriginCompletion(form) {
+  const values = formValues(form);
+  if (![values.kingdomId, values.regionId, values.cultureId, values.professionId].every((value) => String(value || "").trim())) throw new Error("Escolha reino, região, cultura e ofício.");
+  if (values.cultureId === "custom" && (!values.customCultureName || !values.customCultureSummary)) throw new Error("Descreva a cultura personalizada.");
+  if (values.professionId === "custom" && (!values.customProfessionName || !values.customProfessionSummary)) throw new Error("Descreva o ofício personalizado.");
+  const culture = characterCatalogEntry("cultures", values.cultureId);
+  const profession = characterCatalogEntry("professions", values.professionId);
+  const patch = {
+    kingdomId: values.kingdomId,
+    regionId: values.regionId,
+    cultureId: values.cultureId,
+    professionId: values.professionId,
+    customCultureName: values.cultureId === "custom" ? values.customCultureName : "",
+    customCultureSummary: values.cultureId === "custom" ? values.customCultureSummary : "",
+    customProfessionName: values.professionId === "custom" ? values.customProfessionName : "",
+    customProfessionSummary: values.professionId === "custom" ? values.customProfessionSummary : "",
+    culture: values.cultureId === "custom" ? `${values.customCultureName}: ${values.customCultureSummary}` : culture?.name || "",
+    profession: values.professionId === "custom" ? `${values.customProfessionName}: ${values.customProfessionSummary}` : values.professionId === "none" ? "Sem ofício" : profession?.name || "",
+  };
+  await saveCharacterOriginPatch(patch);
+  await syncPublicProfileProjection({ ...currentCharacter(), ...patch });
+  clearLocalFormDraft("character-origin-completion");
+  toast("Origem complementada sem alterar atributos.");
+}
+
 function registrationPreviewCard(entry, kind, fallback = "Escolha uma opção para consultar o registro.") {
   if (!entry) return `<aside class="registration-preview empty"><p>${esc(fallback)}</p></aside>`;
   const image = entry.imageThumbnail || entry.imageHero || entry.imageUrl || entry.emblemUrl || "";
@@ -3652,17 +4122,37 @@ function characterStatComposition(character = currentCharacter()) {
     temporaryBonus: "Temporários",
     penalties: "Penalidades",
   };
+  const quarantined = new Set(result.diagnostics?.quarantinedBaseKeys || []);
   return `
+    ${quarantined.size ? `<div class="diagnostic-inline" role="alert"><strong>Base inconsistente isolada</strong><span>Valores fora das regras não entram integralmente no cálculo até revisão do Oráculo.</span></div>` : ""}
     <div class="stat-composition-grid">
       ${ATTRIBUTES.map((attr) => {
         const rows = Object.entries(sourceLabels).map(([key, label]) => {
           const value = Number(result[key]?.[attr.key] || 0) * (key === "penalties" ? -1 : 1);
-          return `<span><small>${label}</small><b>${value > 0 ? "+" : ""}${value}</b></span>`;
+          const raw = key === "base" && quarantined.has(attr.key) ? ` <em>(armazenado: ${esc(result.raw?.base?.[attr.key])})</em>` : "";
+          return `<span><small>${label}${raw}</small><b>${value > 0 ? "+" : ""}${value}</b></span>`;
         }).join("");
-        return `<details class="stat-composition"><summary><span>${esc(attr.label)}</span><strong>${Number(result.total[attr.key] || 0)}</strong></summary><div>${rows}</div></details>`;
+        return `<details class="stat-composition ${quarantined.has(attr.key) ? "is-quarantined" : ""}"><summary><span>${esc(attr.label)}</span><strong>${Number(result.total[attr.key] || 0)}</strong></summary><div>${rows}</div></details>`;
       }).join("")}
       <details class="stat-composition derived"><summary><span>DEF derivada</span><strong>${Number(result.derived.def || 0)}</strong></summary><p>DEF vem de armadura, escudo e efeitos registrados. Ela não é um sexto atributo-base.</p></details>
     </div>`;
+}
+
+function renderAttributeDiagnostic(character = {}) {
+  const diagnostic = window.MILLENNIUM_CORE_31.diagnoseAttributeSources(character, state.content);
+  const rawBase = diagnostic.stats.raw?.base || {};
+  const rawDevelopment = diagnostic.stats.raw?.development || {};
+  const rawRows = ATTRIBUTES.map((attr) => `<tr><th>${esc(attr.short)}</th><td>${esc(rawBase[attr.key])}</td><td>${esc(rawDevelopment[attr.key])}</td><td>${Number(diagnostic.stats.total[attr.key] || 0)}</td></tr>`).join("");
+  return `
+    <section class="attribute-diagnostic ${diagnostic.ok ? "is-ok" : "has-errors"}">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Diagnóstico de ficha</p><h3>${diagnostic.ok ? "Fontes de atributo consistentes" : `${diagnostic.issues.length} inconsistência(s) detectada(s)`}</h3></div>
+        <span class="tag ${diagnostic.ok ? "success" : "danger"}">${diagnostic.ok ? "Sem bloqueios" : "Revisão necessária"}</span>
+      </div>
+      <p>Nenhum valor é reparado por esta tela. Valores corrompidos são apenas identificados e isolados do cálculo oficial.</p>
+      <div class="diagnostic-table-wrap"><table class="diagnostic-table"><thead><tr><th>Atributo</th><th>Base armazenada</th><th>Desenvolvimento</th><th>Total efetivo</th></tr></thead><tbody>${rawRows}</tbody></table></div>
+      ${diagnostic.issues.length ? `<ul class="diagnostic-issue-list">${diagnostic.issues.map((issue) => `<li class="severity-${esc(issue.severity)}"><strong>${esc(issue.code)}</strong><span>${esc(issue.message)}</span></li>`).join("")}</ul>` : `<div class="empty-state compact">Nenhuma inconsistência encontrada.</div>`}
+    </section>`;
 }
 
 function registrationStepper(activeStep) {
@@ -3706,6 +4196,7 @@ function renderLockedCharacterRecord(character) {
         <div><p class="eyebrow">Registro técnico concluído</p><h2>${esc(character.characterName || "Escolhido sem nome")}</h2><p>${esc(character.originType || "Retornado")} · ${esc(race?.name || "Sem raça")} · ${esc(classEntry?.name || "Sem classe")}</p></div>
         <div class="action-row"><span class="tag success">Base protegida</span><button class="primary-button" type="button" data-nav="character-life">Dar Vida</button><button class="ghost-button" type="button" data-nav="creations">Poderes e técnicas</button></div>
       </article>
+      <div class="span-12">${renderManifestationPanel(character)}</div>
       <article class="panel span-5 registered-summary">
         <p class="eyebrow">Identidade registrada</p>
         <dl class="record-list">
@@ -3722,7 +4213,8 @@ function renderLockedCharacterRecord(character) {
         ${characterStatComposition(character)}
         ${Number(character.freePoints || 0) > 0 ? `<div class="development-controls"><p>Adicione um ponto conquistado. A base inicial nunca é reescrita.</p>${ATTRIBUTES.map((attr) => `<button class="ghost-button" type="button" data-action="spend-development" data-attr="${attr.key}" ${state.developmentSpending ? "disabled" : ""}>+1 ${esc(attr.short)}</button>`).join("")}</div>` : ""}
       </article>
-      ${diagnostics.ok ? "" : `<article class="panel span-12 diagnostic-warning"><p class="eyebrow">Atenção</p><h3>A Interface encontrou ${diagnostics.issues.length} inconsistência(s)</h3><p>Nada foi reparado automaticamente. O Oráculo pode abrir o diagnóstico, registrar o motivo e preservar rollback.</p></article>`}
+      ${diagnostics.ok ? "" : `<article class="panel span-12 diagnostic-warning"><p class="eyebrow">Atenção</p><h3>A Interface encontrou ${diagnostics.issues.length} inconsistência(s)</h3><p>Nada foi reparado automaticamente. Valores fora das regras foram isolados do cálculo e exigem revisão do Oráculo.</p><ul class="diagnostic-issue-list">${diagnostics.issues.map((issue) => `<li class="severity-${esc(issue.severity)}"><strong>${esc(issue.code)}</strong><span>${esc(issue.message)}</span></li>`).join("")}</ul></article>`}
+      ${renderOriginCompletionForm(character)}
     </div>`;
 }
 
@@ -3765,6 +4257,7 @@ function renderCharacterStep(step, draft, character) {
         ${draft.professionId === "custom" ? `<label><span>Nome do ofício</span><input name="customProfessionName" required maxlength="80" value="${esc(draft.customProfessionName)}" /></label><label><span>Atividades e conhecimento</span><textarea name="customProfessionSummary" required maxlength="800" rows="3">${esc(draft.customProfessionSummary)}</textarea></label>` : ""}
       </div>
       <div class="origin-preview-grid">${registrationPreviewCard(kingdom, "Reino")}${registrationPreviewCard(region, "Região")}${registrationPreviewCard(culture, "Cultura", "Cultura concede idiomas, costumes e familiaridade; nunca atributos automáticos.")}${draft.professionId === "none" ? registrationPreviewCard({ name: "Sem ofício", summary: "O personagem começa sem formação profissional registrada." }, "Ofício") : registrationPreviewCard(profession, "Ofício", "Ofício concede conhecimento, ferramentas e acesso narrativo; nunca atributos automáticos.")}</div>
+      <div class="action-row origin-catalog-actions"><button class="ghost-button" type="button" data-nav="cultures">Comparar culturas</button><button class="ghost-button" type="button" data-nav="professions">Comparar ofícios</button><button class="text-button" type="button" data-nav="codex" data-codex-target="kingdoms">Ler reinos e regiões</button></div>
     </div>`;
   if (step === 5) return `
     <div class="registration-stage attribute-stage"><div class="stage-heading"><span>05</span><div><p class="eyebrow">Atributos-base</p><h2>Distribua exatamente 20 pontos</h2><p>Cada atributo começa entre 2 e 6. Os bônus aparecem depois e nunca contaminam a base.</p></div></div>
@@ -3830,8 +4323,7 @@ function characterLifeSource() {
 }
 
 function characterLifeProgress(source = characterLifeSource()) {
-  const completed = CHARACTER_LIFE_FIELDS.filter((field) => String(source[field] || "").trim().length >= 3).length;
-  return Math.round((completed / CHARACTER_LIFE_FIELDS.length) * 100);
+  return window.MILLENNIUM_JOURNEY_31.narrativeProgress(source).percentage;
 }
 
 function lifeTextarea(name, label, source, hint = "", rows = 3) {
@@ -4536,7 +5028,7 @@ function renderWorldMap() {
       <div class="world-map-nodes">
         ${places.map((item, index) => `
           <button class="world-map-node ${item.id === "cortinas" ? "corrupted" : ""}" style="--node-index:${index}" type="button" data-action="open-codex-entry" data-collection="${esc(item.collection)}" data-entry-id="${esc(item.id)}">
-            <img src="${esc(codexImageFor(item, index))}" alt="" />
+            <img src="${esc(codexImageFor(item, index, "world"))}" alt="Mapa ilustrado de ${esc(item.name)}" loading="lazy" decoding="async" />
             <small>${esc(item.type)}</small>
             <strong>${esc(item.name)}</strong>
           </button>
@@ -4579,101 +5071,120 @@ function renderJourneyCodex() {
   `;
 }
 
-function codexImageFor(item = {}, index = 0) {
-  if (item.imageUrl) return item.imageUrl;
-  if (SEASON_ART.maps[item.id]) return SEASON_ART.maps[item.id];
-  if (item.role || item.ruler || item.race) return generatedPetPortrait({ id: `codex-${item.id || index}`, name: item.name || "Registro", rarity: item.rarity || "Codex" });
-  const mapIds = Object.keys(SEASON_ART.maps);
-  return SEASON_ART.maps[mapIds[stableNumber(`${item.id || item.name || "codex"}-${index}`) % mapIds.length]] || SEASON_ART.login;
+function codexKindForTab(tab = state.codexTab || "affinities") {
+  return ({
+    affinities: "affinity", categories: "affinity", races: "race", classes: "class",
+    biomes: "biome", kingdoms: "kingdom", regions: "region", npcs: "npc",
+    wanted: "npc", bestiary: "bestiary", events: "event", lore: "lore",
+    reputation: "lore", world: "map",
+  })[tab] || "record";
+}
+
+function codexVisualFor(item = {}, index = 0, tab = state.codexTab || "affinities") {
+  const kind = codexKindForTab(tab);
+  const enriched = { ...item };
+  if (!enriched.imageHero && SEASON_ART.maps[item.id]) enriched.imageHero = SEASON_ART.maps[item.id];
+  if (!enriched.imageThumbnail && SEASON_ART.mapThumbs[item.id]) enriched.imageThumbnail = SEASON_ART.mapThumbs[item.id];
+  if (!enriched.imageHero && SEASON_ART.pets[item.id]) enriched.imageHero = SEASON_ART.pets[item.id];
+  if (!enriched.imageThumbnail && SEASON_ART.petThumbs[item.id]) enriched.imageThumbnail = SEASON_ART.petThumbs[item.id];
+  if (!enriched.imageHero && item.imageUrl) enriched.imageHero = item.imageUrl;
+  enriched.id ||= `${tab}-${index}`;
+  return POLISH.visualFor(enriched, { kind });
+}
+
+function codexImageFor(item = {}, index = 0, tab = state.codexTab || "affinities") {
+  return codexVisualFor(item, index, tab).hero;
+}
+
+function codexCollectionForTab(tab = state.codexTab || "affinities") {
+  return ({
+    events: "worldEvents", lore: "worldLore", affinities: "affinities", categories: "affinityCategories",
+    races: "races", classes: "classes", biomes: "biomes", kingdoms: "kingdoms", regions: "regions",
+    npcs: "npcs", wanted: "wantedBoard", bestiary: "bestiary", reputation: "reputationFactions",
+  })[tab] || "affinities";
+}
+
+function codexContextFor(tab, item = {}) {
+  const category = tab === "affinities" ? getCategory(item.categoryId) : {};
+  return {
+    category,
+    bonusText: bonusToText(item.bonus),
+    ownerCount: tab === "categories" ? categoryOwnerCount(item.id) : tab === "affinities" ? affinityOwnerCount(item.id) : 0,
+    affinityCount: tab === "categories" ? state.content.affinities.filter((affinity) => affinity.categoryId === item.id).length : 0,
+    kingdomName: tab === "regions" ? state.content.kingdoms.find((kingdom) => kingdom.id === item.kingdomId)?.name || "Independente" : "",
+  };
 }
 
 function renderCodexResults(tab = state.codexTab || "affinities") {
-  const renderCodexCards = (items, detail) => {
+  const renderCodexCards = (items, collection = codexCollectionForTab(tab)) => {
     const visible = filterCodexItems(items);
     return `
-      <div class="codex-grid">
-        ${visible.map((item, index) => `
-          <article class="codex-card">
-            <img src="${esc(codexImageFor(item, index))}" alt="${esc(item.name || item.title || item.id)}" />
-            <div>
-              <span>${esc(item.rarity || item.region || item.role || item.ruler || item.id)}</span>
-              <h3>${esc(item.name || item.title || item.id)}</h3>
-              <p>${esc(detail(item))}</p>
-            </div>
-          </article>
-        `).join("") || `<div class="empty-state">Nada cadastrado nesta aba.</div>`}
+      <div class="codex-grid codex-grid-compact" role="list" aria-label="Registros de ${esc(tab)}">
+        ${visible.map((item, index) => {
+          const visual = codexVisualFor(item, index, tab);
+          const presentation = POLISH.codexPresentation(tab, item, codexContextFor(tab, item));
+          return `
+            <article class="codex-card codex-card-summary" role="listitem">
+              <div class="codex-card-media">
+                <img src="${esc(visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="480" height="270" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+              </div>
+              <div class="codex-card-body">
+                <div class="codex-card-meta">${presentation.meta.slice(0, 6).map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
+                <h3>${esc(presentation.title)}</h3>
+                <p>${esc(presentation.summary)}</p>
+                <button class="ghost-button codex-open-button" type="button" data-action="open-codex-entry" data-collection="${esc(collection)}" data-entry-id="${esc(item.id)}">Abrir registro</button>
+              </div>
+            </article>
+          `;
+        }).join("") || `<div class="empty-state">Nada cadastrado nesta aba.</div>`}
       </div>
     `;
   };
   const views = {
     world: () => renderWorldMap(),
-    events: () => renderCodexCards(state.content.worldEvents || [], (item) => `${item.status || "Evento"} · ${item.modifier || "Sem modificador"} · ${item.reward || "Recompensa a revelar"} · ${item.description || ""}`),
-    lore: () => renderCodexCards(state.content.worldLore, (item) => `${item.era || "Registro"} · ${item.summary || ""} ${item.description || ""}`),
+    events: () => renderCodexCards(state.content.worldEvents || [], "worldEvents"),
+    lore: () => renderCodexCards(state.content.worldLore || [], "worldLore"),
     journey: () => renderJourneyCodex(),
-    affinities: () => renderCodexCards(state.content.affinities, (item) => {
-      const category = getCategory(item.categoryId);
-      return `${category?.name || "Sem categoria"} · ${category?.rarity || "Comum"} · ${bonusToText(item.bonus)} · ${affinityOwnerCount(item.id)} player(s) · ${item.passive || item.description || ""}`;
-    }),
-    categories: () => renderCodexCards(state.content.affinityCategories, (item) => `Peso ${item.weight || 0} · ${item.rarity || "Comum"} · ${state.content.affinities.filter((affinity) => affinity.categoryId === item.id).length} afinidade(s) · ${categoryOwnerCount(item.id)} player(s) · ${item.description || "Categoria de roleta e balanceamento."}`),
-    races: () => renderCodexCards(state.content.races, (item) => `${bonusToText(item.bonus)} · ${item.passive || ""} ${item.description || ""}`),
-    classes: () => renderCodexCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role || ""}${item.paths ? ` Caminhos: ${item.paths}.` : ""} ${item.description || ""}`),
-    biomes: () => renderCodexCards(state.content.biomes, (item) => `${item.region || "Mundo"} · ${item.description || ""}`),
-    kingdoms: () => renderCodexCards(state.content.kingdoms, (item) => `${item.ruler || "Sem governante"} · ${item.description || ""}`),
-    regions: () => renderCodexCards(state.content.regions, (item) => `${state.content.kingdoms.find((kingdom) => kingdom.id === item.kingdomId)?.name || "Independente"} · ${item.description || ""}`),
-    npcs: () => renderCodexCards(state.content.npcs, (item) => `${item.role || "NPC importante"} · ${item.description || ""}`),
-    wanted: () => renderCodexCards(state.content.wantedBoard, (item) => `${item.reward || "Recompensa a definir"} · ${item.description || ""}`),
-    bestiary: () => renderCodexCards(state.content.bestiary, (item) => `${item.region || "Região desconhecida"} · Fraqueza: ${item.weakness || "não catalogada"} · Drops: ${item.drops || "desconhecidos"} · ${item.description || ""}`),
-    reputation: () => renderCodexCards(state.content.reputationFactions, (item) => `${item.region || "Mundo"} · ${item.levels || ""} · ${item.description || ""} Beneficio: ${item.benefit || "caminhos proprios"}. Risco: ${item.risk || "desconhecido"}. ${item.quote || ""}`),
+    affinities: () => renderCodexCards(state.content.affinities || [], "affinities"),
+    categories: () => renderCodexCards(state.content.affinityCategories || [], "affinityCategories"),
+    races: () => renderCodexCards(state.content.races || [], "races"),
+    classes: () => renderCodexCards(state.content.classes || [], "classes"),
+    biomes: () => renderCodexCards(state.content.biomes || [], "biomes"),
+    kingdoms: () => renderCodexCards(state.content.kingdoms || [], "kingdoms"),
+    regions: () => renderCodexCards(state.content.regions || [], "regions"),
+    npcs: () => renderCodexCards(state.content.npcs || [], "npcs"),
+    wanted: () => renderCodexCards(state.content.wantedBoard || [], "wantedBoard"),
+    bestiary: () => renderCodexCards(state.content.bestiary || [], "bestiary"),
+    reputation: () => renderCodexCards(state.content.reputationFactions || [], "reputationFactions"),
   };
   return views[tab]?.() || views.affinities();
 }
 
 function renderCodex() {
   const tabs = [
-    ["world", "Mapa"],
-    ["events", "Eventos"],
-    ["lore", "Lore"],
-    ["journey", "Jornada"],
-    ["affinities", "Afinidades"],
-    ["categories", "Raridades"],
-    ["races", "Raças"],
-    ["classes", "Classes"],
-    ["biomes", "Biomas"],
-    ["kingdoms", "Reinos"],
-    ["regions", "Regiões"],
-    ["npcs", "NPCs"],
-    ["wanted", "Procurados"],
-    ["bestiary", "Bestiário"],
-    ["reputation", "Facções"],
+    ["world", "Mapa"], ["events", "Eventos"], ["lore", "Lore"], ["journey", "Jornada"],
+    ["affinities", "Afinidades"], ["categories", "Raridades"], ["races", "Raças"], ["classes", "Classes"],
+    ["biomes", "Biomas"], ["kingdoms", "Reinos"], ["regions", "Regiões"], ["npcs", "NPCs"],
+    ["wanted", "Procurados"], ["bestiary", "Bestiário"], ["reputation", "Facções"],
   ];
   const tab = state.codexTab || "affinities";
   return `
-    <div class="grid">
-      <article class="panel span-12">
+    <div class="grid codex-view" data-codex-active-tab="${esc(tab)}">
+      <article class="panel span-12 codex-toolbar-panel">
         <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Biblioteca viva</p>
-            <h2>Codex Millennium</h2>
-          </div>
-          <span class="tag">Atualizado pela Forja</span>
+          <div><p class="eyebrow">Biblioteca viva</p><h2>Codex Millennium</h2></div>
+          <span class="tag">Registro resumido · detalhes sob demanda</span>
         </div>
-        <div class="tabs codex-tabs">
-          ${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="codex-tab" data-tab="${id}">${label}</button>`).join("")}
+        <div class="tabs codex-tabs" role="tablist" aria-label="Seções do Codex">
+          ${tabs.map(([id, label]) => `<button id="codex-tab-${id}" class="tab ${tab === id ? "active" : ""}" type="button" role="tab" aria-selected="${tab === id}" aria-controls="codex-results" tabindex="${tab === id ? "0" : "-1"}" data-action="codex-tab" data-tab="${id}">${label}</button>`).join("")}
         </div>
         <div class="codex-controls">
-          <input data-action="codex-search" placeholder="Buscar no Codex..." value="${esc(state.codexSearch)}" />
-          <select data-action="codex-filter">
-            <option value="all" ${state.codexFilter === "all" ? "selected" : ""}>Todos</option>
-            ${RARITIES.map((rarity) => `<option value="${rarity}" ${state.codexFilter === rarity ? "selected" : ""}>${rarity}</option>`).join("")}
-          </select>
-          <select data-action="codex-sort">
-            <option value="name" ${state.codexSort === "name" ? "selected" : ""}>Nome</option>
-            <option value="rarity" ${state.codexSort === "rarity" ? "selected" : ""}>Raridade</option>
-            <option value="owners" ${state.codexSort === "owners" ? "selected" : ""}>Mais players</option>
-          </select>
+          <label class="visually-labeled"><span>Buscar no Codex</span><input id="codexSearch" name="codexSearch" data-action="codex-search" data-focus-key="codex-search" autocomplete="off" spellcheck="false" placeholder="Nome, região, domínio ou palavra-chave" value="${esc(state.codexSearch)}" /></label>
+          <label class="visually-labeled"><span>Raridade</span><select data-action="codex-filter"><option value="all" ${state.codexFilter === "all" ? "selected" : ""}>Todos</option>${RARITIES.map((rarity) => `<option value="${rarity}" ${state.codexFilter === rarity ? "selected" : ""}>${rarity}</option>`).join("")}</select></label>
+          <label class="visually-labeled"><span>Ordenação</span><select data-action="codex-sort"><option value="name" ${state.codexSort === "name" ? "selected" : ""}>Nome</option><option value="rarity" ${state.codexSort === "rarity" ? "selected" : ""}>Raridade</option><option value="owners" ${state.codexSort === "owners" ? "selected" : ""}>Mais players</option></select></label>
         </div>
       </article>
-      <article class="panel span-12" data-search-results="codex" aria-live="polite">
+      <article id="codex-results" class="panel span-12" role="tabpanel" aria-labelledby="codex-tab-${esc(tab)}" data-search-results="codex" aria-live="polite">
         ${renderCodexResults(tab)}
       </article>
     </div>
@@ -4683,13 +5194,18 @@ function renderCodex() {
 function openCodexEntry(collection, id) {
   const item = state.content[collection]?.find((entry) => entry.id === id);
   if (!item) return;
+  state.codexScrollByTab[state.codexTab] = window.scrollY;
   const kingdom = item.kingdomId ? state.content.kingdoms.find((entry) => entry.id === item.kingdomId) : null;
+  const tab = ({ worldEvents: "events", worldLore: "lore", affinityCategories: "categories", wantedBoard: "wanted", reputationFactions: "reputation" })[collection] || collection;
+  const visual = codexVisualFor(item, 0, tab);
+  const presentation = POLISH.codexPresentation(tab, item, codexContextFor(tab, item));
   $("#modalContent").innerHTML = `
-    <section class="codex-entry-modal">
-      ${item.imageUrl ? `<img src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || "Registro")}" />` : `<div class="codex-entry-mark">${esc(String(item.name || item.title || "M").slice(0, 1))}</div>`}
+    <section class="codex-entry-modal" aria-labelledby="codex-entry-title">
+      <img src="${esc(visual.hero)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id)}" alt="${esc(visual.alt)}" loading="eager" decoding="async" style="object-position:${visual.focusX}% ${visual.focusY}%" />
       <div>
         <p class="eyebrow">${esc(item.era || item.region || item.role || kingdom?.name || "Codex Millennium")}</p>
-        <h2>${esc(item.name || item.title || item.id)}</h2>
+        <h2 id="codex-entry-title">${esc(presentation.title)}</h2>
+        <div class="codex-entry-meta">${presentation.meta.map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
         <p>${esc(item.summary || item.description || "Registro ainda incompleto.")}</p>
         ${item.summary && item.description ? `<p>${esc(item.description)}</p>` : ""}
         ${item.benefit ? `<div class="tag-row"><span class="tag">${esc(item.benefit)}</span><span class="tag danger">${esc(item.risk || "Risco desconhecido")}</span></div>` : ""}
@@ -4699,6 +5215,7 @@ function openCodexEntry(collection, id) {
     </section>
   `;
   $("#modal").hidden = false;
+  focusModal();
 }
 
 function filterCodexItems(items) {
@@ -4798,7 +5315,7 @@ function renderGlobalSearchPanel() {
   return `
     <article class="panel span-12">
       <div class="codex-controls">
-        <input data-action="codex-search" placeholder="Buscar fogo, guerreiro, missão, regra..." value="${esc(state.codexSearch)}" />
+        <input id="globalSearch" name="globalSearch" data-action="codex-search" data-focus-key="global-search" autocomplete="off" spellcheck="false" placeholder="Buscar fogo, guerreiro, missão, regra..." value="${esc(state.codexSearch)}" />
       </div>
       <div class="content-grid" data-search-results="global-search" aria-live="polite">
         ${renderGlobalSearchResults()}
@@ -4876,12 +5393,13 @@ function renderMarket() {
     market: () => `
       <section class="market-catalog-tools">
         <div><p class="eyebrow">Catálogo oficial</p><h3>Equipamento para cada caminho</h3><p data-market-result-count>${filteredMarket.length} de ${(state.content.marketListings || []).length} item(ns)</p></div>
-        <label><span>Buscar</span><input data-action="market-search" placeholder="Arma, poção, viagem..." value="${esc(state.marketSearch || "")}" /></label>
+        <label><span>Buscar</span><input id="marketSearch" name="marketSearch" data-action="market-search" data-focus-key="market-search" autocomplete="off" spellcheck="false" placeholder="Arma, poção, viagem..." value="${esc(state.marketSearch || "")}" /></label>
         <label><span>Raridade</span><select data-action="market-rarity"><option value="all">Todas</option>${RARITIES.map((rarity) => `<option value="${esc(rarity)}" ${state.marketRarity === rarity ? "selected" : ""}>${esc(rarity)}</option>`).join("")}</select></label>
         <label><span>Categoria</span><select data-action="market-category"><option value="all">Todas</option>${marketCategories.map((id) => `<option value="${esc(id)}" ${state.marketCategory === id ? "selected" : ""}>${esc((state.content.itemCategories || []).find((category) => category.id === id)?.name || id)}</option>`).join("")}</select></label>
       </section>
-      <span data-search-results="market" hidden></span>
-      ${marketCards(filteredMarket, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO")}
+      <div class="market-search-results" data-search-results="market" aria-live="polite">
+        ${marketCards(filteredMarket, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO")}
+      </div>
     `,
     bazaar: () => renderPlayerBazaar(character),
     cosmetics: () => marketCards(allCosmetics, (item) => `${item.type || item.category || "Cosmético"} · ${item.description || item.effect || "Coleção visual para o perfil."}`, "Coleção"),
@@ -4950,39 +5468,84 @@ function marketCards(items, detail, currency = "PO") {
 function updateCodexSearchResults() {
   if (state.view === "codex") {
     const results = document.querySelector('[data-search-results="codex"]');
-    if (results) results.innerHTML = renderCodexResults();
+    if (results) STABILITY.replaceHtmlIfChanged(results, renderCodexResults());
     return;
   }
   if (state.view === "help" && state.helpTab === "search") {
     const results = document.querySelector('[data-search-results="global-search"]');
-    if (results) results.innerHTML = renderGlobalSearchResults();
+    if (results) STABILITY.replaceHtmlIfChanged(results, renderGlobalSearchResults());
   }
 }
 
 function updateMarketSearchResults() {
   if (state.view !== "market" || state.marketTab !== "market") return;
-  const marker = document.querySelector('[data-search-results="market"]');
-  if (!marker) return;
+  const results = document.querySelector('[data-search-results="market"]');
+  if (!results) return;
   const filtered = filteredMarketListings();
   const count = document.querySelector("[data-market-result-count]");
   if (count) count.textContent = `${filtered.length} de ${(state.content.marketListings || []).length} item(ns)`;
-  let sibling = marker.nextElementSibling;
-  while (sibling) {
-    const next = sibling.nextElementSibling;
-    sibling.remove();
-    sibling = next;
+  STABILITY.replaceHtmlIfChanged(results, marketCards(filtered, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"));
+}
+
+function updateCultureSearchResults() {
+  if (state.view !== "cultures") return;
+  const entries = window.MILLENNIUM_JOURNEY_31.catalogSearch(state.content.cultures || [], state.cultureSearch, state.cultureFilter);
+  const results = document.querySelector('[data-search-results="cultures"]');
+  const count = document.querySelector('[data-catalog-count="cultures"]');
+  if (count) count.textContent = `${entries.length} registro(s)`;
+  if (results) STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "culture")).join("") || `<div class="empty-state">Nenhuma cultura corresponde à busca.</div>`);
+}
+
+function updateProfessionSearchResults() {
+  if (state.view !== "professions") return;
+  const entries = window.MILLENNIUM_JOURNEY_31.catalogSearch(state.content.professions || [], state.professionSearch, state.professionFilter);
+  const results = document.querySelector('[data-search-results="professions"]');
+  const count = document.querySelector('[data-catalog-count="professions"]');
+  if (count) count.textContent = `${entries.length} registro(s)`;
+  if (results) STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "profession")).join("") || `<div class="empty-state">Nenhum ofício corresponde à busca.</div>`);
+}
+
+const SEARCH_CONTROLLERS = Object.freeze({
+  "culture-search": { stateKey: "cultureSearch", update: updateCultureSearchResults },
+  "profession-search": { stateKey: "professionSearch", update: updateProfessionSearchResults },
+  "codex-search": {
+    stateKey: "codexSearch",
+    update: updateCodexSearchResults,
+  },
+  "market-search": {
+    stateKey: "marketSearch",
+    update: updateMarketSearchResults,
+  },
+});
+
+function isPartialSearchAction(action) {
+  return Boolean(SEARCH_CONTROLLERS[action]);
+}
+
+function setPartialSearchValue(action, value) {
+  const controller = SEARCH_CONTROLLERS[action];
+  if (!controller) return false;
+  state[controller.stateKey] = String(value ?? "");
+  return true;
+}
+
+function searchUpdateTask() {
+  if (!state.searchTask) {
+    state.searchTask = STABILITY.createLatestTask(({ action, route }) => {
+      if (state.searchComposing || route !== state.view) return;
+      SEARCH_CONTROLLERS[action]?.update();
+    }, 160);
   }
-  marker.insertAdjacentHTML("afterend", marketCards(filtered, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"));
+  return state.searchTask;
 }
 
 function queueSearchResultsUpdate(action) {
-  window.clearTimeout(state.searchUpdateTimer);
-  const sequence = ++state.searchUpdateSequence;
-  state.searchUpdateTimer = window.setTimeout(() => {
-    if (state.searchComposing || sequence !== state.searchUpdateSequence) return;
-    if (action === "market-search") updateMarketSearchResults();
-    else updateCodexSearchResults();
-  }, 160);
+  if (!isPartialSearchAction(action)) return;
+  searchUpdateTask().schedule({ action, route: state.view });
+}
+
+function cancelSearchResultsUpdate() {
+  state.searchTask?.cancel?.();
 }
 
 function renderPlayerBazaar(character) {
@@ -5249,6 +5812,7 @@ function guildScore(guild) {
 }
 
 function renderAdminOps() {
+  const diagnostics = currentDiagnosticSnapshot();
   const totalGold = state.characters.reduce((sum, char) => sum + Number(char.gold || 0), 0);
   const totalItems = state.characters.reduce((sum, char) => sum + (char.inventory || []).length, 0);
   const totalEssences = state.characters.reduce((sum, char) => sum + Number(char.affinityAttempts || 0), 0);
@@ -5283,8 +5847,54 @@ function renderAdminOps() {
           <button class="primary-button wide" type="submit">Salvar operações</button>
         </form>
       </article>
+      <article class="panel span-12">
+        <div class="panel-heading"><div><p class="eyebrow">Migração 3.1</p><h3>Diagnóstico sem escrita</h3></div><span class="tag">Dry-run obrigatório</span></div>
+        <p>Gera um plano idempotente para separar arrays antigos em subcoleções. Nenhum documento real é alterado e os arrays antigos permanecem preservados.</p>
+        <div class="form-grid"><label><span>Ficha</span><select id="migrationCharacterSelect">${state.characters.map((character) => `<option value="${esc(character.ownerId || character.id)}">${esc(character.characterName || getUserName(character.ownerId || character.id))}</option>`).join("")}</select></label><div class="action-row wide"><button class="primary-button" type="button" data-action="preview-migration">Gerar plano</button>${state.migrationPreview ? `<button class="ghost-button" type="button" data-action="download-migration-preview">Baixar JSON</button>` : ""}</div></div>
+        ${state.migrationPreview ? `<div class="diagnostic-chip-row"><span class="tag">${state.migrationPreview.operations.length} operação(ões)</span><span class="tag">origem v${state.migrationPreview.fromVersion}</span><span class="tag">destino v${state.migrationPreview.targetVersion}</span><span class="tag">arrays preservados</span></div><pre class="migration-plan">${esc(JSON.stringify({ plan: state.migrationPreview, rollback: window.MILLENNIUM_BACKEND_31.migrationRollbackPlan(state.migrationPreview) }, null, 2))}</pre>` : ""}
+      </article>
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Listeners por rota</p><h3>Assinaturas ativas</h3></div><span class="tag">${state.diagnostics.listenerCount} total</span></div><div class="diagnostic-chip-row">${(state.routeSubscriptionNames || []).map((name) => `<span class="tag">${esc(name)}</span>`).join("") || `<span class="muted-text">Nenhuma assinatura de rota ativa.</span>`}${state.privateUnsub ? `<span class="tag">conversa-aberta</span>` : ""}</div></article>
+      <article class="panel span-12 diagnostic-console" aria-labelledby="diagnostic-console-title">
+        <div class="panel-heading"><div><p class="eyebrow">Diagnóstico local</p><h3 id="diagnostic-console-title">Estado da Interface</h3></div><div class="action-row"><span class="tag ${diagnostics.online ? "success" : "danger"}">${diagnostics.online ? "Online" : "Offline"}</span><button class="ghost-button" type="button" data-action="download-diagnostics">Baixar diagnóstico</button></div></div>
+        <div class="diagnostic-metrics">
+          ${renderStat("Build", diagnostics.build)}${renderStat("Commit", diagnostics.commit)}${renderStat("Rota", diagnostics.route)}${renderStat("Service Worker", diagnostics.serviceWorker)}
+          ${renderStat("Renders", diagnostics.renders)}${renderStat("Último render", `${diagnostics.lastRenderMs} ms`)}${renderStat("Listeners", diagnostics.listeners)}${renderStat("Foco", diagnostics.focused || "nenhum")}
+          ${renderStat("Leituras observadas", diagnostics.reads)}${renderStat("Escritas observadas", diagnostics.writes)}${renderStat("Imagens carregadas", `${diagnostics.images.loaded}/${diagnostics.images.total}`)}${renderStat("Falhas de imagem", diagnostics.images.failed)}
+        </div>
+        <div class="diagnostic-chip-row">${diagnostics.minigames.map((game) => `<span class="tag">${esc(game.mode)} · ${esc(game.state)} · ${game.timers} timer(s)</span>`).join("") || `<span class="muted-text">Nenhuma sessão de minigame ativa.</span>`}</div>
+        <details><summary>Histórico recente de renderização</summary><div class="diagnostic-history">${(state.diagnostics.renderHistory || []).slice(-12).reverse().map((entry) => `<div><span>${esc(entry.route || "rota")}</span><strong>${Number(entry.durationMs || 0)} ms</strong><small>${esc(entry.reason || "render")} · ${esc(entry.focused || "sem foco")} · ${Number(entry.listeners || 0)} listener(s)</small></div>`).join("") || `<p class="muted-text">Nenhum render registrado.</p>`}</div></details>
+      </article>
     </div>
   `;
+}
+
+function previewMigrationPlan() {
+  const select = document.querySelector("#migrationCharacterSelect");
+  const uid = select?.value || state.characters[0]?.ownerId || state.characters[0]?.id;
+  const character = state.characters.find((entry) => (entry.ownerId || entry.id) === uid) || currentCharacter();
+  state.migrationPreview = window.MILLENNIUM_BACKEND_31.arrayDocumentPlan(character, 3);
+  scheduleRender({ critical: true, preserveScroll: true, reason: "migration-preview" });
+}
+
+function downloadMigrationPreview() {
+  if (!state.migrationPreview) return;
+  const payload = JSON.stringify({ generatedAt: new Date().toISOString(), dryRun: true, plan: state.migrationPreview, rollback: window.MILLENNIUM_BACKEND_31.migrationRollbackPlan(state.migrationPreview) }, null, 2);
+  const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `millennium-migration-${state.migrationPreview.uid || "character"}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadDiagnostics() {
+  const payload = JSON.stringify({ generatedAt: new Date().toISOString(), diagnostics: currentDiagnosticSnapshot(), renderHistory: state.diagnostics.renderHistory || [], routeSubscriptions: state.routeSubscriptionNames || [] }, null, 2);
+  const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `millennium-diagnostics-${Date.now()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function renderAuditRows() {
@@ -5498,52 +6108,37 @@ function renderGuild() {
   `;
 }
 
+function conversationOtherId(conversation = {}) {
+  return (conversation.participantIds || conversation.participants || []).find((uid) => uid !== state.user?.uid) || "";
+}
+
+function conversationSummaryFor(uid) {
+  const id = window.MILLENNIUM_BACKEND_31.conversationIdFor(state.user.uid, uid);
+  return state.conversations.find((entry) => entry.id === id) || null;
+}
+
+function renderConversationContact(user) {
+  const conversation = conversationSummaryFor(user.id);
+  const active = state.selectedPrivateUserId === user.id;
+  return `<button class="conversation-card ${active ? "active" : ""}" type="button" data-action="select-direct-user" data-user-id="${esc(user.id)}"><span class="${isUserOnline(user) ? "online-dot" : "offline-dot"}"></span><span><strong>${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</strong><small>${esc(conversation?.lastMessage || (conversation ? "Conversa iniciada" : "Iniciar conversa"))}</small></span>${conversation?.lastMessageAt ? `<time>${esc(tsText(conversation.lastMessageAt))}</time>` : ""}</button>`;
+}
+
 function renderChatView() {
   const recipients = state.users.filter((user) => user.id !== state.user.uid);
   const globalMessages = state.globalMessages.filter((message) => message.type !== "whisper");
-  const onlineUsers = recipients.filter((user) => isUserOnline(user));
   const friends = friendIds().map((uid) => state.users.find((user) => user.id === uid)).filter(Boolean);
-  const directList = friends.length ? friends : recipients;
+  const conversationUsers = state.conversations.map((conversation) => state.users.find((user) => user.id === conversationOtherId(conversation))).filter(Boolean);
+  const directList = [...new Map([...(friends.length ? friends : recipients), ...conversationUsers].map((user) => [user.id, user])).values()]
+    .sort((a, b) => timeValue(conversationSummaryFor(b.id)?.lastMessageAt) - timeValue(conversationSummaryFor(a.id)?.lastMessageAt));
   return `
     <div class="grid">
       <div class="span-12 chat-mode-switch" role="tablist" aria-label="Tipo de conversa">
         <button class="${state.chatTab === "global" ? "active" : ""}" type="button" role="tab" aria-selected="${state.chatTab === "global"}" data-action="chat-mode" data-tab="global"><span>Global</span><small>${globalMessages.length} mensagens</small></button>
-        <button class="${state.chatTab === "direct" ? "active" : ""}" type="button" role="tab" aria-selected="${state.chatTab === "direct"}" data-action="chat-mode" data-tab="direct"><span>Direto</span><small>${state.privateMessages.length} nesta conversa</small></button>
+        <button class="${state.chatTab === "direct" ? "active" : ""}" type="button" role="tab" aria-selected="${state.chatTab === "direct"}" data-action="chat-mode" data-tab="direct"><span>Direto</span><small>${state.privateMessages.length} carregadas</small></button>
       </div>
-      <article class="panel span-12 chat-panel ${state.chatTab === "global" ? "active" : ""}" data-chat-panel="global">
-        <div class="panel-heading"><div><p class="eyebrow">Global</p><h3>Chat e anúncios raros</h3></div></div>
-        <div class="scroll-list" data-chat-scroll="global">${renderMessages(globalMessages, { source: "global", reportable: true })}</div>
-        <form class="form-stack" data-form="global-chat">
-          <textarea name="text" rows="3" placeholder="Escreva no chat global..." required></textarea>
-          ${renderEmojiBar()}
-          <button class="primary-button" type="submit">Enviar global</button>
-        </form>
-      </article>
-      <article class="panel span-12 chat-panel ${state.chatTab === "direct" ? "active" : ""}" data-chat-panel="direct">
-        <div class="panel-heading"><div><p class="eyebrow">Direto</p><h3>Mensagens diretas</h3></div></div>
-        <div class="direct-layout">
-          <div class="direct-list">
-            <span>Online agora</span>
-            ${onlineUsers.map((user) => `<button class="direct-contact ${state.selectedPrivateUserId === user.id ? "active" : ""}" type="button" data-action="select-direct-user" data-user-id="${esc(user.id)}"><span class="online-dot"></span>${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</button>`).join("") || `<div class="empty-state compact">Ninguém online.</div>`}
-            <span>${friends.length ? "Amigos" : "Jogadores"}</span>
-            ${directList.map((user) => `<button class="direct-contact ${state.selectedPrivateUserId === user.id ? "active" : ""}" type="button" data-action="select-direct-user" data-user-id="${esc(user.id)}"><span class="${isUserOnline(user) ? "online-dot" : "offline-dot"}"></span>${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</button>`).join("") || `<div class="empty-state compact">Adicione amigos pelo perfil.</div>`}
-          </div>
-          <div class="direct-chat">
-            <div class="direct-chat-head">
-              <strong>${state.selectedPrivateUserId ? esc(displayNameWithTitle(state.selectedPrivateUserId, getUserName(state.selectedPrivateUserId))) : "Selecione uma conversa"}</strong>
-              ${state.selectedPrivateUserId ? `<button class="link-button" type="button" data-action="open-user-profile" data-user-id="${esc(state.selectedPrivateUserId)}">Perfil</button>` : ""}
-            </div>
-            <div class="scroll-list direct-messages" data-chat-scroll="private-${esc(state.selectedPrivateUserId || "none")}">${state.privateChatError ? `<div class="empty-state">${esc(state.privateChatError)}</div>` : renderMessages(state.privateMessages, { source: "private", reportable: true })}</div>
-            <form class="form-stack" data-form="private-chat">
-              <textarea name="text" rows="3" placeholder="Mensagem direta..." ${state.selectedPrivateUserId ? "" : "disabled"} required></textarea>
-              ${renderEmojiBar()}
-              <button class="primary-button" type="submit" ${state.selectedPrivateUserId ? "" : "disabled"}>Enviar direto</button>
-            </form>
-          </div>
-        </div>
-      </article>
-    </div>
-  `;
+      <article class="panel span-12 chat-panel ${state.chatTab === "global" ? "active" : ""}" data-chat-panel="global"><div class="panel-heading"><div><p class="eyebrow">Global</p><h3>Chat e anúncios raros</h3></div></div><div class="scroll-list" data-chat-scroll="global">${renderMessages(globalMessages, { source: "global", reportable: true })}</div><form class="form-stack" data-form="global-chat"><textarea name="text" rows="3" placeholder="Escreva no chat global..." required></textarea>${renderEmojiBar()}<button class="primary-button" type="submit">Enviar global</button></form></article>
+      <article class="panel span-12 chat-panel ${state.chatTab === "direct" ? "active" : ""}" data-chat-panel="direct"><div class="panel-heading"><div><p class="eyebrow">Direto</p><h3>Conversas privadas</h3></div><span class="tag">30 mensagens por página</span></div><div class="direct-layout"><div class="conversation-list">${directList.map(renderConversationContact).join("") || `<div class="empty-state compact">Nenhum contato disponível.</div>`}</div><div class="direct-chat">${state.selectedPrivateUserId ? `<div class="direct-chat-head"><button class="link-button" type="button" data-action="direct-back">← Conversas</button><strong>${esc(displayNameWithTitle(state.selectedPrivateUserId, getUserName(state.selectedPrivateUserId)))}</strong><button class="link-button" type="button" data-action="open-user-profile" data-user-id="${esc(state.selectedPrivateUserId)}">Perfil</button></div>${state.conversationHasMore ? `<div class="load-older-wrap"><button class="ghost-button" type="button" data-action="load-older-direct" ${state.conversationLoading ? "disabled" : ""}>${state.conversationLoading ? "Carregando..." : "Carregar anteriores"}</button></div>` : ""}<div class="scroll-list direct-messages" data-chat-scroll="private-${esc(state.selectedPrivateUserId)}">${state.privateChatError ? `<div class="empty-state">${esc(state.privateChatError)}</div>` : renderMessages(state.privateMessages, { source: "private", reportable: true })}</div><form class="form-stack" data-form="private-chat"><textarea name="text" rows="3" maxlength="2000" placeholder="Mensagem direta..." required></textarea>${renderEmojiBar()}<button class="primary-button" type="submit" ${state.messageSending ? "disabled" : ""}>${state.messageSending ? "Enviando..." : "Enviar direto"}</button></form>` : `<div class="direct-chat-empty"><div><p class="eyebrow">Mensagem direta</p><h3>Selecione um jogador</h3><p>Somente os dois participantes podem ler a conversa. Mensagens enviadas não podem ser reescritas.</p></div></div>`}</div></div></article>
+    </div>`;
 }
 
 function renderEmojiBar() {
@@ -5570,14 +6165,15 @@ function renderMessageIdentity(message = {}) {
 function renderMessages(messages, options = {}) {
   if (!messages.length) return `<div class="empty-state">Nada por aqui ainda.</div>`;
   return messages.map((message) => `
-    <div class="message ${esc(message.type || "")} ${message.type === "rare" ? "rare" : ""}">
+    <div class="message ${esc(message.type || "")} ${message.type === "rare" ? "rare" : ""} ${message.pending ? "pending" : ""} ${message.failed ? "failed" : ""}">
       <div class="message-head">
         ${renderMessageIdentity(message)}
         ${message.rarity ? `<span class="message-rarity ${rarityClass(message.rarity)}">${esc(message.rarity)}</span>` : ""}
       </div>
       <p>${esc(message.text)}</p>
       <div class="message-actions">
-        <small>${esc(tsText(message.createdAt))}</small>
+        <small>${esc(tsText(message.createdAt))}${message.pending ? " · enviando" : message.failed ? " · falhou" : ""}</small>
+        ${message.failed ? `<button class="link-button" type="button" data-action="retry-private-message" data-client-id="${esc(message.clientId || message.id)}">Tentar novamente</button>` : ""}
         ${options.reportable && message.senderId && message.senderId !== "system" && message.senderId !== state.user?.uid ? `
           <button class="link-button danger-link" type="button" data-action="report-message" data-message-id="${esc(message.id)}" data-message-source="${esc(options.source || "global")}">Denunciar mensagem</button>
         ` : ""}
@@ -5715,29 +6311,23 @@ function renderProgressRequests(requests, adminMode = false) {
   `).join("");
 }
 
+function reportStatusLabel(status = "recebido") {
+  const normalized = String(status || "recebido").toLowerCase();
+  return window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.includes(normalized) ? normalized : normalized === "aberto" ? "recebido" : normalized;
+}
+
 function renderReports() {
+  const tab = state.reportTab || "bug";
+  const mine = [...state.reports].sort((a, b) => timeValue(b.updatedAt || b.createdAt) - timeValue(a.updatedAt || a.createdAt));
   return `
-    <div class="grid">
-      <article class="panel span-6">
-        <p class="eyebrow">Bug</p>
-        <h3>Reportar problema do site</h3>
-        <form class="form-stack" data-form="bug-report">
-          <label><span>Título</span><input name="title" required /></label>
-          <label><span>Descrição</span><textarea name="description" rows="5" required></textarea></label>
-          <button class="primary-button" type="submit">Enviar bug</button>
-        </form>
-      </article>
-      <article class="panel span-6">
-        <p class="eyebrow">Denúncia</p>
-        <h3>Denunciar player</h3>
-        <form class="form-stack" data-form="player-report">
-          <label><span>Player denunciado</span><select name="targetId">${state.users.filter((user) => user.id !== state.user.uid).map((user) => `<option value="${esc(user.id)}">${esc(user.displayName || user.email)}</option>`).join("")}</select></label>
-          <label><span>Motivo</span><textarea name="description" rows="5" required></textarea></label>
-          <button class="danger-button" type="submit">Enviar denúncia</button>
-        </form>
-      </article>
-    </div>
-  `;
+    <div class="grid support-workbench">
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Suporte e Segurança</p><h2>Ajuda, bugs e denúncias</h2><p>O formulário preserva seu texto localmente e envia somente os dados necessários para análise.</p></div><div class="support-tabs">${[["bug","Reportar bug"],["player","Denunciar player"],["message","Denunciar mensagem"],["mine","Meus reports"],["faq","FAQ"]].map(([id,label]) => `<button class="ghost-button ${tab === id ? "active" : ""}" type="button" data-action="report-tab" data-tab="${id}">${label}</button>`).join("")}</div></article>
+      ${tab === "bug" ? `<article class="panel span-12"><p class="eyebrow">Reportar bug</p><h3>Descreva como reproduzir o problema</h3><form class="support-form-grid" data-form="bug-report"><label><span>Título</span><input name="title" maxlength="160" required /></label><label><span>Categoria</span><select name="category"><option>Interface</option><option>Conta</option><option>Personagem</option><option>Chat</option><option>Codex</option><option>Minigame</option><option>Outro</option></select></label><label class="wide"><span>Descrição</span><textarea name="description" rows="4" maxlength="5000" required></textarea></label><label class="wide"><span>Passos para reproduzir</span><textarea name="steps" rows="4" maxlength="3000"></textarea></label><label><span>Resultado esperado</span><textarea name="expected" rows="3" maxlength="2000"></textarea></label><label><span>Resultado atual</span><textarea name="actual" rows="3" maxlength="2000"></textarea></label><label><span>Dispositivo</span><input name="device" maxlength="160" placeholder="Ex.: Android, PC, iPhone" /></label><label><span>Navegador</span><input name="browser" maxlength="160" placeholder="Ex.: Chrome, Safari" /></label><button class="primary-button wide" type="submit">Enviar bug</button></form></article>` : ""}
+      ${tab === "player" ? `<article class="panel span-12"><p class="eyebrow">Denunciar player</p><h3>Envio restrito ao Oráculo</h3><form class="support-form-grid" data-form="player-report"><label><span>Player denunciado</span><select name="targetId" required><option value="">Escolha</option>${state.users.filter((user) => user.id !== state.user.uid).map((user) => `<option value="${esc(user.id)}">${esc(user.displayName || user.email)}</option>`).join("")}</select></label><label><span>Categoria</span><select name="category"><option>Assédio</option><option>Trapaça</option><option>Conteúdo inadequado</option><option>Conflito narrativo</option><option>Outro</option></select></label><label class="wide"><span>Contexto e descrição</span><textarea name="description" rows="6" maxlength="5000" required></textarea></label><label class="wide"><span>Link de anexo opcional</span><input name="attachmentUrl" maxlength="1000" /></label><button class="danger-button wide" type="submit">Enviar denúncia</button></form></article>` : ""}
+      ${tab === "message" ? `<article class="panel span-12"><div class="empty-state"><strong>Denuncie pela própria mensagem.</strong><p>Abra o chat, localize a mensagem e use “Denunciar mensagem”. O sistema inclui um pequeno contexto sem carregar toda a conversa.</p><button class="primary-button" type="button" data-nav="chat">Abrir Chat</button></div></article>` : ""}
+      ${tab === "mine" ? `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Acompanhamento</p><h3>Meus reports</h3></div><span class="tag">${mine.length} registro(s)</span></div><div class="scroll-list">${mine.map((report) => `<article class="report-row"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Report")}</strong><p>${esc(report.description || "")}</p>${report.adminNote ? `<p><strong>Resposta do Oráculo:</strong> ${esc(report.adminNote)}</p>` : ""}</article>`).join("") || `<div class="empty-state">Nenhum report enviado.</div>`}</div></article>` : ""}
+      ${tab === "faq" ? `<article class="panel span-12"><p class="eyebrow">Perguntas frequentes</p><div class="list">${(state.content.faqEntries || []).slice(0,20).map((entry) => `<details><summary>${esc(entry.name || entry.question || entry.id)}</summary><p>${esc(entry.answer || entry.description || "")}</p></details>`).join("") || `<div class="empty-state">FAQ ainda não carregado.</div>`}</div></article>` : ""}
+    </div>`;
 }
 
 function renderAdminHome() {
@@ -5889,6 +6479,7 @@ function renderAdminUsers() {
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
+          <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>
            <div class="grid" style="margin-top:18px">
             <div class="panel span-6">
               <p class="eyebrow">Adicionar item</p>
@@ -6694,27 +7285,13 @@ function renderAdminSettings() {
 }
 
 function renderAdminReports() {
+  const filter = state.reportFilter || "all";
+  const reports = state.reports.filter((report) => filter === "all" || reportStatusLabel(report.status) === filter);
+  const filters = ["all", ...window.MILLENNIUM_BACKEND_31.REPORT_STATUSES];
   return `
     <div class="grid">
-      <article class="panel span-12">
-        <div class="panel-heading"><div><p class="eyebrow">Moderação</p><h2>Bugs e denúncias</h2></div></div>
-        <div class="scroll-list">
-          ${state.reports.map((report) => `
-            <div class="report-row">
-              <span>${esc(report.type)} · ${esc(report.status || "aberto")} · ${esc(tsText(report.createdAt))}</span>
-              <strong>${esc(report.title || "Denúncia")}</strong>
-              <p>${esc(report.description)}</p>
-              <p>Autor: ${esc(getUserName(report.reporterId))}${report.targetId ? ` · Alvo: ${esc(getUserName(report.targetId))}` : ""}</p>
-              <div class="action-row">
-                <button class="ghost-button" type="button" data-action="mark-report" data-report-id="${esc(report.id)}" data-status="em análise">Em análise</button>
-                <button class="primary-button" type="button" data-action="mark-report" data-report-id="${esc(report.id)}" data-status="resolvido">Resolvido</button>
-              </div>
-            </div>
-          `).join("") || `<div class="empty-state">Nenhum report enviado.</div>`}
-        </div>
-      </article>
-    </div>
-  `;
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Moderação</p><h2>Bugs e denúncias</h2></div><div class="support-tabs">${filters.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="report-filter" data-filter="${esc(status)}">${status === "all" ? "Todos" : esc(status)}</button>`).join("")}</div></div><div class="scroll-list">${reports.map((report) => `<article class="report-row"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Denúncia")}</strong><p>${esc(report.description || "")}</p><p>Autor: ${esc(getUserName(report.reporterId))}${report.targetId ? ` · Alvo: ${esc(getUserName(report.targetId))}` : ""}</p>${report.steps ? `<details><summary>Dados técnicos</summary><p><strong>Passos:</strong> ${esc(report.steps)}</p><p><strong>Esperado:</strong> ${esc(report.expected || "")}</p><p><strong>Atual:</strong> ${esc(report.actual || "")}</p><p>${esc(report.build || "")} · ${esc(report.route || "")} · ${esc(report.viewport || "")}</p></details>` : ""}<form class="form-grid compact-form" data-form="review-report"><input type="hidden" name="reportId" value="${esc(report.id)}" /><label><span>Status</span><select name="status">${window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.map((status) => `<option value="${esc(status)}" ${reportStatusLabel(report.status) === status ? "selected" : ""}>${esc(status)}</option>`).join("")}</select></label><label class="wide"><span>Resposta / nota</span><textarea name="adminNote" rows="3" maxlength="2000">${esc(report.adminNote || "")}</textarea></label><button class="primary-button wide" type="submit">Salvar análise</button></form></article>`).join("") || `<div class="empty-state">Nenhum report neste filtro.</div>`}</div></article>
+    </div>`;
 }
 
 const VIEW_RENDERERS = {
@@ -6722,6 +7299,9 @@ const VIEW_RENDERERS = {
   profile: renderProfile,
   character: renderCharacterForm,
   "character-life": renderCharacterLife,
+  creations: renderCreationsIntroduction,
+  cultures: renderCultureCatalog,
+  professions: renderProfessionCatalog,
   roulette: renderRoulette,
   gacha: renderGacha,
   minigames: renderMinigames,
@@ -6783,29 +7363,18 @@ async function saveLegacyCharacter(form) {
   const values = formValues(form);
   const current = currentCharacter();
   const locked = current.creationLocked || Boolean(current.characterName && current.raceId && current.classId);
-  const base = {};
-  ATTRIBUTES.forEach((attr) => {
-    const previous = Number(current.base?.[attr.key] || 0);
-    const next = Math.max(0, Number(values[`base_${attr.key}`] || 0));
-    base[attr.key] = locked ? Math.max(previous, next) : next;
-  });
-  const spent = Object.values(base).reduce((sum, value) => sum + value, 0);
-  const max = 20 + Number(current.freePoints || 0);
-  if (!locked && Object.values(base).some((value) => value < 2 || value > 6)) {
-    toast("Na criação, cada atributo precisa ficar entre 2 e 6 antes dos bônus.");
+  if (locked) {
+    toast("Atributos-base bloqueados não podem ser editados. Use Pontos de Desenvolvimento.");
     return;
   }
-  if (!locked && spent !== 20) {
-    const difference = Math.abs(20 - spent);
-    toast(spent < 20
-      ? `Distribua exatamente 20 pontos. Ainda faltam ${difference} ponto(s).`
-      : `Distribua exatamente 20 pontos. Remova ${difference} ponto(s).`);
+
+  const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(values[`base_${attr.key}`])]));
+  const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
+  if (!allocation.valid) {
+    toast(allocation.errors[0] || "Distribua exatamente 20 pontos entre 2 e 6.");
     return;
   }
-  if (spent > max) {
-    toast(`Você distribuiu ${spent} pontos, mas só tem ${max}.`);
-    return;
-  }
+
   await updateCharacter(state.user.uid, {
     playerName: values.playerName,
     displayName: values.playerName || state.profile?.displayName,
@@ -6833,16 +7402,53 @@ async function saveLegacyCharacter(form) {
     bannerFocusX: Math.max(0, Math.min(100, Number(values.bannerFocusX || 50))),
     bannerFocusY: Math.max(0, Math.min(100, Number(values.bannerFocusY || 50))),
     bannerZoom: Math.max(1, Math.min(2.4, Number(values.bannerZoom || 1))),
-    raceId: locked ? current.raceId : values.raceId,
-    classId: locked ? current.classId : values.classId,
+    raceId: values.raceId,
+    classId: values.classId,
     creationLocked: true,
-    base,
+    creationStatus: "registered",
+    technicalCreationComplete: true,
+    base: allocation.normalized,
     story: values.story,
     personality: values.personality,
   });
   await writeDoc("users", state.user.uid, { displayName: values.playerName || state.profile?.displayName || state.user.email });
   state.characterDraft = null;
-  toast("Ficha salva.");
+  toast("Ficha salva com a base protegida.");
+}
+
+function publicProfileProjection(character = currentCharacter(), lore = state.characterLore || character.lore || {}) {
+  const title = activeTitle(character);
+  return {
+    ownerId: character.ownerId || state.user?.uid || "",
+    name: character.characterName || "",
+    player: character.playerName || state.profile?.displayName || "",
+    avatar: character.avatarUrl || "",
+    banner: character.bannerUrl || "",
+    title: title?.name || "",
+    race: getRace(character.raceId)?.name || character.raceId || "",
+    class: getClass(character.classId)?.name || character.classId || "",
+    affinity: getAffinity(character.affinityId)?.name || character.affinityId || "",
+    culture: character.culture || characterCatalogEntry("cultures", character.cultureId)?.name || "",
+    profession: character.profession || characterCatalogEntry("professions", character.professionId)?.name || "",
+    kingdom: characterCatalogEntry("kingdoms", character.kingdomId)?.name || character.kingdomId || "",
+    region: characterCatalogEntry("regions", character.regionId)?.name || character.regionId || "",
+    guild: state.guilds.find((guild) => guild.id === character.guildId || (guild.memberIds || []).includes(character.ownerId))?.name || "",
+    location: character.currentLocation || "",
+    publicPhrase: lore.publicPhrase || character.publicPhrase || "",
+    privacy: character.profilePublic === false ? "private" : "public",
+  };
+}
+
+async function syncPublicProfileProjection(character = currentCharacter(), lore = state.characterLore || character.lore || {}) {
+  const uid = character.ownerId || state.user?.uid;
+  if (!uid) return;
+  const projection = publicProfileProjection({ ...character, ownerId: uid }, lore);
+  if (state.demo) {
+    state.publicProfiles = state.publicProfiles.filter((entry) => entry.id !== uid).concat({ id: uid, ...projection, updatedAt: new Date().toISOString() });
+    return;
+  }
+  await state.db.collection("publicProfiles").doc(uid).set({ ...projection, updatedAt: nowValue() }, { merge: true });
+  state.diagnostics.writes += 1;
 }
 
 function pickCharacterPatch(source, keys) {
@@ -6895,6 +7501,7 @@ async function saveCharacterLorePatch(source, options = {}) {
   await state.db.collection("characters").doc(uid).collection("lore").doc("main").set({ ...patch, updatedAt: nowValue() }, { merge: true });
   state.diagnostics.writes += 1;
   await updateCharacter(uid, { narrativeCreationComplete: Number(patch.progress || 0) >= 100 });
+  await syncPublicProfileProjection({ ...currentCharacter(), ownerId: uid, narrativeCreationComplete: Number(patch.progress || 0) >= 100 }, { ...(state.characterLore || {}), ...patch });
   return patch;
 }
 
@@ -7002,6 +7609,7 @@ async function saveCharacter(form) {
     };
     await updateCharacter(state.user.uid, patch);
     await writeDoc("users", state.user.uid, { displayName: normalized.displayName });
+    await syncPublicProfileProjection({ ...currentCharacter(), ...patch, ownerId: state.user.uid });
     state.characterDraft = null;
     state.characterStep = 1;
     clearLocalFormDraft("character");
@@ -7013,21 +7621,22 @@ async function saveCharacter(form) {
 }
 
 async function spendDevelopmentPoint(attribute) {
-  if (state.developmentSpending || !ATTRIBUTES.some((entry) => entry.key === attribute)) return;
+  if (state.developmentSpending) return;
   const character = currentCharacter();
-  if (Number(character.freePoints || 0) < 1) {
-    toast("Nenhum Ponto de Desenvolvimento disponível.");
+  const initialValidation = window.MILLENNIUM_CORE_31.validateDevelopmentSpend(character, attribute);
+  if (!initialValidation.valid) {
+    toast(initialValidation.errors[0] || "Não foi possível aplicar o ponto.");
     return;
   }
+
   state.developmentSpending = true;
-  scheduleRender({ preserveScroll: true });
+  scheduleRender({ preserveScroll: true, reason: "development-start" });
   try {
-    const before = Number(character.development?.[attribute] || 0);
     const operationId = cryptoRandom();
     if (state.demo) {
       await updateCharacter(state.user.uid, {
-        development: { ...(character.development || {}), [attribute]: before + 1 },
-        freePoints: Number(character.freePoints || 0) - 1,
+        development: { ...initialValidation.development, [attribute]: initialValidation.next },
+        freePoints: initialValidation.nextFreePoints,
       });
     } else {
       const ref = state.db.collection("characters").doc(state.user.uid);
@@ -7035,19 +7644,32 @@ async function spendDevelopmentPoint(attribute) {
       await state.db.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
         const current = snapshot.data() || {};
-        if (Number(current.freePoints || 0) < 1) throw new Error("Nenhum ponto disponível.");
-        const development = { for: 0, vel: 0, hab: 0, res: 0, pod: 0, ...(current.development || {}) };
-        const previous = Number(development[attribute] || 0);
-        development[attribute] = previous + 1;
-        transaction.update(ref, { development, freePoints: Number(current.freePoints) - 1, updatedAt: nowValue() });
-        transaction.set(logRef, { ownerId: state.user.uid, attribute, amount: 1, before: previous, after: previous + 1, createdAt: nowValue() });
+        const validation = window.MILLENNIUM_CORE_31.validateDevelopmentSpend(current, attribute);
+        if (!validation.valid) throw new Error(validation.errors[0] || "Evolução recusada.");
+        const development = { ...validation.development, [attribute]: validation.next };
+        transaction.update(ref, {
+          development,
+          freePoints: validation.nextFreePoints,
+          updatedAt: nowValue(),
+        });
+        transaction.set(logRef, {
+          ownerId: state.user.uid,
+          attribute,
+          amount: 1,
+          before: validation.previous,
+          after: validation.next,
+          freePointsBefore: validation.freePoints,
+          freePointsAfter: validation.nextFreePoints,
+          idempotencyKey: operationId,
+          createdAt: nowValue(),
+        });
       });
       state.diagnostics.writes += 2;
     }
     toast(`+1 ${ATTRIBUTES.find((entry) => entry.key === attribute).short} registrado.`);
   } finally {
     state.developmentSpending = false;
-    scheduleRender({ preserveScroll: true });
+    scheduleRender({ preserveScroll: true, reason: "development-finish" });
   }
 }
 
@@ -7243,10 +7865,12 @@ async function chooseAffinity(affinityId) {
   const affinity = getAffinity(affinityId);
   if (!affinity) return;
   const category = getCategory(affinity.categoryId);
-  await updateCharacter(state.user.uid, {
+  const affinityPatch = {
     affinityId: affinity.id,
     affinitySnapshot: { ...affinity, categoryName: category?.name || "", rarity: category?.rarity || "" },
-  });
+  };
+  await updateCharacter(state.user.uid, affinityPatch);
+  await syncPublicProfileProjection({ ...currentCharacter(), ...affinityPatch });
   state.affinityChoices = [];
   state.lastRoll = affinity;
   if (isRareReward(category?.rarity)) {
@@ -7259,7 +7883,9 @@ async function chooseAffinity(affinityId) {
 
 async function toggleProfilePublic() {
   const character = currentCharacter();
-  await updateCharacter(state.user.uid, { profilePublic: !character.profilePublic });
+  const patch = { profilePublic: !character.profilePublic };
+  await updateCharacter(state.user.uid, patch);
+  await syncPublicProfileProjection({ ...character, ...patch });
 }
 
 async function joinFaction(form) {
@@ -7616,11 +8242,15 @@ function minigameReward(difficultyId, score = 0, mode = "aim") {
   return { passed, grade: grade.label, coins: baseCoins, fragmentName, fragments, loot, rareDrop };
 }
 
-function stopActiveAimGame() {
+function stopActiveAimGame(reason = "cancelled") {
   const session = state.activeAimSession;
   if (!session) return;
   session.finished = true;
-  (session.timers || []).forEach((timer) => window.clearTimeout(timer));
+  (session.timers || []).forEach((timer) => {
+    window.clearTimeout(timer);
+    window.clearInterval(timer);
+  });
+  if (session.lifecycle?.can?.("cancelled")) session.lifecycle.transition("cancelled", reason);
   state.activeAimSession = null;
 }
 
@@ -7635,9 +8265,15 @@ async function spendGachaEnergy(cost) {
   return { ...refresh, gachaEnergy: energy - cost, gachaEnergyUpdatedAt: new Date().toISOString() };
 }
 
-async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {}) {
+async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {}, runId = "") {
   const character = currentCharacter();
   const difficulty = difficultyById(difficultyId);
+  const completionKey = String(runId || `${mode}:${difficulty.id}:${Date.now()}`);
+  const completionKeys = [...new Set(character.minigameCompletionKeys || [])].slice(-79);
+  if (completionKeys.includes(completionKey)) {
+    toast("Esta partida já foi resolvida. Nenhuma recompensa duplicada foi aplicada.");
+    return { duplicate: true, passed: false, grade: "-", coins: 0, fragments: 0, fragmentName: "", loot: [] };
+  }
   const energyPatch = await spendGachaEnergy(difficulty.cost);
   if (!energyPatch) return null;
   const reward = minigameReward(difficultyId, score, mode);
@@ -7647,6 +8283,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
     ...energyPatch,
     millenniumCoins: Number(character.millenniumCoins || 0) + reward.coins,
     gachaFragments: fragments,
+    minigameCompletionKeys: [...completionKeys, completionKey],
     minigameStats: {
       ...(character.minigameStats || {}),
       [mode]: {
@@ -7658,6 +8295,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
     minigameHistory: [
       {
         id: cryptoRandom(),
+        completionKey,
         mode,
         difficultyId: difficulty.id,
         difficultyName: difficulty.name,
@@ -7684,23 +8322,32 @@ function startAimGame(difficultyId) {
     toast("Energia insuficiente para a Prova da Mira.");
     return;
   }
-  stopActiveAimGame();
+  stopActiveAimGame("new-run");
   const seconds = difficulty.id === "god-slayer" ? 42 : 38;
   let score = 0;
   let remaining = seconds;
   let streak = 0;
+  let bestStreak = 0;
   let misses = 0;
-  const session = { timers: [], finished: false, difficulty };
+  const session = {
+    id: `aim:${state.user?.uid || "demo"}:${cryptoRandom()}`,
+    timers: [],
+    finished: false,
+    difficulty,
+    lifecycle: POLISH.createLifecycle("preparing"),
+  };
+  session.lifecycle.transition("running", "arena-ready");
   state.activeAimSession = session;
   $("#modalContent").innerHTML = `
-    <section class="aim-session difficulty-${esc(difficulty.id)}">
-      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p><h2>O portal atira de volta.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
-      <div class="aim-hud"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${seconds}s</span></div>
-      <div class="aim-arena" data-aim-arena aria-label="Arena de mira"></div>
-      <div class="aim-legend"><span><b>•</b> eco</span><span><b>✦</b> raro</span><span><b>⌁</b> tempo</span>${difficulty.id !== "noob" ? "<span class=\"danger\"><b>×</b> armadilha</span>" : ""}</div>
+    <section class="aim-session difficulty-${esc(difficulty.id)}" aria-labelledby="aim-title">
+      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p><h2 id="aim-title">O portal atira de volta.</h2><p class="sr-only" id="aim-instructions">Use toque, clique ou Tab e Enter para atingir os alvos. Evite os alvos marcados com X.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="aim-hud" role="status" aria-live="polite" aria-atomic="true"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${seconds}s</span></div>
+      <div class="aim-arena" data-aim-arena role="group" aria-describedby="aim-instructions" aria-label="Arena de mira"></div>
+      <div class="aim-legend" aria-label="Legenda"><span><b>•</b> eco</span><span><b>✦</b> raro</span><span><b>⌁</b> tempo</span>${difficulty.id !== "noob" ? '<span class="danger"><b>×</b> armadilha</span>' : ""}</div>
     </section>
   `;
   $("#modal").hidden = false;
+  focusModal();
   const arena = $("[data-aim-arena]");
   const scoreEl = $("[data-aim-score]");
   const comboEl = $("[data-aim-combo]");
@@ -7715,10 +8362,23 @@ function startAimGame(difficultyId) {
   const finish = async () => {
     if (session.finished) return;
     session.finished = true;
-    session.timers.forEach((timerId) => window.clearTimeout(timerId));
-    const reward = await applyMinigameReward("aim", difficulty.id, Math.max(0, score), { lastAimRun: { score: Math.max(0, score), streak, misses, difficultyId: difficulty.id, createdAt: new Date().toISOString() } });
-    state.activeAimSession = null;
-    showMinigameResult({ mode: "Prova da Mira", difficulty, score: Math.max(0, score), reward, detail: `${misses} erro(s) · Melhor combo ${streak}` });
+    session.timers.forEach((timerId) => {
+      window.clearTimeout(timerId);
+      window.clearInterval(timerId);
+    });
+    if (session.lifecycle.can("resolving")) session.lifecycle.transition("resolving", "time-ended");
+    try {
+      const reward = await applyMinigameReward("aim", difficulty.id, Math.max(0, score), {
+        lastAimRun: { id: session.id, score: Math.max(0, score), streak: bestStreak, misses, difficultyId: difficulty.id, createdAt: new Date().toISOString() },
+      }, session.id);
+      if (session.lifecycle.can("completed")) session.lifecycle.transition("completed", "reward-applied");
+      state.activeAimSession = null;
+      showMinigameResult({ mode: "Prova da Mira", difficulty, score: Math.max(0, score), reward, detail: `${misses} erro(s) · Melhor combo ${bestStreak}` });
+    } catch (error) {
+      if (session.lifecycle.can("failed")) session.lifecycle.transition("failed", error?.message || "reward-error");
+      state.activeAimSession = null;
+      throw error;
+    }
   };
   const breakCombo = (penalty = 0) => {
     streak = 0;
@@ -7731,7 +8391,7 @@ function startAimGame(difficultyId) {
     if (event.target === arena) breakCombo(Math.round(28 * difficulty.multiplier));
   });
   const addTarget = () => {
-    if (!arena || session.finished) return;
+    if (!arena || session.finished || session.lifecycle.state !== "running") return;
     const roll = Math.random();
     const dangerChance = difficulty.id === "noob" ? 0 : Math.min(0.22, 0.035 + difficulty.multiplier * 0.035);
     const type = roll < dangerChance ? "trap" : roll < dangerChance + 0.07 ? "freeze" : roll < dangerChance + 0.2 ? "rare" : "normal";
@@ -7740,10 +8400,11 @@ function startAimGame(difficultyId) {
     target.className = `aim-target ${type}`;
     target.style.left = `${Math.random() * 82 + 4}%`;
     target.style.top = `${Math.random() * 74 + 8}%`;
-    const size = Math.max(24, 50 - difficulty.multiplier * 5 - (type === "rare" ? 4 : 0));
+    const size = Math.max(44, 54 - difficulty.multiplier * 2 - (type === "rare" ? 2 : 0));
     target.style.setProperty("--aim-size", `${size}px`);
     target.style.setProperty("--aim-drift", `${Math.max(0.6, 2.6 - difficulty.multiplier * 0.22)}s`);
     target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : type === "trap" ? "×" : "•";
+    target.setAttribute("aria-label", type === "freeze" ? "Alvo de tempo" : type === "rare" ? "Alvo raro" : type === "trap" ? "Armadilha, não acertar" : "Alvo comum");
     target.addEventListener("pointerdown", (event) => {
       event.stopPropagation();
       if (type === "trap") {
@@ -7752,6 +8413,7 @@ function startAimGame(difficultyId) {
         return;
       }
       streak += 1;
+      bestStreak = Math.max(bestStreak, streak);
       const streakBonus = Math.min(2.5, 1 + streak * 0.055);
       if (type === "freeze") {
         remaining = Math.min(seconds + 5, remaining + 3);
@@ -7764,7 +8426,7 @@ function startAimGame(difficultyId) {
       target.remove();
     }, { once: true });
     arena.appendChild(target);
-    const life = Math.max(280, (type === "rare" ? 780 : type === "freeze" ? 680 : type === "trap" ? 940 : 1220) - difficulty.multiplier * 130);
+    const life = Math.max(360, (type === "rare" ? 880 : type === "freeze" ? 780 : type === "trap" ? 1040 : 1320) - difficulty.multiplier * 110);
     const removeTimer = window.setTimeout(() => {
       if (target.isConnected) {
         if (type !== "trap") breakCombo(0);
@@ -7774,12 +8436,12 @@ function startAimGame(difficultyId) {
     session.timers.push(removeTimer);
   };
   const timer = window.setInterval(() => {
-    if (session.finished) return;
+    if (session.finished || session.lifecycle.state !== "running") return;
     remaining -= 1;
-    timeEl.textContent = `${remaining}s`;
+    refreshHud();
     if (remaining <= 0) finish();
   }, 1000);
-  const spawn = window.setInterval(addTarget, Math.max(165, 720 - difficulty.multiplier * 82));
+  const spawn = window.setInterval(addTarget, Math.max(190, 720 - difficulty.multiplier * 76));
   session.timers.push(timer, spawn);
 }
 
@@ -7906,36 +8568,51 @@ async function startPetHunt(form) {
 }
 
 async function completeActivity(activityId, cancelled = false) {
-  const character = currentCharacter();
-  const activity = (character.activeActivities || []).find((item) => item.id === activityId);
-  if (!activity) return;
-  const ready = Date.now() >= (dateFromValue(activity.endsAt)?.getTime() || 0);
-  const difficulty = difficultyById(activity.difficultyId);
-  const pet = (character.gachaVault || []).find((item) => item.instanceId === activity.petId);
-  const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier);
-  const reward = minigameReward(activity.difficultyId, score, "hunt");
-  const danger = Number(activity.risk || difficulty.risk);
-  const deathRisk = cancelled ? danger * 0.08 : danger * (difficulty.id === "god-slayer" ? 0.34 : difficulty.id === "pesadelo" ? 0.18 : 0.08);
-  const injuryRisk = cancelled ? danger * 0.25 : danger;
-  const died = Math.random() < deathRisk && ["hard", "pesadelo", "god-slayer"].includes(difficulty.id);
-  const fell = !died && Math.random() < injuryRisk && difficulty.id !== "noob";
-  const status = died ? "Morto" : fell ? "Ferido" : "Livre";
-  const fragments = withFragments(character, reward.fragmentName, reward.fragments + (cancelled ? 0 : 2));
-  if (reward.rareDrop) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + 1;
-  fragments["Marcas de Caçada"] = Number(fragments["Marcas de Caçada"] || 0) + Math.max(1, Math.floor(Number(reward.fragments || 1) * (cancelled ? 0.5 : 1)));
-  const biome = (state.content.biomes || []).find((item) => item.name === activity.biome) || {};
-  const huntLoot = huntLootFor({ ...biome, huntRoute: activity.route || "balanced" }, difficulty, pet || {}, cancelled);
-  const vault = (character.gachaVault || []).map((item) => item.instanceId === activity.petId ? { ...item, status, activityId: "", injuredAt: fell ? new Date().toISOString() : item.injuredAt || "" } : item);
-  await updateCharacter(state.user.uid, {
-    gachaVault: vault,
-    activeActivities: (character.activeActivities || []).filter((item) => item.id !== activityId),
-    millenniumCoins: Number(character.millenniumCoins || 0) + (cancelled ? Math.floor(reward.coins * 0.35) : reward.coins),
-    gachaFragments: fragments,
-    inventory: mergeInventoryLoot(character.inventory || [], huntLoot),
-    huntHistory: [{ id: cryptoRandom(), biome: activity.biome, difficultyId: difficulty.id, petName: activity.petName, loot: huntLoot.map((item) => `${item.name} x${item.quantity}`), status, createdAt: new Date().toISOString() }, ...(character.huntHistory || [])].slice(0, 60),
-  });
-  if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
-  toast(`${activity.petName} voltou${died ? " morto" : fell ? " ferido" : ""}: ${[...reward.loot, ...huntLoot.map((item) => `${item.name} x${item.quantity}`)].join(" · ")}`);
+  if (!activityId || state.resolvingActivityIds.has(activityId)) {
+    if (activityId) toast("Esta expedição já está sendo resolvida.");
+    return;
+  }
+  state.resolvingActivityIds.add(activityId);
+  try {
+    const character = currentCharacter();
+    const activity = (character.activeActivities || []).find((item) => item.id === activityId);
+    if (!activity) return;
+    const completionKeys = [...new Set(character.huntCompletionKeys || [])].slice(-79);
+    if (completionKeys.includes(activityId)) {
+      toast("Esta expedição já foi coletada.");
+      return;
+    }
+    const ready = Date.now() >= (dateFromValue(activity.endsAt)?.getTime() || 0);
+    const difficulty = difficultyById(activity.difficultyId);
+    const pet = (character.gachaVault || []).find((item) => item.instanceId === activity.petId);
+    const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier);
+    const reward = minigameReward(activity.difficultyId, score, "hunt");
+    const danger = Number(activity.risk || difficulty.risk);
+    const deathRisk = cancelled ? danger * 0.08 : danger * (difficulty.id === "god-slayer" ? 0.34 : difficulty.id === "pesadelo" ? 0.18 : 0.08);
+    const injuryRisk = cancelled ? danger * 0.25 : danger;
+    const died = Math.random() < deathRisk && ["hard", "pesadelo", "god-slayer"].includes(difficulty.id);
+    const fell = !died && Math.random() < injuryRisk && difficulty.id !== "noob";
+    const status = died ? "Morto" : fell ? "Ferido" : "Livre";
+    const fragments = withFragments(character, reward.fragmentName, reward.fragments + (cancelled ? 0 : 2));
+    if (reward.rareDrop) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + 1;
+    fragments["Marcas de Caçada"] = Number(fragments["Marcas de Caçada"] || 0) + Math.max(1, Math.floor(Number(reward.fragments || 1) * (cancelled ? 0.5 : 1)));
+    const biome = (state.content.biomes || []).find((item) => item.name === activity.biome) || {};
+    const huntLoot = huntLootFor({ ...biome, huntRoute: activity.route || "balanced" }, difficulty, pet || {}, cancelled);
+    const vault = (character.gachaVault || []).map((item) => item.instanceId === activity.petId ? { ...item, status, activityId: "", injuredAt: fell ? new Date().toISOString() : item.injuredAt || "" } : item);
+    await updateCharacter(state.user.uid, {
+      gachaVault: vault,
+      activeActivities: (character.activeActivities || []).filter((item) => item.id !== activityId),
+      huntCompletionKeys: [...completionKeys, activityId],
+      millenniumCoins: Number(character.millenniumCoins || 0) + (cancelled ? Math.floor(reward.coins * 0.35) : reward.coins),
+      gachaFragments: fragments,
+      inventory: mergeInventoryLoot(character.inventory || [], huntLoot),
+      huntHistory: [{ id: cryptoRandom(), completionKey: activityId, biome: activity.biome, difficultyId: difficulty.id, petName: activity.petName, loot: huntLoot.map((item) => `${item.name} x${item.quantity}`), status, createdAt: new Date().toISOString() }, ...(character.huntHistory || [])].slice(0, 60),
+    });
+    if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
+    toast(`${activity.petName} voltou${died ? " morto" : fell ? " ferido" : ""}: ${[...reward.loot, ...huntLoot.map((item) => `${item.name} x${item.quantity}`)].join(" · ")}`);
+  } finally {
+    state.resolvingActivityIds.delete(activityId);
+  }
 }
 
 function routeLabel(type = "") {
@@ -8046,9 +8723,7 @@ async function startTowerDefense(form) {
     toast("Cada torre precisa ser um companheiro diferente. Troque a cópia repetida antes de iniciar.");
     return;
   }
-  const pets = uniqueDeckIds
-    .map((id) => (character.gachaVault || []).find((item) => item.instanceId === id && item.kind === "pet"))
-    .filter(Boolean);
+  const pets = uniqueDeckIds.map((id) => (character.gachaVault || []).find((item) => item.instanceId === id && item.kind === "pet")).filter(Boolean);
   if (!pets.length || pets.some((pet) => petBusy(pet))) {
     toast("Escolha pelo menos um pet livre para a partida.");
     return;
@@ -8059,69 +8734,87 @@ async function startTowerDefense(form) {
     toast("Energia insuficiente para iniciar a defesa.");
     return;
   }
-  stopActiveTowerDefense();
+  stopActiveTowerDefense("new-run");
   const slots = towerSlotsFor(map);
   const session = {
-    pet: pets[0],
-    pets,
-    map,
-    difficulty,
-    slots,
-    selectedSlot: 0,
-    selectedTowerIndex: 0,
+    id: `tower:${state.user?.uid || "demo"}:${cryptoRandom()}`,
+    lifecycle: POLISH.createLifecycle("preparing"),
+    pet: pets[0], pets, map, difficulty, slots,
+    selectedSlot: 0, selectedTowerIndex: 0,
     towers: pets.map((pet, index) => ({ pet, slotIndex: index, upgrade: 0, lastShotAt: 0, flash: 0 })),
-    wave: 0,
-    targetWaves: Math.min(8, 3 + Math.ceil(difficulty.multiplier)),
-    lives: 3,
-    essence: 3,
-    kills: 0,
-    escaped: 0,
-    enemies: [],
-    spawning: false,
-    running: false,
-    looping: false,
-    waveTargetCount: 0,
-    waveSpawned: 0,
-    waveStartKills: 0,
-    waveStartEscaped: 0,
-    finished: false,
-    lastFrame: performance.now(),
-    animationFrame: null,
-    spawnTimers: [],
-    flash: 0,
+    wave: 0, targetWaves: Math.min(8, 3 + Math.ceil(difficulty.multiplier)), lives: 3, essence: 3,
+    kills: 0, escaped: 0, enemies: [], spawning: false, running: false, looping: false, paused: false,
+    waveTargetCount: 0, waveSpawned: 0, waveStartKills: 0, waveStartEscaped: 0,
+    finished: false, lastFrame: performance.now(), animationFrame: null, spawnTimers: [], flash: 0,
+    logicalWidth: 760, logicalHeight: 420, dpr: Math.min(2, Math.max(1, Number(window.devicePixelRatio || 1))),
   };
   state.activeTowerSession = session;
   $("#modalContent").innerHTML = `
-    <section class="tower-session">
-      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p><h2>${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
-      <canvas class="tower-canvas" data-tower-canvas width="760" height="420" aria-label="Mapa jogável do Tower Defense"></canvas>
-      <div class="tower-hud" data-tower-hud></div>
-      <div class="tower-deck" data-tower-deck>${pets.map((entry, index) => `<button class="tower-deck-pet ${index === 0 ? "active" : ""}" type="button" data-action="tower-select-pet" data-tower-index="${index}">${petImageFor(entry) ? `<img src="${esc(petImageFor(entry))}" alt="" />` : ""}<span>${esc(entry.name)}</span><small>★${Number(entry.stars || 1)}</small></button>`).join("")}</div>
+    <section class="tower-session" aria-labelledby="tower-title">
+      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p><h2 id="tower-title">${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <canvas class="tower-canvas" data-tower-canvas width="760" height="420" role="img" aria-label="Mapa jogável do Tower Defense. Use os botões de companheiro e os controles abaixo para jogar."></canvas>
+      <div class="tower-hud" data-tower-hud role="status" aria-live="polite"></div>
+      <div class="tower-deck" data-tower-deck aria-label="Companheiros da defesa">${pets.map((entry, index) => `<button class="tower-deck-pet ${index === 0 ? "active" : ""}" type="button" data-action="tower-select-pet" data-tower-index="${index}" aria-pressed="${index === 0}">${petImageFor(entry) ? `<img src="${esc(petImageFor(entry))}" alt="" loading="lazy" />` : ""}<span>${esc(entry.name)}</span><small>★${Number(entry.stars || 1)}</small></button>`).join("")}</div>
       <div class="tower-controls">
-        <button class="primary-button intense" type="button" data-action="tower-start-wave">${session.wave ? "Próxima onda" : "Iniciar defesa"}</button>
+        <button class="primary-button intense" type="button" data-action="tower-start-wave">Iniciar defesa</button>
+        <button class="ghost-button" type="button" data-action="tower-toggle-pause" aria-pressed="false">Pausar</button>
         <button class="ghost-button" type="button" data-action="tower-upgrade">Elevar torre · 1 essência</button>
       </div>
     </section>
   `;
   $("#modal").hidden = false;
+  focusModal();
   const canvas = $("[data-tower-canvas]");
   const ctx = canvas?.getContext("2d");
   session.canvas = canvas;
   session.ctx = ctx;
+  resizeTowerCanvas(session);
   prepareTowerArt(session);
   canvas?.addEventListener("pointerdown", (event) => selectTowerSlot(event, session));
+  session.resizeHandler = () => { resizeTowerCanvas(session); drawTowerDefense(session); };
+  window.addEventListener("resize", session.resizeHandler, { passive: true });
+  session.lifecycle.transition("running", "arena-ready");
   drawTowerDefense(session);
   delete state.minigameDrafts["tower-defense"];
   form.reset();
 }
 
-function stopActiveTowerDefense() {
+function stopActiveTowerDefense(reason = "cancelled") {
   const session = state.activeTowerSession;
   if (!session) return;
   session.finished = true;
   if (session.animationFrame) window.cancelAnimationFrame(session.animationFrame);
   (session.spawnTimers || []).forEach((timer) => window.clearTimeout(timer));
+  if (session.resizeHandler) window.removeEventListener("resize", session.resizeHandler);
+  if (session.lifecycle?.can?.("cancelled")) session.lifecycle.transition("cancelled", reason);
   state.activeTowerSession = null;
+}
+
+function resizeTowerCanvas(session) {
+  if (!session?.canvas || !session?.ctx) return;
+  const { canvas, ctx } = session;
+  const dpr = Math.min(2, Math.max(1, Number(window.devicePixelRatio || 1)));
+  session.dpr = dpr;
+  canvas.width = Math.round(session.logicalWidth * dpr);
+  canvas.height = Math.round(session.logicalHeight * dpr);
+  canvas.style.width = "100%";
+  canvas.style.aspectRatio = `${session.logicalWidth} / ${session.logicalHeight}`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function toggleTowerPause() {
+  const session = state.activeTowerSession;
+  if (!session || session.finished) return;
+  session.paused = !session.paused;
+  const next = session.paused ? "paused" : "running";
+  if (session.lifecycle?.can?.(next)) session.lifecycle.transition(next, session.paused ? "user-paused" : "user-resumed");
+  session.lastFrame = performance.now();
+  const button = document.querySelector("button[data-action='tower-toggle-pause']");
+  if (button) {
+    button.textContent = session.paused ? "Continuar" : "Pausar";
+    button.setAttribute("aria-pressed", String(session.paused));
+  }
+  updateTowerHud(session);
 }
 
 function towerPetStats(session, tower = null) {
@@ -8139,8 +8832,8 @@ function towerPetStats(session, tower = null) {
 function selectTowerSlot(event, session) {
   if (!session || session.running || session.finished || !session.canvas) return;
   const box = session.canvas.getBoundingClientRect();
-  const x = (event.clientX - box.left) * (session.canvas.width / box.width);
-  const y = (event.clientY - box.top) * (session.canvas.height / box.height);
+  const x = (event.clientX - box.left) * (session.logicalWidth / box.width);
+  const y = (event.clientY - box.top) * (session.logicalHeight / box.height);
   let closest = 0;
   let distance = Infinity;
   session.slots.forEach((slot, index) => {
@@ -8189,7 +8882,7 @@ function updateTowerHud(session) {
     <span>Vidas <b>${"✦".repeat(session.lives)}</b></span>
     <span>Essência <b>${session.essence}</b></span>
     <span>Abates <b>${session.kills}</b></span>
-    <small>${esc(session.running ? "Onda em curso · posições seladas" : session.notice || "Toque numa torre e depois numa runa vazia para mover")}</small>
+    <small>${esc(session.paused ? "Defesa pausada" : session.running ? "Onda em curso · posições seladas" : session.notice || "Toque numa torre e depois numa runa vazia para mover")}</small>
   `;
 }
 
@@ -8263,22 +8956,24 @@ function drawTowerEnemy(ctx, enemy, map = {}) {
 function drawTowerDefense(session) {
   if (!session?.ctx || session.finished) return;
   const { ctx, canvas } = session;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const sky = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  const width = session.logicalWidth || 760;
+  const height = session.logicalHeight || 420;
+  ctx.clearRect(0, 0, width, height);
+  const sky = ctx.createLinearGradient(0, 0, width, height);
   sky.addColorStop(0, "#101a22");
   sky.addColorStop(0.55, "#18201d");
   sky.addColorStop(1, "#090a0c");
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, width, height);
   if (session.mapArt?.complete) {
     ctx.globalAlpha = 0.64;
-    ctx.drawImage(session.mapArt, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(session.mapArt, 0, 0, width, height);
     ctx.globalAlpha = 1;
   }
   ctx.fillStyle = "rgba(225, 192, 110, 0.12)";
   for (let index = 0; index < 42; index += 1) {
-    const x = (index * 83) % canvas.width;
-    const y = (index * 47) % canvas.height;
+    const x = (index * 83) % width;
+    const y = (index * 47) % height;
     ctx.fillRect(x, y, 2, 2);
   }
   drawTowerRoutes(ctx, session.map);
@@ -8359,7 +9054,7 @@ function pointOnTowerRoute(route = [], progress = 0) {
 
 function startTowerWave() {
   const session = state.activeTowerSession;
-  if (!session || session.running || session.finished) return;
+  if (!session || session.running || session.finished || session.paused) return;
   if (session.wave >= session.targetWaves) return;
   session.wave += 1;
   session.running = true;
@@ -8376,7 +9071,7 @@ function startTowerWave() {
   const baseHp = 36 * session.difficulty.multiplier * (1 + session.wave * 0.32);
   for (let index = 0; index < count; index += 1) {
     const timer = window.setTimeout(() => {
-      if (session.finished) return;
+      if (session.finished || session.paused) return;
       session.waveSpawned += 1;
       const elite = session.wave > 1 && index === count - 1;
       const route = towerRoutesFor(session.map)[index % towerRoutesFor(session.map).length];
@@ -8406,6 +9101,12 @@ function startTowerWave() {
 
 function runTowerFrame(session) {
   if (!session || session.finished) return;
+  if (session.paused) {
+    session.lastFrame = performance.now();
+    drawTowerDefense(session);
+    session.animationFrame = window.requestAnimationFrame(() => runTowerFrame(session));
+    return;
+  }
   const now = performance.now();
   const dt = Math.min(0.05, (now - session.lastFrame) / 1000);
   session.lastFrame = now;
@@ -8496,19 +9197,22 @@ async function finishTowerDefense(session, victory) {
   session.finished = true;
   if (session.animationFrame) window.cancelAnimationFrame(session.animationFrame);
   (session.spawnTimers || []).forEach((timer) => window.clearTimeout(timer));
+  if (session.resizeHandler) window.removeEventListener("resize", session.resizeHandler);
+  if (session.lifecycle?.can?.("resolving")) session.lifecycle.transition("resolving", victory ? "victory" : "defeat");
   const towerUpgrades = (session.towers || []).reduce((sum, tower) => sum + Number(tower.upgrade || 0), 0);
   const score = Math.round((session.kills * 110 + session.wave * 240 + session.lives * 180 + towerUpgrades * 150) * session.difficulty.multiplier);
-  const reward = await applyMinigameReward("tower", session.difficulty.id, score, {
-    lastTowerRun: { mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, createdAt: new Date().toISOString() },
-  });
-  state.activeTowerSession = null;
-  showMinigameResult({
-    mode: "Tower Defense",
-    difficulty: session.difficulty,
-    score,
-    reward,
-    detail: `${victory ? "Fortaleza preservada" : "A rota foi rompida"} · ${session.kills} abates · ${session.wave}/${session.targetWaves} ondas · ${session.lives} vida(s)`,
-  });
+  try {
+    const reward = await applyMinigameReward("tower", session.difficulty.id, score, {
+      lastTowerRun: { id: session.id, mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, createdAt: new Date().toISOString() },
+    }, session.id);
+    if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
+    state.activeTowerSession = null;
+    showMinigameResult({ mode: "Tower Defense", difficulty: session.difficulty, score, reward, detail: `${victory ? "Fortaleza preservada" : "A rota foi rompida"} · ${session.kills} abates · ${session.wave}/${session.targetWaves} ondas · ${session.lives} vida(s)` });
+  } catch (error) {
+    if (session.lifecycle?.can?.("failed")) session.lifecycle.transition("failed", error?.message || "reward-error");
+    state.activeTowerSession = null;
+    throw error;
+  }
 }
 
 function passRewardPatch(character, rewardText, tier) {
@@ -8989,31 +9693,51 @@ async function submitTrainingRequest(form) {
 async function submitCreationRequest(form) {
   const values = formValues(form);
   const character = currentCharacter();
-  const type = values.type;
+  const payload = window.MILLENNIUM_BACKEND_31.sanitizeCreationPayload(values, character);
+  const type = payload.type;
   const powerSlots = Math.max(1, Number(character.powerSlots || 1));
   const powersUsed = approvedPowerCount(character);
-  const pendingPower = pendingProgressRequests().some((request) => request.type === "power");
-  if (type === "power" && (powersUsed >= powerSlots || pendingPower)) {
-    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s). Peça ao Oráculo um novo slot quando subir de tier.`);
+  const previous = state.progressRequests.find((request) => request.id === payload.previousRequestId);
+  const pendingDuplicate = state.progressRequests.some((request) => request.uid === state.user.uid
+    && request.id !== previous?.id
+    && request.type === type
+    && window.MILLENNIUM_BACKEND_31.creationStatusLabel(request.status) === "pendente"
+    && String(request.title || "").trim().toLowerCase() === payload.title.toLowerCase());
+  if (pendingDuplicate) {
+    toast("Já existe uma solicitação pendente com esse nome.");
+    return;
+  }
+  if (!previous && type === "power" && powersUsed >= powerSlots) {
+    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s).`);
     return;
   }
   if (type === "technique" && powersUsed < 1) {
     toast("Crie e aprove um poder base antes de enviar técnicas.");
     return;
   }
-  await addDoc("progressRequests", {
+  const requestPayload = {
+    ...payload,
     uid: state.user.uid,
     playerName: state.profile?.displayName || state.user.email,
     characterName: character.characterName || "",
-    type,
     status: "pendente",
-    title: values.title,
-    description: values.description,
     xp: 0,
-    createdAt: state.demo ? new Date().toISOString() : nowValue(),
-  });
+  };
+  if (previous) {
+    if (!window.MILLENNIUM_BACKEND_31.canResubmitCreation(previous)) throw new Error("Essa solicitação não está disponível para reenvio.");
+    if (state.demo) {
+      await writeDoc("progressRequests", previous.id, { ...requestPayload, resubmittedAt: new Date().toISOString() });
+    } else {
+      await state.db.collection("progressRequests").doc(previous.id).set({ ...requestPayload, resubmittedAt: nowValue(), updatedAt: nowValue() }, { merge: true });
+      state.diagnostics.writes += 1;
+    }
+    toast("Criação ajustada e reenviada para o Oráculo.");
+  } else {
+    await addDoc("progressRequests", requestPayload);
+    toast("Criação enviada para análise do Oráculo.");
+  }
+  state.creationDraftRequestId = "";
   form.reset();
-  toast("Criação enviada para análise do Oráculo.");
 }
 
 async function saveDiaryEntry(form) {
@@ -9044,54 +9768,159 @@ async function sendGlobalChat(form) {
 }
 
 function chatIdFor(a, b) {
-  return [a, b].sort().join("__");
+  return window.MILLENNIUM_BACKEND_31.conversationIdFor(a, b);
+}
+
+function closePrivateConversationListener() {
+  if (state.privateUnsub) {
+    try { state.privateUnsub(); } catch { /* no-op */ }
+  }
+  state.privateUnsub = null;
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
+}
+
+async function subscribeConversationMessages(conversationId, targetId) {
+  closePrivateConversationListener();
+  state.conversationMessages = [];
+  state.conversationOldestDoc = null;
+  state.conversationHasMore = false;
+  if (state.demo || !state.db) {
+    syncPrivateMessages();
+    return;
+  }
+  const conversationRef = state.db.collection("conversations").doc(conversationId);
+  const conversationSnapshot = await conversationRef.get().catch(() => null);
+  state.diagnostics.documentsRead += conversationSnapshot?.exists ? 1 : 0;
+  if (!conversationSnapshot?.exists) {
+    syncPrivateMessages();
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+    return;
+  }
+  const query = conversationRef.collection("messages").orderBy("createdAt", "desc").limit(30);
+  state.privateUnsub = query.onSnapshot((snapshot) => {
+    state.diagnostics.documentsRead += snapshot.size;
+    const descending = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    state.conversationOldestDoc = snapshot.docs.at(-1) || null;
+    state.conversationHasMore = snapshot.size === 30;
+    state.conversationMessages = descending.reverse();
+    const confirmed = new Set(state.conversationMessages.map((message) => message.clientId).filter(Boolean));
+    state.optimisticMessages = state.optimisticMessages.filter((message) => !confirmed.has(message.clientId));
+    syncPrivateMessages();
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true, reason: "direct-message-snapshot" });
+  }, (error) => {
+    console.error(error);
+    state.privateChatError = "Não foi possível carregar esta conversa. Confirme as regras e os índices do Firestore.";
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  });
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + 1;
+}
+
+async function openDirectConversation(targetId) {
+  if (!targetId || targetId === state.user?.uid) return;
+  state.privateChatError = "";
+  state.selectedPrivateUserId = targetId;
+  state.activeConversationId = chatIdFor(state.user.uid, targetId);
+  state.chatTab = "direct";
+  state.view = state.role === "admin" ? "admin-chat" : "chat";
+  syncPrivateMessages();
+  scheduleRender({ critical: true, preserveScroll: true, reason: "open-direct-conversation" });
+  await subscribeConversationMessages(state.activeConversationId, targetId);
+  window.requestAnimationFrame(() => document.querySelector('form[data-form="private-chat"] textarea')?.focus());
 }
 
 function subscribePrivateChat(targetId) {
-  if (state.privateUnsub) state.privateUnsub();
-  state.privateUnsub = null;
-  state.privateChatError = "";
-  state.selectedPrivateUserId = targetId;
-  syncPrivateMessages();
-  render();
+  return openDirectConversation(targetId);
 }
 
-async function sendPrivateChat(form) {
-  if (!canSendChat()) return;
-  const values = formValues(form);
+async function loadOlderDirectMessages() {
+  if (state.demo || !state.db || !state.activeConversationId || !state.conversationOldestDoc || state.conversationLoading) return;
+  state.conversationLoading = true;
+  scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  try {
+    const snapshot = await state.db.collection("conversations").doc(state.activeConversationId).collection("messages")
+      .orderBy("createdAt", "desc").startAfter(state.conversationOldestDoc).limit(30).get();
+    state.diagnostics.documentsRead += snapshot.size;
+    const older = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).reverse();
+    state.conversationMessages = window.MILLENNIUM_BACKEND_31.mergeMessages(older, state.conversationMessages);
+    state.conversationOldestDoc = snapshot.docs.at(-1) || state.conversationOldestDoc;
+    state.conversationHasMore = snapshot.size === 30;
+    syncPrivateMessages();
+  } finally {
+    state.conversationLoading = false;
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  }
+}
+
+async function persistPrivateMessage(message) {
+  const conversationId = message.conversationId;
+  const knownConversation = state.conversations.some((conversation) => conversation.id === conversationId);
+  const conversationRef = state.db.collection("conversations").doc(conversationId);
+  const messageRef = conversationRef.collection("messages").doc(message.clientId);
+  const batch = state.db.batch();
+  const conversationPatch = {
+    participantIds: message.participants,
+    participantNames: {
+      [message.senderId]: message.senderName,
+      [message.targetId]: message.targetName,
+    },
+    lastMessage: message.text.slice(0, 240),
+    lastMessageAt: nowValue(),
+    lastSenderId: message.senderId,
+    lastClientId: message.clientId,
+    updatedAt: nowValue(),
+  };
+  if (!knownConversation) conversationPatch.createdAt = nowValue();
+  batch.set(conversationRef, conversationPatch, { merge: true });
+  batch.set(messageRef, { ...message, createdAt: nowValue() });
+  await batch.commit();
+  state.diagnostics.writes += 2;
+}
+
+async function sendPrivateChat(form, retryMessage = null) {
+  if (!canSendChat() || state.messageSending) return;
+  const values = retryMessage ? { text: retryMessage.text } : formValues(form);
   if (!state.selectedPrivateUserId) return;
   const targetId = state.selectedPrivateUserId;
-  state.forceChatBottom = `private-${targetId}`;
-  const localId = cryptoRandom();
-  const message = {
-    senderId: state.user.uid,
-    senderName: state.profile?.displayName || state.user.email,
-    targetId,
-    targetName: getUserName(targetId),
-    participants: [state.user.uid, targetId],
+  const clientId = retryMessage?.clientId || cryptoRandom();
+  const message = window.MILLENNIUM_BACKEND_31.buildDirectMessage({
+    sender: { uid: state.user.uid, name: state.profile?.displayName || state.user.email },
+    target: { uid: targetId, name: getUserName(targetId) },
     text: values.text,
-    type: "private",
+    clientId,
     createdAt: new Date().toISOString(),
-  };
-  if (state.demo) {
-    state.privateMessages.push({ id: localId, ...message });
-    state.directMessages.push({ id: localId, ...message });
-    render();
-    await pruneMessages("directMessages", state.directMessages, (item) => (item.participants || []).includes(state.user.uid) && (item.participants || []).includes(targetId));
-  } else {
-    state.privateMessages = [...state.privateMessages, { id: localId, ...message, pending: true }];
-    render();
-    try {
-      const messageId = await addDoc("directMessages", { ...message, createdAt: nowValue() });
-      const pruneSource = [...state.directMessages, { ...message, id: messageId, createdAt: new Date().toISOString() }];
-      await pruneMessages("directMessages", pruneSource, (item) => (item.participants || []).includes(state.user.uid) && (item.participants || []).includes(targetId));
-    } catch (error) {
-      state.privateMessages = state.privateMessages.filter((item) => item.id !== localId);
-      render();
-      throw error;
+  });
+  state.forceChatBottom = `private-${targetId}`;
+  state.optimisticMessages = state.optimisticMessages.filter((item) => item.clientId !== clientId).concat({ ...message, id: clientId, pending: true });
+  syncPrivateMessages();
+  state.messageSending = true;
+  scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  try {
+    if (state.demo) {
+      state.conversationMessages = window.MILLENNIUM_BACKEND_31.mergeMessages(state.conversationMessages, [{ ...message, id: clientId, pending: false }]);
+      writeDemo("conversations", message.conversationId, { participantIds: message.participants, lastMessage: message.text, lastMessageAt: new Date().toISOString(), lastSenderId: message.senderId });
+      state.optimisticMessages = state.optimisticMessages.filter((item) => item.clientId !== clientId);
+    } else {
+      const existing = await state.db.collection("conversations").doc(message.conversationId).collection("messages").doc(clientId).get().catch(() => null);
+      if (!existing?.exists) await persistPrivateMessage(message);
+      else state.diagnostics.documentsRead += 1;
+      if (!state.privateUnsub) await subscribeConversationMessages(message.conversationId, targetId);
     }
+    if (form && !retryMessage) form.reset();
+  } catch (error) {
+    state.optimisticMessages = state.optimisticMessages.map((item) => item.clientId === clientId ? { ...item, pending: false, failed: true } : item);
+    syncPrivateMessages();
+    throw error;
+  } finally {
+    state.messageSending = false;
+    syncPrivateMessages();
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
   }
-  form.reset();
+}
+
+async function retryPrivateMessage(clientId) {
+  const message = state.optimisticMessages.find((item) => item.clientId === clientId && item.failed);
+  if (!message) return;
+  await sendPrivateChat(null, message);
 }
 
 function canSendChat() {
@@ -9106,20 +9935,29 @@ function canSendChat() {
   return true;
 }
 
+function reportRuntimeContext() {
+  return {
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.1.0",
+    route: state.view,
+    viewport: `${window.innerWidth}x${window.innerHeight}`,
+    userAgent: navigator.userAgent,
+    device: `${navigator.platform || "navegador"} · ${window.matchMedia("(pointer: coarse)").matches ? "toque" : "ponteiro"}`,
+    browser: navigator.userAgent,
+  };
+}
+
 async function submitReport(type, form) {
   const values = formValues(form);
-  await addDoc("reports", {
+  const payload = window.MILLENNIUM_BACKEND_31.buildReportPayload({
     type,
-    status: "aberto",
-    reporterId: state.user.uid,
-    reporterName: state.profile?.displayName || state.user.email,
-    targetId: values.targetId || "",
-    title: values.title || (type === "bug" ? "Bug reportado" : "Denúncia de player"),
-    description: values.description,
-    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+    user: { uid: state.user.uid, name: state.profile?.displayName || state.user.email },
+    values,
+    context: reportRuntimeContext(),
   });
+  await addDoc("reports", payload);
   form.reset();
-  toast("Report enviado para o Oráculo.");
+  state.reportTab = "mine";
+  toast(`Report ${payload.friendlyId} enviado para o Oráculo.`);
 }
 
 async function reportMessage(messageId, source) {
@@ -9134,19 +9972,33 @@ async function reportMessage(messageId, source) {
   const context = pool.slice(Math.max(0, index - 2), index + 3)
     .map((item) => `${item.senderName || "Player"}: ${item.text || ""}`)
     .join("\n");
-  await addDoc("reports", {
+  const payload = window.MILLENNIUM_BACKEND_31.buildReportPayload({
     type: "mensagem",
-    status: "aberto",
-    reporterId: state.user.uid,
-    reporterName: state.profile?.displayName || state.user.email,
-    targetId: message.senderId || "",
-    title: `Mensagem denunciada (${sourceLabel})`,
-    description: `Autor: ${message.senderName || "Player"}\nMensagem: ${message.text || ""}\n\nContexto:\n${context}`,
-    messageId,
-    source,
-    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+    user: { uid: state.user.uid, name: state.profile?.displayName || state.user.email },
+    values: {
+      targetId: message.senderId || "",
+      title: `Mensagem denunciada (${sourceLabel})`,
+      category: "Mensagem",
+      description: `Autor: ${message.senderName || "Player"}\nMensagem: ${message.text || ""}\n\nContexto:\n${context}`,
+      messageId,
+      source,
+    },
+    context: reportRuntimeContext(),
   });
-  toast("Mensagem denunciada ao Oráculo.");
+  await addDoc("reports", payload);
+  toast(`Mensagem denunciada. Protocolo ${payload.friendlyId}.`);
+}
+
+async function reviewReport(form) {
+  const values = formValues(form);
+  if (!window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.includes(values.status)) throw new Error("Status de report inválido.");
+  await writeDoc("reports", values.reportId, {
+    status: values.status,
+    adminNote: String(values.adminNote || "").slice(0, 2000),
+    reviewedBy: state.user.uid,
+    reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+  }, { reason: `Revisão de report: ${values.status}.` });
+  toast("Análise do report salva com registro de auditoria.");
 }
 
 async function recordProfileView(uid) {
@@ -9840,6 +10692,40 @@ async function adminClearActivity(uid, activityId) {
   toast("Atividade removida e pet liberado.");
 }
 
+async function writeApprovedCreationRecord(request, adminNote = "") {
+  if (!["power", "technique"].includes(request.type)) return;
+  const collection = request.type === "power" ? "powers" : "techniques";
+  const record = {
+    ownerId: request.uid,
+    requestId: request.id,
+    type: request.type,
+    name: request.title,
+    title: request.title,
+    concept: request.concept || "",
+    function: request.function || "",
+    manifestation: request.manifestation || "",
+    range: request.range || "",
+    duration: request.duration || "",
+    cost: request.cost || "",
+    limitations: request.limitations || "",
+    countermeasures: request.countermeasures || "",
+    risks: request.risks || "",
+    affinityId: request.affinityId || "",
+    description: request.description || "",
+    example: request.example || "",
+    basePowerId: request.basePowerId || "",
+    revision: Number(request.revision || 1),
+    status: "aprovado",
+    adminNote,
+    approvedBy: state.user.uid,
+    approvedAt: state.demo ? new Date().toISOString() : nowValue(),
+    migrationVersion: 3,
+  };
+  if (state.demo) return;
+  await state.db.collection("characters").doc(request.uid).collection(collection).doc(request.id).set(record, { merge: true });
+  state.diagnostics.writes += 1;
+}
+
 async function reviewProgressRequest(form) {
   await reviewProgressRequestValues(formValues(form));
 }
@@ -9923,6 +10809,7 @@ async function reviewProgressRequestValues(values) {
       from: state.profile?.displayName || ORACLE_LABEL,
     };
     await updateCharacter(request.uid, patch);
+    await writeApprovedCreationRecord(request, adminNote);
   }
 
   await writeDoc("progressRequests", request.id, {
@@ -10245,8 +11132,8 @@ async function maybeResetWeeklyMissions() {
 }
 
 async function markReport(id, status) {
-  await writeDoc("reports", id, { status });
-  toast("Report atualizado.");
+  await writeDoc("reports", id, { status, reviewedBy: state.user.uid, reviewedAt: state.demo ? new Date().toISOString() : nowValue() }, { reason: `Alteração rápida de report para ${status}.` });
+  toast("Report atualizado com auditoria.");
 }
 
 async function panicRefresh() {
@@ -10319,6 +11206,73 @@ async function startRpg() {
   toast("RPG iniciado e pacote beta entregue.");
 }
 
+function modalFocusableElements() {
+  const modal = $("#modal");
+  if (!modal || modal.hidden) return [];
+  return [...modal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+}
+
+function focusModal() {
+  const modal = $("#modal");
+  if (!modal || modal.hidden) return;
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  const title = modal.querySelector("h1, h2, h3");
+  if (title) {
+    if (!title.id) title.id = `modal-title-${cryptoRandom().slice(0, 8)}`;
+    modal.setAttribute("aria-labelledby", title.id);
+  }
+  const focusable = modalFocusableElements();
+  (focusable[0] || modal.querySelector(".modal-card"))?.focus?.({ preventScroll: true });
+}
+
+function trapModalFocus(event) {
+  const modal = $("#modal");
+  if (!modal || modal.hidden || event.key !== "Tab") return;
+  const focusable = modalFocusableElements();
+  if (!focusable.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function activeMinigameDiagnostics() {
+  return [
+    state.activeAimSession ? { mode: "aim", state: state.activeAimSession.lifecycle?.state || (state.activeAimSession.finished ? "completed" : "running"), timers: state.activeAimSession.timers?.length || 0 } : null,
+    state.activeTowerSession ? { mode: "tower", state: state.activeTowerSession.lifecycle?.state || (state.activeTowerSession.finished ? "completed" : state.activeTowerSession.paused ? "paused" : "running"), timers: state.activeTowerSession.spawnTimers?.length || 0 } : null,
+  ].filter(Boolean);
+}
+
+function currentDiagnosticSnapshot() {
+  const registration = state.serviceWorkerRegistration;
+  const serviceWorker = registration?.waiting ? "aguardando atualização" : registration?.active ? "ativo" : registration?.installing ? "instalando" : "indisponível";
+  return POLISH.diagnosticSnapshot({
+    build: MILLENNIUM_BUILD.version,
+    commit: MILLENNIUM_BUILD.commit,
+    route: state.view,
+    listeners: state.diagnostics.listenerCount,
+    renders: state.diagnostics.renders,
+    lastRenderMs: state.diagnostics.lastRenderMs,
+    reads: state.diagnostics.documentsRead,
+    writes: state.diagnostics.writes,
+    focused: state.diagnostics.lastFocusedElement,
+    online: navigator.onLine,
+    serviceWorker,
+    images: [...document.images],
+    minigames: activeMinigameDiagnostics(),
+  });
+}
+
 function openReportModal() {
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Atalho rápido</p>
@@ -10334,12 +11288,36 @@ function openReportModal() {
 }
 
 function closeModal() {
-  stopActiveAimGame();
-  stopActiveTowerDefense();
+  stopActiveAimGame("modal-closed");
+  stopActiveTowerDefense("modal-closed");
   (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
   state.gachaRevealTimers = [];
-  $("#modal").hidden = true;
+  const modal = $("#modal");
+  modal.hidden = true;
+  modal.removeAttribute("aria-labelledby");
   $("#modalContent").innerHTML = "";
+  const returnFocus = state.modalReturnFocus;
+  const returnFocusMeta = returnFocus ? {
+    id: returnFocus.id || "",
+    action: returnFocus.dataset?.action || "",
+    entryId: returnFocus.dataset?.entryId || "",
+    collection: returnFocus.dataset?.collection || "",
+    nav: returnFocus.dataset?.nav || "",
+  } : null;
+  state.modalReturnFocus = null;
+  window.setTimeout(() => {
+    let target = returnFocus?.isConnected ? returnFocus : null;
+    if (!target && returnFocusMeta) {
+      if (returnFocusMeta.id) target = document.getElementById(returnFocusMeta.id);
+      if (!target && returnFocusMeta.action) {
+        target = [...document.querySelectorAll(`button[data-action="${CSS.escape(returnFocusMeta.action)}"]`)].find((button) =>
+          (!returnFocusMeta.entryId || button.dataset.entryId === returnFocusMeta.entryId)
+          && (!returnFocusMeta.collection || button.dataset.collection === returnFocusMeta.collection));
+      }
+      if (!target && returnFocusMeta.nav) target = document.querySelector(`button[data-nav="${CSS.escape(returnFocusMeta.nav)}"]`);
+    }
+    target?.focus?.({ preventScroll: true });
+  }, 60);
   if (state.pendingLiveRender) {
     state.pendingLiveRender = false;
     scheduleRender();
@@ -10358,16 +11336,37 @@ function syncTowerDeckOptions(form) {
 }
 
 function wireEvents() {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("#modal")?.hidden) {
+      event.preventDefault();
+      closeModal();
+      return;
+    }
+    const activeTab = event.target.closest?.('[role="tab"][data-action="codex-tab"]');
+    if (activeTab && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      const tabs = [...activeTab.closest('[role="tablist"]')?.querySelectorAll('[role="tab"]') || []];
+      if (tabs.length) {
+        event.preventDefault();
+        const current = tabs.indexOf(activeTab);
+        const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].click();
+      }
+      return;
+    }
+    trapModalFocus(event);
+  });
+  const modal = $("#modal");
+  if (modal) new MutationObserver(() => { if (!modal.hidden) window.requestAnimationFrame(focusModal); }).observe(modal, { attributes: true, attributeFilter: ["hidden"] });
   ["pointerdown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
     document.addEventListener(eventName, touchActivity, { passive: true });
   });
 
   document.addEventListener("compositionstart", (event) => {
     state.textComposing = true;
-    if (["codex-search", "market-search"].includes(event.target.dataset.action)) {
+    const action = event.target.dataset.action;
+    if (isPartialSearchAction(action)) {
       state.searchComposing = true;
-      state.searchUpdateSequence += 1;
-      window.clearTimeout(state.searchUpdateTimer);
+      cancelSearchResultsUpdate();
     }
   });
 
@@ -10375,19 +11374,21 @@ function wireEvents() {
     const action = event.target.dataset.action;
     state.textComposing = false;
     queueLocalFormDraft(event.target.closest("form"));
-    if (["codex-search", "market-search"].includes(action)) {
+    if (isPartialSearchAction(action)) {
       state.searchComposing = false;
-      if (action === "market-search") state.marketSearch = event.target.value;
-      else state.codexSearch = event.target.value;
+      setPartialSearchValue(action, event.target.value);
       queueSearchResultsUpdate(action);
     }
   });
 
   document.addEventListener("focusout", () => {
     window.setTimeout(() => {
-      if (!state.pendingInputRender || state.searchComposing || hasActiveTextEntry()) return;
-      state.pendingInputRender = false;
-      scheduleRender();
+      if (!state.pendingInputRender || state.searchComposing || state.textComposing || hasActiveTextEntry()) return;
+      if (hasDirtyForm()) {
+        updateLiveShell();
+        return;
+      }
+      flushDeferredRender({ reason: "focus-released" });
     }, 0);
   });
 
@@ -10395,13 +11396,18 @@ function wireEvents() {
     const button = event.target.closest("button");
     if (!button) return;
     const action = button.dataset.action;
+    if ($("#modal")?.hidden) state.modalReturnFocus = button;
     playSound("click");
 
     try {
       if (button.dataset.nav) {
         persistDirtyForms();
+        cancelSearchResultsUpdate();
+        if (["chat", "admin-chat"].includes(state.view) && !["chat", "admin-chat"].includes(button.dataset.nav)) closePrivateConversationListener();
         if (button.dataset.codexTarget) state.codexTab = button.dataset.codexTarget;
         state.view = button.dataset.nav;
+        recordJourneyVisit(state.view);
+        state.renderReason = "navigation";
         button.blur();
         if (button.closest("#modal")) closeModal();
         render();
@@ -10429,12 +11435,14 @@ function wireEvents() {
         showAuth();
       }
       if (action === "open-report") openReportModal();
+      if (action === "catalog-details") openCatalogDetails(button.dataset.catalogType, button.dataset.catalogId);
       if (action === "open-more-nav") openMoreNav();
       if (action === "close-modal") closeModal();
       if (action === "onboarding-prev") openOnboarding(state.onboardingStep - 1);
       if (action === "onboarding-next") openOnboarding(state.onboardingStep + 1);
       if (action === "onboarding-visit") {
         state.view = button.dataset.navTarget || "player-home";
+        recordJourneyVisit(state.view);
         render();
         openOnboarding(state.onboardingStep);
       }
@@ -10482,14 +11490,17 @@ function wireEvents() {
       }
       if (action === "start-aim-game") startAimGame(button.dataset.difficulty || state.minigameDifficulty);
       if (action === "tower-start-wave") startTowerWave();
+      if (action === "tower-toggle-pause") toggleTowerPause();
       if (action === "tower-select-pet") selectTowerPet(Number(button.dataset.towerIndex || 0));
       if (action === "tower-upgrade") upgradeTowerDefense();
       if (action === "watch-hunt") openHuntActivity(button.dataset.activityId);
       if (action === "collect-activity") {
+        button.disabled = true;
         await completeActivity(button.dataset.activityId, false);
         if (!$("#modal").hidden) closeModal();
       }
       if (action === "cancel-activity") {
+        button.disabled = true;
         await completeActivity(button.dataset.activityId, true);
         if (!$("#modal").hidden) closeModal();
       }
@@ -10506,14 +11517,24 @@ function wireEvents() {
       if (action === "start-mission") await startMission(button.dataset.missionId);
       if (action === "finish-mission") await finishMission(button.dataset.missionId);
       if (action === "select-direct-user") {
-        state.chatTab = "direct";
-        state.view = state.role === "admin" ? "admin-chat" : "chat";
-        subscribePrivateChat(button.dataset.userId);
-        closeModal();
+        if (!$("#modal")?.hidden) closeModal();
+        await openDirectConversation(button.dataset.userId);
+      }
+      if (action === "direct-back") {
+        closePrivateConversationListener();
+        state.selectedPrivateUserId = "";
+        state.activeConversationId = "";
+        state.conversationMessages = [];
+        state.privateMessages = [];
         render();
       }
+      if (action === "load-older-direct") await loadOlderDirectMessages();
+      if (action === "retry-private-message") await retryPrivateMessage(button.dataset.clientId);
       if (action === "open-user-profile") openUserProfile(button.dataset.userId);
-      if (action === "open-codex-entry") openCodexEntry(button.dataset.collection, button.dataset.entryId);
+      if (action === "open-codex-entry") {
+        state.modalReturnFocus = button;
+        openCodexEntry(button.dataset.collection, button.dataset.entryId);
+      }
       if (action === "report-message") await reportMessage(button.dataset.messageId, button.dataset.messageSource);
       if (action === "send-friend-request") await sendFriendRequest(button.dataset.userId);
       if (action === "accept-social-request") await respondSocialRequest(button.dataset.requestId, true);
@@ -10593,9 +11614,39 @@ function wireEvents() {
       if (action === "claim-auction") await claimAuction(button.dataset.auctionId);
       if (action === "compare-item") openItemCompare(button.dataset.itemInstance);
       if (action === "codex-tab") {
+        state.codexScrollByTab[state.codexTab] = window.scrollY;
         state.codexTab = button.dataset.tab;
         render();
+        window.requestAnimationFrame(() => {
+          const selected = document.querySelector(`#codex-tab-${CSS.escape(state.codexTab)}`);
+          selected?.focus({ preventScroll: true });
+          window.scrollTo({ top: Number(state.codexScrollByTab[state.codexTab] || 0), behavior: "auto" });
+        });
       }
+      if (action === "creation-filter") {
+        state.creationFilter = button.dataset.filter || "all";
+        render();
+      }
+      if (action === "edit-creation-request") {
+        state.creationDraftRequestId = button.dataset.requestId || "";
+        render();
+        window.requestAnimationFrame(() => document.querySelector('form[data-form="creation-request"] input[name="title"]')?.focus());
+      }
+      if (action === "cancel-creation-edit") {
+        state.creationDraftRequestId = "";
+        render();
+      }
+      if (action === "report-tab") {
+        state.reportTab = button.dataset.tab || "bug";
+        render();
+      }
+      if (action === "report-filter") {
+        state.reportFilter = button.dataset.filter || "all";
+        render();
+      }
+      if (action === "preview-migration") previewMigrationPlan();
+      if (action === "download-migration-preview") downloadMigrationPreview();
+      if (action === "download-diagnostics") downloadDiagnostics();
       if (action === "reset-missions") await resetWeeklyMissions(false);
       if (action === "recycle-missions") await resetWeeklyMissions(true);
       if (action === "mark-report") await markReport(button.dataset.reportId, button.dataset.status);
@@ -10614,12 +11665,22 @@ function wireEvents() {
       previewMediaInput(event.target).catch((error) => toast(firebaseErrorMessage(error)));
       return;
     }
-    if (event.target.dataset.action === "select-private-user") subscribePrivateChat(event.target.value);
+    if (event.target.dataset.action === "select-private-user") openDirectConversation(event.target.value).catch((error) => toast(firebaseErrorMessage(error)));
     if (event.target.dataset.characterPreview) {
       const form = event.target.closest("form");
       captureCharacterStep(form);
       if (event.target.name === "kingdomId") state.characterDraft.regionId = "";
       scheduleRender({ critical: true, preserveScroll: true });
+      return;
+    }
+    if (event.target.dataset.action === "culture-filter") {
+      state.cultureFilter = event.target.value;
+      updateCultureSearchResults();
+      return;
+    }
+    if (event.target.dataset.action === "profession-filter") {
+      state.professionFilter = event.target.value;
+      updateProfessionSearchResults();
       return;
     }
     if (event.target.dataset.action === "codex-filter") {
@@ -10661,14 +11722,10 @@ function wireEvents() {
       setAmbientVolume(event.target.value);
       return;
     }
-    if (event.target.dataset.action === "codex-search") {
-      state.codexSearch = event.target.value;
-      if (!event.isComposing && !state.searchComposing) queueSearchResultsUpdate("codex-search");
-      return;
-    }
-    if (event.target.dataset.action === "market-search") {
-      state.marketSearch = event.target.value;
-      if (!event.isComposing && !state.searchComposing) queueSearchResultsUpdate("market-search");
+    const searchAction = event.target.dataset.action;
+    if (isPartialSearchAction(searchAction)) {
+      setPartialSearchValue(searchAction, event.target.value);
+      if (!event.isComposing && !state.searchComposing) queueSearchResultsUpdate(searchAction);
       return;
     }
     const form = event.target.closest("form");
@@ -10694,6 +11751,7 @@ function wireEvents() {
       if (type === "terms-accept") await acceptTerms();
       if (type === "character") await saveCharacter(form);
       if (type === "character-life") await saveCharacterLife(form);
+      if (type === "character-origin-completion") await saveOriginCompletion(form);
       if (type === "global-chat") await sendGlobalChat(form);
       if (type === "private-chat") await sendPrivateChat(form);
       if (type === "diary-entry") await saveDiaryEntry(form);
@@ -10710,6 +11768,7 @@ function wireEvents() {
       if (type === "creation-request") await submitCreationRequest(form);
       if (type === "bug-report") await submitReport("bug", form);
       if (type === "player-report") await submitReport("denuncia", form);
+      if (type === "review-report") await reviewReport(form);
       if (type === "quick-report") {
         const values = formValues(form);
         await submitReport(values.type, form);
@@ -10819,9 +11878,8 @@ function wireEvents() {
       form.dataset.dirty = "false";
       clearUpdateDraft(type);
       clearLocalFormDraft(type);
-      if (state.pendingInputRender) {
-        state.pendingInputRender = false;
-        scheduleRender({ preserveFocus: true, preserveScroll: true });
+      if (!flushDeferredRender({ reason: "form-submitted" })) {
+        scheduleRender({ preserveFocus: true, preserveScroll: true, reason: "form-submitted" });
       }
     } catch (error) {
       console.error(error);
@@ -10838,6 +11896,7 @@ try {
   // The site still works when browser storage is unavailable.
 }
 wireEvents();
+state.imageFallbackCleanup = POLISH.installImageFallback(document);
 updateBuildBadge();
 registerMillenniumServiceWorker();
 window.addEventListener("beforeunload", () => {

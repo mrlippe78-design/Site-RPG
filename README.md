@@ -1,29 +1,47 @@
-# Millennium RPG Support
+# Millennium RPG — Interface do Oráculo
 
-Plataforma web de suporte para o Millennium RPG, usando Firebase Auth + Firestore.
+Plataforma web de suporte ao Millennium RPG textual, com Firebase Authentication, Firestore e publicação estática no GitHub Pages.
 
-> Direcao narrativa, produto, faccoes, progressao e plano de divulgacao: leia [MILLENNIUM_BIBLIA_DO_PROJETO.md](MILLENNIUM_BIBLIA_DO_PROJETO.md).
+## Build atual
 
-## Edicao Reforjada 3.0
+- Versão: `3.1.0`
+- Fase: **Operação 1 — Base estável**
+- Fonte de cálculo de atributos: `millennium-core.js`
+- Camada de estabilidade de renderização: `millennium-stability.js`
+- Cache: `millennium-shell-v3.1.0`
 
-Esta versao unifica a Interface do Oraculo, a Temporada do Despertar, o conteudo canonico do guia, a experiencia mobile e os sistemas autonomos do player. O seed atual e `10`; ao entrar uma vez como Oraculo, o site sincroniza os novos catalogos e remove etapas antigas do tutorial.
+Esta etapa corrige foco, teclado, buscas parciais, agendamento seguro de render, validação dos 20 pontos-base, isolamento de fichas corrompidas, desenvolvimento por ponto, identificação de build e instalação do Service Worker. Não executa migração de dados reais.
 
-### Publicar sem manter cache antigo
-
-1. Envie todos os arquivos do projeto para a hospedagem, incluindo `content-v3.js`, `overrides.css`, `service-worker.js` e a pasta `assets`.
-2. No Firebase, abra **Firestore Database > Regras**, substitua tudo pelo conteudo de `firestore.rules` e clique em **Publicar**.
-3. Abra o site publicado e entre uma vez com `mrlippe78@gmail.com` para executar o seed da Edicao Reforjada 3.0.
-4. Recarregue a pagina. O Service Worker `v33` apaga caches antigos e busca JavaScript/CSS na rede antes de usar a copia local.
-
-Sem a etapa 2, Passe, chat direto, perfil, minigames e economia podem mostrar `permission-denied`, mesmo que o visual novo ja esteja publicado.
-
-## Rodar local
+## Validação local
 
 ```powershell
+npm test
 py -m http.server 5173 --bind 127.0.0.1
 ```
 
-Acesse `http://127.0.0.1:5173`.
+Acesse `http://127.0.0.1:5173` e valide Demo Player e Demo Admin conforme `QA_CHECKLIST_3_1.md`.
+
+O comando `npm test` executa sintaxe, consistência de build e 14 testes de regressão. Os testes das regras exigem dependências instaladas e o Emulator Suite:
+
+```powershell
+npm ci
+npm run test:rules
+```
+
+## Firebase
+
+Os arquivos `firestore.rules`, `firestore.indexes.json` e `firebase.json` permanecem versionados, mas **não são publicados automaticamente**. Não publique regras novas antes de executar o Emulator, revisar os fluxos de produção e preparar rollback.
+
+## Publicação segura
+
+1. Trabalhe em uma branch `fix/...`;
+2. execute `npm test`;
+3. abra o site local e valide Demo Player/Admin;
+4. abra Pull Request sem merge automático;
+5. após o merge, confirme o GitHub Pages com `node scripts/verify-deploy.mjs --build 3.1.0`;
+6. trate regras e índices do Firebase como uma publicação separada.
+
+Consulte `OPERATION_1_REPORT.md`, `ROLLBACK_PLAN_3_1.md` e `FIRESTORE_SECURITY_3_1.md`.
 
 ## Conceito
 
@@ -127,3 +145,48 @@ O site funciona como a interface mística de Millennium: um suporte dentro e for
 Depois desta mega atualizacao, publique novamente `firestore.rules`: Passe, minigames e o novo enquadramento (`avatarFocusX/Y`, `avatarZoom`, `bannerFocusX/Y`, `bannerZoom`) dependem das regras atuais.
 
 Use `firestore.rules` como base de segurança e publique no console do Firebase depois de atualizar o site. As imagens vão para o Cloudinary usando `cloudName: cakvvuqx` e `uploadPreset: Millenium`; não é necessário ativar Firebase Storage para esta versão. O email `mrlippe78@gmail.com` está autorizado como Oráculo; a senha deve existir apenas no Firebase Authentication.
+
+## Operação 2 — Jornada do Personagem
+
+A criação técnica, Dar Vida, Culturas, Ofícios, onboarding e Grau de Manifestação são carregados por `millennium-journey.js` e `journey.css`.
+
+Comandos de validação:
+
+```bash
+npm test
+python -m http.server 5173
+```
+
+Esta operação não publica regras do Firebase e não executa migração. `firestore.rules` e `firestore.indexes.json` permanecem no pacote para uma etapa separada de segurança e backend.
+## Módulos da Operação 3
+
+- `millennium-backend.js`: contratos de Criações, Reports, mensagens, listeners e migração.
+- `backend.css`: componentes de comunicação e administração.
+- `scripts/plan-migration.mjs`: gera plano dry-run a partir de JSON anonimizado.
+- `tests/backend.test.mjs`: testes puros da camada de backend.
+- `tests/operation3.integration.test.mjs`: verifica integração dos arquivos.
+- `tests/firestore.rules.test.mjs`: cenários para execução no Emulator.
+
+Nenhum script deste pacote publica regras ou migra dados automaticamente.
+
+
+## Operação 4 — polimento e QA
+
+O projeto agora inclui:
+
+- Codex mobile resumido;
+- assets WebP locais e fallbacks;
+- camada `polish.css`;
+- acessibilidade de modal e navegação;
+- ciclo de vida dos minigames;
+- painel de diagnóstico;
+- auditoria de CSS e browser smoke.
+
+Comandos:
+
+```bash
+npm test
+python scripts/browser_smoke_op4.py
+```
+
+Consulte `OPERATION_4_REPORT.md`, `VALIDATION_OPERATION_4.md` e `FINAL_DELIVERY_3_1.md`.

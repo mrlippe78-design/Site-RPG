@@ -1,33 +1,54 @@
-# Firestore Security 3.1
+# Segurança do Firestore — Millennium 3.1
 
-## Security boundary
+## Estado
 
-The browser is not trusted to award currency, affinities, pets, items, titles, pass rewards, rarity, stars, XP, or approvals. Player-owned edits are limited to identity, public profile, narrative text, media focus, selected missions, and one validated development-point operation.
+As regras estão versionadas, mas não foram publicadas pelo processo desta entrega.
 
-Economy actions now have a protected request path:
+## Proteções centrais
 
-1. The player creates an immutable `operationRequests` document with `status: pending` and an idempotency key.
-2. The Oracle reviews or processes the request.
-3. The Oracle writes the reward and an `auditLogs` record in the same batch.
-4. A receipt prevents a second reward for the same idempotency key.
+- o player não altera economia, afinidade, pets, itens, títulos ou função administrativa;
+- atributos iniciais exigem exatamente 20 pontos, entre 2 e 6;
+- desenvolvimento consome um ponto por operação;
+- reports pertencem ao autor e revisão exige auditoria;
+- mensagens diretas são imutáveis;
+- conversa nova exige dois participantes distintos;
+- participantes da mensagem precisam corresponder ao resumo da conversa;
+- Criações só podem ser reenviadas após pedido de nerf e com revisão sequencial;
+- solicitações têm tamanho, party e XP limitados;
+- perfil privado só é visível ao dono e ao administrador;
+- logs administrativos não podem ser reescritos ou apagados.
 
-This is the safest free-tier design without a trusted server. Automatic economy processing cannot be made tamper-proof in browser JavaScript alone.
+## Compatibilidade
 
-## Administrator authorization
+`directMessages` permanece com leitura e criação protegidas para a transição. O novo front-end não cria novos documentos nessa coleção; novas mensagens usam `conversations/{id}/messages/{id}`.
 
-Rules accept an administrator from one of these server-readable signals:
+## Testes escritos
 
-- private document `admins/{uid}`;
-- existing locked `users/{uid}.role == admin` record for migration compatibility.
+`tests/firestore.rules.test.mjs` cobre:
 
-No email address is used as the only authorization barrier. Players cannot create or change their role.
+- fraude econômica;
+- atributo 67;
+- isolamento de personagens;
+- reports falsificados;
+- mensagens legadas;
+- conversas atômicas;
+- participantes forjados;
+- reenvio controlado de criação;
+- autoaprovação;
+- XP forjado em mercado;
+- party acima do limite;
+- privacidade de perfil;
+- auditoria administrativa.
 
-## Audit contract
+## Limitação de validação
 
-Sensitive administrator mutations require `lastAuditId` on the target document and an immutable `auditLogs/{lastAuditId}` created in the same batch. The log records administrator, target, field, previous value, next value, reason, and server timestamp.
+O Emulator não foi executado nesta entrega porque o ambiente não conseguiu baixar o JAR oficial. As regras não devem ser publicadas antes de o teste passar em outro ambiente.
 
-## Compatibility and publication
+## Ordem de deploy
 
-Do not publish these rules before the 3.1 client migration is deployed. The legacy client writes economy fields directly; those writes are intentionally denied by 3.1 rules. During rollout, deploy the compatible client first, verify Demo and Emulator tests, then publish rules and indexes.
-
-No legacy document is deleted by these rules.
+1. backup das regras atuais;
+2. `firebase emulators:exec`;
+3. publicação de índices em ambiente de teste;
+4. publicação das regras em ambiente de teste;
+5. teste com duas contas de player e uma de admin;
+6. produção somente após validação.

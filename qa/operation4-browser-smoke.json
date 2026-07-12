@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-07-12T12:07:15.119527+00:00",
+  "mode": "Chromium local DOM; mobile emulation and desktop",
+  "checks": [
+    {
+      "name": "Demo Player abre no mobile",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Mobile sem overflow inicial",
+      "passed": true,
+      "details": {
+        "overflowPx": 0
+      }
+    },
+    {
+      "name": "Codex resumido possui cards",
+      "passed": true,
+      "details": {
+        "cards": 52
+      }
+    },
+    {
+      "name": "Codex mobile sem overflow",
+      "passed": true,
+      "details": {
+        "overflowPx": 0
+      }
+    },
+    {
+      "name": "Thumbnail do Codex usa lazy loading",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Resumo do Codex permanece compacto",
+      "passed": true,
+      "details": {
+        "height": 92.75,
+        "lineHeight": 23.2
+      }
+    },
+    {
+      "name": "Registro completo abre em modal acessível",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Escape fecha modal",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Foco retorna ao acionador do modal",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Imagens visíveis carregam ou usam fallback",
+      "passed": true,
+      "details": {
+        "failed": []
+      }
+    },
+    {
+      "name": "Prova da Mira inicia com sessão explícita",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Fechar minigame encerra o modal",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Reduced motion remove animação contínua",
+      "passed": true,
+      "details": {
+        "animationName": "none"
+      }
+    },
+    {
+      "name": "Demo Admin abre diagnóstico da Interface",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Diagnóstico mostra build e rota",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Diagnóstico oferece exportação",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Desktop sem overflow",
+      "passed": true,
+      "details": {
+        "overflowPx": 0
+      }
+    },
+    {
+      "name": "Assets críticos existem e não estão vazios",
+      "passed": true,
+      "details": {
+        "assets/first-awakening-portal.webp": true,
+        "assets/maps/arena-das-sete-esferas.webp": true,
+        "assets/maps/sociedade-das-laminas.webp": true,
+        "assets/maps/reino-do-pecado-partido.webp": true,
+        "assets/pets/cronista-de-vidro.webp": true,
+        "assets/pets/filha-da-cinza.webp": true
+      }
+    }
+  ],
+  "passed": 18,
+  "failed": 0,
+  "pageErrors": [],
+  "consoleErrors": [],
+  "ignoredExternalErrors": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED"
+  ],
+  "screenshots": {
+    "baselineAvailable": true,
+    "beforeScreenshot": "qa/screenshots/codex-mobile-before.png",
+    "after": [
+      "qa/screenshots/codex-mobile-after.png",
+      "qa/screenshots/admin-diagnostics-after.png"
+    ]
+  }
+}

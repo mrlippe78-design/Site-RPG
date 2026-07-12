@@ -384,3 +384,52 @@ Cada item deve receber instrução própria e commit separado.
 ## Critério para avançar
 
 Esta auditoria deve ser revisada e aprovada antes de qualquer correção. Nenhuma próxima etapa foi iniciada automaticamente.
+
+---
+
+# Atualização de status — Operação 1
+
+A Base estável foi implementada em cópia local, sem migração e sem publicação no Firebase.
+
+Resolvidos nesta operação: foco/teclado de busca, render não crítico durante edição, validação de base 2–6/20 pontos, isolamento do valor 67, diagnóstico de fontes, duplicidade de equipamento, build/cache consistente e instalação resiliente do Service Worker.
+
+Validação: 14/14 testes Node e 37/37 verificações browser smoke. Consulte `OPERATION_1_REPORT.md`.
+
+Itens marcados no relatório original como Criações, mensagens, reports, migração estrutural, CSS completo e minigames permanecem para operações posteriores.
+
+---
+
+# Atualização de status — Operação 2
+
+A Jornada do Personagem foi implementada sobre a Base estável.
+
+Resolvidos: onboarding baseado em progresso real, Home com ação principal, consulta de culturas e ofícios, origem complementar de ficha antiga, Grau de Manifestação, Perfil de Potencial e fallback quebrado da rota Criações.
+
+Validação acumulada: 24/24 testes Node e consistência de build aprovada. Nenhuma regra do Firebase foi publicada e nenhuma migração foi executada.
+
+Permanecem: oficina completa de Criações, mensagens, reports, listeners sob demanda, paginação, migração estrutural, CSS legado, minigames e testes físicos em dispositivos.
+
+## Fechamento da Operação 4 — 2026-07-12
+
+### Resolvidos nesta operação
+
+- Codex mobile com cards excessivamente altos e texto narrativo misturado a metadados;
+- ausência de fallbacks visuais consistentes;
+- assets obrigatórios usados pela interface ausentes do pacote;
+- modal sem ciclo completo de foco por teclado;
+- foco perdido quando o conteúdo era renderizado após fechar modal;
+- ausência de preferência de movimento reduzido;
+- controle de música sobrepondo conteúdo mobile;
+- sessões de minigames sem máquina de estados uniforme;
+- timers, animation frames e resize listeners sem encerramento central;
+- resolução duplicada de recompensas no cliente;
+- Tower Defense sem pausa e sem ajuste de densidade de pixels;
+- diagnóstico administrativo sem métricas de imagens e minigames.
+
+### Não encerrados
+
+- validação física Android/iOS;
+- auditoria completa por leitor de tela;
+- Firestore Rules Emulator;
+- consolidação total do CSS legado;
+- proteção econômica absoluta sem backend confiável.
