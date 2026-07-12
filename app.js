@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.1", commit: "dev", cacheName: "millennium-shell-v3.1.1" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.2", commit: "dev", cacheName: "millennium-shell-v3.1.2" };
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -2032,13 +2032,27 @@ function petRecoveryCost(instance) {
 }
 
 function prestigeFor(character) {
+  const level = Math.max(1, Number(character.level || 0), levelFromXp(character.xp || 0));
   return Math.floor(
-    Number(character.prestige || 0)
-    || Number(character.totalRolls || 0) * 10
+    Number(character.totalRolls || 0) * 10
     + Number(character.totalRares || 0) * 250
-    + Number(character.level || 1) * 20
+    + level * 20
     + Number(character.gold || 0) / 10
   );
+}
+
+function rankingEligible(character = {}) {
+  const ownerId = character.ownerId || character.id || "";
+  const user = state.users.find((entry) => entry.id === ownerId);
+  if (!ownerId || !character.characterName) return false;
+  if (character.excludeFromRanking === true) return false;
+  if (user?.role === "admin") return false;
+  if (["deleted", "removed"].includes(String(user?.status || "").toLowerCase())) return false;
+  return Boolean(character.creationLocked || character.technicalCreationComplete || character.characterName);
+}
+
+function classOwnerCount(classId) {
+  return state.characters.filter((character) => rankingEligible(character) && character.classId === classId).length;
 }
 
 function levelFromXp(xp = 0) {
@@ -2105,8 +2119,10 @@ function requestRewardHint(request) {
 
 function leaderboard() {
   return [...state.characters]
-    .filter((char) => state.role === "admin" || char.profilePublic !== false || char.ownerId === state.user?.uid)
-    .sort((a, b) => prestigeFor(b) - prestigeFor(a) || Number(b.totalRares || 0) - Number(a.totalRares || 0) || Number(b.level || 1) - Number(a.level || 1));
+    .filter(rankingEligible)
+    .sort((a, b) => prestigeFor(b) - prestigeFor(a)
+      || Number(b.totalRares || 0) - Number(a.totalRares || 0)
+      || Math.max(Number(b.level || 0), levelFromXp(b.xp || 0)) - Math.max(Number(a.level || 0), levelFromXp(a.xp || 0)));
 }
 
 function renderPityBar(value, max) {
@@ -2147,7 +2163,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Atualize o site e as regras para o Hotfix 3.1.1.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Atualize o site e as regras para o Hotfix 3.1.2.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -4015,39 +4031,51 @@ function renderCreationsIntroduction() {
     .sort((a, b) => timeValue(b.updatedAt || b.createdAt) - timeValue(a.updatedAt || a.createdAt));
   const filter = state.creationFilter || "all";
   const filtered = requests.filter((request) => filter === "all" || creationRequestStatus(request) === filter);
-  const editRequest = requests.find((request) => request.id === state.creationDraftRequestId && window.MILLENNIUM_BACKEND_31.canResubmitCreation(request)) || {};
   const approvedPowers = (character.powers || []).filter((power) => power.status !== "reprovado");
   const powerSlots = Math.max(1, Number(character.powerSlots || 1));
-  const statuses = ["all", "pendente", "em análise", "nerf solicitado", "aprovado", "reprovado"];
-  const value = (field) => esc(editRequest[field] || "");
+  const statuses = ["all", "pendente", "em análise", "aguardando confirmação", "aceito pelo player", "contestado pelo player", "aprovado", "reprovado"];
+
+  const proposalBlock = (request) => {
+    if (!request.proposedDescription && !request.proposedTitle && !request.proposedLimitations && !request.proposedCountermeasures && !request.proposedCost) return "";
+    return `<section class="oracle-proposal"><p class="eyebrow">Versão proposta pelo Oráculo</p><h4>${esc(request.proposedTitle || request.title || "Proposta revisada")}</h4>${request.proposedDescription ? `<p>${esc(request.proposedDescription)}</p>` : ""}<div class="creation-field-list">${[
+      ["Custo", request.proposedCost],
+      ["Limitações", request.proposedLimitations],
+      ["Contramedidas", request.proposedCountermeasures],
+    ].filter(([, value]) => value).map(([label, value]) => `<div><strong>${esc(label)}</strong><p>${esc(value)}</p></div>`).join("")}</div></section>`;
+  };
+
   return `
     <div class="grid creation-workbench">
-      <article class="catalog-hero span-12"><div><p class="eyebrow">Jornada · Criações</p><h2>Poderes e Técnicas</h2><p>Envie uma proposta completa, receba análise do Oráculo e reenvie a mesma solicitação quando houver pedido de ajuste. Aprovação nunca concede vitória automática.</p></div><div class="creation-summary-grid"><span class="tag">Poderes ${approvedPowers.length}/${powerSlots}</span><span class="tag">Afinidade ${esc(getAffinity(character.affinityId)?.name || "não revelada")}</span><span class="tag">${requests.length} registro(s)</span></div></article>
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Jornada · Criações</p><h2>Poderes e Técnicas</h2><p>O player envia a ideia. O Oráculo analisa, ajusta e apresenta a versão balanceada. O player apenas confirma se concorda ou aponta uma contradição antes da aprovação final.</p></div><div class="creation-summary-grid"><span class="tag">Poderes ${approvedPowers.length}/${powerSlots}</span><span class="tag">Afinidade ${esc(getAffinity(character.affinityId)?.name || "não revelada")}</span><span class="tag">${requests.length} registro(s)</span></div></article>
       <article class="panel span-7">
-        <div class="panel-heading"><div><p class="eyebrow">${editRequest.id ? "Reenvio após nerf" : "Nova proposta"}</p><h3>${editRequest.id ? esc(editRequest.title) : "Registrar criação"}</h3></div>${editRequest.id ? `<button class="ghost-button" type="button" data-action="cancel-creation-edit">Cancelar reenvio</button>` : ""}</div>
+        <div class="panel-heading"><div><p class="eyebrow">Nova proposta</p><h3>Enviar ideia ao Oráculo</h3></div></div>
         <form class="creation-form-grid" data-form="creation-request">
-          <input type="hidden" name="previousRequestId" value="${esc(editRequest.id || "")}" />
-          <input type="hidden" name="revision" value="${editRequest.id ? Number(editRequest.revision || 1) + 1 : 1}" />
-          <label><span>Tipo</span><select name="type"><option value="power" ${editRequest.type === "power" ? "selected" : ""}>Poder</option><option value="technique" ${editRequest.type === "technique" ? "selected" : ""}>Técnica</option></select></label>
-          <label><span>Nome</span><input name="title" maxlength="120" value="${value("title")}" required /></label>
-          <label class="wide"><span>Conceito</span><textarea name="concept" rows="3" maxlength="1200" required>${value("concept")}</textarea></label>
-          <label><span>Função</span><input name="function" maxlength="500" value="${value("function")}" placeholder="Ataque, defesa, suporte, mobilidade..." required /></label>
+          <input type="hidden" name="previousRequestId" value="" />
+          <input type="hidden" name="revision" value="1" />
+          <label><span>Tipo</span><select name="type"><option value="power">Poder</option><option value="technique">Técnica</option></select></label>
+          <label><span>Nome</span><input name="title" maxlength="120" required /></label>
+          <label class="wide"><span>Conceito</span><textarea name="concept" rows="3" maxlength="1200" required></textarea></label>
+          <label><span>Função</span><input name="function" maxlength="500" placeholder="Ataque, defesa, suporte, mobilidade..." required /></label>
           <label><span>Afinidade</span><select name="affinityId"><option value="${esc(character.affinityId || "")}">${esc(getAffinity(character.affinityId)?.name || "Afinidade da ficha")}</option></select></label>
-          <label class="wide"><span>Manifestação</span><textarea name="manifestation" rows="3" maxlength="1200" required>${value("manifestation")}</textarea></label>
-          <label><span>Alcance</span><input name="range" maxlength="300" value="${value("range")}" required /></label>
-          <label><span>Duração</span><input name="duration" maxlength="300" value="${value("duration")}" required /></label>
-          <label><span>Custo</span><textarea name="cost" rows="3" maxlength="1200" required>${value("cost")}</textarea></label>
-          <label><span>Limitações</span><textarea name="limitations" rows="3" maxlength="1200" required>${value("limitations")}</textarea></label>
-          <label><span>Contramedidas</span><textarea name="countermeasures" rows="3" maxlength="1200" required>${value("countermeasures")}</textarea></label>
-          <label><span>Riscos</span><textarea name="risks" rows="3" maxlength="1200" required>${value("risks")}</textarea></label>
-          <label class="wide"><span>Descrição completa</span><textarea name="description" rows="5" maxlength="5000" required>${value("description")}</textarea></label>
-          <label><span>Poder-base da técnica</span><select name="basePowerId"><option value="">Não se aplica / escolha</option>${approvedPowers.map((power) => `<option value="${esc(power.id || power.name)}" ${editRequest.basePowerId === (power.id || power.name) ? "selected" : ""}>${esc(power.name)}</option>`).join("")}</select></label>
-          <label><span>Exemplo de uso</span><textarea name="example" rows="3" maxlength="1200">${value("example")}</textarea></label>
-          <button class="primary-button wide" type="submit">${editRequest.id ? "Reenviar para análise" : "Enviar para análise"}</button>
+          <label class="wide"><span>Manifestação</span><textarea name="manifestation" rows="3" maxlength="1200" required></textarea></label>
+          <label><span>Alcance imaginado</span><input name="range" maxlength="300" required /></label>
+          <label><span>Duração imaginada</span><input name="duration" maxlength="300" required /></label>
+          <label><span>Custo sugerido</span><textarea name="cost" rows="3" maxlength="1200" required></textarea></label>
+          <label><span>Limitações sugeridas</span><textarea name="limitations" rows="3" maxlength="1200" required></textarea></label>
+          <label><span>Contramedidas sugeridas</span><textarea name="countermeasures" rows="3" maxlength="1200" required></textarea></label>
+          <label><span>Riscos sugeridos</span><textarea name="risks" rows="3" maxlength="1200" required></textarea></label>
+          <label class="wide"><span>Descrição completa</span><textarea name="description" rows="5" maxlength="5000" required></textarea></label>
+          <label><span>Poder-base da técnica</span><select name="basePowerId"><option value="">Não se aplica / escolha</option>${approvedPowers.map((power) => `<option value="${esc(power.id || power.name)}">${esc(power.name)}</option>`).join("")}</select></label>
+          <label><span>Exemplo de uso</span><textarea name="example" rows="3" maxlength="1200"></textarea></label>
+          <button class="primary-button wide" type="submit">Enviar para análise</button>
         </form>
       </article>
-      <article class="panel span-5"><p class="eyebrow">Critérios de análise</p><h3>O que o Oráculo verifica</h3><div class="list"><div class="item-row"><strong>Função clara</strong><p>O poder precisa ter um papel legível.</p></div><div class="item-row"><strong>Custo real</strong><p>Limites e riscos precisam afetar o uso.</p></div><div class="item-row"><strong>Contrajogo</strong><p>Outro personagem deve possuir formas narrativas de responder.</p></div><div class="item-row"><strong>Consentimento</strong><p>Controle mental, memória, sangue, dor e sonho exigem limites explícitos.</p></div></div></article>
-      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Fila pessoal</p><h3>Solicitações e revisões</h3></div><div class="creation-tabs">${statuses.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="creation-filter" data-filter="${esc(status)}">${status === "all" ? "Todas" : esc(status)}</button>`).join("")}</div></div><div class="content-grid">${filtered.map((request) => { const status = creationRequestStatus(request); return `<article class="creation-status-card" data-status="${esc(status)}"><span>${esc(progressTypeLabel(request.type))} · revisão ${Number(request.revision || 1)}</span><h3>${esc(request.title || "Criação sem nome")}</h3><p>${esc(request.description || "")}</p><div class="creation-field-list">${creationRequestDetails(request)}</div>${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}<div class="action-row"><span class="tag">${esc(status)}</span>${window.MILLENNIUM_BACKEND_31.canResubmitCreation(request) ? `<button class="primary-button" type="button" data-action="edit-creation-request" data-request-id="${esc(request.id)}">Ajustar e reenviar</button>` : ""}</div></article>`; }).join("") || `<div class="empty-state">Nenhuma solicitação neste filtro.</div>`}</div></article>
+      <article class="panel span-5"><p class="eyebrow">Fluxo correto</p><h3>Quem decide cada etapa</h3><div class="list"><div class="item-row"><strong>1. Player</strong><p>Envia somente a ideia e a intenção do poder.</p></div><div class="item-row"><strong>2. Oráculo</strong><p>Analisa, define nerfs, custos, limites e contramedidas.</p></div><div class="item-row"><strong>3. Player</strong><p>Aceita a versão proposta ou aponta uma contradição.</p></div><div class="item-row"><strong>4. Oráculo</strong><p>Faz a aprovação final e registra o poder na ficha.</p></div></div></article>
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Fila pessoal</p><h3>Solicitações e respostas do Oráculo</h3></div><div class="creation-tabs">${statuses.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="creation-filter" data-filter="${esc(status)}">${status === "all" ? "Todas" : esc(status)}</button>`).join("")}</div></div><div class="content-grid">${filtered.map((request) => {
+        const status = creationRequestStatus(request);
+        const canRespond = window.MILLENNIUM_BACKEND_31.canRespondToCreation(request);
+        return `<article class="creation-status-card" data-status="${esc(status)}"><span>${esc(progressTypeLabel(request.type))} · protocolo ${esc(request.id || "")}</span><h3>${esc(request.title || "Criação sem nome")}</h3><p>${esc(request.description || "")}</p><div class="creation-field-list">${creationRequestDetails(request)}</div>${proposalBlock(request)}${request.adminNote ? `<p><strong>Análise do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}${request.playerResponse ? `<p><strong>Sua resposta:</strong> ${esc(request.playerResponse)}</p>` : ""}<div class="action-row"><span class="tag">${esc(status)}</span>${canRespond ? `<button class="primary-button" type="button" data-action="accept-creation-proposal" data-request-id="${esc(request.id)}">Concordo com a versão</button><button class="ghost-button" type="button" data-action="contest-creation-proposal" data-request-id="${esc(request.id)}">Apontar contradição</button>` : ""}</div></article>`;
+      }).join("") || `<div class="empty-state">Nenhuma solicitação neste filtro.</div>`}</div></article>
     </div>`;
 }
 
@@ -4919,7 +4947,7 @@ function renderRanking() {
         <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}">${label}</button>`).join("")}</div>
         ${supportsRange ? `<div class="ranking-range-row" role="group" aria-label="Período do ranking">
           ${[["daily", "Diário"], ["weekly", "Semanal"], ["season", "Temporada"], ["all", "Todos"]].map(([id, label]) => `<button class="range-chip ${range === id ? "active" : ""}" type="button" data-action="ranking-range" data-range="${id}">${label}</button>`).join("")}
-        </div>` : `<p class="ranking-range-note">Este rank compara o estado atual das fichas. Abra Missões, Giros, Mira, Hunt, Tower, Perfis ou Coleções para filtrar por período.</p>`}
+        </div>` : `<p class="ranking-range-note">Este rank é recalculado a partir das fichas registradas. Perfil privado oculta detalhes, mas não remove a colocação.</p>`}
         <div class="ranking-list">
           ${rows.map((row, index) => {
             const char = row.character || {};
@@ -4938,7 +4966,7 @@ function renderRanking() {
                 </div>
               </div>
             `;
-          }).join("") || `<div class="empty-state">Nenhum personagem público no ranking.</div>`}
+          }).join("") || `<div class="empty-state">Nenhuma ficha elegível no ranking.</div>`}
         </div>
       </article>
     </div>
@@ -4958,7 +4986,7 @@ function isWithinRankingRange(item, range, field = "createdAt") {
 }
 
 function rankRows(tab, range = "season") {
-  const chars = [...state.characters].filter((char) => char.profilePublic !== false);
+  const chars = [...state.characters].filter(rankingEligible);
   const byChar = (score, sub = "pontos", detailFn = null) => chars
     .map((character) => ({
       uid: character.ownerId,
@@ -6286,29 +6314,48 @@ function missionIcon(rarity = "Comum") {
 
 function renderProgressRequests(requests, adminMode = false) {
   if (!requests.length) return `<div class="empty-state">Nenhuma solicitação nessa fila.</div>`;
-  return requests.map((request) => `
-    <div class="request-card ${request.status === "pendente" ? "pending" : ""}">
-      <span>${esc(progressTypeLabel(request.type))} · ${esc(request.status || "pendente")}</span>
-      <h3>${esc(request.title || "Solicitação")}</h3>
-      <p>${esc(request.description || "")}</p>
-      <p>${esc(requestRewardHint(request))}</p>
-      ${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}
-      ${adminMode && request.status === "pendente" ? `
-        <div class="action-row">
-          <button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button>
-        </div>
-        <form class="form-grid compact-form" data-form="review-request">
-          <input type="hidden" name="requestId" value="${esc(request.id)}" />
-          <label><span>XP</span><input name="xp" type="number" min="0" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label>
-          <label><span>PO</span><input name="gold" type="number" min="0" value="0" /></label>
-          <label><span>Essências</span><input name="essences" type="number" min="0" value="0" /></label>
-          <label><span>Status</span><select name="decision"><option value="approved">Aprovar</option><option value="nerf">Pedir nerf</option><option value="rejected">Reprovar</option></select></label>
-          <label class="wide"><span>Nota / Nerf necessário</span><textarea name="adminNote" rows="3" placeholder="Ex: reduzir alcance, custo ou dano antes de aprovar."></textarea></label>
-          <button class="primary-button wide" type="submit">Finalizar análise</button>
-        </form>
-      ` : ""}
-    </div>
-  `).join("");
+  return requests.map((request) => {
+    const status = creationRequestStatus(request);
+    const creation = ["power", "technique"].includes(request.type);
+    const canAdminAct = adminMode && (!creation || window.MILLENNIUM_BACKEND_31.creationNeedsAdminAction(request));
+    const accepted = status === "aceito pelo player";
+    const contested = status === "contestado pelo player";
+    const proposalFields = creation ? `
+      <label><span>Nome final proposto</span><input name="proposedTitle" value="${esc(request.proposedTitle || request.title || "")}" maxlength="120" /></label>
+      <label class="wide"><span>Descrição final proposta</span><textarea name="proposedDescription" rows="4" maxlength="5000">${esc(request.proposedDescription || request.description || "")}</textarea></label>
+      <label><span>Custo final</span><textarea name="proposedCost" rows="3" maxlength="1200">${esc(request.proposedCost || request.cost || "")}</textarea></label>
+      <label><span>Limitações finais</span><textarea name="proposedLimitations" rows="3" maxlength="1200">${esc(request.proposedLimitations || request.limitations || "")}</textarea></label>
+      <label><span>Contramedidas finais</span><textarea name="proposedCountermeasures" rows="3" maxlength="1200">${esc(request.proposedCountermeasures || request.countermeasures || "")}</textarea></label>
+    ` : "";
+    const decisionOptions = creation
+      ? accepted
+        ? `<option value="approved">Aprovar definitivamente</option><option value="proposal">Enviar nova revisão</option><option value="rejected">Reprovar</option>`
+        : `<option value="proposal">Enviar análise para confirmação</option><option value="reviewing">Marcar em análise</option><option value="rejected">Reprovar</option>`
+      : `<option value="approved">Aprovar</option><option value="rejected">Reprovar</option>`;
+
+    return `
+      <div class="request-card ${status === "pendente" ? "pending" : ""}">
+        <span>${esc(progressTypeLabel(request.type))} · ${esc(status)}</span>
+        <h3>${esc(request.title || "Solicitação")}</h3>
+        <p>${esc(request.description || "")}</p>
+        <p>${esc(requestRewardHint(request))}</p>
+        ${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}
+        ${request.playerResponse ? `<p><strong>Resposta do player:</strong> ${esc(request.playerResponse)}</p>` : ""}
+        ${contested ? `<div class="review-warning"><strong>O player apontou uma contradição.</strong><span>Revise a proposta antes de reenviar.</span></div>` : ""}
+        ${canAdminAct ? `
+          ${!creation && status === "pendente" ? `<div class="action-row"><button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button></div>` : ""}
+          <form class="form-grid compact-form" data-form="review-request">
+            <input type="hidden" name="requestId" value="${esc(request.id)}" />
+            ${proposalFields}
+            ${creation ? "" : `<label><span>XP</span><input name="xp" type="number" min="0" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label><label><span>PO</span><input name="gold" type="number" min="0" value="0" /></label><label><span>Essências</span><input name="essences" type="number" min="0" value="0" /></label>`}
+            <label><span>Decisão do Oráculo</span><select name="decision">${decisionOptions}</select></label>
+            <label class="wide"><span>Análise e justificativa</span><textarea name="adminNote" rows="4" maxlength="2000" placeholder="Explique o balanceamento, o nerf, as limitações e as contramedidas.">${esc(request.adminNote || "")}</textarea></label>
+            <button class="primary-button wide" type="submit">${creation && accepted ? "Registrar decisão final" : "Enviar análise"}</button>
+          </form>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
 }
 
 function reportStatusLabel(status = "recebido") {
@@ -6471,7 +6518,7 @@ function renderAdminUsers() {
             <label><span>Fragmentos do Despertar</span><input name="awakeningFragments" type="number" min="0" value="${Number(draftValue(draft, "awakeningFragments", character.gachaFragments?.["Fragmentos do Despertar"] || 0))}" /></label>
             <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(draftValue(draft, "affinityAttempts", character.affinityAttempts || 0))}" /></label>
             <label><span>Pity atual</span><input name="pityCounter" type="number" min="0" value="${Number(draftValue(draft, "pityCounter", character.pityCounter || 0))}" /></label>
-            <label><span>Prestígio</span><input name="prestige" type="number" min="0" value="${Number(draftValue(draft, "prestige", prestigeFor(character)))}" /></label>
+            <label><span>Prestígio calculado automaticamente</span><input name="prestigeComputed" type="number" readonly value="${prestigeFor(character)}" /><small>Atualiza conforme nível, giros, raridades e PO registrados.</small></label>
             <label><span>Slots de poder</span><input name="powerSlots" type="number" min="1" value="${Number(draftValue(draft, "powerSlots", character.powerSlots || 1))}" /></label>
             <label><span>Raça</span><select name="raceId">${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select></label>
             <label><span>Classe</span><select name="classId">${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select></label>
@@ -6479,6 +6526,17 @@ function renderAdminUsers() {
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
+          <section class="admin-danger-zone" style="margin-top:18px">
+            <div>
+              <p class="eyebrow">Zona de exclusão</p>
+              <h3>Limpeza de fichas e contas de teste</h3>
+              <p>Apagar ficha remove os dados do personagem. Remover player bloqueia o retorno ao sistema e limpa os registros ligados ao UID. A conta do Firebase Authentication precisa ser apagada manualmente no Console.</p>
+            </div>
+            <div class="action-row">
+              <button class="danger-button" type="button" data-action="admin-delete-character" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Apagar somente a ficha</button>
+              <button class="danger-button" type="button" data-action="admin-delete-player" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Remover player do sistema</button>
+            </div>
+          </section>
           <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>
            <div class="grid" style="margin-top:18px">
             <div class="panel span-6">
@@ -6803,13 +6861,14 @@ function renderContentEditor() {
   if (tab === "class") {
     return `
       <article class="panel span-5">${contentForm("content-class", "Nova classe", `
+        <p class="hint">Classes salvas aqui aparecem automaticamente no Codex, na criação de personagem, no painel do Oráculo e nos cálculos da ficha.</p>
         <label><span>Nome</span><input name="name" required /></label>
         ${mediaInput("imageUrl", "Imagem da classe")}
         <fieldset class="forge-fieldset"><legend>Bônus de atributo</legend>${forgeBonusInputs()}</fieldset>
-        <label><span>Papel</span><textarea name="role" rows="4"></textarea></label>
-        <label><span>Descrição</span><textarea name="description" rows="4"></textarea></label>
+        <label><span>Papel e função</span><textarea name="role" rows="4" required></textarea></label>
+        <label><span>Descrição</span><textarea name="description" rows="4" required></textarea></label>
       `)}</article>
-      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role}`, "classes")}</div></article>
+      <article class="panel span-7"><div class="content-grid">${contentCards(state.content.classes, (item) => `${bonusToText(item.bonus)} · ${item.role || "Sem função"} · ${classOwnerCount(item.id)} ficha(s)`, "classes")}</div></article>
     `;
   }
   if (tab === "category") {
@@ -7127,8 +7186,13 @@ function renderAdminMail() {
 
 function renderAdminRequests() {
   const filter = state.adminRequestFilter || "all";
-  const pending = state.progressRequests.filter((request) => request.status === "pendente" && (filter === "all" || request.type === filter));
-  const done = state.progressRequests.filter((request) => request.status !== "pendente").slice(0, 16);
+  const pending = state.progressRequests.filter((request) => {
+    const actionable = ["power", "technique"].includes(request.type)
+      ? window.MILLENNIUM_BACKEND_31.creationNeedsAdminAction(request)
+      : creationRequestStatus(request) === "pendente";
+    return actionable && (filter === "all" || request.type === filter);
+  });
+  const done = state.progressRequests.filter((request) => !pending.some((entry) => entry.id === request.id)).slice(0, 16);
   const filters = [
     ["all", "Todos"],
     ["mission", "Missões"],
@@ -7144,7 +7208,7 @@ function renderAdminRequests() {
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Validações</p>
-            <h2>XP, recompensas e nerf</h2>
+            <h2>Validações, análises e balanceamento</h2>
           </div>
           <span class="tag">${pending.length} pendente(s)</span>
         </div>
@@ -7152,7 +7216,7 @@ function renderAdminRequests() {
           ${renderStat("Pendentes", pending.length)}
           ${renderStat("Missões", pending.filter((item) => item.type === "mission").length)}
           ${renderStat("Treinos", pending.filter((item) => item.type === "training").length)}
-          ${renderStat("Nerfs", pending.filter((item) => item.type === "power" || item.type === "technique").length)}
+          ${renderStat("Criações", pending.filter((item) => item.type === "power" || item.type === "technique").length)}
         </div>
         <div class="tabs codex-tabs">
           ${filters.map(([id, label]) => `<button class="tab ${filter === id ? "active" : ""}" type="button" data-action="request-filter" data-filter="${id}">${label}</button>`).join("")}
@@ -9701,17 +9765,15 @@ async function submitCreationRequest(form) {
   const type = payload.type;
   const powerSlots = Math.max(1, Number(character.powerSlots || 1));
   const powersUsed = approvedPowerCount(character);
-  const previous = state.progressRequests.find((request) => request.id === payload.previousRequestId);
   const pendingDuplicate = state.progressRequests.some((request) => request.uid === state.user.uid
-    && request.id !== previous?.id
     && request.type === type
-    && window.MILLENNIUM_BACKEND_31.creationStatusLabel(request.status) === "pendente"
+    && !["aprovado", "reprovado"].includes(creationRequestStatus(request))
     && String(request.title || "").trim().toLowerCase() === payload.title.toLowerCase());
   if (pendingDuplicate) {
-    toast("Já existe uma solicitação pendente com esse nome.");
+    toast("Já existe uma solicitação ativa com esse nome.");
     return;
   }
-  if (!previous && type === "power" && powersUsed >= powerSlots) {
+  if (type === "power" && powersUsed >= powerSlots) {
     toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s).`);
     return;
   }
@@ -9721,27 +9783,50 @@ async function submitCreationRequest(form) {
   }
   const requestPayload = {
     ...payload,
+    previousRequestId: "",
+    revision: 1,
     uid: state.user.uid,
     playerName: state.profile?.displayName || state.user.email,
     characterName: character.characterName || "",
     status: "pendente",
     xp: 0,
   };
-  if (previous) {
-    if (!window.MILLENNIUM_BACKEND_31.canResubmitCreation(previous)) throw new Error("Essa solicitação não está disponível para reenvio.");
-    if (state.demo) {
-      await writeDoc("progressRequests", previous.id, { ...requestPayload, resubmittedAt: new Date().toISOString() });
-    } else {
-      await state.db.collection("progressRequests").doc(previous.id).set({ ...requestPayload, resubmittedAt: nowValue(), updatedAt: nowValue() }, { merge: true });
-      state.diagnostics.writes += 1;
-    }
-    toast("Criação ajustada e reenviada para o Oráculo.");
-  } else {
-    await addDoc("progressRequests", requestPayload);
-    toast("Criação enviada para análise do Oráculo.");
-  }
+  await addDoc("progressRequests", requestPayload);
+  toast("Criação enviada. Agora o Oráculo fará a análise e apresentará a versão balanceada.");
   state.creationDraftRequestId = "";
   form.reset();
+}
+
+async function respondCreationProposal(requestId, response) {
+  const request = state.progressRequests.find((entry) => entry.id === requestId);
+  if (!request || !window.MILLENNIUM_BACKEND_31.creationPlayerResponseAllowed(request, response)) {
+    throw new Error("Esta proposta não está aguardando sua confirmação.");
+  }
+  let playerResponse = "Concordo com a versão apresentada pelo Oráculo.";
+  let status = "aceito pelo player";
+  if (response === "contested") {
+    const note = window.prompt("Explique a contradição ou o ponto que precisa ser revisto.");
+    if (!String(note || "").trim()) return;
+    playerResponse = String(note).trim().slice(0, 2000);
+    status = "contestado pelo player";
+  }
+  if (state.demo) {
+    await writeDoc("progressRequests", requestId, {
+      status,
+      playerResponse,
+      playerRespondedAt: new Date().toISOString(),
+    });
+  } else {
+    await state.db.collection("progressRequests").doc(requestId).set({
+      status,
+      playerResponse,
+      playerRespondedAt: nowValue(),
+      updatedAt: nowValue(),
+    }, { merge: true });
+    state.diagnostics.writes += 1;
+  }
+  toast(response === "accepted" ? "Versão aceita. O Oráculo fará o registro final." : "Contradição enviada ao Oráculo.");
+  render();
 }
 
 async function saveDiaryEntry(form) {
@@ -9941,7 +10026,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.1.0",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.1.2",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -10614,7 +10699,6 @@ async function saveAdminUser(form) {
     },
     affinityAttempts: Number(values.affinityAttempts || 0),
     pityCounter: Number(values.pityCounter || 0),
-    prestige: Number(values.prestige || 0),
     powerSlots: Math.max(1, Number(values.powerSlots || 1)),
     raceId: values.raceId,
     classId: values.classId,
@@ -10623,6 +10707,149 @@ async function saveAdminUser(form) {
   });
   state.adminUserDraft = null;
   toast("Player atualizado.");
+}
+
+
+function adminDeletionTarget(uid) {
+  const user = state.users.find((entry) => entry.id === uid);
+  const character = getCharacterFor(uid);
+  if (!uid || uid === state.user?.uid || user?.role === "admin") {
+    throw new Error("A conta do próprio Oráculo ou de outro administrador não pode ser excluída por este painel.");
+  }
+  return { user, character, label: character?.characterName || user?.displayName || user?.email || uid };
+}
+
+async function deleteQueryDocuments(query, beforeDelete = null) {
+  if (!query || state.demo) return 0;
+  let total = 0;
+  while (true) {
+    const snapshot = await query.limit(200).get();
+    if (snapshot.empty) break;
+    for (const documentSnapshot of snapshot.docs) {
+      if (beforeDelete) await beforeDelete(documentSnapshot);
+      await documentSnapshot.ref.delete();
+      total += 1;
+      state.diagnostics.writes += 1;
+    }
+    if (snapshot.size < 200) break;
+  }
+  return total;
+}
+
+async function deleteCharacterSubcollections(uid) {
+  if (state.demo) return 0;
+  const names = [
+    "lore", "developmentLogs", "inventory", "pets", "titles", "powers", "techniques",
+    "activities", "missions", "achievements", "discoveries", "history", "rewards", "minigameRuns",
+  ];
+  let removed = 0;
+  for (const name of names) {
+    removed += await deleteQueryDocuments(state.db.collection("characters").doc(uid).collection(name));
+  }
+  return removed;
+}
+
+async function recordAdminDeletion(uid, action, reason) {
+  if (state.demo) return;
+  const auditId = `audit-delete-${cryptoRandom()}`;
+  await state.db.collection("auditLogs").doc(auditId).set({
+    adminId: state.user.uid,
+    targetId: uid,
+    field: action,
+    previousValue: null,
+    nextValue: { deleted: true },
+    reason: String(reason || "Limpeza administrativa de dados de teste.").slice(0, 500),
+    createdAt: nowValue(),
+  });
+  state.diagnostics.writes += 1;
+}
+
+async function removeConversationTree(snapshot) {
+  await deleteQueryDocuments(snapshot.ref.collection("messages"));
+}
+
+async function cleanupCharacterData(uid) {
+  await deleteCharacterSubcollections(uid);
+  if (!state.demo) {
+    await state.db.collection("characters").doc(uid).delete().catch(() => {});
+    await state.db.collection("publicProfiles").doc(uid).delete().catch(() => {});
+    state.diagnostics.writes += 2;
+  }
+  state.characters = state.characters.filter((entry) => (entry.ownerId || entry.id) !== uid);
+  state.publicProfiles = state.publicProfiles.filter((entry) => entry.id !== uid && entry.ownerId !== uid);
+  if (state.character?.ownerId === uid) state.character = null;
+}
+
+async function adminDeleteCharacter(uid) {
+  const { label } = adminDeletionTarget(uid);
+  const typed = window.prompt(`Digite APAGAR FICHA para confirmar a exclusão de "${label}".`);
+  if (typed !== "APAGAR FICHA") return;
+  const reason = window.prompt("Informe o motivo da exclusão para o registro administrativo.", "Limpeza de ficha de teste.") || "Limpeza de ficha de teste.";
+  await recordAdminDeletion(uid, "delete-character", reason);
+  await cleanupCharacterData(uid);
+  state.selectedUserId = uid;
+  toast(`A ficha de ${label} foi apagada. A conta de acesso foi mantida.`);
+  render();
+}
+
+async function adminDeletePlayer(uid) {
+  const { label } = adminDeletionTarget(uid);
+  const typed = window.prompt(`Digite REMOVER PLAYER para excluir os dados de "${label}" e bloquear o retorno ao sistema.`);
+  if (typed !== "REMOVER PLAYER") return;
+  const reason = window.prompt("Informe o motivo da remoção para o registro administrativo.", "Remoção de conta de teste.") || "Remoção de conta de teste.";
+  await recordAdminDeletion(uid, "delete-player", reason);
+
+  if (state.demo) {
+    await cleanupCharacterData(uid);
+    state.users = state.users.filter((entry) => entry.id !== uid);
+    state.progressRequests = state.progressRequests.filter((entry) => entry.uid !== uid);
+    state.reports = state.reports.filter((entry) => entry.reporterId !== uid && entry.targetId !== uid);
+    state.selectedUserId = state.users.find((entry) => entry.role !== "admin")?.id || "";
+    toast(`Player ${label} removido do modo Demo.`);
+    render();
+    return;
+  }
+
+  await state.db.collection("deletedUsers").doc(uid).set({
+    uid,
+    displayName: label,
+    reason: String(reason).slice(0, 500),
+    deletedBy: state.user.uid,
+    createdAt: nowValue(),
+  });
+  state.diagnostics.writes += 1;
+
+  await cleanupCharacterData(uid);
+  await deleteQueryDocuments(state.db.collection("progressRequests").where("uid", "==", uid));
+  await deleteQueryDocuments(state.db.collection("reports").where("reporterId", "==", uid));
+  await deleteQueryDocuments(state.db.collection("profileViews").where("targetId", "==", uid));
+  await deleteQueryDocuments(state.db.collection("profileViews").where("viewerId", "==", uid));
+  await deleteQueryDocuments(state.db.collection("socialRequests").where("participants", "array-contains", uid));
+  await deleteQueryDocuments(state.db.collection("directMessages").where("participants", "array-contains", uid));
+  await deleteQueryDocuments(state.db.collection("conversations").where("participantIds", "array-contains", uid), removeConversationTree);
+  await deleteQueryDocuments(state.db.collection("globalMessages").where("senderId", "==", uid));
+  await deleteQueryDocuments(state.db.collection("guildMessages").where("senderId", "==", uid));
+  await deleteQueryDocuments(state.db.collection("campaignDiary").where("authorId", "==", uid));
+
+  for (const guild of state.guilds.filter((entry) => (entry.memberIds || []).includes(uid))) {
+    const nextMembers = (guild.memberIds || []).filter((memberId) => memberId !== uid);
+    await state.db.collection("guilds").doc(guild.id).set({
+      memberIds: nextMembers,
+      leaderId: guild.leaderId === uid ? (nextMembers[0] || "") : guild.leaderId,
+      updatedAt: nowValue(),
+    }, { merge: true });
+    state.diagnostics.writes += 1;
+  }
+
+  await state.db.collection("users").doc(uid).delete().catch(() => {});
+  state.diagnostics.writes += 1;
+  state.users = state.users.filter((entry) => entry.id !== uid);
+  state.progressRequests = state.progressRequests.filter((entry) => entry.uid !== uid);
+  state.reports = state.reports.filter((entry) => entry.reporterId !== uid && entry.targetId !== uid);
+  state.selectedUserId = state.users.find((entry) => entry.role !== "admin")?.id || "";
+
+  toast(`Player ${label} removido e bloqueado no sistema. Apague também o UID em Firebase Authentication para remover a credencial.`);
+  render();
 }
 
 async function adminAddItem(form) {
@@ -10734,16 +10961,83 @@ async function reviewProgressRequest(form) {
   await reviewProgressRequestValues(formValues(form));
 }
 
-async function reviewProgressRequestValues(values) {
-  const request = state.progressRequests.find((item) => item.id === values.requestId);
-  if (!request) return;
+function effectiveCreationRequest(request = {}) {
+  return {
+    ...request,
+    title: request.proposedTitle || request.title || "",
+    description: request.proposedDescription || request.description || "",
+    cost: request.proposedCost || request.cost || "",
+    limitations: request.proposedLimitations || request.limitations || "",
+    countermeasures: request.proposedCountermeasures || request.countermeasures || "",
+  };
+}
 
+async function reviewProgressRequestValues(values) {
+  const storedRequest = state.progressRequests.find((item) => item.id === values.requestId);
+  if (!storedRequest) return;
+
+  const creation = ["power", "technique"].includes(storedRequest.type);
   const decision = values.decision;
-  const status = decision === "approved" ? "aprovado" : decision === "nerf" ? "nerf solicitado" : "reprovado";
-  const adminNote = values.adminNote || "";
-  const xpGain = decision === "approved" ? Math.max(0, Number(values.xp || 0)) : 0;
-  const goldGain = decision === "approved" ? Math.max(0, Number(values.gold || 0)) : 0;
-  const essenceGain = decision === "approved" ? Math.max(0, Number(values.essences || 0)) : 0;
+  const adminNote = String(values.adminNote || "").trim().slice(0, 2000);
+
+  if (creation && decision === "reviewing") {
+    await writeDoc("progressRequests", storedRequest.id, {
+      status: "em análise",
+      decision: "reviewing",
+      adminNote,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+    }, { reason: `Análise iniciada para ${storedRequest.title}.` });
+    toast("Criação marcada como em análise.");
+    return;
+  }
+
+  if (creation && decision === "proposal") {
+    const proposal = {
+      proposedTitle: String(values.proposedTitle || storedRequest.title || "").trim().slice(0, 120),
+      proposedDescription: String(values.proposedDescription || storedRequest.description || "").trim().slice(0, 5000),
+      proposedCost: String(values.proposedCost || storedRequest.cost || "").trim().slice(0, 1200),
+      proposedLimitations: String(values.proposedLimitations || storedRequest.limitations || "").trim().slice(0, 1200),
+      proposedCountermeasures: String(values.proposedCountermeasures || storedRequest.countermeasures || "").trim().slice(0, 1200),
+    };
+    if (!proposal.proposedTitle || !proposal.proposedDescription || !proposal.proposedLimitations || !proposal.proposedCountermeasures) {
+      throw new Error("Preencha a versão proposta, limitações e contramedidas antes de enviar ao player.");
+    }
+    await writeDoc("progressRequests", storedRequest.id, {
+      ...proposal,
+      status: "aguardando confirmação",
+      decision: "proposal",
+      adminNote,
+      playerResponse: "",
+      playerRespondedAt: null,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+    }, { reason: `Versão balanceada enviada para confirmação: ${storedRequest.title}.` });
+    toast("Análise enviada ao player para confirmação.");
+    return;
+  }
+
+  if (creation && decision === "approved" && creationRequestStatus(storedRequest) !== "aceito pelo player") {
+    throw new Error("O player precisa aceitar a versão proposta antes da aprovação final.");
+  }
+
+  if (creation && decision === "rejected") {
+    await writeDoc("progressRequests", storedRequest.id, {
+      status: "reprovado",
+      decision: "rejected",
+      adminNote,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+    }, { reason: `Criação reprovada: ${storedRequest.title}.` });
+    toast("Criação reprovada pelo Oráculo.");
+    return;
+  }
+
+  const request = creation ? effectiveCreationRequest(storedRequest) : storedRequest;
+  const status = decision === "approved" ? "aprovado" : "reprovado";
+  const xpGain = decision === "approved" && !creation ? Math.max(0, Number(values.xp || 0)) : 0;
+  const goldGain = decision === "approved" && !creation ? Math.max(0, Number(values.gold || 0)) : 0;
+  const essenceGain = decision === "approved" && !creation ? Math.max(0, Number(values.essences || 0)) : 0;
   const character = getCharacterFor(request.uid);
   const patch = {};
 
@@ -10752,7 +11046,7 @@ async function reviewProgressRequestValues(values) {
     for (const uid of targetIds) {
       const memberCharacter = getCharacterFor(uid);
       const xp = Number(memberCharacter.xp || 0) + xpGain;
-      const oldLevel = Number(memberCharacter.level || levelFromXp(memberCharacter.xp || 0));
+      const oldLevel = Math.max(Number(memberCharacter.level || 0), levelFromXp(memberCharacter.xp || 0));
       const level = levelFromXp(xp);
       const memberPatch = {
         xp,
@@ -10773,7 +11067,7 @@ async function reviewProgressRequestValues(values) {
     }
   } else if (decision === "approved") {
     const xp = Number(character.xp || 0) + xpGain;
-    const oldLevel = Number(character.level || levelFromXp(character.xp || 0));
+    const oldLevel = Math.max(Number(character.level || 0), levelFromXp(character.xp || 0));
     const level = levelFromXp(xp);
     patch.xp = xp;
     patch.level = level;
@@ -10784,7 +11078,6 @@ async function reviewProgressRequestValues(values) {
       patch.premiumPassUnlocked = true;
       patch.gold = Math.max(0, Number(character.gold || 0) - Number(request.goldCost || 1000)) + goldGain;
     }
-
     if (request.type === "mission" && request.missionId) {
       patch.activeMissions = (character.activeMissions || []).filter((id) => id !== request.missionId);
     }
@@ -10792,7 +11085,16 @@ async function reviewProgressRequestValues(values) {
       const legacyPower = character.power?.name ? [{ id: "base", ...character.power, status: character.power.status || "aprovado" }] : [];
       const powers = (character.powers?.length ? character.powers : legacyPower)
         .filter((power) => power.id !== request.id && power.name !== request.title);
-      const approvedPower = { id: request.id, name: request.title, description: request.description, status: "aprovado", adminNote };
+      const approvedPower = {
+        id: request.id,
+        name: request.title,
+        description: request.description,
+        cost: request.cost,
+        limitations: request.limitations,
+        countermeasures: request.countermeasures,
+        status: "aprovado",
+        adminNote,
+      };
       const nextPowers = [...powers, approvedPower];
       patch.powers = nextPowers;
       patch.power = nextPowers[0];
@@ -10800,10 +11102,20 @@ async function reviewProgressRequestValues(values) {
     }
     if (request.type === "technique") {
       const techniques = (character.techniques || []).filter((technique) => technique.name || technique.description);
-      patch.techniques = [...techniques, { id: request.id, name: request.title, description: request.description, status: "aprovado", adminNote }];
+      patch.techniques = [...techniques, {
+        id: request.id,
+        name: request.title,
+        description: request.description,
+        cost: request.cost,
+        limitations: request.limitations,
+        countermeasures: request.countermeasures,
+        status: "aprovado",
+        adminNote,
+      }];
     }
     patch.prestige = prestigeFor({ ...character, ...patch });
     const approvedRewards = [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 "));
+    if (creation) approvedRewards.push(`${progressTypeLabel(request.type)} aprovado`);
     if (request.type === "premiumPass") approvedRewards.push("Passe premium liberado");
     patch.pendingGift = {
       id: cryptoRandom(),
@@ -10820,12 +11132,14 @@ async function reviewProgressRequestValues(values) {
     status,
     decision,
     adminNote,
+    finalTitle: creation ? request.title : "",
+    finalDescription: creation ? request.description : "",
     xpApproved: xpGain,
     goldApproved: goldGain,
     essencesApproved: essenceGain,
     reviewedBy: state.profile?.displayName || state.user.email,
     reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
-  });
+  }, { reason: `Decisão final em ${progressTypeLabel(request.type)}: ${request.title}.` });
 
   if (decision === "approved") {
     await addGlobalMessage({
@@ -10835,12 +11149,15 @@ async function reviewProgressRequestValues(values) {
       text: `${getUserName(request.uid)} recebeu aprovação em ${progressTypeLabel(request.type)}: ${request.title}.`,
     });
   }
-  toast(decision === "approved" ? "Solicitação aprovada." : decision === "nerf" ? "Nerf solicitado ao player." : "Solicitação reprovada.");
+  toast(decision === "approved" ? "Solicitação aprovada." : "Solicitação reprovada.");
 }
 
 async function quickApproveRequest(requestId) {
   const request = state.progressRequests.find((item) => item.id === requestId);
   if (!request) return;
+  if (["power", "technique"].includes(request.type)) {
+    throw new Error("Poderes e técnicas exigem análise, confirmação do player e aprovação final.");
+  }
   await reviewProgressRequestValues({
     requestId,
     decision: "approved",
@@ -11658,6 +11975,10 @@ function wireEvents() {
       if (action === "toggle-maintenance") await toggleMaintenance(button.dataset.mode);
       if (action === "start-rpg") await startRpg();
       if (action === "quick-approve") await quickApproveRequest(button.dataset.requestId);
+      if (action === "admin-delete-character") await adminDeleteCharacter(button.dataset.userId);
+      if (action === "admin-delete-player") await adminDeletePlayer(button.dataset.userId);
+      if (action === "accept-creation-proposal") await respondCreationProposal(button.dataset.requestId, "accepted");
+      if (action === "contest-creation-proposal") await respondCreationProposal(button.dataset.requestId, "contested");
     } catch (error) {
       console.error(error);
       toast(firebaseErrorMessage(error));

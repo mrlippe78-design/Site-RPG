@@ -242,3 +242,39 @@ body.season-theme-awakening::before,
   :root { --op4-muted: rgba(255, 248, 228, 0.9); --op4-line: rgba(247, 217, 140, 0.55); }
   .codex-card-summary, .panel { border-color: var(--op4-line); }
 }
+
+/* Hotfix 3.1.2 — administração, ranking e revisão de criações */
+.admin-danger-zone {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(198, 73, 73, .55);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(77, 15, 15, .28), rgba(18, 18, 18, .9));
+}
+
+.admin-danger-zone h3,
+.admin-danger-zone p { margin: 0; }
+
+.admin-danger-zone .action-row { justify-content: flex-start; }
+
+.oracle-proposal {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid rgba(216, 180, 93, .45);
+  border-radius: 14px;
+  background: rgba(216, 180, 93, .07);
+}
+
+.oracle-proposal h4,
+.oracle-proposal p { margin: 0; }
+
+.creation-status-card[data-status="aguardando confirmação"] {
+  box-shadow: inset 3px 0 0 rgba(216, 180, 93, .9);
+}
+
+.creation-status-card[data-status="contestado pelo player"] {
+  box-shadow: inset 3px 0 0 rgba(204, 86, 86, .9);
+}
