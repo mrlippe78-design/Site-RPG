@@ -1,0 +1,47 @@
+{
+  "scenario": "desktop-admin",
+  "executedAt": "2026-07-12T10:03:07Z",
+  "checks": [
+    {
+      "name": "Admin navega para usuários",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Admin mostra diagnóstico de atributos",
+      "passed": true,
+      "details": {
+        "text": "DIAGNÓSTICO DE FICHA\n\nFontes de atributo consistentes\nSem bloqueios\n\nNenhum valor é reparado por esta tela. Valores corrompidos são apenas identificados e isola"
+      }
+    },
+    {
+      "name": "Diagnóstico é somente leitura",
+      "passed": true,
+      "details": {
+        "interactiveElements": 0
+      }
+    },
+    {
+      "name": "Sem erros JavaScript não tratados",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Sem erros internos inesperados no console",
+      "passed": true,
+      "details": []
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

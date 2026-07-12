@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-07-12T11:04:01Z",
+  "mode": "inline local DOM with Chromium",
+  "results": [
+    {
+      "name": "Demo Player opens",
+      "passed": true
+    },
+    {
+      "name": "Direct message appears once",
+      "passed": true
+    },
+    {
+      "name": "Bug report enters My Reports",
+      "passed": true
+    },
+    {
+      "name": "Creations explains technical lock",
+      "passed": true
+    },
+    {
+      "name": "No horizontal overflow at 390px",
+      "passed": true
+    },
+    {
+      "name": "Admin operations exposes migration dry-run",
+      "passed": true
+    },
+    {
+      "name": "Admin diagnostics exposes listener information",
+      "passed": true
+    },
+    {
+      "name": "Admin reports route opens",
+      "passed": true
+    },
+    {
+      "name": "No horizontal overflow at 1366px",
+      "passed": true
+    }
+  ],
+  "passed": 9,
+  "failed": 0,
+  "consoleErrors": [],
+  "ignoredExternalErrors": [],
+  "pageErrors": []
+}

@@ -1,3 +1,6 @@
+import http from "node:http";
+import https from "node:https";
+
 const args = process.argv.slice(2);
 const valueFor = (name, fallback) => {
   const index = args.indexOf(name);
@@ -7,22 +10,34 @@ const valueFor = (name, fallback) => {
 const baseUrl = new URL(valueFor("--url", "https://mrlippe78-design.github.io/Site-RPG/"));
 const expectedBuild = valueFor("--build", "3.1.0");
 const expectedCommit = valueFor("--commit", "");
+const attempts = Math.max(1, Number(valueFor("--attempts", "4")) || 4);
+const waitMs = Math.max(0, Number(valueFor("--wait-ms", "15000")) || 15000);
 const required = [
   "index.html",
   "build-info.js",
+  "millennium-stability.js",
   "catalogs-3.1.js",
   "millennium-core.js",
+  "millennium-journey.js",
+  "millennium-backend.js",
+  "millennium-polish.js",
   "content-v3.js",
   "app.js",
   "styles.css",
   "overrides.css",
+  "journey.css",
+  "backend.css",
+  "polish.css",
+  "assets/first-awakening-portal.webp",
+  "assets/maps/arena-das-sete-esferas.webp",
+  "assets/maps/sociedade-das-laminas.webp",
+  "assets/maps/reino-do-pecado-partido.webp",
+  "assets/pets/cronista-de-vidro.webp",
+  "assets/pets/filha-da-cinza.webp",
   "service-worker.js",
   "manifest.webmanifest",
   "favicon.svg",
 ];
-
-const failures = [];
-const responses = new Map();
 
 function requestText(url, redirects = 0) {
   return new Promise((resolve, reject) => {
@@ -48,28 +63,45 @@ function requestText(url, redirects = 0) {
   });
 }
 
-for (const path of required) {
-  const url = new URL(path, baseUrl);
-  url.searchParams.set("deploy-check", Date.now().toString());
-  try {
-    const response = await requestText(url);
-    responses.set(path, response);
-    if (!response.ok) failures.push(`${path}: HTTP ${response.status}`);
-  } catch (error) {
-    failures.push(`${path}: ${error.message}`);
+const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
+
+async function verifyOnce() {
+  const failures = [];
+  const responses = new Map();
+  for (const file of required) {
+    const url = new URL(file, baseUrl);
+    url.searchParams.set("deploy-check", `${Date.now()}-${Math.random()}`);
+    try {
+      const response = await requestText(url);
+      responses.set(file, response);
+      if (!response.ok) failures.push(`${file}: HTTP ${response.status}`);
+    } catch (error) {
+      failures.push(`${file}: ${error.message}`);
+    }
   }
+
+  const indexText = responses.get("index.html")?.text || "";
+  const build = indexText.match(/name="millennium-build"\s+content="([^"]+)"/)?.[1] || "ausente";
+  const commit = indexText.match(/name="millennium-commit"\s+content="([^"]+)"/)?.[1] || "ausente";
+  if (build !== expectedBuild) failures.push(`build publicado ${build}; esperado ${expectedBuild}`);
+  if (expectedCommit && commit !== expectedCommit && !expectedCommit.startsWith(commit)) failures.push(`commit publicado ${commit}; esperado ${expectedCommit}`);
+
+  const buildInfo = responses.get("build-info.js")?.text || "";
+  const serviceWorker = responses.get("service-worker.js")?.text || "";
+  const manifest = responses.get("manifest.webmanifest")?.text || "";
+  if (!buildInfo.includes(`version: "${expectedBuild}"`)) failures.push("build-info.js não expõe o build esperado");
+  if (!serviceWorker.includes(`MILLENNIUM_BUILD = "${expectedBuild}"`)) failures.push("service-worker.js não usa o build esperado");
+  if (!manifest.includes(`"version": "${expectedBuild}"`)) failures.push("manifest.webmanifest não usa o build esperado");
+
+  return { build, commit, failures };
 }
 
-const indexResponse = responses.get("index.html");
-const indexText = indexResponse?.ok ? indexResponse.text : "";
-const build = indexText.match(/name="millennium-build"\s+content="([^"]+)"/)?.[1] || "ausente";
-const commit = indexText.match(/name="millennium-commit"\s+content="([^"]+)"/)?.[1] || "ausente";
-if (build !== expectedBuild) failures.push(`build publicado ${build}; esperado ${expectedBuild}`);
-if (expectedCommit && commit !== expectedCommit && !expectedCommit.startsWith(commit)) {
-  failures.push(`commit publicado ${commit}; esperado ${expectedCommit}`);
+let result;
+for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  result = await verifyOnce();
+  console.log(JSON.stringify({ attempt, attempts, url: baseUrl.href, expectedBuild, expectedCommit, ...result }, null, 2));
+  if (!result.failures.length) break;
+  if (attempt < attempts) await sleep(waitMs);
 }
 
-console.log(JSON.stringify({ url: baseUrl.href, expectedBuild, expectedCommit, build, commit, failures }, null, 2));
-if (failures.length) process.exitCode = 1;
-import http from "node:http";
-import https from "node:https";
+if (result?.failures.length) process.exitCode = 1;

@@ -1,0 +1,614 @@
+{
+  "generatedAt": "2026-07-12T14:18:33.607Z",
+  "files": {
+    "styles.css": {
+      "bytes": 94047,
+      "selectors": 2613,
+      "repeatedInsideFile": 277,
+      "importantDeclarations": 15,
+      "mediaQueries": 20
+    },
+    "overrides.css": {
+      "bytes": 74410,
+      "selectors": 936,
+      "repeatedInsideFile": 189,
+      "importantDeclarations": 1,
+      "mediaQueries": 14
+    },
+    "journey.css": {
+      "bytes": 8176,
+      "selectors": 138,
+      "repeatedInsideFile": 24,
+      "importantDeclarations": 3,
+      "mediaQueries": 3
+    },
+    "backend.css": {
+      "bytes": 2684,
+      "selectors": 37,
+      "repeatedInsideFile": 3,
+      "importantDeclarations": 0,
+      "mediaQueries": 1
+    },
+    "polish.css": {
+      "bytes": 6644,
+      "selectors": 133,
+      "repeatedInsideFile": 12,
+      "importantDeclarations": 14,
+      "mediaQueries": 4
+    }
+  },
+  "crossFileDuplicateCount": 108,
+  "crossFileDuplicates": [
+    {
+      "selector": "0",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "journey.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".auth-art",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".tower-canvas",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "11",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "14",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "18",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "20",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "207",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "3vw",
+      "files": [
+        "styles.css",
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": ":root",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".activity-card",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".affinity-reveal-runes",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".aim-hud",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".aim-target",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".auth-art .auth-copy > p:last-child",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-art h1",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-brand",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-card",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-card > *",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-card-copy",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-copy",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-copy .auth-kicker",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-copy .season-chip",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-screen",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".auth-whisper",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".character-record-head",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".codex-entry-modal > img",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".direct-layout",
+      "files": [
+        "styles.css",
+        "backend.css"
+      ]
+    },
+    {
+      "selector": ".direct-list",
+      "files": [
+        "styles.css",
+        "backend.css"
+      ]
+    },
+    {
+      "selector": ".draft-status",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".first-awakening-guide",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".gacha-sanctum",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".icon-button",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".message",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".message-actions",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".modal-card",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".music-control",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".onboarding-visual",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".oracle-season-console",
+      "files": [
+        "overrides.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".panel",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".pass-track",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".profile-showcase-grid",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".season-pass-board",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".tab",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".tower-controls",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".tower-hud",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": ".tower-session",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": ".tower-session-head",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "} @media (max-width: 720px)",
+      "files": [
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "} @media (max-width: 760px)",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "} @media (prefers-reduced-motion: reduce)",
+      "files": [
+        "journey.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "@media (max-width: 760px)",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.16) 0%",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.2); border-radius: 10px; background: linear-gradient(90deg",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.28) 34%",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.46); } .auth-card::before",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.72) 0%",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.76) 76%",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.92) 100%)",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "0.98)",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "1.45fr) minmax(340px",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "10",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "105",
+      "files": [
+        "styles.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "111",
+      "files": [
+        "styles.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "12",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "142",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "15",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "16",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "162",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "185",
+      "files": [
+        "styles.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "19",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "190",
+      "files": [
+        "overrides.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "201",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "22",
+      "files": [
+        "styles.css",
+        "journey.css"
+      ]
+    },
+    {
+      "selector": "23",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
+      "selector": "430px); background: #090a0c; } .auth-art",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "5",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "5vw",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "6",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "6vw",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    }
+  ],
+  "policy": "Operation 4 keeps legacy selectors for compatibility and centralizes new Codex, minigame, diagnostic and accessibility rules in polish.css."
+}

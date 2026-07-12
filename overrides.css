@@ -14,7 +14,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
+    url("assets/first-awakening-portal.webp") center/cover no-repeat;
 }
 
 .auth-portal-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(9, 10, 12, 0.62)); pointer-events: none; }
@@ -515,7 +515,7 @@
   background:
     linear-gradient(90deg, rgba(7,8,10,.08), rgba(7,8,10,.42) 48%, rgba(7,8,10,.9)),
     linear-gradient(0deg, rgba(5,6,8,.82), transparent 52%),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
+    url("assets/first-awakening-portal.webp") center/cover no-repeat;
 }
 
 .first-awakening-guide {
@@ -529,7 +529,7 @@
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(12,12,14,.96), rgba(14,14,16,.7)),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") 50% 43%/cover no-repeat;
+    url("assets/first-awakening-portal.webp") 50% 43%/cover no-repeat;
   box-shadow: inset 0 0 55px rgba(201,160,68,.06), 0 16px 32px rgba(0,0,0,.24);
 }
 .first-awakening-guide h2 { margin: 3px 0 6px; font-size: clamp(24px,3vw,38px); }
@@ -542,7 +542,7 @@
 .affinity-contract-strip b { color: #efe1bc; font-size: 13px; }
 
 .onboarding-ritual { display: grid; grid-template-columns: minmax(210px,.72fr) minmax(0,1.28fr); min-height: 520px; overflow: hidden; border: 1px solid rgba(229,196,111,.36); border-radius: 8px; background: #0b0c0f; }
-.onboarding-visual { position: relative; min-height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 28px; overflow: hidden; background: linear-gradient(180deg, rgba(8,9,12,.2), rgba(8,9,12,.92)), url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1280,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") 43% center/cover no-repeat; }
+.onboarding-visual { position: relative; min-height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 28px; overflow: hidden; background: linear-gradient(180deg, rgba(8,9,12,.2), rgba(8,9,12,.92)), url("assets/first-awakening-portal.webp") 43% center/cover no-repeat; }
 .onboarding-visual::after { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(237,204,123,.22); pointer-events: none; }
 .onboarding-visual > span { position: relative; z-index: 1; font: 900 clamp(70px,11vw,140px)/1 var(--font-title); color: rgba(237,207,136,.16); }
 .onboarding-visual > div { position: relative; z-index: 1; display: grid; gap: 4px; }
@@ -559,7 +559,7 @@
 .onboarding-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: auto; }
 
 .character-forge { align-items: start; }
-.character-record-head { overflow: hidden; background: linear-gradient(110deg, rgba(25,22,20,.98), rgba(15,16,19,.9)), url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1280,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") right 35%/55% auto no-repeat; }
+.character-record-head { overflow: hidden; background: linear-gradient(110deg, rgba(25,22,20,.98), rgba(15,16,19,.9)), url("assets/first-awakening-portal.webp") right 35%/55% auto no-repeat; }
 .character-record-head .panel-heading { align-items: end; }
 .character-record-head .panel-heading p { max-width: 68ch; }
 .character-save-stack { display: grid; justify-items: end; gap: 10px; }
@@ -578,7 +578,7 @@
 .attribute-editor-grid input { font: 700 20px var(--font-title); text-align: center; }
 .narrative-fields textarea { min-height: 88px; resize: vertical; }
 
-.gacha-sanctum { position: relative; min-height: 410px; display: grid; grid-template-columns: minmax(300px,1.15fr) minmax(280px,.9fr) minmax(220px,.72fr); gap: 24px; align-items: center; overflow: hidden; background: linear-gradient(90deg,rgba(8,8,11,.98),rgba(14,11,18,.84)),url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1600,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat; }
+.gacha-sanctum { position: relative; min-height: 410px; display: grid; grid-template-columns: minmax(300px,1.15fr) minmax(280px,.9fr) minmax(220px,.72fr); gap: 24px; align-items: center; overflow: hidden; background: linear-gradient(90deg,rgba(8,8,11,.98),rgba(14,11,18,.84)),url("assets/first-awakening-portal.webp") center/cover no-repeat; }
 .gacha-sanctum::before { content: ""; position: absolute; inset: 14px; border: 1px solid rgba(229,195,111,.18); pointer-events: none; }
 .gacha-sanctum > * { position: relative; z-index: 1; min-width: 0; }
 .gacha-banner-copy h2 { max-width: 13ch; margin: 7px 0 10px; font-size: clamp(34px,4vw,58px); line-height: 1; }
@@ -628,7 +628,7 @@
 .cosmetic-card button { width: 100%; margin-top: auto; }
 
 .admin-settings-view { align-items: start; }
-.oracle-season-console { min-height: 170px; display: grid; grid-template-columns: minmax(0,1fr) minmax(360px,.8fr); gap: 24px; align-items: center; overflow: hidden; background: linear-gradient(105deg,rgba(19,17,17,.98),rgba(22,17,26,.82)),url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1280,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") right 38%/55% auto no-repeat; }
+.oracle-season-console { min-height: 170px; display: grid; grid-template-columns: minmax(0,1fr) minmax(360px,.8fr); gap: 24px; align-items: center; overflow: hidden; background: linear-gradient(105deg,rgba(19,17,17,.98),rgba(22,17,26,.82)),url("assets/first-awakening-portal.webp") right 38%/55% auto no-repeat; }
 .oracle-season-console h2 { margin: 4px 0 7px; font-size: clamp(28px,3.2vw,44px); }
 .settings-control-panel,.settings-category-panel { align-self: start; }
 .settings-category-panel .list { max-height: 720px; overflow-y: auto; padding-right: 5px; }
@@ -643,12 +643,12 @@ body.season-theme-blood::before,
 body.season-theme-frost::before,
 body.season-theme-ember::before,
 body.season-theme-forest::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-size: cover; background-position: center; opacity: .13; }
-body.season-theme-awakening::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png"); }
-body.season-theme-void::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783719065/millennium/maps/vlxlggz8ud2lvg1js83k.png"); filter: hue-rotate(28deg) saturate(.7); }
-body.season-theme-blood::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783719061/millennium/maps/zefcknkprt8h7uhzzmkd.png"); filter: sepia(.5) hue-rotate(310deg) saturate(1.3); }
-body.season-theme-frost::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708461/millennium/drgbcvntcsiizl1jttkm.png"); filter: hue-rotate(145deg) saturate(.45) brightness(.8); }
-body.season-theme-ember::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783719057/millennium/maps/un0qeu7czwnglelaowc9.png"); filter: sepia(.35) saturate(1.25); }
-body.season-theme-forest::before { background-image: url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708457/millennium/i0msz6obtytilj8hdoc1.png"); filter: hue-rotate(55deg) saturate(.6); }
+body.season-theme-awakening::before { background-image: url("assets/first-awakening-portal.webp"); }
+body.season-theme-void::before { background-image: url("assets/maps/reino-do-pecado-partido.webp"); filter: hue-rotate(28deg) saturate(.7); }
+body.season-theme-blood::before { background-image: url("assets/maps/sociedade-das-laminas.webp"); filter: sepia(.5) hue-rotate(310deg) saturate(1.3); }
+body.season-theme-frost::before { background-image: url("assets/maps/aldeia-das-folhas-douradas.webp"); filter: hue-rotate(145deg) saturate(.45) brightness(.8); }
+body.season-theme-ember::before { background-image: url("assets/maps/arena-das-sete-esferas.webp"); filter: sepia(.35) saturate(1.25); }
+body.season-theme-forest::before { background-image: url("assets/maps/cruzamento-das-cortinas.webp"); filter: hue-rotate(55deg) saturate(.6); }
 body.season-theme-void .panel { border-top-color: rgba(160,133,219,.35); }
 body.season-theme-blood .panel { border-left-color: rgba(167,65,72,.36); }
 body.season-theme-frost .panel { box-shadow: inset 0 1px rgba(189,222,228,.08); }
@@ -800,7 +800,7 @@ body.season-theme-forest .panel { border-right-color: rgba(91,146,100,.3); }
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(7, 8, 10, .97) 0 52%, rgba(7, 8, 10, .68)),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,c_limit,w_1800/v1783565755/aventura_epica_dark_fantasy_cinematografico_atmosfera_tensa_e_sombria_portal_branco_gigante_ao_fundo_emitindo_luz_vermelha_jovem_guerreiro_visto_de_costas_cabelo_preto_baguncado_capa_vermelha_esvoacante_armadura_escura_espada_e_escudo_nas_costas_em_pe_sobre_precipicio_irregu_crfsna.jpg") center/cover;
+    url("assets/first-awakening-portal.webp") center/cover;
   box-shadow: inset 0 0 90px rgba(0, 0, 0, .72);
 }
 

@@ -185,3 +185,221 @@ test("admin sensitive mutation requires an immutable audit in the same batch", a
   const snapshot = await getDoc(doc(db, "characters", "player-a"));
   assert.equal(snapshot.data().gold, 500);
 });
+
+
+test("conversation summary and immutable message are created atomically", async () => {
+  const playerDb = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  const intruderDb = environment.authenticatedContext("intruder", { email: "x@example.invalid" }).firestore();
+  const conversationId = "player-a__player-b";
+  const clientId = "client-conversation-001";
+  const conversationRef = doc(playerDb, "conversations", conversationId);
+  const messageRef = doc(playerDb, "conversations", conversationId, "messages", clientId);
+  const batch = writeBatch(playerDb);
+  batch.set(conversationRef, {
+    participantIds: ["player-a", "player-b"],
+    participantNames: { "player-a": "A", "player-b": "B" },
+    lastMessage: "Mensagem segura",
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: "player-a",
+    lastClientId: clientId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(messageRef, {
+    senderId: "player-a",
+    senderName: "A",
+    targetId: "player-b",
+    targetName: "B",
+    participants: ["player-a", "player-b"],
+    text: "Mensagem segura",
+    type: "private",
+    clientId,
+    conversationId,
+    createdAt: serverTimestamp(),
+  });
+  await assertSucceeds(batch.commit());
+  await assertFails(updateDoc(messageRef, { text: "reescrita" }));
+  await assertFails(getDoc(doc(intruderDb, "conversations", conversationId)));
+
+  const forged = writeBatch(playerDb);
+  forged.update(conversationRef, {
+    lastMessage: "Destino forjado",
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: "player-a",
+    lastClientId: "client-forged",
+    updatedAt: serverTimestamp(),
+  });
+  forged.set(doc(playerDb, "conversations", conversationId, "messages", "client-forged"), {
+    senderId: "player-a",
+    senderName: "A",
+    targetId: "intruder",
+    targetName: "X",
+    participants: ["intruder", "player-a"],
+    text: "Destino forjado",
+    type: "private",
+    clientId: "client-forged",
+    conversationId,
+    createdAt: serverTimestamp(),
+  });
+  await assertFails(forged.commit());
+});
+
+test("creation requests allow controlled resubmission but not self approval", async () => {
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  const baseRequest = {
+    uid: "player-a",
+    playerName: "A",
+    characterName: "Ariadne",
+    type: "power",
+    status: "pendente",
+    title: "Lança Solar",
+    description: "Projétil de luz.",
+    concept: "Condensar luz",
+    function: "Ataque",
+    manifestation: "Lança",
+    range: "20 metros",
+    duration: "Instantânea",
+    cost: "Cansaço",
+    limitations: "Uma vez por cena",
+    countermeasures: "Cobertura",
+    risks: "Cegueira",
+    affinityId: "solar",
+    example: "Disparo frontal",
+    basePowerId: "",
+    revision: 1,
+    previousRequestId: "",
+    xp: 0,
+    createdAt: serverTimestamp(),
+  };
+  await assertSucceeds(setDoc(doc(db, "progressRequests", "power-new"), baseRequest));
+  await assertFails(updateDoc(doc(db, "progressRequests", "power-new"), { status: "aprovado" }));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "progressRequests", "power-nerf"), {
+      ...baseRequest,
+      status: "nerf solicitado",
+      createdAt: new Date(),
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db, "progressRequests", "power-nerf"), {
+    status: "pendente",
+    description: "Projétil ajustado.",
+    revision: 2,
+    previousRequestId: "power-nerf",
+    resubmittedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "progressRequests", "power-bad-revision"), {
+      ...baseRequest,
+      status: "nerf solicitado",
+      createdAt: new Date(),
+    });
+  });
+  await assertFails(updateDoc(doc(db, "progressRequests", "power-bad-revision"), {
+    status: "pendente",
+    revision: 99,
+    previousRequestId: "power-bad-revision",
+    resubmittedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test("market and guild requests preserve current application fields with bounded rewards", async () => {
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertSucceeds(setDoc(doc(db, "progressRequests", "market-001"), {
+    uid: "player-a",
+    playerName: "A",
+    characterName: "Ariadne",
+    type: "market",
+    status: "pendente",
+    marketId: "lamina-celeste",
+    title: "Mercado - Lâmina Celeste",
+    description: "Pedido de item.",
+    rarity: "Raro",
+    reward: "Lâmina Celeste",
+    xp: 0,
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(db, "progressRequests", "market-xp-forged"), {
+    uid: "player-a",
+    playerName: "A",
+    characterName: "Ariadne",
+    type: "market",
+    status: "pendente",
+    marketId: "lamina-celeste",
+    title: "Mercado forjado",
+    description: "Tentativa de XP.",
+    xp: 999,
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(db, "progressRequests", "guild-overflow"), {
+    uid: "player-a",
+    playerName: "A",
+    characterName: "Ariadne",
+    type: "guildMission",
+    status: "pendente",
+    guildId: "guild-a",
+    guildName: "Guilda A",
+    partyIds: ["player-a", "player-b", "p3", "p4", "p5"],
+    title: "Missão excedente",
+    description: "Party acima do limite.",
+    rarity: "Raro",
+    reward: "Registro",
+    xp: 100,
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test("private public-profile projection is visible only to owner and admin", async () => {
+  const ownerDb = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  const otherDb = environment.authenticatedContext("player-b", { email: "b@example.invalid" }).firestore();
+  const adminDb = environment.authenticatedContext("oracle", { email: "oracle@example.invalid" }).firestore();
+  await assertSucceeds(setDoc(doc(ownerDb, "publicProfiles", "player-a"), {
+    ownerId: "player-a",
+    name: "Ariadne",
+    player: "A",
+    privacy: "private",
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(getDoc(doc(ownerDb, "publicProfiles", "player-a")));
+  await assertFails(getDoc(doc(otherDb, "publicProfiles", "player-a")));
+  await assertSucceeds(getDoc(doc(adminDb, "publicProfiles", "player-a")));
+});
+
+test("report review requires an audit record in the same batch", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "reports", "report-review"), {
+      type: "bug",
+      status: "recebido",
+      reporterId: "player-a",
+      reporterName: "A",
+      targetId: "",
+      title: "Falha",
+      description: "Falha de teste.",
+      createdAt: new Date(),
+    });
+  });
+  const adminDb = environment.authenticatedContext("oracle", { email: "oracle@example.invalid" }).firestore();
+  await assertFails(updateDoc(doc(adminDb, "reports", "report-review"), { status: "resolvido" }));
+  const batch = writeBatch(adminDb);
+  batch.set(doc(adminDb, "auditLogs", "audit-report-0001"), {
+    adminId: "oracle",
+    targetId: "report-review",
+    field: "status",
+    previousValue: "recebido",
+    nextValue: "resolvido",
+    reason: "Revisão administrativa do report.",
+    createdAt: serverTimestamp(),
+  });
+  batch.update(doc(adminDb, "reports", "report-review"), {
+    status: "resolvido",
+    reviewedBy: "oracle",
+    reviewedAt: serverTimestamp(),
+    adminNote: "Resolvido em teste.",
+    lastAuditId: "audit-report-0001",
+    updatedAt: serverTimestamp(),
+  });
+  await assertSucceeds(batch.commit());
+});

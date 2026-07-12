@@ -428,7 +428,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
+    url("assets/first-awakening-portal.webp") center/cover no-repeat;
 }
 .auth-portal-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(9, 10, 12, 0.62)); pointer-events: none; }
 .auth-brand, .auth-copy, .auth-whisper { position: relative; z-index: 2; }
@@ -471,7 +471,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
+    url("assets/first-awakening-portal.webp") center/cover no-repeat;
 }
 
 .auth-portal-shade {
@@ -533,7 +533,7 @@
   background:
     linear-gradient(90deg, rgba(8, 9, 11, 0.16) 0%, rgba(8, 9, 11, 0.28) 34%, rgba(8, 9, 11, 0.76) 76%, rgba(8, 9, 11, 0.92) 100%),
     linear-gradient(0deg, rgba(4, 5, 7, 0.72) 0%, transparent 48%),
-    url("https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1920,c_limit/v1783708409/millennium/millennium-first-awakening-portal.png") center/cover no-repeat;
+    url("assets/first-awakening-portal.webp") center/cover no-repeat;
 }
 
 .auth-portal-shade {
@@ -4943,5 +4943,102 @@ body.season-theme-void::after {
   .pass-tier {
     flex: 0 0 82vw;
     scroll-snap-align: start;
+  }
+}
+
+/* Operation 1: stability diagnostics and partial-search containers. */
+.diagnostic-inline,
+.attribute-diagnostic {
+  border: 1px solid rgba(211, 170, 91, 0.32);
+  background: linear-gradient(135deg, rgba(64, 42, 24, 0.72), rgba(20, 22, 27, 0.9));
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.diagnostic-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+
+.diagnostic-inline strong,
+.attribute-diagnostic h3 {
+  color: #f1d38a;
+}
+
+.stat-composition.is-quarantined {
+  border-color: rgba(221, 111, 82, 0.58);
+}
+
+.stat-composition small em {
+  display: block;
+  margin-top: 2px;
+  color: #e6a18d;
+  font-style: normal;
+}
+
+.attribute-diagnostic.is-ok {
+  border-color: rgba(99, 178, 132, 0.4);
+}
+
+.diagnostic-table-wrap {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.diagnostic-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.diagnostic-table th,
+.diagnostic-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.diagnostic-issue-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnostic-issue-list li {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.diagnostic-issue-list .severity-critical,
+.diagnostic-issue-list .severity-high {
+  border-left: 3px solid #d76f55;
+}
+
+.diagnostic-issue-list .severity-info {
+  border-left: 3px solid #7397c7;
+}
+
+.market-search-results {
+  display: contents;
+}
+
+@media (max-width: 760px) {
+  .diagnostic-issue-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-inline {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

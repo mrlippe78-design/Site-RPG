@@ -1,0 +1,235 @@
+/* Millennium 3.1 — Operation 4: final component and accessibility layer. */
+:root {
+  --op4-touch: 44px;
+  --op4-copy: clamp(1rem, 0.96rem + 0.15vw, 1.08rem);
+  --op4-muted: rgba(238, 226, 199, 0.72);
+  --op4-line: rgba(217, 184, 99, 0.2);
+  --op4-focus: #f7d98c;
+  --op4-danger: #e98282;
+  --op4-success: #8fd2a7;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 10000;
+  left: 12px;
+  top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--op4-focus);
+  border-radius: 8px;
+  background: #0a0b0d;
+  color: #fff2c9;
+  transform: translateY(-160%);
+  transition: transform 0.16s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--op4-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(247, 217, 140, 0.16);
+}
+
+:where(button, .icon-button, .tab, .difficulty-chip, .link-button) {
+  min-height: var(--op4-touch);
+}
+
+input, select, textarea { font-size: max(16px, 1rem); }
+
+.auth-art,
+body.season-theme-awakening::before,
+.first-awakening-guide,
+.onboarding-visual,
+.character-record-head,
+.gacha-sanctum,
+.oracle-season-console {
+  --local-awakening-art: url("assets/first-awakening-portal.webp");
+}
+.auth-art { background-image: linear-gradient(180deg, rgba(5, 6, 8, 0.04), rgba(5, 6, 8, 0.84)), var(--local-awakening-art); }
+
+.modal-card { outline: none; }
+.modal:not([hidden]) { overscroll-behavior: contain; }
+
+.visually-labeled {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.visually-labeled > span {
+  color: var(--op4-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.codex-toolbar-panel { position: sticky; top: 0; z-index: 4; }
+.codex-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  padding-block: 6px 10px;
+}
+.codex-tabs .tab { flex: 0 0 auto; scroll-snap-align: center; }
+.codex-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+  gap: 16px;
+}
+.codex-card-summary {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--op4-line);
+  border-radius: 14px;
+  background: linear-gradient(130deg, rgba(25, 23, 23, 0.98), rgba(13, 15, 18, 0.96));
+}
+.codex-card-media { min-height: 100%; background: #0b0d10; }
+.codex-card-media img {
+  width: 100%;
+  height: 100%;
+  min-height: 168px;
+  object-fit: cover;
+  display: block;
+}
+.codex-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+}
+.codex-card-body h3 {
+  margin: 0;
+  font-size: clamp(1.28rem, 1.12rem + 0.45vw, 1.72rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+.codex-card-body > p {
+  margin: 0;
+  color: var(--op4-muted);
+  font-size: var(--op4-copy);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.codex-card-meta,
+.codex-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.codex-card-meta span,
+.codex-entry-meta span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid rgba(217, 184, 99, 0.16);
+  border-radius: 999px;
+  background: rgba(217, 184, 99, 0.06);
+  color: rgba(246, 235, 207, 0.88);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+.codex-card-meta small,
+.codex-entry-meta small { color: rgba(238, 226, 199, 0.52); }
+.codex-open-button { margin-top: auto; justify-self: start; }
+.codex-entry-modal > img {
+  width: 100%;
+  max-height: min(48vh, 520px);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.image-fallback-applied { filter: saturate(0.72) contrast(1.04); }
+
+.aim-target { min-width: var(--op4-touch); min-height: var(--op4-touch); }
+.aim-hud, .tower-hud { font-variant-numeric: tabular-nums; }
+.tower-canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;
+  border-radius: 12px;
+}
+.tower-controls { flex-wrap: wrap; }
+.tower-controls > button { flex: 1 1 150px; }
+.tower-deck-pet[aria-pressed="true"] { border-color: var(--op4-focus); }
+
+.diagnostic-console .tag.success { border-color: rgba(143, 210, 167, 0.4); color: var(--op4-success); }
+.diagnostic-console .tag.danger { border-color: rgba(233, 130, 130, 0.4); color: var(--op4-danger); }
+.diagnostic-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-block: 14px;
+}
+.diagnostic-history { display: grid; gap: 8px; margin-top: 12px; }
+.diagnostic-history > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) auto;
+  gap: 4px 12px;
+  padding: 10px;
+  border: 1px solid var(--op4-line);
+  border-radius: 9px;
+}
+.diagnostic-history small { grid-column: 1 / -1; color: var(--op4-muted); }
+
+.music-control {
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+  right: max(12px, env(safe-area-inset-right));
+}
+
+@media (max-width: 720px) {
+  .codex-toolbar-panel { position: static; }
+  .codex-controls { grid-template-columns: 1fr; }
+  .codex-card-summary { grid-template-columns: 96px minmax(0, 1fr); }
+  .codex-card-media img { min-height: 160px; }
+  .codex-card-body { padding: 12px; }
+  .codex-card-body h3 { font-size: clamp(1.24rem, 7vw, 1.6rem); }
+  .codex-card-meta span:nth-child(n+5) { display: none; }
+  .modal-card { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px); }
+  .music-control { bottom: calc(env(safe-area-inset-bottom) + 78px); }
+}
+
+@media (max-width: 390px) {
+  .codex-card-summary { grid-template-columns: 84px minmax(0, 1fr); }
+  .codex-card-media img { min-height: 154px; }
+  .codex-card-body > p { -webkit-line-clamp: 4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+  .auth-runes, .gacha-reveal-sky, .affinity-reveal-runes, .aim-target { animation: none !important; }
+}
+
+@media (prefers-contrast: more) {
+  :root { --op4-muted: rgba(255, 248, 228, 0.9); --op4-line: rgba(247, 217, 140, 0.55); }
+  .codex-card-summary, .panel { border-color: var(--op4-line); }
+}

@@ -1,0 +1,122 @@
+/* Millennium 3.1 · Operation 2: character journey, catalogs and manifestation */
+
+.journey-home-progress,
+.manifestation-progress {
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(229,196,111,.18);
+  background: rgba(0,0,0,.34);
+}
+
+.journey-home-progress { margin-top: 16px; max-width: 560px; }
+.journey-home-progress i,
+.manifestation-progress i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg,#7b5829,#efce75);
+}
+
+.today-dashboard {
+  padding: clamp(20px,3vw,34px);
+  border: 1px solid rgba(225,190,105,.28);
+  background: linear-gradient(140deg,rgba(24,22,20,.98),rgba(10,11,14,.96));
+  box-shadow: 0 22px 54px rgba(0,0,0,.22);
+}
+.today-dashboard > header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:18px; }
+.today-dashboard h2 { margin:4px 0 0; }
+.today-dashboard-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.today-dashboard-grid section { min-height:148px; padding:17px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.025); }
+.today-dashboard-grid section > span { display:block; margin-bottom:9px; color:#b8a67d; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+.today-dashboard-grid strong { display:block; color:#f2e5c8; font-size:18px; }
+.today-dashboard-grid p { margin:7px 0 0; color:rgba(239,228,203,.68); }
+.today-primary-action { border-color:rgba(230,191,91,.32)!important; background:linear-gradient(145deg,rgba(147,103,40,.12),rgba(255,255,255,.02))!important; }
+.today-primary-action .primary-button { margin-top:14px; }
+.today-shortcuts { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.today-shortcuts button { min-height:42px; padding:0 15px; border:1px solid rgba(223,188,99,.2); background:rgba(255,255,255,.025); color:#e9d8b3; cursor:pointer; }
+.today-shortcuts button:hover,.today-shortcuts button:focus-visible { border-color:#d8b45d; background:rgba(216,180,93,.1); }
+
+.manifestation-panel {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) minmax(180px,.34fr);
+  gap:22px;
+  align-items:center;
+  padding:22px;
+  border:1px solid rgba(223,185,91,.3);
+  background:radial-gradient(circle at 8% 50%,rgba(219,174,71,.12),transparent 30%),linear-gradient(120deg,#15130f,#0b0d11);
+}
+.manifestation-panel.compact { grid-template-columns:auto minmax(0,1fr); }
+.manifestation-seal { width:82px; aspect-ratio:1; display:grid; place-items:center; border:1px solid rgba(235,199,111,.4); border-radius:50%; box-shadow:inset 0 0 0 8px rgba(216,180,93,.04); }
+.manifestation-seal span { font:700 38px/1 Cinzel,serif; color:#e8c971; }
+.manifestation-copy h3 { margin:2px 0 6px; font-size:clamp(24px,3vw,34px); }
+.manifestation-copy p { margin:0 0 14px; color:rgba(239,228,204,.7); }
+.manifestation-meta { display:flex; justify-content:space-between; gap:14px; margin-top:7px; color:#aa9b7d; font-size:12px; }
+.manifestation-meta strong { color:#ead39a; }
+.potential-brief { display:grid; gap:5px; padding-left:20px; border-left:1px solid rgba(225,188,96,.2); }
+.potential-brief span,.potential-brief small { color:#9e927b; }
+.potential-brief strong { color:#f2dfb5; font-size:22px; }
+
+.profile-manifestation-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr); gap:14px; }
+.potential-profile { padding:22px; border:1px solid rgba(223,185,91,.24); background:rgba(14,14,16,.88); }
+.potential-profile > p,.potential-profile > small { color:rgba(236,225,199,.66); }
+.potential-bars { display:grid; gap:9px; margin:18px 0; }
+.potential-bars > div { display:grid; grid-template-columns:95px minmax(0,1fr) 34px; gap:9px; align-items:center; }
+.potential-bars span { font-size:12px; color:#b6a784; }
+.potential-bars > div > div { height:6px; background:rgba(255,255,255,.06); }
+.potential-bars i { display:block; height:100%; background:linear-gradient(90deg,#735329,#dfbd66); }
+.potential-bars strong { text-align:right; color:#e6d3a7; }
+
+.catalog-hero { display:flex; justify-content:space-between; gap:24px; align-items:center; padding:clamp(24px,4vw,44px); border:1px solid rgba(224,187,96,.3); background:linear-gradient(120deg,rgba(28,24,19,.98),rgba(10,12,16,.95)); }
+.catalog-hero h2 { margin:5px 0 9px; font-size:clamp(28px,4vw,44px); }
+.catalog-hero p { max-width:68ch; margin:0; color:rgba(236,225,200,.7); }
+.catalog-toolbar { display:grid; grid-template-columns:minmax(240px,1fr) minmax(180px,.35fr) auto; gap:14px; align-items:end; }
+.catalog-toolbar label { margin:0; }
+.journey-catalog-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.journey-catalog-card { display:grid; grid-template-columns:90px minmax(0,1fr); gap:15px; align-items:start; padding:17px; border:1px solid rgba(255,255,255,.08); background:rgba(17,17,20,.86); }
+.journey-catalog-card > button { grid-column:1/-1; }
+.journey-catalog-thumb { width:90px; aspect-ratio:1; overflow:hidden; border:1px solid rgba(223,185,91,.24); background:radial-gradient(circle,rgba(216,180,93,.12),rgba(0,0,0,.56)); }
+.journey-catalog-thumb img { width:100%; height:100%; object-fit:cover; }
+.journey-catalog-thumb span { width:100%; height:100%; display:grid; place-items:center; font:700 38px/1 Cinzel,serif; color:#d6b45f; }
+.journey-catalog-card small { color:#a99b7c; text-transform:capitalize; }
+.journey-catalog-card h3 { margin:3px 0 7px; }
+.journey-catalog-card p { margin:0; color:rgba(235,224,200,.67); }
+.catalog-detail-modal { display:grid; grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr); gap:25px; }
+.catalog-detail-modal > img,.catalog-detail-fallback { width:100%; min-height:340px; object-fit:cover; border:1px solid rgba(223,185,91,.28); }
+.catalog-detail-fallback { display:grid; place-items:center; font:700 90px/1 Cinzel,serif; color:rgba(226,190,96,.6); background:radial-gradient(circle,rgba(216,180,93,.13),rgba(0,0,0,.72)); }
+.catalog-detail-modal dl { display:grid; gap:8px; margin:18px 0; }
+.catalog-detail-modal dl div { display:grid; grid-template-columns:150px minmax(0,1fr); gap:12px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+.catalog-detail-modal dt { color:#b8a77f; }
+.catalog-detail-modal dd { margin:0; color:#ede0c2; }
+
+.creations-introduction .panel { min-height:190px; }
+.origin-completion-panel { border-color:rgba(100,174,193,.26); }
+.origin-completion-form { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.origin-completion-form details,.origin-completion-form > button { grid-column:1/-1; }
+.origin-completion-form details { padding:13px; border:1px solid rgba(255,255,255,.08); }
+.origin-completion-form details[open] { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+@media (max-width: 1100px) {
+  .today-dashboard-grid,.journey-catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .profile-manifestation-grid { grid-template-columns:1fr; }
+  .origin-completion-form { grid-template-columns:1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .today-dashboard > header,.catalog-hero { display:grid; }
+  .today-dashboard-grid,.journey-catalog-grid,.catalog-toolbar,.profile-manifestation-grid,.origin-completion-form { grid-template-columns:1fr; }
+  .today-dashboard-grid section { min-height:0; }
+  .manifestation-panel,.manifestation-panel.compact { grid-template-columns:auto minmax(0,1fr); gap:14px; padding:17px; }
+  .manifestation-seal { width:58px; }
+  .manifestation-seal span { font-size:28px; }
+  .potential-brief { grid-column:1/-1; padding:14px 0 0; border-left:0; border-top:1px solid rgba(225,188,96,.2); }
+  .journey-catalog-card { grid-template-columns:72px minmax(0,1fr); }
+  .journey-catalog-thumb { width:72px; }
+  .catalog-detail-modal { grid-template-columns:1fr; }
+  .catalog-detail-modal > img,.catalog-detail-fallback { min-height:180px; max-height:260px; }
+  .catalog-detail-modal dl div { grid-template-columns:1fr; gap:3px; }
+  .origin-completion-form details[open] { grid-template-columns:1fr; }
+  .today-shortcuts { display:grid; grid-template-columns:1fr 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-home-progress i,.manifestation-progress i,.potential-bars i { transition:none!important; }
+}

@@ -36,12 +36,12 @@ service cloud.firestore {
     }
 
     function validAudit(auditId, targetId) {
-      return auditId is string && auditId.size() >= 12
+      return auditId is string
+        && auditId.size() >= 12
         && existsAfter(/databases/$(database)/documents/auditLogs/$(auditId))
-        ? getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.adminId == request.auth.uid
-          && getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.targetId == targetId
-          && shortText(getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.reason, 500)
-        : false;
+        && getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.adminId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.targetId == targetId
+        && shortText(getAfter(/databases/$(database)/documents/auditLogs/$(auditId)).data.reason, 500);
     }
 
     function auditedAdminMutation(targetId) {
@@ -107,7 +107,8 @@ service cloud.firestore {
           "passMissionClaims", "rollHistory", "titles", "tokens", "pets", "inventory",
           "power", "powers", "powerSlots", "techniques", "story", "personality", "avatarUrl",
           "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY", "avatarZoom",
-          "bannerFocusX", "bannerFocusY", "bannerZoom", "createdAt", "updatedAt"
+          "bannerFocusX", "bannerFocusY", "bannerZoom", "migrationVersion", "migrationState",
+          "legacyArraysPreserved", "createdAt", "updatedAt"
         ])
         && data.creationLocked == false
         && validBase(data.base)
@@ -192,7 +193,7 @@ service cloud.firestore {
     function validDirectMessage(data) {
       return data.keys().hasOnly([
           "senderId", "senderName", "targetId", "targetName", "participants",
-          "text", "type", "clientId", "createdAt"
+          "text", "type", "clientId", "conversationId", "createdAt"
         ])
         && data.senderId == request.auth.uid
         && data.targetId is string
@@ -204,6 +205,96 @@ service cloud.firestore {
         && shortText(data.text, 2000)
         && data.text.size() > 0
         && data.createdAt == request.time;
+    }
+
+    function validConversationCreate() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          "participantIds", "participantNames", "lastMessage", "lastMessageAt",
+          "lastSenderId", "lastClientId", "createdAt", "updatedAt"
+        ])
+        && data.participantIds is list
+        && data.participantIds.size() == 2
+        && data.participantIds[0] != data.participantIds[1]
+        && request.auth.uid in data.participantIds
+        && data.lastSenderId == request.auth.uid
+        && shortText(data.lastMessage, 240)
+        && data.lastMessage.size() > 0
+        && shortText(data.lastClientId, 160)
+        && data.createdAt == request.time
+        && data.lastMessageAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function validConversationUpdate() {
+      let data = request.resource.data;
+      return request.auth.uid in resource.data.participantIds
+        && data.participantIds == resource.data.participantIds
+        && data.lastSenderId == request.auth.uid
+        && shortText(data.lastMessage, 240)
+        && data.lastMessage.size() > 0
+        && shortText(data.lastClientId, 160)
+        && data.lastMessageAt == request.time
+        && data.updatedAt == request.time
+        && changedOnly([
+          "participantNames", "lastMessage", "lastMessageAt", "lastSenderId",
+          "lastClientId", "updatedAt"
+        ]);
+    }
+
+    function validProgressRequestCreate() {
+      let data = request.resource.data;
+      return data.uid == request.auth.uid
+        && data.status == "pendente"
+        && data.type in ["mission", "training", "power", "technique", "guildMission", "market"]
+        && data.keys().hasOnly([
+          "uid", "playerName", "characterName", "type", "status", "missionId",
+          "marketId", "guildId", "guildName", "partyIds", "title", "description", "rarity", "reward",
+          "xp", "concept", "function", "manifestation", "range", "duration",
+          "cost", "limitations", "countermeasures", "risks", "affinityId",
+          "example", "basePowerId", "revision", "previousRequestId", "createdAt"
+        ])
+        && shortText(data.get("playerName", ""), 120)
+        && shortText(data.get("characterName", ""), 120)
+        && shortText(data.get("title", ""), 160)
+        && shortText(data.get("description", ""), 5000)
+        && shortText(data.get("marketId", ""), 160)
+        && shortText(data.get("guildId", ""), 160)
+        && shortText(data.get("guildName", ""), 160)
+        && data.get("partyIds", []) is list
+        && data.get("partyIds", []).size() <= 4
+        && data.xp is int
+        && data.xp >= 0
+        && data.xp <= 1000
+        && (!(data.type in ["power", "technique", "market"]) || data.xp == 0)
+        && (data.type != "training" || data.xp <= 30)
+        && data.createdAt == request.time;
+    }
+
+    function validCreationResubmit() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return resource.data.uid == request.auth.uid
+        && resource.data.type in ["power", "technique"]
+        && resource.data.status in ["nerf solicitado", "nerf_solicitado"]
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.status == "pendente"
+        && request.resource.data.revision == resource.data.get("revision", 1) + 1
+        && request.resource.data.resubmittedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && shortText(request.resource.data.get("title", ""), 160)
+        && shortText(request.resource.data.get("description", ""), 5000)
+        && shortText(request.resource.data.get("concept", ""), 1200)
+        && shortText(request.resource.data.get("limitations", ""), 1200)
+        && shortText(request.resource.data.get("countermeasures", ""), 1200)
+        && shortText(request.resource.data.get("risks", ""), 1200)
+        && (request.resource.data.type == "power" || shortText(request.resource.data.get("basePowerId", ""), 160))
+        && changed.hasOnly([
+          "status", "title", "concept", "function", "manifestation", "range",
+          "duration", "cost", "limitations", "countermeasures", "risks",
+          "affinityId", "description", "example", "basePowerId", "revision",
+          "previousRequestId", "resubmittedAt", "updatedAt"
+        ]);
     }
 
     match /admins/{uid} {
@@ -315,14 +406,16 @@ service cloud.firestore {
     }
 
     match /publicProfiles/{uid} {
-      allow read: if signedIn();
+      allow read: if isAdmin() || own(uid) || (signedIn() && resource.data.privacy == "public");
       allow create, update: if own(uid)
         && request.resource.data.ownerId == uid
         && request.resource.data.keys().hasOnly([
           "ownerId", "name", "player", "avatar", "banner", "title", "race",
           "class", "affinity", "culture", "profession", "kingdom", "region",
           "guild", "location", "publicPhrase", "privacy", "updatedAt"
-        ]);
+        ])
+        && request.resource.data.privacy in ["public", "private"]
+        && request.resource.data.updatedAt == request.time;
       allow write: if isAdmin();
     }
 
@@ -389,19 +482,17 @@ service cloud.firestore {
     }
 
     match /conversations/{conversationId} {
-      allow create: if signedIn()
-        && request.resource.data.participantIds is list
-        && request.resource.data.participantIds.size() == 2
-        && request.auth.uid in request.resource.data.participantIds;
+      allow create: if signedIn() && validConversationCreate();
       allow read: if signedIn() && request.auth.uid in resource.data.participantIds;
-      allow update: if signedIn()
-        && request.auth.uid in resource.data.participantIds
-        && changedOnly(["lastMessage", "lastMessageAt", "unreadCounts", "updatedAt"]);
+      allow update: if signedIn() && validConversationUpdate();
       allow delete: if false;
 
       match /messages/{messageId} {
         allow create: if signedIn()
-          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && existsAfter(/databases/$(database)/documents/conversations/$(conversationId))
+          && request.auth.uid in getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && request.resource.data.conversationId == conversationId
+          && request.resource.data.participants == getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
           && validDirectMessage(request.resource.data);
         allow read: if signedIn()
           && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
@@ -411,13 +502,11 @@ service cloud.firestore {
     }
 
     match /progressRequests/{requestId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.status == "pendente"
-        && request.resource.data.type in ["mission", "training", "power", "technique", "guildMission", "market"];
+      allow create: if signedIn() && validProgressRequestCreate();
       allow read: if isAdmin()
         || resource.data.uid == request.auth.uid
         || (resource.data.get("partyIds", []) is list && request.auth.uid in resource.data.get("partyIds", []));
+      allow update: if signedIn() && validCreationResubmit();
       allow update: if auditedAdminMutation(requestId);
       allow delete: if false;
     }

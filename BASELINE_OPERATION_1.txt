@@ -1,0 +1,7 @@
+Repository: mrlippe78-design/Site-RPG
+Remote base branch: main
+Remote base commit observed before Operation 1: 035e68c18f7c5205e42f163248d619b9cdc1539a
+Local work branch: fix/millennium-3.1-stability-op1
+Firebase rules published: no
+Real data migrated: no
+Direct merge to main: no
