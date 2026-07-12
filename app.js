@@ -7,6 +7,10 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.0", commit: "dev", cacheName: "millennium-shell-v3.1.0" };
+const UPDATE_DRAFT_KEY = "millennium:3.1:update-draft";
+const LOCAL_DRAFT_PREFIX = "millennium:3.1:form-draft";
+
 const CLOUDINARY_CONFIG = {
   cloudName: "cakvvuqx",
   uploadPreset: "Millenium",
@@ -33,8 +37,6 @@ const SEASON_ART = {
     "reino-do-pecado-partido": "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719065/millennium/maps/vlxlggz8ud2lvg1js83k.png",
   },
 };
-
-const ADMIN_EMAILS = ["mrlippe78@gmail.com"];
 
 const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
@@ -69,6 +71,7 @@ const GACHA_RARITIES = [
 ];
 const IDLE_LIMIT_MS = 10 * 60 * 1000;
 const JOIN_ANNOUNCE_COOLDOWN_MS = 10 * 60 * 1000;
+const PRESENCE_HEARTBEAT_MS = 4 * 60 * 1000;
 const ORACLE_LABEL = "Oráculo";
 const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
@@ -338,8 +341,8 @@ const DEFAULT_CONTENT = {
   npcs: [
     { id: "arquivista-eren", name: "Arquivista Eren", imageUrl: "", description: "Guardião de contratos, registros de guilda e segredos apagados da Interface.", role: "Informante" },
     { id: "capita-lyra", name: "Capitã Lyra", imageUrl: "", description: "Responsável por missões semanais e recompensas oficiais.", role: "Comandante" },
-    { id: "maeve-da-cinza", name: "Maeve da Cinza", imageUrl: "assets/pets/filha-da-cinza.png", description: "Cacadora da Irmandade das Cinzas. Conhece rotas que nem o Codex consegue registrar.", role: "Guia de Hunt" },
-    { id: "vidraceiro-mudo", name: "O Vidraceiro Mudo", imageUrl: "assets/pets/cronista-de-vidro.png", description: "Estuda fragmentos da Primeira Janela e escreve respostas em vidro quebrado.", role: "Vigia da Primeira Janela" },
+    { id: "maeve-da-cinza", name: "Maeve da Cinza", imageUrl: SEASON_ART.pets["filha-da-cinza"], description: "Cacadora da Irmandade das Cinzas. Conhece rotas que nem o Codex consegue registrar.", role: "Guia de Hunt" },
+    { id: "vidraceiro-mudo", name: "O Vidraceiro Mudo", imageUrl: SEASON_ART.pets["cronista-de-vidro"], description: "Estuda fragmentos da Primeira Janela e escreve respostas em vidro quebrado.", role: "Vigia da Primeira Janela" },
   ],
   worldLore: [
     { id: "primeira-janela", name: "A Primeira Janela", era: "Antes dos reinos", imageUrl: SEASON_ART.login, summary: "A estrutura divina que registrava possibilidades de uma alma.", description: "Os deuses criaram a Primeira Janela para impedir que a morte apagasse histórias ainda capazes de mudar Millennium. Quando eles desapareceram, a Janela se partiu em Interfaces individuais." },
@@ -469,6 +472,10 @@ function applyEdition3Defaults() {
 
 applyEdition3Defaults();
 
+const STATIC_CATALOGS_31 = window.MILLENNIUM_CATALOGS_31 || { cultures: [], professions: [] };
+DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry }));
+DEFAULT_CONTENT.professions = STATIC_CATALOGS_31.professions.map((entry) => ({ ...entry }));
+
 const CONTENT_COLLECTIONS = Object.keys(DEFAULT_CONTENT).filter((key) => key !== "settings" && key !== "marketTrades");
 
 function defaultContentState() {
@@ -480,7 +487,9 @@ const NAVS = {
     { id: "player-home", label: "Início", icon: "⌂" },
     { id: "profile", label: "Perfil", icon: "◈" },
     { id: "character", label: "Personagem", icon: "✎" },
-    { id: "roulette", label: "Roleta", icon: "✦" },
+    { id: "character-life", label: "Dar Vida", icon: "✧" },
+    { id: "creations", label: "Criações", icon: "⌁" },
+    { id: "roulette", label: "Afinidade", icon: "✦" },
     { id: "gacha", label: "Invocação", icon: "◇" },
     { id: "minigames", label: "Minigames", icon: "▣" },
     { id: "inventory", label: "Inventário", icon: "◎" },
@@ -520,6 +529,8 @@ const VIEW_TITLES = {
   "player-home": "Suporte do player",
   profile: "Perfil público",
   character: "Ficha do personagem",
+  "character-life": "Dar Vida",
+  creations: "Poderes e técnicas",
   roulette: "Roleta de afinidade",
   gacha: "Invocação dimensional",
   minigames: "Minigames do Oráculo",
@@ -596,7 +607,9 @@ const state = {
   content: defaultContentState(),
   users: [],
   characters: [],
+  publicProfiles: [],
   character: null,
+  characterLore: null,
   weeklyMissions: [],
   diaryEntries: [],
   globalMessages: [],
@@ -618,6 +631,10 @@ const state = {
   sessionAnnounced: false,
   lastPanicVersion: "",
   characterDraft: null,
+  characterStep: 0,
+  characterIntroSeen: false,
+  characterSaving: false,
+  developmentSpending: false,
   adminUserDraft: null,
   minigameDrafts: {},
   forceChatBottom: "",
@@ -626,12 +643,47 @@ const state = {
   searchUpdateTimer: 0,
   searchUpdateSequence: 0,
   searchComposing: false,
+  textComposing: false,
+  localDraftTimer: 0,
   passClaiming: false,
   onboardingShown: false,
   onboardingStep: 0,
   pendingLiveRender: false,
   unsubs: [],
+  routeUnsubs: [],
+  routeSubscriptionKey: "",
   privateUnsub: null,
+  renderContext: null,
+  diagnostics: {
+    renders: 0,
+    lastRenderMs: 0,
+    lastRoute: "",
+    listenerCount: 0,
+    documentsRead: 0,
+    writes: 0,
+  },
+  serviceWorkerRegistration: null,
+  waitingServiceWorker: null,
+  updateReloadRequested: false,
+  updateDraftRestored: false,
+  updateDraftRouteApplied: false,
+};
+
+const NAV_GROUPS = {
+  player: [
+    { label: "Jornada", ids: ["character", "roulette", "missions", "creations", "character-life", "diary"] },
+    { label: "Mundo", ids: ["player-home", "codex", "help"] },
+    { label: "Comunidade", ids: ["profile", "chat", "guild", "hall"] },
+    { label: "Coleção", ids: ["gacha", "inventory", "grimoire", "pass"] },
+    { label: "Atividades", ids: ["minigames", "market", "ranking"] },
+    { label: "Suporte", ids: ["reports"] },
+  ],
+  admin: [
+    { label: "Oráculo", ids: ["admin-home", "admin-users", "admin-requests", "admin-reports"] },
+    { label: "Mundo e economia", ids: ["admin-content", "admin-rewards", "admin-economy", "admin-mail"] },
+    { label: "Operação", ids: ["admin-ops", "admin-chat", "admin-missions", "admin-settings"] },
+    { label: "Visões", ids: ["pass", "diary", "guild"] },
+  ],
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -666,6 +718,189 @@ function toast(message) {
   el.classList.add("show");
   window.clearTimeout(toast.timer);
   toast.timer = window.setTimeout(() => el.classList.remove("show"), 2800);
+}
+
+function updateBuildBadge() {
+  const badge = $("#buildBadge");
+  if (badge) badge.textContent = `Build ${MILLENNIUM_BUILD.version} · ${MILLENNIUM_BUILD.commit}`;
+}
+
+function serializableFormDraft(form) {
+  const values = {};
+  [...form.elements].forEach((field) => {
+    if (!field.name || field.disabled || ["file", "password", "submit", "button"].includes(field.type)) return;
+    if (["checkbox", "radio"].includes(field.type) && !field.checked) return;
+    values[field.name] = field.value;
+  });
+  return values;
+}
+
+function localDraftKey(formType) {
+  return `${LOCAL_DRAFT_PREFIX}:${state.user?.uid || "anonymous"}:${formType}`;
+}
+
+function setDraftStatus(message = "") {
+  const status = $("#draftStatus");
+  if (status) status.textContent = message;
+}
+
+function saveLocalFormDraft(form) {
+  if (!form?.dataset.form || form.dataset.form === "login") return;
+  let previous = null;
+  try { previous = JSON.parse(localStorage.getItem(localDraftKey(form.dataset.form)) || "null"); } catch { /* no-op */ }
+  const payload = {
+    build: MILLENNIUM_BUILD.version,
+    view: state.view,
+    values: {
+      ...(previous?.values || {}),
+      ...serializableFormDraft(form),
+    },
+    savedAt: new Date().toISOString(),
+  };
+  try {
+    localStorage.setItem(localDraftKey(form.dataset.form), JSON.stringify(payload));
+    form.dataset.dirty = "true";
+    setDraftStatus("Rascunho salvo neste dispositivo");
+  } catch {
+    setDraftStatus("Rascunho local indisponível");
+  }
+}
+
+function queueLocalFormDraft(form) {
+  if (!form?.dataset.form || form.dataset.form === "login" || state.textComposing) return;
+  window.clearTimeout(state.localDraftTimer);
+  state.localDraftTimer = window.setTimeout(() => saveLocalFormDraft(form), 600);
+}
+
+function restoreLocalFormDrafts() {
+  document.querySelectorAll("#viewHost form[data-form], #modalContent form[data-form]").forEach((form) => {
+    if (form.dataset.form === "login" || form.dataset.restoredLocalDraft === "true") return;
+    let payload = null;
+    try { payload = JSON.parse(localStorage.getItem(localDraftKey(form.dataset.form)) || "null"); } catch { /* no-op */ }
+    if (!payload?.values) return;
+    Object.entries(payload.values).forEach(([name, value]) => {
+      const field = form.elements.namedItem(name);
+      if (!field || field.type === "file") return;
+      if (["checkbox", "radio"].includes(field.type)) field.checked = field.value === value;
+      else field.value = value;
+    });
+    form.dataset.dirty = "true";
+    form.dataset.restoredLocalDraft = "true";
+    setDraftStatus("Rascunho restaurado neste dispositivo");
+  });
+}
+
+function clearLocalFormDraft(formType) {
+  try { localStorage.removeItem(localDraftKey(formType)); } catch { /* no-op */ }
+  setDraftStatus("");
+}
+
+function hasDirtyForm() {
+  return Boolean(document.querySelector('#viewHost form[data-dirty="true"], #modalContent form[data-dirty="true"]'));
+}
+
+function persistDirtyForms() {
+  document.querySelectorAll('#viewHost form[data-dirty="true"], #modalContent form[data-dirty="true"]').forEach(saveLocalFormDraft);
+}
+
+function saveUpdateDrafts() {
+  const forms = [...document.querySelectorAll("#viewHost form[data-form], #modalContent form[data-form]")]
+    .filter((form) => form.dataset.form !== "login")
+    .map((form) => ({ type: form.dataset.form, values: serializableFormDraft(form) }));
+  const payload = { build: MILLENNIUM_BUILD.version, uid: state.user?.uid || "", view: state.view, forms, savedAt: new Date().toISOString() };
+  try {
+    localStorage.setItem(UPDATE_DRAFT_KEY, JSON.stringify(payload));
+  } catch {
+    // Updating remains optional when browser storage is unavailable.
+  }
+  return payload;
+}
+
+function pendingUpdateDraft() {
+  try {
+    const payload = JSON.parse(localStorage.getItem(UPDATE_DRAFT_KEY) || "null");
+    if (!payload || (payload.uid && state.user?.uid && payload.uid !== state.user.uid)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function restoreUpdateDrafts() {
+  if (state.updateDraftRestored) return;
+  const payload = pendingUpdateDraft();
+  if (!payload?.forms?.length) {
+    state.updateDraftRestored = true;
+    return;
+  }
+  let restored = false;
+  payload.forms.forEach(({ type, values }) => {
+    const form = document.querySelector(`[data-form="${CSS.escape(type)}"]`);
+    if (!form) return;
+    Object.entries(values || {}).forEach(([name, value]) => {
+      const field = form.elements.namedItem(name);
+      if (!field || field.type === "file") return;
+      if (["checkbox", "radio"].includes(field.type)) field.checked = field.value === value;
+      else field.value = value;
+    });
+    form.dataset.dirty = "true";
+    form.dataset.restoredDraft = "true";
+    restored = true;
+  });
+  if (restored) {
+    state.updateDraftRestored = true;
+    toast("Rascunho restaurado neste dispositivo.");
+  }
+}
+
+function clearUpdateDraft(type = "") {
+  const payload = pendingUpdateDraft();
+  if (!payload) return;
+  if (!type || !payload.forms?.some((entry) => entry.type === type)) {
+    try { localStorage.removeItem(UPDATE_DRAFT_KEY); } catch { /* no-op */ }
+    return;
+  }
+  payload.forms = payload.forms.filter((entry) => entry.type !== type);
+  try {
+    if (payload.forms.length) localStorage.setItem(UPDATE_DRAFT_KEY, JSON.stringify(payload));
+    else localStorage.removeItem(UPDATE_DRAFT_KEY);
+  } catch {
+    // Draft cleanup is best effort.
+  }
+}
+
+function showUpdateNotice(worker) {
+  if (!worker) return;
+  state.waitingServiceWorker = worker;
+  const notice = $("#updateNotice");
+  if (notice) notice.hidden = false;
+}
+
+function applyAvailableUpdate() {
+  if (!state.waitingServiceWorker) return;
+  saveUpdateDrafts();
+  state.updateReloadRequested = true;
+  state.waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
+async function registerMillenniumServiceWorker() {
+  if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
+  try {
+    const registration = await navigator.serviceWorker.register(`service-worker.js?v=${MILLENNIUM_BUILD.version}`);
+    state.serviceWorkerRegistration = registration;
+    if (registration.waiting && navigator.serviceWorker.controller) showUpdateNotice(registration.waiting);
+    registration.addEventListener("updatefound", () => {
+      const worker = registration.installing;
+      worker?.addEventListener("statechange", () => {
+        if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdateNotice(worker);
+      });
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (state.updateReloadRequested) window.location.reload();
+    });
+  } catch (error) {
+    console.warn("Service Worker indisponível:", error);
+  }
 }
 
 function formValues(form) {
@@ -959,8 +1194,11 @@ function defaultCharacter(uid, displayName = "") {
     apparentAge: "",
     realAge: "",
     culture: "",
+    cultureId: "",
     kingdomId: "",
+    regionId: "",
     profession: "",
+    professionId: "",
     objective: "",
     fear: "",
     playerLimits: "",
@@ -968,6 +1206,9 @@ function defaultCharacter(uid, displayName = "") {
     physicalState: "Íntegro",
     essenceState: "Plena",
     creationLocked: false,
+    creationStatus: "draft",
+    technicalCreationComplete: false,
+    narrativeCreationComplete: false,
     bannerUrl: "",
     raceId: "humano",
     classId: "guerreiro",
@@ -981,6 +1222,7 @@ function defaultCharacter(uid, displayName = "") {
     totalRares: 0,
     prestige: 0,
     base: { for: 4, vel: 4, hab: 4, res: 4, pod: 4 },
+    development: { for: 0, vel: 0, hab: 0, res: 0, pod: 0 },
     xp: 0,
     level: 1,
     freePoints: 0,
@@ -1007,7 +1249,7 @@ function defaultCharacter(uid, displayName = "") {
     power: { name: "", description: "" },
     powers: [],
     powerSlots: 1,
-    techniques: [{ name: "", description: "" }],
+    techniques: [],
     story: "",
     personality: "",
     avatarUrl: "",
@@ -1061,16 +1303,8 @@ function addBonuses(...bonuses) {
 }
 
 function getTotals(character = currentCharacter()) {
-  const race = getRace(character.raceId);
-  const klass = getClass(character.classId);
-  const affinity = getAffinity(character.affinityId);
-  const equipmentBonus = addBonuses(...equippedItems(character).map((item) => item.bonus || {}));
-  const gachaBonus = addBonuses(...equippedGachaBonuses(character));
-  const raw = addBonuses(character.base, race.bonus, klass.bonus, affinity?.bonus, equipmentBonus, gachaBonus);
-  const hpMax = Math.max(0, raw.res * 5 + raw.hp);
-  const ppMax = Math.max(0, raw.pod * 5 + raw.pp);
-  const def = Math.ceil(raw.res / 2) + raw.def;
-  return { ...raw, hpMax, ppMax, def };
+  const result = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content);
+  return { ...result.total, ...result.derived, composition: result };
 }
 
 function isRareReward(rarity) {
@@ -1812,10 +2046,7 @@ function showAuth() {
   $("#authNote").textContent = state.firebaseReady
     ? "Modo demo local disponível para testar a interface sem alterar contas reais."
     : "Firebase não carregou nesta sessão. Use o modo demo local para testar a interface.";
-}
-
-function isConfiguredAdminEmail(email) {
-  return ADMIN_EMAILS.includes(String(email || "").trim().toLowerCase());
+  updateBuildBadge();
 }
 
 function firebaseErrorMessage(error) {
@@ -1881,6 +2112,7 @@ function cleanupListeners() {
     }
   });
   state.unsubs = [];
+  clearRouteSubscriptions();
   if (state.privateUnsub) state.privateUnsub();
   state.privateUnsub = null;
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
@@ -1909,7 +2141,7 @@ function startPresence() {
   touchActivity();
   setPresence(true);
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
-  state.presenceTimer = window.setInterval(() => setPresence(true), 45000);
+  state.presenceTimer = window.setInterval(() => setPresence(true), PRESENCE_HEARTBEAT_MS);
   if (state.idleTimer) window.clearInterval(state.idleTimer);
   state.idleTimer = window.setInterval(checkIdleTimeout, 30000);
 }
@@ -1953,7 +2185,6 @@ async function initFirebase() {
 
     state.user = user;
     await ensureUserProfile(user);
-    await seedDefaultsIfNeeded();
     subscribeCore();
   });
 }
@@ -1961,40 +2192,17 @@ async function initFirebase() {
 async function ensureUserProfile(user) {
   const ref = state.db.collection("users").doc(user.uid);
   const snap = await ref.get();
-  const adminByEmail = isConfiguredAdminEmail(user.email);
 
   if (snap.exists) {
-    const profile = { id: user.uid, ...snap.data() };
-    if (adminByEmail && profile.role !== "admin") {
-      try {
-        await ref.set({
-          email: user.email,
-          role: "admin",
-          displayName: profile.displayName || user.email?.split("@")[0] || ORACLE_LABEL,
-          updatedAt: nowValue(),
-        }, { merge: true });
-      } catch (error) {
-        console.warn("Não consegui gravar o papel do Oráculo ainda. Publique firestore.rules.", error);
-      }
-      profile.role = "admin";
-    }
-    state.profile = profile;
+    state.profile = { id: user.uid, ...snap.data() };
     return;
-  }
-
-  let firstUser = false;
-  try {
-    const first = await state.db.collection("users").limit(1).get();
-    firstUser = first.empty;
-  } catch {
-    firstUser = false;
   }
 
   const profile = {
     id: user.uid,
     email: user.email,
     displayName: user.email?.split("@")[0] || "Player",
-    role: adminByEmail || firstUser ? "admin" : "player",
+    role: "player",
     createdAt: nowValue(),
   };
   await ref.set(profile, { merge: true });
@@ -2011,13 +2219,6 @@ async function seedDefaultsIfNeeded() {
 
     const writes = [];
     for (const collection of CONTENT_COLLECTIONS) {
-      if (EDITION_REPLACED_COLLECTIONS.has(collection)) {
-        const allowedIds = new Set(DEFAULT_CONTENT[collection].map((item) => item.id));
-        const current = await state.db.collection(collection).get();
-        current.docs.forEach((doc) => {
-          if (!allowedIds.has(doc.id)) writes.push({ ref: doc.ref, remove: true });
-        });
-      }
       DEFAULT_CONTENT[collection].forEach((item) => {
         writes.push({ ref: state.db.collection(collection).doc(item.id), data: item });
       });
@@ -2025,9 +2226,8 @@ async function seedDefaultsIfNeeded() {
     writes.push({ ref: settingsRef, data: DEFAULT_CONTENT.settings });
     for (let offset = 0; offset < writes.length; offset += 400) {
       const batch = state.db.batch();
-      writes.slice(offset, offset + 400).forEach(({ ref, data, remove }) => {
-        if (remove) batch.delete(ref);
-        else batch.set(ref, data, { merge: true });
+      writes.slice(offset, offset + 400).forEach(({ ref, data }) => {
+        batch.set(ref, data, { merge: true });
       });
       await batch.commit();
     }
@@ -2037,15 +2237,22 @@ async function seedDefaultsIfNeeded() {
 }
 
 function subscribeDoc(path, id, cb) {
-  const unsub = state.db.collection(path).doc(id).onSnapshot((snap) => cb(snap.exists ? { id: snap.id, ...snap.data() } : null));
+  const unsub = state.db.collection(path).doc(id).onSnapshot((snap) => {
+    state.diagnostics.documentsRead += 1;
+    cb(snap.exists ? { id: snap.id, ...snap.data() } : null);
+  }, (error) => console.error(`Listener ${path}/${id}:`, error));
   state.unsubs.push(unsub);
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
 }
 
-function subscribeCollection(path, cb, queryBuilder = null) {
+function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsubs) {
   const base = state.db.collection(path);
   const query = queryBuilder ? queryBuilder(base) : base;
   const unsub = query.onSnapshot(
-    (snap) => cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))),
+    (snap) => {
+      state.diagnostics.documentsRead += snap.size;
+      cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    },
     (error) => {
       console.error(error);
       if (path === "directMessages") {
@@ -2054,7 +2261,160 @@ function subscribeCollection(path, cb, queryBuilder = null) {
       }
     },
   );
-  state.unsubs.push(unsub);
+  bucket.push(unsub);
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
+}
+
+function clearRouteSubscriptions() {
+  state.routeUnsubs.forEach((unsubscribe) => {
+    try { unsubscribe(); } catch { /* no-op */ }
+  });
+  state.routeUnsubs = [];
+  state.routeSubscriptionKey = "";
+  state.diagnostics.listenerCount = state.unsubs.length;
+}
+
+function routeCollection(path, cb, queryBuilder = null) {
+  subscribeCollection(path, cb, queryBuilder, state.routeUnsubs);
+}
+
+function routeDocument(path, id, cb) {
+  const unsub = state.db.collection(path).doc(id).onSnapshot((snapshot) => {
+    state.diagnostics.documentsRead += snapshot.exists ? 1 : 0;
+    cb(snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null);
+  }, (error) => console.error(`Listener ${path}/${id}:`, error));
+  state.routeUnsubs.push(unsub);
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
+}
+
+function subscribeUserDirectory() {
+  routeCollection("users", (users) => {
+    state.users = users;
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  }, (query) => query.limit(100));
+  routeCollection("publicProfiles", (profiles) => {
+    state.publicProfiles = profiles;
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  }, (query) => query.limit(30));
+}
+
+function subscribeOwnRequests() {
+  routeCollection("progressRequests", (requests) => {
+    state.progressRequests = requests;
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
+  }, (query) => state.role === "admin"
+    ? query.orderBy("createdAt", "desc").limit(30)
+    : query.where("uid", "==", state.user.uid).orderBy("createdAt", "desc").limit(20));
+}
+
+function activateRouteSubscriptions(view = state.view) {
+  if (state.demo || !state.db || !state.user) return;
+  const key = `${state.role}:${state.user.uid}:${view}`;
+  if (state.routeSubscriptionKey === key) return;
+  clearRouteSubscriptions();
+  state.routeSubscriptionKey = key;
+
+  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops"].includes(view);
+  if (needsDirectory) subscribeUserDirectory();
+
+  if (["admin-home", "admin-users", "admin-ops"].includes(view) && state.role === "admin") {
+    routeCollection("characters", (characters) => {
+      state.characters = characters;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.limit(80));
+  }
+
+  if (["player-home", "missions", "guild", "admin-home", "admin-missions"].includes(view)) {
+    routeCollection("weeklyMissions", (missions) => {
+      state.weeklyMissions = missions;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.orderBy("createdAt", "desc").limit(20));
+  }
+
+  if (["player-home", "chat", "admin-home", "admin-chat"].includes(view)) {
+    routeCollection("globalMessages", (messages) => {
+      state.globalMessages = messages.reverse();
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.orderBy("createdAt", "desc").limit(view === "player-home" ? 10 : 30));
+  }
+
+  if (["chat", "admin-chat"].includes(view)) {
+    routeCollection("directMessages", (messages) => {
+      state.directMessages = messages.reverse();
+      syncPrivateMessages();
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
+  }
+
+  if (["player-home", "missions", "guild", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
+
+  if (view === "character-life") {
+    routeDocument(`characters/${state.user.uid}/lore`, "main", (lore) => {
+      state.characterLore = lore || {};
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    });
+  }
+
+  if (["profile", "chat", "guild", "admin-mail"].includes(view)) {
+    routeCollection("socialRequests", (requests) => {
+      state.socialRequests = requests;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
+  }
+
+  if (["player-home", "guild", "market", "ranking", "hall", "admin-home", "admin-ops"].includes(view)) {
+    routeCollection("guilds", (guilds) => {
+      state.guilds = guilds;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.limit(30));
+  }
+
+  if (["guild", "admin-chat"].includes(view)) {
+    routeCollection("guildMessages", (messages) => {
+      state.guildMessages = messages.reverse();
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => state.role === "admin"
+      ? query.orderBy("createdAt", "desc").limit(30)
+      : query.where("memberIds", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
+    routeCollection("guildMissions", (missions) => {
+      state.guildMissions = missions.length ? missions : [...DEFAULT_GUILD_MISSIONS];
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.limit(20));
+  }
+
+  if (view === "diary") {
+    routeCollection("campaignDiary", (entries) => {
+      state.diaryEntries = entries;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.orderBy("createdAt", "desc").limit(20));
+  }
+
+  if (["reports", "admin-home", "admin-reports"].includes(view)) {
+    routeCollection("reports", (reports) => {
+      state.reports = reports;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => state.role === "admin"
+      ? query.orderBy("createdAt", "desc").limit(20)
+      : query.where("reporterId", "==", state.user.uid).orderBy("createdAt", "desc").limit(20));
+  }
+
+  if (["market", "admin-ops"].includes(view)) {
+    routeCollection("marketTrades", (trades) => {
+      state.marketTrades = trades;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => state.role === "admin"
+      ? query.orderBy("createdAt", "desc").limit(30)
+      : query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
+  }
+
+  if (view === "admin-content" && state.role === "admin") {
+    CONTENT_COLLECTIONS.forEach((collection) => routeCollection(collection, (items) => {
+      state.content[collection] = items.length ? items : DEFAULT_CONTENT[collection];
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.limit(100)));
+  }
+
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
 }
 
 function hasActiveTextEntry() {
@@ -2065,13 +2425,51 @@ function hasActiveTextEntry() {
   return !["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"].includes(active.type);
 }
 
+function captureRenderContext(options = {}) {
+  const active = document.activeElement;
+  const form = active?.closest?.("form[data-form]");
+  const context = {
+    preserveFocus: options.preserveFocus !== false,
+    preserveScroll: options.preserveScroll !== false,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+    formType: form?.dataset.form || "",
+    fieldName: active?.name || "",
+    fieldId: active?.id || "",
+    selectionStart: typeof active?.selectionStart === "number" ? active.selectionStart : null,
+    selectionEnd: typeof active?.selectionEnd === "number" ? active.selectionEnd : null,
+  };
+  return context;
+}
+
+function restoreRenderContext(context) {
+  if (!context) return;
+  if (context.preserveScroll) window.scrollTo({ left: context.scrollX, top: context.scrollY, behavior: "auto" });
+  if (!context.preserveFocus) return;
+  const formSelector = context.formType ? `form[data-form="${CSS.escape(context.formType)}"]` : "";
+  const root = formSelector ? document.querySelector(formSelector) : document;
+  const field = context.fieldId
+    ? document.getElementById(context.fieldId)
+    : context.fieldName && root?.querySelector?.(`[name="${CSS.escape(context.fieldName)}"]`);
+  if (!field || field.disabled) return;
+  field.focus({ preventScroll: true });
+  if (context.selectionStart !== null && field.setSelectionRange) {
+    field.setSelectionRange(context.selectionStart, context.selectionEnd ?? context.selectionStart);
+  }
+}
+
 function scheduleRender(views = null, options = {}) {
+  if (views && !Array.isArray(views) && typeof views === "object") {
+    options = views;
+    views = options.views || null;
+  }
+  if (options.route && options.route !== state.view) return;
   if (Array.isArray(views) && !views.includes(state.view)) return;
   if (state.activeTowerSession || state.activeAimSession) {
     state.pendingLiveRender = true;
     return;
   }
-  if (!options.critical && hasActiveTextEntry()) {
+  if (!options.critical && (hasActiveTextEntry() || hasDirtyForm())) {
     state.pendingInputRender = true;
     return;
   }
@@ -2081,12 +2479,18 @@ function scheduleRender(views = null, options = {}) {
   }
   if (state.renderFrame) return;
   const critical = Boolean(options.critical);
+  const context = captureRenderContext(options);
+  if (critical && hasActiveTextEntry()) {
+    saveUpdateDrafts();
+    state.updateDraftRestored = false;
+  }
   state.renderFrame = window.requestAnimationFrame(() => {
     state.renderFrame = 0;
-    if (!critical && hasActiveTextEntry()) {
+    if (!critical && (hasActiveTextEntry() || hasDirtyForm())) {
       state.pendingInputRender = true;
       return;
     }
+    state.renderContext = context;
     render();
   });
 }
@@ -2105,37 +2509,35 @@ function profileRenderKey(profile = {}) {
 
 function subscribeCore() {
   subscribeDoc("users", state.user.uid, (profile) => {
-    const previousRole = state.profile?.role || "player";
-    const previousStatus = state.profile?.status || "";
-    const previousTerms = state.profile?.acceptedTermsVersion || "";
+    const previousRole = state.role;
     const previousKey = profileRenderKey(state.profile || {});
     state.profile = profile || state.profile;
     state.role = state.profile?.role === "admin" ? "admin" : "player";
     if (!NAVS[state.role].some((item) => item.id === state.view)) state.view = NAVS[state.role][0].id;
+    if (previousRole !== state.role) {
+      clearRouteSubscriptions();
+      activateRouteSubscriptions(state.view);
+    }
     if (previousKey !== profileRenderKey(state.profile || {})) {
-      const critical = previousRole !== state.role
-        || previousStatus !== (state.profile?.status || "")
-        || previousTerms !== (state.profile?.acceptedTermsVersion || "");
-      scheduleRender(null, { critical });
+      scheduleRender({
+        critical: previousRole !== state.role || ["suspended", "banned"].includes(state.profile?.status),
+        preserveFocus: true,
+        preserveScroll: true,
+      });
     }
   });
 
   subscribeDoc("settings", "system", (settings) => {
     const previousPanic = state.lastPanicVersion;
-    const previousSeasonTheme = state.settings.seasonTheme;
-    const previousMaintenanceMode = Boolean(state.settings.maintenanceMode);
+    const previousTheme = state.settings.seasonTheme;
+    const previousMaintenance = Boolean(state.settings.maintenanceMode);
     state.settings = { ...DEFAULT_CONTENT.settings, ...(settings || {}) };
-    if (state.musicOn && previousSeasonTheme && previousSeasonTheme !== state.settings.seasonTheme) {
+    if (state.musicOn && previousTheme && previousTheme !== state.settings.seasonTheme) {
       stopAmbientMusic();
       window.setTimeout(() => startAmbientMusic().catch(() => {}), 320);
     }
     if (!state.lastPanicVersion) state.lastPanicVersion = state.settings.panicVersion || "";
-    if (
-      previousPanic
-      && state.settings.panicVersion
-      && state.settings.panicVersion !== previousPanic
-      && state.role !== "admin"
-    ) {
+    if (previousPanic && state.settings.panicVersion && state.settings.panicVersion !== previousPanic && state.role !== "admin") {
       toast(`Atualização emergencial iniciada pelo ${ORACLE_LABEL}. Você será desconectado.`);
       setPresence(false);
       cleanupListeners();
@@ -2148,106 +2550,26 @@ function subscribeCore() {
     state.lastPanicVersion = state.settings.panicVersion || "";
     applyThemeClasses();
     maybeResetWeeklyMissions();
-    scheduleRender(null, { critical: previousMaintenanceMode !== Boolean(state.settings.maintenanceMode) });
+    scheduleRender({
+      critical: previousMaintenance !== Boolean(state.settings.maintenanceMode),
+      preserveFocus: true,
+      preserveScroll: true,
+    });
   });
 
   subscribeDoc("characters", state.user.uid, async (character) => {
     if (!character) {
-      await state.db.collection("characters").doc(state.user.uid).set(defaultCharacter(state.user.uid, state.profile?.displayName), { merge: true });
+      await state.db.collection("characters").doc(state.user.uid).set(defaultCharacter(state.user.uid, state.profile?.displayName));
       return;
     }
     state.character = character;
-    scheduleRender();
+    if (state.role !== "admin") state.characters = [character];
+    scheduleRender({ preserveFocus: true, preserveScroll: true });
   });
-
-  CONTENT_COLLECTIONS.forEach((collection) => {
-    subscribeCollection(collection, (items) => {
-      state.content[collection] = items.length ? items : DEFAULT_CONTENT[collection];
-      scheduleRender();
-    });
-  });
-
-  subscribeCollection("users", (users) => {
-    state.users = users;
-    scheduleRender(["player-home", "profile", "chat", "guild", "ranking", "hall", "admin-home", "admin-users", "admin-chat", "admin-ops"]);
-  });
-
-  subscribeCollection("characters", (characters) => {
-    state.characters = characters;
-    scheduleRender(["player-home", "profile", "chat", "guild", "ranking", "hall", "codex", "admin-home", "admin-users", "admin-ops"]);
-  });
-
-  subscribeCollection("weeklyMissions", (missions) => {
-    state.weeklyMissions = missions;
-    scheduleRender(["player-home", "missions", "guild", "admin-home", "admin-missions"]);
-  }, (q) => q.orderBy("createdAt", "desc"));
-
-  subscribeCollection("campaignDiary", (entries) => {
-    state.diaryEntries = entries.reverse();
-    scheduleRender(["diary", "admin-home"]);
-  }, (q) => q.orderBy("createdAt", "desc").limit(80));
-
-  subscribeCollection("globalMessages", (messages) => {
-    state.globalMessages = messages.reverse();
-    scheduleRender(["player-home", "chat", "admin-home", "admin-chat"]);
-  }, (q) => q.orderBy("createdAt", "desc").limit(80));
-
-  subscribeCollection("directMessages", (messages) => {
-    state.directMessages = messages.sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
-    syncPrivateMessages();
-    scheduleRender(["chat", "admin-chat"]);
-  }, (q) => q.where("participants", "array-contains", state.user.uid).limit(200));
-
-  subscribeCollection("profileViews", (views) => {
-    state.profileViews = views;
-    scheduleRender(["player-home", "profile", "ranking", "hall", "admin-users", "admin-ops"]);
-  }, (q) => q.limit(500));
-
-  subscribeCollection("reports", (reports) => {
-    state.reports = reports;
-    scheduleRender(["reports", "admin-home", "admin-reports"]);
-  }, (q) => state.profile?.role === "admin"
-    ? q.orderBy("createdAt", "desc").limit(100)
-    : q.where("reporterId", "==", state.user.uid).limit(40));
-
-  subscribeCollection("progressRequests", (requests) => {
-    state.progressRequests = requests;
-    scheduleRender(["player-home", "missions", "guild", "ranking", "hall", "admin-home", "admin-requests", "admin-ops"]);
-  }, (q) => state.profile?.role === "admin"
-    ? q.orderBy("createdAt", "desc").limit(160)
-    : q.where("uid", "==", state.user.uid).limit(80));
-
-  subscribeCollection("socialRequests", (requests) => {
-    state.socialRequests = requests;
-    scheduleRender(["profile", "chat", "guild", "admin-mail"]);
-  }, (q) => q.where("participants", "array-contains", state.user.uid).limit(120));
-
-  subscribeCollection("guilds", (guilds) => {
-    state.guilds = guilds;
-    scheduleRender(["player-home", "guild", "market", "ranking", "hall", "admin-home", "admin-ops"]);
-  }, (q) => q.limit(80));
-
-  subscribeCollection("guildMessages", (messages) => {
-    state.guildMessages = messages.sort((a, b) => timeValue(a.createdAt) - timeValue(b.createdAt));
-    scheduleRender(["guild", "admin-chat"]);
-  }, (q) => state.profile?.role === "admin"
-    ? q.limit(120)
-    : q.where("memberIds", "array-contains", state.user.uid).limit(120));
-
-  subscribeCollection("guildMissions", (missions) => {
-    state.guildMissions = missions.length ? missions : [...DEFAULT_GUILD_MISSIONS];
-    scheduleRender(["guild", "admin-missions"]);
-  }, (q) => q.limit(20));
-
-  subscribeCollection("marketTrades", (trades) => {
-    state.marketTrades = trades.sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
-    scheduleRender(["market", "admin-ops"]);
-  }, (q) => state.role === "admin"
-    ? q.orderBy("createdAt", "desc").limit(160)
-    : q.where("participants", "array-contains", state.user.uid).limit(120));
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
+  activateRouteSubscriptions(state.view);
   startPresence();
   announceSessionEntry();
   render();
@@ -2267,11 +2589,23 @@ function enterDemo(role) {
   };
   state.role = role;
   state.view = NAVS[role][0].id;
+  state.characterStep = 0;
+  state.characterDraft = null;
+  state.characterLore = null;
+  state.characterIntroSeen = false;
   state.settings = { ...DEFAULT_CONTENT.settings };
   state.content = defaultContentState();
-  const playerChar = {
-    ...defaultCharacter("demo-player", "Player Demo"),
+  const playerChar = defaultCharacter("demo-player", "Player Demo");
+  const existingChar = {
+    ...defaultCharacter("demo-existing", "Viajante Demo"),
     characterName: "Ariadne Vesper",
+    creationLocked: true,
+    technicalCreationComplete: true,
+    creationStatus: "registered",
+    kingdomId: state.content.kingdoms?.[0]?.id || "",
+    regionId: state.content.regions?.[0]?.id || "",
+    cultureId: state.content.cultures?.[0]?.id || "",
+    professionId: state.content.professions?.[0]?.id || "",
     base: { for: 3, vel: 4, hab: 5, res: 4, pod: 4 },
     gold: 180,
     titles: [{ id: "arquivo-vivo", name: "Arquivo Vivo", rarity: "Raro" }],
@@ -2279,9 +2613,10 @@ function enterDemo(role) {
   };
   state.users = [
     { id: "demo-player", displayName: "Player Demo", email: "player@demo.local", role: "player" },
+    { id: "demo-existing", displayName: "Viajante Demo", email: "existing@demo.local", role: "player" },
     { id: "demo-admin", displayName: "Oráculo Demo", email: "admin@demo.local", role: "admin" },
   ];
-  state.characters = [playerChar, defaultCharacter("demo-admin", "Oráculo Demo")];
+  state.characters = [playerChar, existingChar, defaultCharacter("demo-admin", "Oráculo Demo")];
   state.character = role === "player" ? playerChar : defaultCharacter("demo-admin", "Oráculo Demo");
   state.weeklyMissions = DEFAULT_CONTENT.missionPool.slice(0, 3).map((mission) => ({ ...mission, createdAt: new Date().toISOString() }));
   state.globalMessages = [{ id: "welcome", senderName: "Sistema", text: "Chat global iniciado.", type: "system", createdAt: new Date().toISOString() }];
@@ -2294,20 +2629,24 @@ function enterDemo(role) {
 async function writeDoc(collection, id, data) {
   if (state.demo) {
     writeDemo(collection, id, data);
+    state.diagnostics.writes += 1;
     render();
     return;
   }
   await state.db.collection(collection).doc(id).set({ ...data, updatedAt: nowValue() }, { merge: true });
+  state.diagnostics.writes += 1;
 }
 
 async function addDoc(collection, data) {
   if (state.demo) {
     const id = cryptoRandom();
     writeDemo(collection, id, { id, ...data });
+    state.diagnostics.writes += 1;
     render();
     return id;
   }
   const ref = await state.db.collection(collection).add({ ...data, createdAt: nowValue() });
+  state.diagnostics.writes += 1;
   return ref.id;
 }
 
@@ -2323,6 +2662,7 @@ async function deleteDoc(collection, id) {
     return;
   }
   await state.db.collection(collection).doc(id).delete();
+  state.diagnostics.writes += 1;
 }
 
 function writeDemo(collection, id, data) {
@@ -2423,30 +2763,44 @@ async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
   });
 }
 
+function finishRender(startedAt) {
+  state.diagnostics.renders += 1;
+  state.diagnostics.lastRenderMs = Math.round((performance.now() - startedAt) * 100) / 100;
+  state.diagnostics.lastRoute = state.view;
+  restoreRenderContext(state.renderContext);
+  state.renderContext = null;
+}
+
 function render() {
+  const startedAt = performance.now();
   state.pendingInputRender = false;
   if (!state.user) {
     showAuth();
+    finishRender(startedAt);
     return;
   }
 
   applyThemeClasses();
+  updateBuildBadge();
+
+  if (!state.updateDraftRouteApplied) {
+    const payload = pendingUpdateDraft();
+    const allowedViews = NAVS[state.role].map((item) => item.id);
+    if (payload?.view && allowedViews.includes(payload.view)) state.view = payload.view;
+    state.updateDraftRouteApplied = true;
+  }
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
   updateMusicButton();
   const nav = NAVS[state.role];
   if (!nav.some((item) => item.id === state.view)) state.view = nav[0].id;
+  activateRouteSubscriptions(state.view);
   $("#roleLabel").textContent = state.role === "admin" ? ORACLE_LABEL : "Player";
   $("#seasonLabel").textContent = state.settings.seasonName || `Temporada ${state.settings.seasonNumber || 1}`;
   $("#contextLabel").textContent = state.role === "admin" ? "Oráculo da interface" : "Suporte do personagem";
   $("#viewTitle").textContent = VIEW_TITLES[state.view] || "Painel";
-  $("#navList").innerHTML = nav.map((item) => `
-    <button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}">
-      <span class="nav-icon">${item.icon}</span>
-      <span>${item.label}</span>
-    </button>
-  `).join("");
+  $("#navList").innerHTML = renderGroupedNavigation(nav);
 
   const character = currentCharacter();
   $("#moneyPill").hidden = state.role === "admin";
@@ -2461,14 +2815,17 @@ function render() {
 
   if (state.role !== "admin" && ["suspended", "banned"].includes(state.profile?.status)) {
     $("#viewHost").innerHTML = renderSuspendedGate();
+    finishRender(startedAt);
     return;
   }
   if (state.role !== "admin" && state.settings.maintenanceMode) {
     $("#viewHost").innerHTML = renderMaintenanceGate();
+    finishRender(startedAt);
     return;
   }
   if (state.role !== "admin" && !hasAcceptedTerms()) {
     $("#viewHost").innerHTML = renderTermsGate();
+    finishRender(startedAt);
     return;
   }
 
@@ -2476,7 +2833,10 @@ function render() {
   const renderer = VIEW_RENDERERS[state.view] || renderPlayerHome;
   $("#viewHost").innerHTML = renderer();
   restoreChatScroll(chatScroll);
+  restoreUpdateDrafts();
+  restoreLocalFormDrafts();
   maybeOpenOnboarding();
+  finishRender(startedAt);
 }
 
 function applyThemeClasses(settings = state.settings) {
@@ -2599,10 +2959,27 @@ function renderQuickStatus(character) {
   `;
 }
 
+function renderGroupedNavigation(nav, compact = false) {
+  const groups = NAV_GROUPS[state.role] || NAV_GROUPS.player;
+  const byId = new Map(nav.map((item) => [item.id, item]));
+  return groups.map((group) => {
+    const items = group.ids.map((id) => byId.get(id)).filter(Boolean);
+    if (!items.length) return "";
+    return `
+      <section class="nav-group ${compact ? "compact" : ""}" aria-label="${esc(group.label)}">
+        <span class="nav-group-label">${esc(group.label)}</span>
+        <div class="nav-group-items">
+          ${items.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></button>`).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 function renderMobileBottomNav(nav) {
   const preferred = state.role === "admin"
     ? ["admin-home", "admin-users", "admin-economy", "admin-requests", "admin-reports"]
-    : ["player-home", "profile", "gacha", "chat", "missions"];
+    : ["player-home", "profile", "roulette", "chat", "missions"];
   const quick = preferred.map((id) => nav.find((item) => item.id === id)).filter(Boolean);
   return [
     ...quick.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`),
@@ -2617,9 +2994,7 @@ function openMoreNav() {
       <div><p class="eyebrow">Navegação rápida</p><h2>Seu grimório</h2></div>
       <span class="tag">${state.role === "admin" ? ORACLE_LABEL : "Escolhido"}</span>
     </div>
-    <div class="more-nav-grid app-drawer-grid">
-      ${nav.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></button>`).join("")}
-    </div>
+    <div class="more-nav-grid app-drawer-grid">${renderGroupedNavigation(nav, true)}</div>
     <button class="drawer-logout" type="button" data-action="logout"><span>↪</span> Sair da interface</button>
   `;
   const modal = $("#modal");
@@ -3118,7 +3493,7 @@ function renderMailbox() {
   return rows.join("") || `<div class="empty-state">Nenhum pedido pendente.</div>`;
 }
 
-function renderCharacterForm() {
+function renderLegacyCharacterForm() {
   const character = currentCharacter();
   const draft = state.characterDraft || null;
   const locked = character.creationLocked || Boolean(character.characterName && character.raceId && character.classId);
@@ -3209,6 +3584,288 @@ function renderCharacterForm() {
       </article>
     </form>
   `;
+}
+
+function characterRegistrationLocked(character = currentCharacter()) {
+  return Boolean(character.technicalCreationComplete || character.creationLocked || (character.characterName && character.raceId && character.classId));
+}
+
+function mergedCharacterDraft(character = currentCharacter(), form = null) {
+  const liveValues = form ? formValues(form) : {};
+  return {
+    playerName: character.playerName || character.displayName || state.profile?.displayName || "",
+    characterName: character.characterName || "",
+    pronouns: character.pronouns || "",
+    originType: character.originType || "Retornado",
+    apparentAge: character.apparentAge ?? character.characterAge ?? "",
+    realAge: character.realAge ?? "",
+    raceId: character.raceId || "humano",
+    classId: character.classId || "guerreiro",
+    kingdomId: character.kingdomId || "",
+    regionId: character.regionId || "",
+    cultureId: character.cultureId || character.culture || "",
+    professionId: character.professionId || character.profession || "",
+    customCultureName: character.customCultureName || "",
+    customCultureSummary: character.customCultureSummary || "",
+    customProfessionName: character.customProfessionName || "",
+    customProfessionSummary: character.customProfessionSummary || "",
+    currentLocation: character.currentLocation || "Limiar das Cortinas",
+    avatarUrl: character.avatarUrl || "",
+    characterDescription: character.characterDescription || "",
+    avatarFocusX: character.avatarFocusX ?? 50,
+    avatarFocusY: character.avatarFocusY ?? 50,
+    avatarZoom: character.avatarZoom ?? 1,
+    ...Object.fromEntries(ATTRIBUTES.map((attr) => [`base_${attr.key}`, Number(character.base?.[attr.key] ?? 4)])),
+    ...(state.characterDraft || {}),
+    ...liveValues,
+  };
+}
+
+function characterCatalogEntry(collection, id) {
+  return (state.content[collection] || []).find((entry) => entry.id === id) || null;
+}
+
+function registrationPreviewCard(entry, kind, fallback = "Escolha uma opção para consultar o registro.") {
+  if (!entry) return `<aside class="registration-preview empty"><p>${esc(fallback)}</p></aside>`;
+  const image = entry.imageThumbnail || entry.imageHero || entry.imageUrl || entry.emblemUrl || "";
+  const summary = entry.summary || entry.description || entry.role || entry.domain || fallback;
+  const bonus = entry.bonus ? bonusToText(entry.bonus) : "";
+  const keywords = Array.isArray(entry.keywords) ? entry.keywords.slice(0, 4) : [];
+  return `
+    <aside class="registration-preview">
+      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || `${kind} ${entry.name}`)}" loading="lazy" />` : `<span class="catalog-fallback" aria-hidden="true">${esc(String(entry.name || kind).slice(0, 1))}</span>`}
+      <div><p class="eyebrow">${esc(kind)}</p><h3>${esc(entry.name)}</h3><p>${esc(summary)}</p>
+      ${bonus && bonus !== "Sem bônus" ? `<span class="tag">${esc(bonus)}</span>` : ""}
+      ${keywords.length ? `<div class="keyword-row">${keywords.map((word) => `<span>${esc(word)}</span>`).join("")}</div>` : ""}</div>
+    </aside>`;
+}
+
+function characterStatComposition(character = currentCharacter()) {
+  const result = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content);
+  const sourceLabels = {
+    base: "Base",
+    development: "Desenvolvimento",
+    raceBonus: "Raça",
+    classBonus: "Classe",
+    affinityBonus: "Afinidade",
+    equipmentBonus: "Equipamentos",
+    temporaryBonus: "Temporários",
+    penalties: "Penalidades",
+  };
+  return `
+    <div class="stat-composition-grid">
+      ${ATTRIBUTES.map((attr) => {
+        const rows = Object.entries(sourceLabels).map(([key, label]) => {
+          const value = Number(result[key]?.[attr.key] || 0) * (key === "penalties" ? -1 : 1);
+          return `<span><small>${label}</small><b>${value > 0 ? "+" : ""}${value}</b></span>`;
+        }).join("");
+        return `<details class="stat-composition"><summary><span>${esc(attr.label)}</span><strong>${Number(result.total[attr.key] || 0)}</strong></summary><div>${rows}</div></details>`;
+      }).join("")}
+      <details class="stat-composition derived"><summary><span>DEF derivada</span><strong>${Number(result.derived.def || 0)}</strong></summary><p>DEF vem de armadura, escudo e efeitos registrados. Ela não é um sexto atributo-base.</p></details>
+    </div>`;
+}
+
+function registrationStepper(activeStep) {
+  const labels = ["Identidade", "Herança", "Formação", "Origem", "Atributos", "Aparência", "Revisão"];
+  return `<ol class="registration-stepper" aria-label="Progresso do registro">${labels.map((label, index) => `<li class="${index + 1 < activeStep ? "done" : index + 1 === activeStep ? "active" : ""}" aria-current="${index + 1 === activeStep ? "step" : "false"}"><span>${index + 1}</span><small>${esc(label)}</small></li>`).join("")}</ol>`;
+}
+
+function renderCharacterIntroduction() {
+  return `
+    <section class="character-introduction">
+      <div class="introduction-copy">
+        <p class="eyebrow">Antes de escolher quem você será</p>
+        <h2>Você despertou em Millennium</h2>
+        <p>Escolhidos chegam de outros mundos; Nativos nasceram sob o olhar da Interface. Reinos, culturas e ofícios formam pessoas diferentes, mas nenhum número decide sozinho uma cena.</p>
+        <div class="lore-pillars">
+          <div><strong>Interface do Oráculo</strong><span>Registra sua existência e suas conquistas.</span></div>
+          <div><strong>Retornado ou Nativo</strong><span>Sua origem muda lembranças e vínculos, não seu valor.</span></div>
+          <div><strong>Jogo textual</strong><span>Estratégia, coerência e consequência conduzem a narrativa.</span></div>
+        </div>
+        <div class="action-row">
+          <button class="primary-button" type="button" data-action="character-intro-start">Começar minha ficha</button>
+          <button class="ghost-button" type="button" data-nav="codex" data-codex-target="kingdoms">Conhecer os reinos</button>
+          <button class="text-button" type="button" data-action="character-intro-skip">Pular introdução</button>
+        </div>
+      </div>
+      <aside class="introduction-seal" aria-hidden="true"><span>Ⅰ</span><small>Primeiro<br />Despertar</small></aside>
+    </section>`;
+}
+
+function renderLockedCharacterRecord(character) {
+  const race = getRace(character.raceId);
+  const classEntry = getClass(character.classId);
+  const culture = characterCatalogEntry("cultures", character.cultureId || character.culture);
+  const profession = characterCatalogEntry("professions", character.professionId || character.profession);
+  const kingdom = characterCatalogEntry("kingdoms", character.kingdomId);
+  const region = characterCatalogEntry("regions", character.regionId);
+  const diagnostics = window.MILLENNIUM_CORE_31.diagnoseAttributeSources(character, state.content);
+  return `
+    <div class="grid character-registered">
+      <article class="panel span-12 registered-hero">
+        <div><p class="eyebrow">Registro técnico concluído</p><h2>${esc(character.characterName || "Escolhido sem nome")}</h2><p>${esc(character.originType || "Retornado")} · ${esc(race?.name || "Sem raça")} · ${esc(classEntry?.name || "Sem classe")}</p></div>
+        <div class="action-row"><span class="tag success">Base protegida</span><button class="primary-button" type="button" data-nav="character-life">Dar Vida</button><button class="ghost-button" type="button" data-nav="creations">Poderes e técnicas</button></div>
+      </article>
+      <article class="panel span-5 registered-summary">
+        <p class="eyebrow">Identidade registrada</p>
+        <dl class="record-list">
+          <div><dt>Player</dt><dd>${esc(character.playerName || character.displayName || "Não informado")}</dd></div>
+          <div><dt>Pronomes</dt><dd>${esc(character.pronouns || "Não informados")}</dd></div>
+          <div><dt>Reino</dt><dd>${esc(kingdom?.name || character.kingdomId || "Não registrado")}</dd></div>
+          <div><dt>Região</dt><dd>${esc(region?.name || character.regionId || "Não registrada")}</dd></div>
+          <div><dt>Cultura</dt><dd>${esc(culture?.name || character.customCultureName || character.culture || "Não registrada")}</dd></div>
+          <div><dt>Ofício</dt><dd>${esc(profession?.name || character.customProfessionName || character.profession || "Sem ofício")}</dd></div>
+        </dl>
+      </article>
+      <article class="panel span-7">
+        <div class="panel-heading"><div><p class="eyebrow">Capacidade registrada</p><h3>Composição dos atributos</h3></div><span class="tag">${Number(character.freePoints || 0)} ponto(s) de desenvolvimento</span></div>
+        ${characterStatComposition(character)}
+        ${Number(character.freePoints || 0) > 0 ? `<div class="development-controls"><p>Adicione um ponto conquistado. A base inicial nunca é reescrita.</p>${ATTRIBUTES.map((attr) => `<button class="ghost-button" type="button" data-action="spend-development" data-attr="${attr.key}" ${state.developmentSpending ? "disabled" : ""}>+1 ${esc(attr.short)}</button>`).join("")}</div>` : ""}
+      </article>
+      ${diagnostics.ok ? "" : `<article class="panel span-12 diagnostic-warning"><p class="eyebrow">Atenção</p><h3>A Interface encontrou ${diagnostics.issues.length} inconsistência(s)</h3><p>Nada foi reparado automaticamente. O Oráculo pode abrir o diagnóstico, registrar o motivo e preservar rollback.</p></article>`}
+    </div>`;
+}
+
+function renderCharacterStep(step, draft, character) {
+  const race = getRace(draft.raceId);
+  const classEntry = getClass(draft.classId);
+  const kingdom = characterCatalogEntry("kingdoms", draft.kingdomId);
+  const allRegions = state.content.regions || [];
+  const regions = draft.kingdomId ? allRegions.filter((entry) => !entry.kingdomId || entry.kingdomId === draft.kingdomId) : allRegions;
+  const region = characterCatalogEntry("regions", draft.regionId);
+  const culture = characterCatalogEntry("cultures", draft.cultureId);
+  const profession = characterCatalogEntry("professions", draft.professionId);
+  const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Math.max(2, Math.min(6, Number(draft[`base_${attr.key}`] ?? 4)))]));
+  const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
+  const previewCharacter = { ...character, raceId: draft.raceId, classId: draft.classId, kingdomId: draft.kingdomId, regionId: draft.regionId, cultureId: draft.cultureId, professionId: draft.professionId, base };
+  const ageInput = (name, label) => `<label><span>${label}</span><input name="${name}" type="number" inputmode="numeric" min="0" max="99999" step="1" value="${esc(draft[name])}" /></label>`;
+  if (step === 1) return `
+    <div class="registration-stage"><div class="stage-heading"><span>01</span><div><p class="eyebrow">Identidade</p><h2>Quem abriu os olhos?</h2><p>Registre apenas o necessário. Sua história poderá crescer depois.</p></div></div>
+      <div class="form-grid"><label><span>Nome do player</span><input name="playerName" required maxlength="60" autocomplete="nickname" value="${esc(draft.playerName)}" /></label><label><span>Nome do personagem</span><input name="characterName" required maxlength="80" value="${esc(draft.characterName)}" /></label><label><span>Pronomes</span><input name="pronouns" maxlength="40" placeholder="Ex.: ela/dela" value="${esc(draft.pronouns)}" /></label><label><span>Origem</span><select name="originType"><option value="Retornado" ${draft.originType === "Retornado" ? "selected" : ""}>Retornado de outro mundo</option><option value="Nativo" ${draft.originType === "Nativo" ? "selected" : ""}>Nativo de Millennium</option></select></label>${ageInput("apparentAge", "Idade aparente")}${ageInput("realAge", "Idade real")}</div>
+    </div>`;
+  if (step === 2) return `
+    <div class="registration-stage"><div class="stage-heading"><span>02</span><div><p class="eyebrow">Herança</p><h2>O que seu corpo recorda?</h2><p>Raça define herança e bônus oficiais. Ela não define cultura, caráter ou destino.</p></div></div>
+      <label class="wide"><span>Raça</span><select name="raceId" data-character-preview="true">${optionList(state.content.races, draft.raceId)}</select></label>${registrationPreviewCard(race, "Herança")}
+      ${race?.bonus ? `<div class="live-bonus"><span>Bônus automático</span><strong>${esc(bonusToText(race.bonus))}</strong><small>O bônus aparece separado da base.</small></div>` : ""}
+    </div>`;
+  if (step === 3) return `
+    <div class="registration-stage"><div class="stage-heading"><span>03</span><div><p class="eyebrow">Formação</p><h2>Como você aprendeu a agir?</h2><p>Classe representa função e formação. Ela orienta possibilidades, não garante resultados.</p></div></div>
+      <label class="wide"><span>Classe-base</span><select name="classId" data-character-preview="true">${optionList(state.content.classes, draft.classId)}</select></label>${registrationPreviewCard(classEntry, "Formação")}
+      ${classEntry?.bonus ? `<div class="live-bonus"><span>Bônus automático</span><strong>${esc(bonusToText(classEntry.bonus))}</strong><small>Estratégia e contexto continuam determinando a cena.</small></div>` : ""}
+    </div>`;
+  if (step === 4) return `
+    <div class="registration-stage origin-stage"><div class="stage-heading"><span>04</span><div><p class="eyebrow">Origem</p><h2>Que mundo formou você?</h2><p>Reino é território político; região é lugar; cultura é criação; ofício é conhecimento.</p></div></div>
+      <div class="origin-select-grid">
+        <label><span>Reino</span><select name="kingdomId" data-character-preview="true" required><option value="">Escolha um reino</option>${optionList(state.content.kingdoms, draft.kingdomId)}</select></label>
+        <label><span>Região</span><select name="regionId" data-character-preview="true" required><option value="">Escolha uma região</option>${optionList(regions, draft.regionId)}</select></label>
+        <label><span>Cultura</span><select name="cultureId" data-character-preview="true" required><option value="">Escolha uma cultura</option>${optionList(state.content.cultures, draft.cultureId)}<option value="custom" ${draft.cultureId === "custom" ? "selected" : ""}>Cultura personalizada</option></select></label>
+        <label><span>Ofício</span><select name="professionId" data-character-preview="true" required><option value="">Escolha um ofício</option><option value="none" ${draft.professionId === "none" ? "selected" : ""}>Sem ofício</option>${optionList(state.content.professions, draft.professionId)}<option value="custom" ${draft.professionId === "custom" ? "selected" : ""}>Outro ofício</option></select></label>
+        <label class="wide"><span>Localização inicial</span><input name="currentLocation" maxlength="120" value="${esc(draft.currentLocation)}" /></label>
+        ${draft.cultureId === "custom" ? `<label><span>Nome da cultura</span><input name="customCultureName" required maxlength="80" value="${esc(draft.customCultureName)}" /></label><label><span>Origem e costumes</span><textarea name="customCultureSummary" required maxlength="800" rows="3">${esc(draft.customCultureSummary)}</textarea></label>` : ""}
+        ${draft.professionId === "custom" ? `<label><span>Nome do ofício</span><input name="customProfessionName" required maxlength="80" value="${esc(draft.customProfessionName)}" /></label><label><span>Atividades e conhecimento</span><textarea name="customProfessionSummary" required maxlength="800" rows="3">${esc(draft.customProfessionSummary)}</textarea></label>` : ""}
+      </div>
+      <div class="origin-preview-grid">${registrationPreviewCard(kingdom, "Reino")}${registrationPreviewCard(region, "Região")}${registrationPreviewCard(culture, "Cultura", "Cultura concede idiomas, costumes e familiaridade; nunca atributos automáticos.")}${draft.professionId === "none" ? registrationPreviewCard({ name: "Sem ofício", summary: "O personagem começa sem formação profissional registrada." }, "Ofício") : registrationPreviewCard(profession, "Ofício", "Ofício concede conhecimento, ferramentas e acesso narrativo; nunca atributos automáticos.")}</div>
+    </div>`;
+  if (step === 5) return `
+    <div class="registration-stage attribute-stage"><div class="stage-heading"><span>05</span><div><p class="eyebrow">Atributos-base</p><h2>Distribua exatamente 20 pontos</h2><p>Cada atributo começa entre 2 e 6. Os bônus aparecem depois e nunca contaminam a base.</p></div></div>
+      <div class="allocation-status ${allocation.valid ? "valid" : ""}"><strong>${allocation.remaining >= 0 ? allocation.remaining : Math.abs(allocation.remaining)} ${allocation.remaining >= 0 ? "restante(s)" : "acima do limite"}</strong><span>${allocation.spent}/20 distribuídos</span></div>
+      <div class="attribute-steppers">${ATTRIBUTES.map((attr) => `<div class="attribute-stepper"><div><span>${esc(attr.label)}</span><small>${esc(attr.short)}</small></div><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="-1" aria-label="Remover um ponto de ${esc(attr.label)}" ${base[attr.key] <= 2 ? "disabled" : ""}>−</button><output>${base[attr.key]}</output><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="1" aria-label="Adicionar um ponto de ${esc(attr.label)}" ${base[attr.key] >= 6 || allocation.remaining <= 0 ? "disabled" : ""}>+</button><input type="hidden" name="base_${attr.key}" value="${base[attr.key]}" /></div>`).join("")}</div>
+      <div class="attribute-preview"><p class="eyebrow">Total previsto com bônus</p>${characterStatComposition(previewCharacter)}</div>
+    </div>`;
+  if (step === 6) return `
+    <div class="registration-stage appearance-stage"><div class="stage-heading"><span>06</span><div><p class="eyebrow">Aparência mínima</p><h2>Como a Interface verá você?</h2><p>Avatar é opcional. A descrição curta será pública conforme sua privacidade.</p></div></div>
+      <div class="appearance-grid"><div>${mediaInput("avatarUrl", "Avatar ou GIF do personagem", draft.avatarUrl, { hint: "Você poderá trocar e enquadrar depois no perfil." })}<label><span>Descrição visual curta</span><textarea name="characterDescription" maxlength="500" rows="5" placeholder="Aparência, postura e sinais reconhecíveis.">${esc(draft.characterDescription)}</textarea></label></div>${cropEditor("avatar", "Prévia do avatar", draft.avatarUrl, { ...character, avatarFocusX: draft.avatarFocusX, avatarFocusY: draft.avatarFocusY, avatarZoom: draft.avatarZoom }, draft)}</div>
+    </div>`;
+  return `
+    <div class="registration-stage review-stage"><div class="stage-heading"><span>07</span><div><p class="eyebrow">Revisão</p><h2>Confirme o registro técnico</h2><p>Depois de confirmar, raça, classe e atributos-base ficam protegidos. História e personalidade continuam em Dar Vida.</p></div></div>
+      <div class="review-grid">
+        <section><p class="eyebrow">Identidade</p><h3>${esc(draft.characterName || "Nome ausente")}</h3><p>${esc(draft.playerName || "Player ausente")} · ${esc(draft.originType)} · ${esc(draft.pronouns || "Pronomes não informados")}</p></section>
+        <section><p class="eyebrow">Herança e formação</p><h3>${esc(race?.name || "Raça ausente")} · ${esc(classEntry?.name || "Classe ausente")}</h3><p>${esc(bonusToText(race?.bonus || {}))} · ${esc(bonusToText(classEntry?.bonus || {}))}</p></section>
+        <section><p class="eyebrow">Origem</p><h3>${esc(kingdom?.name || "Reino ausente")} · ${esc(region?.name || "Região ausente")}</h3><p>${esc(culture?.name || draft.customCultureName || "Cultura ausente")} · ${esc(profession?.name || draft.customProfessionName || (draft.professionId === "none" ? "Sem ofício" : "Ofício ausente"))}</p></section>
+        <section><p class="eyebrow">Base</p><h3>${ATTRIBUTES.map((attr) => `${attr.short} ${base[attr.key]}`).join(" · ")}</h3><p>${allocation.valid ? "20 pontos válidos" : `${allocation.spent}/20 pontos · volte e corrija`}</p></section>
+      </div>
+      ${characterStatComposition(previewCharacter)}
+      <div class="review-warning"><strong>O registro é uma fundação, não uma sentença.</strong><span>Números orientam limites; estratégia, contexto, preparação e consequências decidem a narrativa.</span></div>
+    </div>`;
+}
+
+function renderCharacterForm() {
+  const character = currentCharacter();
+  if (characterRegistrationLocked(character)) return renderLockedCharacterRecord(character);
+  if (state.characterStep === 0 && !state.characterIntroSeen) return renderCharacterIntroduction();
+  const step = Math.max(1, Math.min(7, Number(state.characterStep || 1)));
+  const draft = mergedCharacterDraft(character);
+  return `
+    <form class="character-registration" data-form="character" novalidate>
+      <header class="registration-header"><div><p class="eyebrow">Registrar o Escolhido</p><h2>Seu Primeiro Despertar</h2><p>Etapa ${step} de 7 · o rascunho fica neste dispositivo até a confirmação.</p></div><span id="draftStatus" class="draft-status" aria-live="polite"></span></header>
+      ${registrationStepper(step)}
+      ${renderCharacterStep(step, draft, character)}
+      <footer class="registration-actions">
+        <button class="ghost-button" type="button" data-action="character-step-prev" ${step === 1 ? "disabled" : ""}>Voltar</button>
+        ${step < 7 ? `<button class="primary-button" type="button" data-action="character-step-next">Continuar</button>` : `<button class="primary-button intense" type="submit" ${state.characterSaving ? "disabled" : ""}>${state.characterSaving ? "Registrando..." : "Confirmar registro"}</button>`}
+      </footer>
+    </form>`;
+}
+
+const CHARACTER_LIFE_FIELDS = [
+  "description", "personality", "virtues", "flaws", "habits", "beliefs",
+  "history", "originWorld", "milestones", "importantPeople", "traumas", "secrets",
+  "primaryGoal", "secondaryGoal", "fear", "desire", "internalConflict",
+  "speech", "moralLimits", "initialRelations", "publicPhrase",
+  "playerLimits", "warningThemes", "consentThemes", "forbiddenThemes",
+];
+
+function characterLifeSource() {
+  const character = currentCharacter();
+  return {
+    description: character.characterDescription || "",
+    personality: character.personality || "",
+    history: character.story || "",
+    primaryGoal: character.objective || "",
+    fear: character.fear || "",
+    playerLimits: character.playerLimits || "",
+    ...(character.lore || {}),
+    ...(state.characterLore || {}),
+  };
+}
+
+function characterLifeProgress(source = characterLifeSource()) {
+  const completed = CHARACTER_LIFE_FIELDS.filter((field) => String(source[field] || "").trim().length >= 3).length;
+  return Math.round((completed / CHARACTER_LIFE_FIELDS.length) * 100);
+}
+
+function lifeTextarea(name, label, source, hint = "", rows = 3) {
+  return `<label><span>${esc(label)}</span><textarea name="${name}" rows="${rows}" maxlength="2400" ${hint ? `placeholder="${esc(hint)}"` : ""}>${esc(source[name] || "")}</textarea></label>`;
+}
+
+function renderCharacterLife() {
+  const character = currentCharacter();
+  if (!characterRegistrationLocked(character)) return `
+    <section class="locked-route"><span aria-hidden="true">Ⅰ</span><p class="eyebrow">Dar Vida</p><h2>Disponível após concluir o registro técnico</h2><p>Primeiro registre identidade, herança, formação, origem e os 20 pontos-base.</p><button class="primary-button" type="button" data-nav="character">Registrar o Escolhido</button></section>`;
+  const source = characterLifeSource();
+  const progress = characterLifeProgress(source);
+  return `
+    <form class="character-life-form" data-form="character-life">
+      <header class="life-header"><div><p class="eyebrow">Parte II · Dar Vida</p><h2>${esc(character.characterName || "Seu personagem")}</h2><p>Esta parte pode crescer com o jogo. Nenhum texto concede vantagem automática de combate.</p></div><div class="life-progress"><strong>${progress}%</strong><span>concluído</span><div><i style="width:${progress}%"></i></div></div></header>
+      <div class="life-grid">
+        <fieldset><legend><span>01</span> Essência</legend><p>Como outras pessoas percebem e convivem com o personagem.</p>${lifeTextarea("description", "Descrição pública", source, "A aparência e a presença que podem ser vistas.")}${lifeTextarea("personality", "Personalidade", source)}${lifeTextarea("virtues", "Virtudes", source)}${lifeTextarea("flaws", "Defeitos", source)}${lifeTextarea("habits", "Hábitos", source)}${lifeTextarea("beliefs", "Crenças", source)}</fieldset>
+        <fieldset><legend><span>02</span> Passado</legend><p>Memórias que orientam escolhas sem obrigar uma biografia completa agora.</p>${lifeTextarea("history", "História", source, "O que importa para entender quem ele se tornou.", 5)}${lifeTextarea("originWorld", "Mundo de origem", source)}${lifeTextarea("milestones", "Acontecimentos marcantes", source)}${lifeTextarea("importantPeople", "Pessoas importantes", source)}${lifeTextarea("traumas", "Traumas", source, "Compartilhe apenas o que deseja registrar.")}${lifeTextarea("secrets", "Segredos", source, "Conteúdo privado para condução responsável.")}</fieldset>
+        <fieldset><legend><span>03</span> Direção</legend><p>Desejos criam caminhos; não criam vitória automática.</p>${lifeTextarea("primaryGoal", "Objetivo principal", source)}${lifeTextarea("secondaryGoal", "Objetivo secundário", source)}${lifeTextarea("fear", "Medo", source)}${lifeTextarea("desire", "Desejo", source)}${lifeTextarea("internalConflict", "Conflito interno", source)}</fieldset>
+        <fieldset><legend><span>04</span> Interpretação</legend><p>Referências práticas para manter uma voz coerente nas cenas.</p>${lifeTextarea("speech", "Forma de falar", source)}${lifeTextarea("moralLimits", "Limites morais", source)}${lifeTextarea("initialRelations", "Relações iniciais", source)}${lifeTextarea("publicPhrase", "Frase pública", source, "A frase exibida no cartão do personagem.")}</fieldset>
+        <fieldset class="narrative-safety"><legend><span>05</span> Segurança narrativa</legend><p>Esses limites orientam consentimento. O Oráculo nunca deve tratá-los como desafio.</p>${lifeTextarea("playerLimits", "Limites do player", source)}${lifeTextarea("warningThemes", "Temas que exigem aviso", source)}${lifeTextarea("consentThemes", "Temas que exigem consentimento", source)}${lifeTextarea("forbiddenThemes", "Temas proibidos", source)}</fieldset>
+      </div>
+      <footer class="life-actions"><span id="draftStatus" class="draft-status" aria-live="polite">Rascunho local ativo</span><button class="primary-button" type="submit">Salvar Dar Vida</button></footer>
+    </form>`;
+}
+
+async function saveCharacterLife(form) {
+  const values = formValues(form);
+  const source = { ...characterLifeSource(), ...values };
+  source.progress = characterLifeProgress(source);
+  await saveCharacterLorePatch(source);
+  state.characterLore = { ...(state.characterLore || {}), ...source };
+  clearLocalFormDraft("character-life");
+  toast(`Dar Vida salvo · ${source.progress}% concluído.`);
 }
 
 function renderRoulette() {
@@ -6064,6 +6721,7 @@ const VIEW_RENDERERS = {
   "player-home": renderPlayerHome,
   profile: renderProfile,
   character: renderCharacterForm,
+  "character-life": renderCharacterLife,
   roulette: renderRoulette,
   gacha: renderGacha,
   minigames: renderMinigames,
@@ -6121,7 +6779,7 @@ async function handleRegister() {
   await state.auth.createUserWithEmailAndPassword(values.email, values.password);
 }
 
-async function saveCharacter(form) {
+async function saveLegacyCharacter(form) {
   const values = formValues(form);
   const current = currentCharacter();
   const locked = current.creationLocked || Boolean(current.characterName && current.raceId && current.classId);
@@ -6185,6 +6843,212 @@ async function saveCharacter(form) {
   await writeDoc("users", state.user.uid, { displayName: values.playerName || state.profile?.displayName || state.user.email });
   state.characterDraft = null;
   toast("Ficha salva.");
+}
+
+function pickCharacterPatch(source, keys) {
+  return Object.fromEntries(keys.filter((key) => source[key] !== undefined).map((key) => [key, source[key]]));
+}
+
+async function saveCharacterPatch(source, keys, options = {}) {
+  const patch = pickCharacterPatch(source, keys);
+  if (options.commit === false) return patch;
+  await updateCharacter(options.uid || state.user.uid, patch);
+  return patch;
+}
+
+function saveCharacterCorePatch(source, options = {}) {
+  return saveCharacterPatch(source, ["playerName", "displayName", "characterName", "characterAge", "pronouns", "originType", "apparentAge", "realAge", "raceId", "classId"], options);
+}
+
+function saveCharacterOriginPatch(source, options = {}) {
+  return saveCharacterPatch(source, ["kingdomId", "regionId", "cultureId", "culture", "professionId", "profession"], options);
+}
+
+function saveCharacterAttributesPatch(source, options = {}) {
+  return saveCharacterPatch(source, ["base", "development", "freePoints"], options);
+}
+
+function saveCharacterMediaPatch(source, options = {}) {
+  return saveCharacterPatch(source, ["avatarUrl", "bannerUrl", "characterDescription", "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY", "avatarZoom", "bannerFocusX", "bannerFocusY", "bannerZoom", "mediaFocus"], options);
+}
+
+function saveCharacterLocationPatch(source, options = {}) {
+  return saveCharacterPatch(source, ["currentLocation", "physicalState", "essenceState"], options);
+}
+
+function saveCharacterStatePatch(source, options = {}) {
+  return saveCharacterPatch(source, ["creationLocked", "creationStatus", "technicalCreationComplete", "narrativeCreationComplete"], options);
+}
+
+async function saveCharacterLorePatch(source, options = {}) {
+  const allowed = ["description", "personality", "virtues", "flaws", "habits", "beliefs", "history", "originWorld", "milestones", "importantPeople", "traumas", "secrets", "primaryGoal", "secondaryGoal", "fear", "desire", "internalConflict", "speech", "moralLimits", "initialRelations", "publicPhrase", "playerLimits", "warningThemes", "consentThemes", "forbiddenThemes", "progress"];
+  const patch = pickCharacterPatch(source, allowed);
+  if (options.commit === false) return patch;
+  if (state.demo) {
+    state.character = { ...currentCharacter(), lore: { ...(currentCharacter().lore || {}), ...patch }, narrativeCreationComplete: Number(patch.progress || 0) >= 100 };
+    state.characters = state.characters.filter((item) => item.ownerId !== state.user.uid && item.id !== state.user.uid).concat(state.character);
+    state.diagnostics.writes += 1;
+    render();
+    return patch;
+  }
+  const uid = options.uid || state.user.uid;
+  await state.db.collection("characters").doc(uid).collection("lore").doc("main").set({ ...patch, updatedAt: nowValue() }, { merge: true });
+  state.diagnostics.writes += 1;
+  await updateCharacter(uid, { narrativeCreationComplete: Number(patch.progress || 0) >= 100 });
+  return patch;
+}
+
+function validateRegistrationStep(step, draft) {
+  const required = (value) => Boolean(String(value ?? "").trim());
+  if (step === 1) {
+    if (!required(draft.playerName) || !required(draft.characterName)) return "Informe o nome do player e do personagem.";
+    for (const key of ["apparentAge", "realAge"]) {
+      if (draft[key] !== "" && (!Number.isInteger(Number(draft[key])) || Number(draft[key]) < 0)) return "Idades aceitam apenas números inteiros positivos.";
+    }
+  }
+  if (step === 2 && !required(draft.raceId)) return "Escolha uma raça para continuar.";
+  if (step === 3 && !required(draft.classId)) return "Escolha uma classe para continuar.";
+  if (step === 4) {
+    if (![draft.kingdomId, draft.regionId, draft.cultureId, draft.professionId].every(required)) return "Escolha reino, região, cultura e ofício.";
+    if (draft.cultureId === "custom" && (!required(draft.customCultureName) || !required(draft.customCultureSummary))) return "Descreva a cultura personalizada.";
+    if (draft.professionId === "custom" && (!required(draft.customProfessionName) || !required(draft.customProfessionSummary))) return "Descreva o ofício personalizado.";
+  }
+  if (step === 5) {
+    const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(draft[`base_${attr.key}`])]));
+    const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
+    if (!allocation.valid) return allocation.errors[0] || "Distribua exatamente 20 pontos entre 2 e 6.";
+  }
+  return "";
+}
+
+function captureCharacterStep(form) {
+  const values = form ? formValues(form) : {};
+  state.characterDraft = { ...mergedCharacterDraft(currentCharacter()), ...values };
+  if (form) saveLocalFormDraft(form);
+  return state.characterDraft;
+}
+
+function moveCharacterStep(direction, form) {
+  const draft = captureCharacterStep(form);
+  if (direction > 0) {
+    const error = validateRegistrationStep(state.characterStep, draft);
+    if (error) {
+      toast(error);
+      form?.querySelector(":invalid")?.focus();
+      return;
+    }
+  }
+  state.characterStep = Math.max(1, Math.min(7, Number(state.characterStep || 1) + direction));
+  scheduleRender({ critical: true, preserveScroll: false });
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+function adjustRegistrationAttribute(attribute, delta, form) {
+  if (!ATTRIBUTES.some((entry) => entry.key === attribute)) return;
+  const draft = captureCharacterStep(form);
+  const current = Math.max(2, Math.min(6, Number(draft[`base_${attribute}`] || 4)));
+  const spent = ATTRIBUTES.reduce((sum, entry) => sum + Number(draft[`base_${entry.key}`] || 4), 0);
+  if (delta > 0 && (current >= 6 || spent >= 20)) return;
+  if (delta < 0 && current <= 2) return;
+  state.characterDraft[`base_${attribute}`] = current + Math.sign(delta);
+  scheduleRender({ critical: true, preserveScroll: true });
+}
+
+async function saveCharacter(form) {
+  if (state.characterSaving || characterRegistrationLocked()) return;
+  const values = captureCharacterStep(form);
+  for (let step = 1; step <= 5; step += 1) {
+    const error = validateRegistrationStep(step, values);
+    if (error) {
+      state.characterStep = step;
+      toast(error);
+      scheduleRender({ critical: true });
+      return;
+    }
+  }
+  const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(values[`base_${attr.key}`])]));
+  const cultureEntry = characterCatalogEntry("cultures", values.cultureId);
+  const professionEntry = characterCatalogEntry("professions", values.professionId);
+  const normalized = {
+    ...values,
+    displayName: values.playerName || state.profile?.displayName || state.user.email,
+    characterAge: values.apparentAge === "" ? "" : Number(values.apparentAge),
+    apparentAge: values.apparentAge === "" ? "" : Number(values.apparentAge),
+    realAge: values.realAge === "" ? "" : Number(values.realAge),
+    culture: values.cultureId === "custom" ? `${values.customCultureName}: ${values.customCultureSummary}` : cultureEntry?.name || "",
+    profession: values.professionId === "custom" ? `${values.customProfessionName}: ${values.customProfessionSummary}` : values.professionId === "none" ? "Sem ofício" : professionEntry?.name || "",
+    currentLocation: values.currentLocation || characterCatalogEntry("regions", values.regionId)?.name || "Limiar das Cortinas",
+    avatarUrl: values.avatarUrl || "",
+    characterDescription: values.characterDescription || "",
+    avatarPosition: "center",
+    avatarFocusX: Math.max(0, Math.min(100, Number(values.avatarFocusX || 50))),
+    avatarFocusY: Math.max(0, Math.min(100, Number(values.avatarFocusY || 50))),
+    avatarZoom: Math.max(1, Math.min(2.4, Number(values.avatarZoom || 1))),
+    base,
+    creationLocked: true,
+    creationStatus: "registered",
+    technicalCreationComplete: true,
+  };
+  state.characterSaving = true;
+  scheduleRender({ critical: true, preserveScroll: true });
+  try {
+    const patch = {
+      ...(await saveCharacterCorePatch(normalized, { commit: false })),
+      ...(await saveCharacterOriginPatch(normalized, { commit: false })),
+      ...(await saveCharacterAttributesPatch(normalized, { commit: false })),
+      ...(await saveCharacterMediaPatch(normalized, { commit: false })),
+      ...(await saveCharacterLocationPatch(normalized, { commit: false })),
+      ...(await saveCharacterStatePatch(normalized, { commit: false })),
+    };
+    await updateCharacter(state.user.uid, patch);
+    await writeDoc("users", state.user.uid, { displayName: normalized.displayName });
+    state.characterDraft = null;
+    state.characterStep = 1;
+    clearLocalFormDraft("character");
+    toast("Registro técnico concluído. Sua base agora está protegida.");
+  } finally {
+    state.characterSaving = false;
+    scheduleRender({ critical: true });
+  }
+}
+
+async function spendDevelopmentPoint(attribute) {
+  if (state.developmentSpending || !ATTRIBUTES.some((entry) => entry.key === attribute)) return;
+  const character = currentCharacter();
+  if (Number(character.freePoints || 0) < 1) {
+    toast("Nenhum Ponto de Desenvolvimento disponível.");
+    return;
+  }
+  state.developmentSpending = true;
+  scheduleRender({ preserveScroll: true });
+  try {
+    const before = Number(character.development?.[attribute] || 0);
+    const operationId = cryptoRandom();
+    if (state.demo) {
+      await updateCharacter(state.user.uid, {
+        development: { ...(character.development || {}), [attribute]: before + 1 },
+        freePoints: Number(character.freePoints || 0) - 1,
+      });
+    } else {
+      const ref = state.db.collection("characters").doc(state.user.uid);
+      const logRef = ref.collection("developmentLogs").doc(operationId);
+      await state.db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const current = snapshot.data() || {};
+        if (Number(current.freePoints || 0) < 1) throw new Error("Nenhum ponto disponível.");
+        const development = { for: 0, vel: 0, hab: 0, res: 0, pod: 0, ...(current.development || {}) };
+        const previous = Number(development[attribute] || 0);
+        development[attribute] = previous + 1;
+        transaction.update(ref, { development, freePoints: Number(current.freePoints) - 1, updatedAt: nowValue() });
+        transaction.set(logRef, { ownerId: state.user.uid, attribute, amount: 1, before: previous, after: previous + 1, createdAt: nowValue() });
+      });
+      state.diagnostics.writes += 2;
+    }
+    toast(`+1 ${ATTRIBUTES.find((entry) => entry.key === attribute).short} registrado.`);
+  } finally {
+    state.developmentSpending = false;
+    scheduleRender({ preserveScroll: true });
+  }
 }
 
 async function rollAffinity(qty = 1) {
@@ -9499,19 +10363,24 @@ function wireEvents() {
   });
 
   document.addEventListener("compositionstart", (event) => {
-    if (!["codex-search", "market-search"].includes(event.target.dataset.action)) return;
-    state.searchComposing = true;
-    state.searchUpdateSequence += 1;
-    window.clearTimeout(state.searchUpdateTimer);
+    state.textComposing = true;
+    if (["codex-search", "market-search"].includes(event.target.dataset.action)) {
+      state.searchComposing = true;
+      state.searchUpdateSequence += 1;
+      window.clearTimeout(state.searchUpdateTimer);
+    }
   });
 
   document.addEventListener("compositionend", (event) => {
     const action = event.target.dataset.action;
-    if (!["codex-search", "market-search"].includes(action)) return;
-    state.searchComposing = false;
-    if (action === "market-search") state.marketSearch = event.target.value;
-    else state.codexSearch = event.target.value;
-    queueSearchResultsUpdate(action);
+    state.textComposing = false;
+    queueLocalFormDraft(event.target.closest("form"));
+    if (["codex-search", "market-search"].includes(action)) {
+      state.searchComposing = false;
+      if (action === "market-search") state.marketSearch = event.target.value;
+      else state.codexSearch = event.target.value;
+      queueSearchResultsUpdate(action);
+    }
   });
 
   document.addEventListener("focusout", () => {
@@ -9530,6 +10399,7 @@ function wireEvents() {
 
     try {
       if (button.dataset.nav) {
+        persistDirtyForms();
         if (button.dataset.codexTarget) state.codexTab = button.dataset.codexTarget;
         state.view = button.dataset.nav;
         button.blur();
@@ -9545,6 +10415,8 @@ function wireEvents() {
         window.setTimeout(resetViewScroll, 80);
       }
       if (action === "register") await handleRegister();
+      if (action === "apply-update") applyAvailableUpdate();
+      if (action === "dismiss-update") $("#updateNotice").hidden = true;
       if (action === "toggle-music") await toggleAmbientMusic();
       if (action === "demo-player") enterDemo("player");
       if (action === "demo-admin") enterDemo("admin");
@@ -9568,6 +10440,16 @@ function wireEvents() {
       }
       if (action === "onboarding-complete") await completeOnboarding();
       if (action === "open-onboarding") openOnboarding(0);
+      if (action === "character-intro-start" || action === "character-intro-skip") {
+        state.characterIntroSeen = true;
+        state.characterStep = 1;
+        try { localStorage.setItem(`${LOCAL_DRAFT_PREFIX}:${state.user?.uid || "anonymous"}:character-intro`, "seen"); } catch { /* no-op */ }
+        render();
+      }
+      if (action === "character-step-next") moveCharacterStep(1, button.closest("form"));
+      if (action === "character-step-prev") moveCharacterStep(-1, button.closest("form"));
+      if (action === "attribute-step") adjustRegistrationAttribute(button.dataset.attr, Number(button.dataset.delta || 0), button.closest("form"));
+      if (action === "spend-development") await spendDevelopmentPoint(button.dataset.attr);
       if (action === "add-emoji") {
         const textarea = button.closest("form")?.querySelector("textarea[name='text']");
         if (textarea) {
@@ -9733,6 +10615,13 @@ function wireEvents() {
       return;
     }
     if (event.target.dataset.action === "select-private-user") subscribePrivateChat(event.target.value);
+    if (event.target.dataset.characterPreview) {
+      const form = event.target.closest("form");
+      captureCharacterStep(form);
+      if (event.target.name === "kingdomId") state.characterDraft.regionId = "";
+      scheduleRender({ critical: true, preserveScroll: true });
+      return;
+    }
     if (event.target.dataset.action === "codex-filter") {
       state.codexFilter = event.target.value;
       render();
@@ -9750,7 +10639,9 @@ function wireEvents() {
       render();
     }
     const form = event.target.closest("form");
-    if (form?.dataset.form === "character") state.characterDraft = formValues(form);
+    if (form?.dataset.form && form.dataset.form !== "login") form.dataset.dirty = "true";
+    queueLocalFormDraft(form);
+    if (form?.dataset.form === "character") state.characterDraft = { ...(state.characterDraft || {}), ...formValues(form) };
     if (["pet-hunt", "tower-defense"].includes(form?.dataset.form)) state.minigameDrafts[form.dataset.form] = formValues(form);
     if (form?.dataset.form === "tower-defense") syncTowerDeckOptions(form);
     if (form?.dataset.form === "admin-user-edit") {
@@ -9781,7 +10672,9 @@ function wireEvents() {
       return;
     }
     const form = event.target.closest("form");
-    if (form?.dataset.form === "character") state.characterDraft = formValues(form);
+    if (form?.dataset.form && form.dataset.form !== "login") form.dataset.dirty = "true";
+    if (!event.isComposing) queueLocalFormDraft(form);
+    if (form?.dataset.form === "character") state.characterDraft = { ...(state.characterDraft || {}), ...formValues(form) };
     if (["pet-hunt", "tower-defense"].includes(form?.dataset.form)) state.minigameDrafts[form.dataset.form] = formValues(form);
     if (form?.dataset.form === "admin-user-edit") {
       const values = formValues(form);
@@ -9800,6 +10693,7 @@ function wireEvents() {
       if (type === "login") await handleLogin(form);
       if (type === "terms-accept") await acceptTerms();
       if (type === "character") await saveCharacter(form);
+      if (type === "character-life") await saveCharacterLife(form);
       if (type === "global-chat") await sendGlobalChat(form);
       if (type === "private-chat") await sendPrivateChat(form);
       if (type === "diary-entry") await saveDiaryEntry(form);
@@ -9922,6 +10816,13 @@ function wireEvents() {
         });
         toast("Configurações publicadas.");
       }
+      form.dataset.dirty = "false";
+      clearUpdateDraft(type);
+      clearLocalFormDraft(type);
+      if (state.pendingInputRender) {
+        state.pendingInputRender = false;
+        scheduleRender({ preserveFocus: true, preserveScroll: true });
+      }
     } catch (error) {
       console.error(error);
       toast(firebaseErrorMessage(error));
@@ -9937,7 +10838,13 @@ try {
   // The site still works when browser storage is unavailable.
 }
 wireEvents();
+updateBuildBadge();
+registerMillenniumServiceWorker();
 window.addEventListener("beforeunload", () => {
+  if (document.querySelector('form[data-dirty="true"]')) {
+    persistDirtyForms();
+    saveUpdateDrafts();
+  }
   setPresence(false);
 });
 initFirebase();

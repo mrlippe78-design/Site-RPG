@@ -1,4 +1,5 @@
 (function registerMillenniumEdition3() {
+  const MILLENNIUM_BUILD = "3.1.0";
   const affinity = (id, name, categoryId, bonus, domain, limit, expansion = false) => ({
     id,
     name,
@@ -304,6 +305,7 @@
   };
 
   window.MILLENNIUM_V3_CONTENT = {
+    build: MILLENNIUM_BUILD,
     settings: {
       seasonName: "Temporada I · Despertar dos Heróis",
       rulesVersion: "3.0",
@@ -404,9 +406,9 @@
       gachaItems: cosmetics,
       gachaShardShops: shardOffers,
       towerMaps: [
-        { id: "pantano-dos-sinos", name: "Pântano dos Sinos Afogados", theme: "Mangue funerário", lanes: 2, slots: 6, routeType: "marsh", enemyFaction: "Afogados Sineiros", enemyTrait: "summoner", difficulty: "Hard", imageUrl: "assets/maps/sociedade-das-laminas.png", description: "Ilhas estreitas e água móvel; sinos não silenciados convocam reforços." },
-        { id: "ermos-da-ferrugem", name: "Ermos da Ferrugem", theme: "Fronteira industrial", lanes: 3, slots: 7, routeType: "rails", enemyFaction: "Máquinas Sem Identidade", enemyTrait: "armored", difficulty: "Pesadelo", imageUrl: "assets/maps/arena-das-sete-esferas.png", description: "Esteiras e trilhos mudam a velocidade dos blindados e deixam sucata utilizável." },
-        { id: "mar-de-vidro-negro", name: "Mar de Vidro Negro", theme: "Oceano refletido", lanes: 2, slots: 5, routeType: "mirror", enemyFaction: "Reflexos Famintos", enemyTrait: "phase", difficulty: "God Slayer", imageUrl: "assets/maps/reino-do-pecado-partido.png", description: "Inimigos surgem na rota refletida; tempestades alteram alcance e direção." },
+        { id: "pantano-dos-sinos", name: "Pântano dos Sinos Afogados", theme: "Mangue funerário", lanes: 2, slots: 6, routeType: "marsh", enemyFaction: "Afogados Sineiros", enemyTrait: "summoner", difficulty: "Hard", imageUrl: "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719061/millennium/maps/zefcknkprt8h7uhzzmkd.png", description: "Ilhas estreitas e água móvel; sinos não silenciados convocam reforços." },
+        { id: "ermos-da-ferrugem", name: "Ermos da Ferrugem", theme: "Fronteira industrial", lanes: 3, slots: 7, routeType: "rails", enemyFaction: "Máquinas Sem Identidade", enemyTrait: "armored", difficulty: "Pesadelo", imageUrl: "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719057/millennium/maps/un0qeu7czwnglelaowc9.png", description: "Esteiras e trilhos mudam a velocidade dos blindados e deixam sucata utilizável." },
+        { id: "mar-de-vidro-negro", name: "Mar de Vidro Negro", theme: "Oceano refletido", lanes: 2, slots: 5, routeType: "mirror", enemyFaction: "Reflexos Famintos", enemyTrait: "phase", difficulty: "God Slayer", imageUrl: "https://res.cloudinary.com/cakvvuqx/image/upload/f_auto,q_auto,w_1440,c_limit/v1783719065/millennium/maps/vlxlggz8ud2lvg1js83k.png", description: "Inimigos surgem na rota refletida; tempestades alteram alcance e direção." },
       ],
       kingdoms,
       biomes,
