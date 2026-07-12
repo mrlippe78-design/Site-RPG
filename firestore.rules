@@ -297,6 +297,78 @@ service cloud.firestore {
         ]);
     }
 
+
+    // Hotfix 3.1.1: compatibility for client-side beta operations.
+    // These rules restore bounded writes while a trusted backend is not available.
+    function ownerAffinityRollUpdate() {
+      let oldAttempts = resource.data.get("affinityAttempts", 0);
+      let nextAttempts = request.resource.data.get("affinityAttempts", 0);
+      let spent = oldAttempts - nextAttempts;
+      let oldRolls = resource.data.get("totalRolls", 0);
+      let nextRolls = request.resource.data.get("totalRolls", 0);
+      let oldRares = resource.data.get("totalRares", 0);
+      let nextRares = request.resource.data.get("totalRares", 0);
+      return changedOnly([
+          "affinityAttempts", "pityCounter", "totalRolls", "totalRares",
+          "prestige", "rollHistory", "affinityId", "affinitySnapshot", "updatedAt"
+        ])
+        && oldAttempts is int && nextAttempts is int
+        && spent >= 1 && spent <= 10
+        && nextAttempts >= 0
+        && oldRolls is int && nextRolls == oldRolls + spent
+        && oldRares is int && nextRares is int
+        && nextRares >= oldRares && nextRares <= oldRares + spent
+        && request.resource.data.get("pityCounter", 0) is int
+        && request.resource.data.get("pityCounter", 0) >= 0
+        && request.resource.data.get("pityCounter", 0) <= 30
+        && request.resource.data.get("prestige", 0) is int
+        && request.resource.data.get("prestige", 0) >= 0
+        && request.resource.data.get("rollHistory", []) is list
+        && request.resource.data.get("rollHistory", []).size() <= 60
+        && shortText(request.resource.data.get("affinityId", ""), 80)
+        && request.resource.data.get("affinitySnapshot", {}) is map;
+    }
+
+    function ownerAffinityChoiceUpdate() {
+      return changedOnly(["affinityId", "affinitySnapshot", "updatedAt"])
+        && resource.data.get("totalRolls", 0) > 0
+        && shortText(request.resource.data.get("affinityId", ""), 80)
+        && request.resource.data.get("affinitySnapshot", {}) is map;
+    }
+
+    function ownerGiftClaimUpdate() {
+      return changedOnly(["pendingGift", "updatedAt"])
+        && resource.data.get("pendingGift", null) is map
+        && request.resource.data.get("pendingGift", null) == null;
+    }
+
+    function ownerMinigameResultUpdate() {
+      let oldEnergy = resource.data.get("gachaEnergy", 30);
+      let nextEnergy = request.resource.data.get("gachaEnergy", 30);
+      let oldCoins = resource.data.get("millenniumCoins", 0);
+      let nextCoins = request.resource.data.get("millenniumCoins", 0);
+      let oldKeys = resource.data.get("minigameCompletionKeys", []);
+      let nextKeys = request.resource.data.get("minigameCompletionKeys", []);
+      return changedOnly([
+          "gachaEnergy", "gachaEnergyUpdatedAt", "millenniumCoins", "gachaFragments",
+          "minigameCompletionKeys", "minigameStats", "minigameHistory",
+          "lastAimRun", "lastTowerRun", "updatedAt"
+        ])
+        && oldEnergy is int && nextEnergy is int
+        && nextEnergy >= 0 && nextEnergy <= 30
+        && oldCoins is int && nextCoins is int
+        && nextCoins >= oldCoins && nextCoins <= oldCoins + 5000
+        && request.resource.data.get("gachaFragments", {}) is map
+        && oldKeys is list && nextKeys is list
+        && nextKeys.size() <= 80
+        && nextKeys != oldKeys
+        && request.resource.data.get("minigameStats", {}) is map
+        && request.resource.data.get("minigameHistory", []) is list
+        && request.resource.data.get("minigameHistory", []).size() <= 30
+        && request.resource.data.get("lastAimRun", {}) is map
+        && request.resource.data.get("lastTowerRun", {}) is map;
+    }
+
     match /admins/{uid} {
       allow read: if own(uid) || isAdmin();
       allow write: if isAdmin();
@@ -323,7 +395,15 @@ service cloud.firestore {
         && request.resource.data.ownerId == uid
         && validAudit(request.resource.data.lastAuditId, uid);
       allow update: if own(uid)
-        && (technicalCreationUpdate() || ownerProfileUpdate() || developmentPointUpdate());
+        && (
+          technicalCreationUpdate()
+          || ownerProfileUpdate()
+          || developmentPointUpdate()
+          || ownerAffinityRollUpdate()
+          || ownerAffinityChoiceUpdate()
+          || ownerGiftClaimUpdate()
+          || ownerMinigameResultUpdate()
+        );
       allow update: if auditedAdminMutation(uid);
       allow delete: if false;
 

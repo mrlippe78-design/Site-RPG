@@ -1,4 +1,4 @@
-const MILLENNIUM_BUILD = "3.1.0";
+const MILLENNIUM_BUILD = "3.1.1";
 const CACHE_PREFIX = "millennium-shell-v";
 const CACHE_NAME = `${CACHE_PREFIX}${MILLENNIUM_BUILD}`;
 const NETWORK_TIMEOUT_MS = 8000;

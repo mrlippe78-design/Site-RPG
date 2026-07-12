@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T14:18:33.607Z",
+  "generatedAt": "2026-07-12T16:30:35.324Z",
   "files": {
     "styles.css": {
       "bytes": 94047,
@@ -30,14 +30,14 @@
       "mediaQueries": 1
     },
     "polish.css": {
-      "bytes": 6644,
+      "bytes": 6775,
       "selectors": 133,
       "repeatedInsideFile": 12,
       "importantDeclarations": 14,
       "mediaQueries": 4
     }
   },
-  "crossFileDuplicateCount": 108,
+  "crossFileDuplicateCount": 107,
   "crossFileDuplicates": [
     {
       "selector": "0",
@@ -130,13 +130,6 @@
       "selector": ".affinity-reveal-runes",
       "files": [
         "overrides.css",
-        "polish.css"
-      ]
-    },
-    {
-      "selector": ".aim-hud",
-      "files": [
-        "styles.css",
         "polish.css"
       ]
     },
@@ -604,6 +597,13 @@
     },
     {
       "selector": "6vw",
+      "files": [
+        "styles.css",
+        "overrides.css"
+      ]
+    },
+    {
+      "selector": "7",
       "files": [
         "styles.css",
         "overrides.css"
