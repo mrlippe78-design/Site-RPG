@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T16:30:35.324Z",
+  "generatedAt": "2026-07-12T17:24:41.324Z",
   "files": {
     "styles.css": {
       "bytes": 94047,
@@ -30,14 +30,14 @@
       "mediaQueries": 1
     },
     "polish.css": {
-      "bytes": 6775,
-      "selectors": 133,
-      "repeatedInsideFile": 12,
+      "bytes": 7680,
+      "selectors": 162,
+      "repeatedInsideFile": 17,
       "importantDeclarations": 14,
       "mediaQueries": 4
     }
   },
-  "crossFileDuplicateCount": 107,
+  "crossFileDuplicateCount": 110,
   "crossFileDuplicates": [
     {
       "selector": "0",
@@ -526,6 +526,13 @@
       ]
     },
     {
+      "selector": "180",
+      "files": [
+        "styles.css",
+        "polish.css"
+      ]
+    },
+    {
       "selector": "185",
       "files": [
         "styles.css",
@@ -597,13 +604,6 @@
     },
     {
       "selector": "6vw",
-      "files": [
-        "styles.css",
-        "overrides.css"
-      ]
-    },
-    {
-      "selector": "7",
       "files": [
         "styles.css",
         "overrides.css"

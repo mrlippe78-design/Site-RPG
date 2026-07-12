@@ -7,6 +7,7 @@ import {
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
 import {
+  deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
@@ -244,7 +245,7 @@ test("conversation summary and immutable message are created atomically", async 
   await assertFails(forged.commit());
 });
 
-test("creation requests allow controlled resubmission but not self approval", async () => {
+test("creation requests let the player only accept or contest the Oracle proposal", async () => {
   const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
   const baseRequest = {
     uid: "player-a",
@@ -273,35 +274,40 @@ test("creation requests allow controlled resubmission but not self approval", as
   };
   await assertSucceeds(setDoc(doc(db, "progressRequests", "power-new"), baseRequest));
   await assertFails(updateDoc(doc(db, "progressRequests", "power-new"), { status: "aprovado" }));
-
-  await environment.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), "progressRequests", "power-nerf"), {
-      ...baseRequest,
-      status: "nerf solicitado",
-      createdAt: new Date(),
-    });
-  });
-  await assertSucceeds(updateDoc(doc(db, "progressRequests", "power-nerf"), {
+  await assertFails(updateDoc(doc(db, "progressRequests", "power-new"), {
     status: "pendente",
-    description: "Projétil ajustado.",
+    description: "Player tentou reescrever.",
     revision: 2,
-    previousRequestId: "power-nerf",
-    resubmittedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }));
 
   await environment.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), "progressRequests", "power-bad-revision"), {
+    await setDoc(doc(context.firestore(), "progressRequests", "power-proposal"), {
       ...baseRequest,
-      status: "nerf solicitado",
+      status: "aguardando confirmação",
+      proposedTitle: "Lança Solar Regulada",
+      proposedDescription: "Versão balanceada pelo Oráculo.",
       createdAt: new Date(),
     });
   });
-  await assertFails(updateDoc(doc(db, "progressRequests", "power-bad-revision"), {
-    status: "pendente",
-    revision: 99,
-    previousRequestId: "power-bad-revision",
-    resubmittedAt: serverTimestamp(),
+  await assertSucceeds(updateDoc(doc(db, "progressRequests", "power-proposal"), {
+    status: "aceito pelo player",
+    playerResponse: "Concordo com a versão apresentada pelo Oráculo.",
+    playerRespondedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "progressRequests", "power-contest"), {
+      ...baseRequest,
+      status: "aguardando confirmação",
+      createdAt: new Date(),
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db, "progressRequests", "power-contest"), {
+    status: "contestado pelo player",
+    playerResponse: "A limitação contradiz o conceito original.",
+    playerRespondedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }));
 });
@@ -366,6 +372,28 @@ test("private public-profile projection is visible only to owner and admin", asy
   await assertSucceeds(getDoc(doc(ownerDb, "publicProfiles", "player-a")));
   await assertFails(getDoc(doc(otherDb, "publicProfiles", "player-a")));
   await assertSucceeds(getDoc(doc(adminDb, "publicProfiles", "player-a")));
+});
+
+test("admin can delete test records and a tombstone blocks profile recreation", async () => {
+  const adminDb = environment.authenticatedContext("oracle", { email: "oracle@example.invalid" }).firestore();
+  const playerDb = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertFails(deleteDoc(doc(playerDb, "characters", "player-a")));
+  await assertSucceeds(deleteDoc(doc(adminDb, "characters", "player-a")));
+  await assertSucceeds(setDoc(doc(adminDb, "deletedUsers", "player-a"), {
+    uid: "player-a",
+    displayName: "A",
+    reason: "Conta de teste",
+    deletedBy: "oracle",
+    createdAt: serverTimestamp(),
+  }));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await deleteDoc(doc(context.firestore(), "users", "player-a"));
+  });
+  await assertFails(setDoc(doc(playerDb, "users", "player-a"), {
+    role: "player",
+    email: "a@example.invalid",
+    displayName: "A",
+  }));
 });
 
 test("report review requires an audit record in the same batch", async () => {

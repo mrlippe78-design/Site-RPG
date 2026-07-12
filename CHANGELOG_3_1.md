@@ -1,3 +1,12 @@
+
+## 3.1.2 — Administração, rankings e criações
+
+- classes dinâmicas integradas ao Codex e às fichas;
+- rankings recalculados pelas fichas registradas;
+- prestígio administrativo somente leitura;
+- exclusão protegida de fichas e contas de teste;
+- fluxo de poder controlado pelo Oráculo com confirmação do player;
+- regras de segurança atualizadas para respostas e exclusões administrativas.
 # Changelog 3.1 — Operação 1
 
 ## Adicionado

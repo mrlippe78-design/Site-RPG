@@ -4,7 +4,9 @@
   const CREATION_STATUSES = Object.freeze({
     pending: "pendente",
     reviewing: "em análise",
-    nerf: "nerf solicitado",
+    awaitingConfirmation: "aguardando confirmação",
+    playerAccepted: "aceito pelo player",
+    playerContested: "contestado pelo player",
     approved: "aprovado",
     rejected: "reprovado",
   });
@@ -81,9 +83,16 @@
       reviewing: CREATION_STATUSES.reviewing,
       "em analise": CREATION_STATUSES.reviewing,
       "em análise": CREATION_STATUSES.reviewing,
-      nerf: CREATION_STATUSES.nerf,
-      "nerf solicitado": CREATION_STATUSES.nerf,
-      nerf_solicitado: CREATION_STATUSES.nerf,
+      nerf: CREATION_STATUSES.awaitingConfirmation,
+      "nerf solicitado": CREATION_STATUSES.awaitingConfirmation,
+      nerf_solicitado: CREATION_STATUSES.awaitingConfirmation,
+      proposal: CREATION_STATUSES.awaitingConfirmation,
+      "aguardando confirmacao": CREATION_STATUSES.awaitingConfirmation,
+      "aguardando confirmação": CREATION_STATUSES.awaitingConfirmation,
+      accepted: CREATION_STATUSES.playerAccepted,
+      "aceito pelo player": CREATION_STATUSES.playerAccepted,
+      contested: CREATION_STATUSES.playerContested,
+      "contestado pelo player": CREATION_STATUSES.playerContested,
       approved: CREATION_STATUSES.approved,
       aprovado: CREATION_STATUSES.approved,
       rejected: CREATION_STATUSES.rejected,
@@ -106,8 +115,26 @@
     return payload;
   }
 
-  function canResubmitCreation(request = {}) {
-    return canonicalCreationStatus(request.status) === CREATION_STATUSES.nerf;
+  function canRespondToCreation(request = {}) {
+    return canonicalCreationStatus(request.status) === CREATION_STATUSES.awaitingConfirmation;
+  }
+
+  function creationPlayerResponseAllowed(request = {}, response = "") {
+    if (!canRespondToCreation(request)) return false;
+    return ["accepted", "contested"].includes(normalizeText(response, 40).toLowerCase());
+  }
+
+  function creationNeedsAdminAction(request = {}) {
+    return [
+      CREATION_STATUSES.pending,
+      CREATION_STATUSES.reviewing,
+      CREATION_STATUSES.playerAccepted,
+      CREATION_STATUSES.playerContested,
+    ].includes(canonicalCreationStatus(request.status));
+  }
+
+  function canResubmitCreation() {
+    return false;
   }
 
   function creationStatusLabel(status) {
@@ -243,6 +270,9 @@
     buildReportPayload,
     canonicalCreationStatus,
     sanitizeCreationPayload,
+    canRespondToCreation,
+    creationPlayerResponseAllowed,
+    creationNeedsAdminAction,
     canResubmitCreation,
     creationStatusLabel,
     buildDirectMessage,

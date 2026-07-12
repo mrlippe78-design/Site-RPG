@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 test("operation 3 assets load before app and are precached", async () => {
   const [html, sw] = await Promise.all([read("../index.html"), read("../service-worker.js")]);
   assert.ok(html.indexOf("millennium-backend.js") < html.indexOf("app.js"));
-  assert.match(html, /backend\.css\?v=3\.1\.1/);
+  assert.match(html, /backend\.css\?v=3\.1\.2/);
   assert.match(sw, /millennium-backend\.js/);
   assert.match(sw, /backend\.css/);
 });
@@ -32,11 +32,11 @@ test("creations, support, audit and migration dry-run are integrated", async () 
   assert.match(app, /syncPublicProfileProjection/);
 });
 
-test("rules protect immutable messages and controlled resubmission", async () => {
+test("rules protect immutable messages and controlled player confirmation", async () => {
   const rules = await read("../firestore.rules");
   assert.match(rules, /validConversationCreate/);
   assert.match(rules, /validConversationUpdate/);
-  assert.match(rules, /validCreationResubmit/);
+  assert.match(rules, /validCreationPlayerResponse/);
   assert.match(rules, /allow update: if false;/);
   assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/conversations/);
 });
