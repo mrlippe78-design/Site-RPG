@@ -1,5 +1,5 @@
 (function registerMillenniumEdition3() {
-  const MILLENNIUM_BUILD = "3.5.1";
+  const MILLENNIUM_BUILD = "3.5.2";
   const affinity = (id, name, categoryId, bonus, domain, limit, expansion = false) => ({
     id,
     name,
