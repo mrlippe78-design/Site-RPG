@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.1", commit: "dev", cacheName: "millennium-shell-v3.6.1" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.2", commit: "dev", cacheName: "millennium-shell-v3.6.2" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -726,6 +726,7 @@ const state = {
   marketCategory: "all",
   rankingTab: "prestige",
   rankingRange: "season",
+  expandedAttribute: "for",
   gachaTab: "pets",
   vaultTab: "all",
   minigameTab: "quick",
@@ -1374,6 +1375,14 @@ function bonusToText(bonus = {}) {
     .filter(([, value]) => Number(value) !== 0)
     .map(([key, value]) => `+${value} ${labels[key] || key.toUpperCase()}`);
   return parts.length ? parts.join(", ") : "Sem bônus";
+}
+
+function penaltyToText(penalty = {}) {
+  const labels = { for: "FOR", vel: "VEL", hab: "HAB", res: "RES", pod: "POD" };
+  const parts = Object.entries(penalty)
+    .filter(([key, value]) => labels[key] && Number(value) > 0)
+    .map(([key, value]) => `−${Number(value)} ${labels[key]}`);
+  return parts.join(", ");
 }
 
 function parseBonus(raw) {
@@ -2366,14 +2375,67 @@ function petRecoveryCost(instance) {
   return 0;
 }
 
-function prestigeFor(character) {
+function petPowerForPrestige(character = {}) {
+  if (character.__rankingProjection || Object.prototype.hasOwnProperty.call(character, "petPower")) {
+    return Math.max(0, Number(character.petPower || 0));
+  }
+  const seen = new Set();
+  return [...(character.gachaVault || []).filter((item) => item?.kind === "pet"), ...(character.pets || [])]
+    .filter((pet) => {
+      const key = pet.instanceId || pet.id || `${pet.name || "pet"}:${pet.rarity || "Comum"}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .reduce((sum, pet) => sum + instancePower(pet), 0);
+}
+
+function approvedMissionCountForPrestige(character = {}) {
+  const projected = Number(character.missions?.all || 0);
+  const stored = Number(character.approvedMissionCount || 0);
+  const ownerId = character.ownerId || character.id || "";
+  const loaded = (state.progressRequests || []).filter((request) => request.uid === ownerId
+    && request.status === "aprovado"
+    && ["mission", "guildMission", "training"].includes(request.type)).length;
+  return Math.max(0, projected, stored, loaded);
+}
+
+function prestigeBreakdown(character = {}) {
   const level = Math.max(1, Number(character.level || 0), levelFromXp(character.xp || 0));
-  return Math.floor(
-    Number(character.totalRolls || 0) * 10
-    + Number(character.totalRares || 0) * 250
-    + level * 20
-    + Number(character.gold || 0) / 10
-  );
+  const xp = Math.max(0, Number(character.xp || 0));
+  const missionCount = approvedMissionCountForPrestige(character);
+  const developmentPoints = character.__rankingProjection || Object.prototype.hasOwnProperty.call(character, "developmentPoints")
+    ? Math.max(0, Number(character.developmentPoints || 0))
+    : ATTRIBUTES.reduce((sum, attribute) => sum + Math.max(0, Number(character.development?.[attribute.key] || 0)), 0);
+  const petPower = petPowerForPrestige(character);
+  const powerCount = Math.max(0, Number(character.powerCount ?? approvedPowerCount(character)));
+  const techniqueCount = Math.max(0, Number(character.techniqueCount ?? (character.techniques || []).filter((entry) => entry?.name && entry.status !== "reprovado").length));
+  const achievementCount = Math.max(0, Number(character.achievementCount ?? derivedAchievementIds(character).size));
+  const passXp = Math.max(0, Number(character.passXp ?? character.seasonPassXp ?? 0));
+  const components = {
+    level: level * 100,
+    xp: Math.floor(xp / 10),
+    missions: missionCount * 120,
+    development: developmentPoints * 75,
+    pets: Math.floor(petPower / 20),
+    po: Math.floor(Math.max(0, Number(character.gold || 0)) / 20),
+    powers: powerCount * 100,
+    techniques: techniqueCount * 60,
+    achievements: achievementCount * 80,
+    pass: Math.floor(passXp / 20),
+    rarities: Math.max(0, Number(character.totalRares || 0)) * 30,
+  };
+  return {
+    ...components,
+    missionCount,
+    developmentPoints,
+    petPower,
+    total: Object.values(components).reduce((sum, value) => sum + Number(value || 0), 0),
+  };
+}
+
+function prestigeFor(character = {}) {
+  return Math.floor(prestigeBreakdown(character).total);
 }
 
 function rankingEligible(character = {}) {
@@ -2520,6 +2582,27 @@ function leaderboard() {
       || Math.max(Number(b.level || 0), levelFromXp(b.xp || 0)) - Math.max(Number(a.level || 0), levelFromXp(a.xp || 0)));
 }
 
+function prestigeComparison(character = currentCharacter()) {
+  const ownerId = character.ownerId || character.id || state.user?.uid || "";
+  const roster = new Map(rankingCharacters().filter(rankingEligible).map((entry) => [entry.ownerId || entry.id, entry]));
+  if (ownerId && rankingEligible({ ...character, ownerId })) roster.set(ownerId, { ...character, ownerId });
+  const ranked = [...roster.values()]
+    .map((entry) => ({ character: entry, score: prestigeFor(entry) }))
+    .sort((a, b) => b.score - a.score || String(a.character.characterName || "").localeCompare(String(b.character.characterName || ""), "pt-BR"));
+  const index = ranked.findIndex((entry) => (entry.character.ownerId || entry.character.id) === ownerId);
+  const own = index >= 0 ? ranked[index] : { character, score: prestigeFor(character) };
+  const leaderScore = Math.max(1, Number(ranked[0]?.score || own.score || 1));
+  return {
+    score: own.score,
+    position: index >= 0 ? index + 1 : 0,
+    totalPlayers: ranked.length,
+    leaderScore,
+    gap: Math.max(0, leaderScore - own.score),
+    percent: Math.max(0, Math.min(100, Math.round((own.score / leaderScore) * 100))),
+    breakdown: prestigeBreakdown(character),
+  };
+}
+
 function renderPityBar(value, max) {
   const pct = Math.max(0, Math.min(100, (Number(value || 0) / Math.max(1, Number(max || 1))) * 100));
   return `<div class="pity-bar" aria-label="Pity ${Number(value || 0)} de ${Number(max || 1)}"><span style="width:${pct}%"></span></div>`;
@@ -2560,7 +2643,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.1 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.2 Spark.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2866,7 +2949,7 @@ function activateRouteSubscriptions(view = state.view) {
     }, (query) => query.orderBy("createdAt", "desc").limit(30), "account-deletion-queue");
   }
 
-  if (["player-home", "ranking", "hall"].includes(view)) {
+  if (["player-home", "profile", "ranking", "hall"].includes(view)) {
     routeCollection("rankings", (profiles) => {
       state.rankingProfiles = profiles;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: "ranking-live" });
@@ -4479,21 +4562,25 @@ function manifestationSnapshot(character = currentCharacter()) {
   };
   const grade = window.MILLENNIUM_CORE_31.manifestationGrade(enriched, stats);
   const potential = window.MILLENNIUM_CORE_31.potentialProfile(stats);
-  return { stats, grade, potential };
+  const comparison = prestigeComparison(character);
+  return { stats, grade, potential, comparison };
 }
 
 function renderManifestationPanel(character = currentCharacter(), options = {}) {
-  const { grade, potential } = manifestationSnapshot(character);
+  const { potential, comparison } = manifestationSnapshot(character);
   const compact = Boolean(options.compact);
+  const position = comparison.position ? `#${comparison.position}` : "—";
+  const gapLabel = comparison.gap > 0 ? `${comparison.gap.toLocaleString("pt-BR")} até o líder` : "Referência atual do ranking";
   return `
-    <article class="manifestation-panel ${compact ? "compact" : ""}">
-      <div class="manifestation-seal" aria-hidden="true"><span>${esc(grade.name.slice(0, 1))}</span></div>
+    <article class="manifestation-panel prestige-comparison ${compact ? "compact" : ""}">
+      <div class="manifestation-seal" aria-hidden="true"><span>${esc(position)}</span></div>
       <div class="manifestation-copy">
-        <p class="eyebrow">Grau de Manifestação</p>
-        <h3>${esc(grade.name)}</h3>
-        <p>O Grau representa desenvolvimento registrado. Estratégia, condições, contexto e interpretação continuam determinando resultados narrativos.</p>
-        <div class="manifestation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Number(grade.progress || 0)}"><i style="width:${Number(grade.progress || 0)}%"></i></div>
-        <div class="manifestation-meta"><span>${Number(grade.progress || 0)}% do marco</span><strong>${esc(window.MILLENNIUM_JOURNEY_31.nextMilestone(grade))}</strong></div>
+        <p class="eyebrow">Prestígio global · ${comparison.totalPlayers} ficha(s)</p>
+        <h3>${comparison.score.toLocaleString("pt-BR")} pontos</h3>
+        <p>Comparação entre fichas por nível, XP, missões aprovadas, desenvolvimento, PO, poder dos pets, poderes, técnicas, conquistas, passe e raridades.</p>
+        <div class="manifestation-progress" role="progressbar" aria-label="Distância para o líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${comparison.percent}"><i style="width:${comparison.percent}%"></i></div>
+        <div class="manifestation-meta"><span>${comparison.percent}% do Top 1</span><strong>${esc(gapLabel)}</strong></div>
+        ${compact ? "" : `<div class="prestige-criteria"><span>Nível ${comparison.breakdown.level}</span><span>XP ${comparison.breakdown.xp}</span><span>Missões ${comparison.breakdown.missions}</span><span>Desenvolvimento ${comparison.breakdown.development}</span><span>Pets ${comparison.breakdown.pets}</span><span>Outros ${comparison.breakdown.total - comparison.breakdown.level - comparison.breakdown.xp - comparison.breakdown.missions - comparison.breakdown.development - comparison.breakdown.pets}</span></div>`}
       </div>
       ${compact ? "" : `<div class="potential-brief"><span>Característica dominante</span><strong>${esc(potential.dominant)}</strong><small>Em desenvolvimento: ${esc(potential.developing)}</small></div>`}
     </article>`;
@@ -4694,41 +4781,52 @@ function registrationPreviewCard(entry, kind, fallback = "Escolha uma opção pa
   const image = entry.imageThumbnail || entry.imageHero || entry.imageUrl || entry.emblemUrl || "";
   const summary = entry.summary || entry.description || entry.role || entry.domain || fallback;
   const bonus = entry.bonus ? bonusToText(entry.bonus) : "";
+  const normalizedKind = normalize(kind);
+  const tradeoffType = normalizedKind.includes("raca") || normalizedKind.includes("heranca") ? "race" : normalizedKind.includes("classe") || normalizedKind.includes("formacao") ? "class" : "";
+  const tradeoff = tradeoffType ? penaltyToText(window.MILLENNIUM_CORE_31.catalogTradeoff(tradeoffType, entry)) : "";
   const keywords = Array.isArray(entry.keywords) ? entry.keywords.slice(0, 4) : [];
   return `
     <aside class="registration-preview">
       ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || `${kind} ${entry.name}`)}" loading="lazy" />` : `<span class="catalog-fallback" aria-hidden="true">${esc(String(entry.name || kind).slice(0, 1))}</span>`}
       <div><p class="eyebrow">${esc(kind)}</p><h3>${esc(entry.name)}</h3><p>${esc(summary)}</p>
-      ${bonus && bonus !== "Sem bônus" ? `<span class="tag">${esc(bonus)}</span>` : ""}
+      ${bonus && bonus !== "Sem bônus" ? `<span class="tag">Vantagem: ${esc(bonus)}</span>` : ""}
+      ${tradeoff ? `<span class="tag danger">Limitação: ${esc(tradeoff)}</span>` : ""}
       ${keywords.length ? `<div class="keyword-row">${keywords.map((word) => `<span>${esc(word)}</span>`).join("")}</div>` : ""}</div>
     </aside>`;
 }
 
 function characterStatComposition(character = currentCharacter()) {
   const result = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content);
-  const sourceLabels = {
-    base: "Base",
-    development: "Desenvolvimento",
-    raceBonus: "Raça",
-    classBonus: "Classe",
-    affinityBonus: "Afinidade",
-    equipmentBonus: "Equipamentos",
-    temporaryBonus: "Temporários",
-    penalties: "Penalidades",
-  };
+  const sources = [
+    ["base", "Base", 1, true],
+    ["development", "Desenvolvimento", 1, false],
+    ["raceBonus", "Vantagem racial", 1, false],
+    ["racePenalty", "Limitação racial", -1, false],
+    ["classBonus", "Vantagem de classe", 1, false],
+    ["classPenalty", "Limitação de classe", -1, false],
+    ["affinityBonus", "Vantagem da afinidade", 1, false],
+    ["affinityPenalty", "Limitação da afinidade", -1, false],
+    ["equipmentBonus", "Equipamentos", 1, false],
+    ["temporaryBonus", "Temporários", 1, false],
+    ["situationalPenalties", "Penalidades ativas", -1, false],
+  ];
   const quarantined = new Set(result.diagnostics?.quarantinedBaseKeys || []);
   return `
     ${quarantined.size ? `<div class="diagnostic-inline" role="alert"><strong>Base inconsistente isolada</strong><span>Valores fora das regras não entram integralmente no cálculo até revisão do Oráculo.</span></div>` : ""}
+    <p class="stat-composition-help">Total efetivo = Base + Desenvolvimento + Vantagens − Limitações. Toque em qualquer atributo para conferir o cálculo.</p>
     <div class="stat-composition-grid">
       ${ATTRIBUTES.map((attr) => {
-        const rows = Object.entries(sourceLabels).map(([key, label]) => {
-          const value = Number(result[key]?.[attr.key] || 0) * (key === "penalties" ? -1 : 1);
+        const expanded = state.expandedAttribute === attr.key;
+        const rows = sources.map(([key, label, sign, isBase]) => {
+          const rawValue = Number(result[key]?.[attr.key] || 0);
+          const value = rawValue * sign;
           const raw = key === "base" && quarantined.has(attr.key) ? ` <em>(armazenado: ${esc(result.raw?.base?.[attr.key])})</em>` : "";
-          return `<span><small>${label}${raw}</small><b>${value > 0 ? "+" : ""}${value}</b></span>`;
+          const display = isBase ? String(rawValue) : value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : "0";
+          return `<span><small>${label}${raw}</small><b>${display}</b></span>`;
         }).join("");
-        return `<details class="stat-composition ${quarantined.has(attr.key) ? "is-quarantined" : ""}"><summary><span>${esc(attr.label)}</span><strong>${Number(result.total[attr.key] || 0)}</strong></summary><div>${rows}</div></details>`;
+        return `<article class="stat-composition ${expanded ? "is-open" : ""} ${quarantined.has(attr.key) ? "is-quarantined" : ""}"><button class="stat-composition-toggle" type="button" data-action="toggle-stat-composition" data-attr="${attr.key}" aria-expanded="${expanded}"><span>${esc(attr.label)}<small>${expanded ? "Ocultar cálculo" : "Ver cálculo"}</small></span><strong>${Number(result.total[attr.key] || 0)}</strong><i aria-hidden="true">${expanded ? "−" : "+"}</i></button><div class="stat-composition-body" ${expanded ? "" : "hidden"}>${rows}</div></article>`;
       }).join("")}
-      <details class="stat-composition derived"><summary><span>DEF derivada</span><strong>${Number(result.derived.def || 0)}</strong></summary><p>DEF vem de armadura, escudo e efeitos registrados. Ela não é um sexto atributo-base.</p></details>
+      <article class="stat-composition derived"><div class="stat-composition-static"><span>DEF derivada<small>Armadura e escudo</small></span><strong>${Number(result.derived.def || 0)}</strong></div><p>DEF não é um sexto atributo-base.</p></article>
     </div>`;
 }
 
@@ -5586,6 +5684,7 @@ function renderRanking() {
   const supportsRange = rangedTabs.has(tab);
   const range = supportsRange ? (state.rankingRange || "season") : "all";
   const rows = rankRows(tab, range).slice(0, 30);
+  const topScore = Math.max(1, Number(rows[0]?.score || 1));
   return `
     <div class="grid">
       <article class="panel span-12">
@@ -5614,10 +5713,11 @@ function renderRanking() {
                 <div>
                   <h3>${esc(row.name || char.characterName || char.displayName || getUserName(char.ownerId || row.uid))}</h3>
                   <p>${esc(row.detail || `${title ? title.name : "Sem título"} · ${affinity?.name || "Sem afinidade"}`)}</p>
+                  ${tab === "prestige" ? `<div class="ranking-relative-bar" role="progressbar" aria-label="${Math.round((Number(row.score || 0) / topScore) * 100)}% do líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((Number(row.score || 0) / topScore) * 100)}"><i style="width:${Math.round((Number(row.score || 0) / topScore) * 100)}%"></i></div>` : ""}
                 </div>
                 <div class="ranking-score">
                   <strong>${esc(row.scoreText || row.score)}</strong>
-                  <span>${esc(row.sub || "pontos")}</span>
+                  <span>${tab === "prestige" && index > 0 ? `${(topScore - Number(row.score || 0)).toLocaleString("pt-BR")} atrás do líder` : esc(row.sub || "pontos")}</span>
                 </div>
               </button>
             `;
@@ -5692,7 +5792,10 @@ function rankRows(tab, range = "season") {
       detail: guild.description || "Guilda ativa",
     })).sort((a, b) => b.score - a.score);
   }
-  return byChar((char) => char.__rankingProjection ? Number(char.prestige || 0) : prestigeFor(char), "prestígio", (char) => `${Number(char.totalRares || 0)} raros · ${Number(char.totalRolls || 0)} giros`);
+  return byChar((char) => prestigeFor(char), "prestígio", (char) => {
+    const detail = prestigeBreakdown(char);
+    return `Nível ${detail.level} · XP ${detail.xp} · Missões ${detail.missions} · Desenvolvimento ${detail.development} · Pets ${detail.pets}`;
+  });
 }
 
 function renderWorldMap() {
@@ -8317,7 +8420,7 @@ async function syncPublicProfileProjection(character = currentCharacter(), lore 
 }
 
 function rankingProjection(character = currentCharacter()) {
-  const level = Math.max(1, Number(character.level || 1));
+  const level = Math.max(1, Number(character.level || 1), levelFromXp(character.xp || 0));
   const vault = character.gachaVault || [];
   const inventory = character.inventory || [];
   const ownerId = character.ownerId || state.user?.uid || "";
@@ -8332,11 +8435,14 @@ function rankingProjection(character = currentCharacter()) {
   ]));
   const rolls = [...(character.rollHistory || []), ...(character.gachaHistory || [])];
   const missions = (state.progressRequests || []).filter((request) => request.uid === ownerId && request.status === "aprovado" && ["mission", "guildMission", "training"].includes(request.type));
+  const existingProjection = state.rankingProfiles.find((entry) => (entry.ownerId || entry.id) === ownerId) || {};
+  const missionPeriods = periodCounts(missions, "reviewedAt");
+  missionPeriods.all = Math.max(Number(missionPeriods.all || 0), Number(existingProjection.missions?.all || 0), Number(character.approvedMissionCount || 0));
   const views = (state.profileViews || []).filter((view) => view.targetId === ownerId);
   const invoked = [...vault, ...inventory.filter((item) => item.source === "Invocacao dimensional")];
   const secrets = invoked.filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial"));
   const minigameHistory = character.minigameHistory || [];
-  return {
+  const projection = {
     ownerId,
     characterName: character.characterName || "",
     displayName: character.displayName || character.playerName || "Player",
@@ -8348,9 +8454,8 @@ function rankingProjection(character = currentCharacter()) {
     affinityId: character.affinityId || "",
     totalRares: Math.max(0, Number(character.totalRares || 0)),
     totalRolls: Math.max(0, Number(character.totalRolls || 0)),
-    prestige: Math.max(0, Number(character.prestige || prestigeFor(character))),
     rolls: { ...periodCounts(rolls), all: Math.max(0, Number(character.totalRolls || rolls.length)) },
-    missions: periodCounts(missions, "reviewedAt"),
+    missions: missionPeriods,
     minigameBest: Object.fromEntries(["aim", "hunt", "tower", "seals", "cartography", "alchemy"].map((mode) => {
       const best = periodBests(minigameHistory, mode);
       best.all = Math.max(best.all, Number(character.minigameStats?.[mode]?.bestScore || 0));
@@ -8359,6 +8464,8 @@ function rankingProjection(character = currentCharacter()) {
     })),
     views: periodCounts(views, "viewedAt"),
     petCount: vault.filter((item) => item?.kind === "pet").length,
+    petPower: petPowerForPrestige(character),
+    developmentPoints: ATTRIBUTES.reduce((sum, attribute) => sum + Math.max(0, Number(character.development?.[attribute.key] || 0)), 0),
     itemCount: inventory.length,
     passXp: Math.max(0, Number(character.seasonPassXp || 0)),
     premiumPassUnlocked: character.premiumPassUnlocked === true,
@@ -8370,6 +8477,9 @@ function rankingProjection(character = currentCharacter()) {
     powerCount: (character.powers || []).filter((item) => item?.name).length,
     techniqueCount: (character.techniques || []).filter((item) => item?.name).length,
   };
+  projection.prestigeBreakdown = prestigeBreakdown({ ...projection, __rankingProjection: true });
+  projection.prestige = projection.prestigeBreakdown.total;
+  return projection;
 }
 
 async function syncRankingProjection(character = currentCharacter()) {
@@ -8403,6 +8513,14 @@ async function rebuildRankingProjections() {
     return;
   }
 
+  const approvedMissionCountByOwner = new Map();
+  const approvedSnapshot = await state.db.collection("progressRequests").where("status", "==", "aprovado").get();
+  approvedSnapshot.forEach((document) => {
+    const request = document.data() || {};
+    if (!["mission", "guildMission", "training"].includes(request.type) || !request.uid) return;
+    approvedMissionCountByOwner.set(request.uid, Number(approvedMissionCountByOwner.get(request.uid) || 0) + 1);
+  });
+
   const batchSize = 400;
   let written = 0;
   for (let offset = 0; offset < characters.length; offset += batchSize) {
@@ -8411,7 +8529,7 @@ async function rebuildRankingProjections() {
       const ownerId = character.ownerId || character.id;
       if (!ownerId) return;
       batch.set(state.db.collection("rankings").doc(ownerId), {
-        ...rankingProjection({ ...character, ownerId }),
+        ...rankingProjection({ ...character, ownerId, approvedMissionCount: approvedMissionCountByOwner.get(ownerId) || 0 }),
         updatedAt: nowValue(),
       });
       written += 1;
@@ -9265,11 +9383,14 @@ function minigameReward(difficultyId, score = 0, mode = "aim", level = 1) {
   const target = FOUNDATIONS.minigameTarget(difficulty, stage.id);
   const grade = minigameGrade(score, { ...difficulty, minScore: target });
   const passed = grade.passed;
-  const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier * Number(stage.rewardFactor || 1)));
+  const coinCap = 8 + stage.id * 4;
+  const baseCoins = passed
+    ? Math.min(coinCap, Math.max(1, Math.round((1 + score / 1600) * Math.sqrt(difficulty.multiplier) * grade.multiplier * Number(stage.rewardFactor || 1))))
+    : 0;
   const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : mode === "seals" ? "Ecos de Selo" : mode === "cartography" ? "Fragmentos Cartográficos" : mode === "alchemy" ? "Resíduos Alquímicos" : "Fragmentos de Mira";
   const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier * Number(stage.rewardFactor || 1)));
   const rareDrop = passed && Math.random() < 0.012 * difficulty.multiplier * grade.multiplier;
-  const loot = [`${baseCoins} Millennium Coins`, `${fragments} ${fragmentName}`];
+  const loot = [...(baseCoins ? [`${baseCoins} Millennium Coins`] : []), `${fragments} ${fragmentName}`];
   if (rareDrop) loot.push("Fragmento do Herói Quebrado");
   return { passed, grade: grade.label, coins: baseCoins, fragmentName, fragments, loot, rareDrop, level: stage.id, target };
 }
@@ -11426,7 +11547,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.1",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.2",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -13877,6 +13998,10 @@ function wireEvents() {
       if (action === "character-step-next") moveCharacterStep(1, button.closest("form"));
       if (action === "character-step-prev") moveCharacterStep(-1, button.closest("form"));
       if (action === "attribute-step") adjustRegistrationAttribute(button.dataset.attr, Number(button.dataset.delta || 0), button.closest("form"));
+      if (action === "toggle-stat-composition") {
+        state.expandedAttribute = state.expandedAttribute === button.dataset.attr ? "" : button.dataset.attr;
+        render();
+      }
       if (action === "add-emoji") {
         const textarea = button.closest("form")?.querySelector("textarea[name='text']");
         if (textarea) {
