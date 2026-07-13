@@ -1,8 +1,8 @@
 (function exposeMillenniumBuild() {
   const meta = document.querySelector('meta[name="millennium-commit"]');
   window.MILLENNIUM_BUILD_INFO = Object.freeze({
-    version: "3.4.0",
+    version: "3.5.0",
     commit: meta?.content || "dev",
-    cacheName: "millennium-shell-v3.4.0",
+    cacheName: "millennium-shell-v3.5.0",
   });
 }());
