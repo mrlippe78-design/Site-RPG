@@ -4059,6 +4059,15 @@ select:focus {
 .ranking-row {
   grid-template-columns: 58px minmax(0, 1fr) minmax(90px, auto);
   align-items: center;
+  width: 100%;
+  color: var(--text);
+  text-align: left;
+}
+
+.ranking-row:hover,
+.ranking-row:focus-visible {
+  border-color: var(--gold);
+  background: rgba(216, 180, 93, 0.1);
 }
 
 .ranking-place {
