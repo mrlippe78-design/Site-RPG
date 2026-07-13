@@ -1,0 +1,437 @@
+{
+  "files": 86,
+  "over500KB": [],
+  "maxBytes": 228808,
+  "entries": [
+    {
+      "path": "assets/pets/arqueira-de-vidro-thumb.webp",
+      "bytes": 5860,
+      "sha256": "36fe07373659e7c20f6aeea78cd10a27239b0108f3c0bb6c09b1ac56f6beca72"
+    },
+    {
+      "path": "assets/pets/arqueira-de-vidro.webp",
+      "bytes": 22508,
+      "sha256": "1678a0d668976009aece6d52e4ba6243f16bba9f156b44092e345ed396906dc5"
+    },
+    {
+      "path": "assets/pets/capelao-das-cinzas-thumb.webp",
+      "bytes": 4904,
+      "sha256": "2a85fc770882f7d38dbe26c787a6619ee91a672f281d94ead6d8bcc24f885814"
+    },
+    {
+      "path": "assets/pets/capelao-das-cinzas.webp",
+      "bytes": 18692,
+      "sha256": "124def4ab0ad184a77c05382a1b5a008b072a6aa4b682bf1d6d613dcefa4744c"
+    },
+    {
+      "path": "assets/pets/coveiro-de-luas-thumb.webp",
+      "bytes": 5348,
+      "sha256": "599aebe1304f534699009c92d1070423bd2d3a365b39a277b0f77fe30de1a48e"
+    },
+    {
+      "path": "assets/pets/coveiro-de-luas.webp",
+      "bytes": 21380,
+      "sha256": "2804785b250a106e076bd40a6e2d31e2fde08ed83db458438cb465053df9d07b"
+    },
+    {
+      "path": "assets/pets/cronista-de-vidro-thumb.webp",
+      "bytes": 27688,
+      "sha256": "7dd4542016b5af9de6b00e70633300a4b278a38b4b3bad08933cff7e6d698867"
+    },
+    {
+      "path": "assets/pets/cronista-de-vidro.webp",
+      "bytes": 173964,
+      "sha256": "cb646089c7879612f31c25006d0e407c2dbf2fe6ed60c3fe7babfcb0cdd5cc5e"
+    },
+    {
+      "path": "assets/pets/cronista-do-trovao-thumb.webp",
+      "bytes": 17256,
+      "sha256": "0a495b4521e453c32add8f6c53337fd4fd957b499fc984c98568d6500e8e199f"
+    },
+    {
+      "path": "assets/pets/cronista-do-trovao.webp",
+      "bytes": 95860,
+      "sha256": "7565dc273c0a64e047bbafeae9899d6cf652007c5e2f527303ade7be8e302f8f"
+    },
+    {
+      "path": "assets/pets/dama-da-vitrine-thumb.webp",
+      "bytes": 14070,
+      "sha256": "e84f875d32e4b3122fb8dae81cf607ab9ebb41ec3e01b8a716ac3e8bff35d2d3"
+    },
+    {
+      "path": "assets/pets/dama-da-vitrine.webp",
+      "bytes": 89296,
+      "sha256": "b39afb424bc98c6b3e4de4b561ba38f09657a3d99f114b1017a2d968ed1bc464"
+    },
+    {
+      "path": "assets/pets/dama-do-ultimo-sino-thumb.webp",
+      "bytes": 5588,
+      "sha256": "32d52c695a626814384d17af85824e813a3da62dc90ccb3bc9544a614a588a84"
+    },
+    {
+      "path": "assets/pets/dama-do-ultimo-sino.webp",
+      "bytes": 21098,
+      "sha256": "8efac783fce68c3ceeb603bd3dfd086f5c93e0e295b1787569f076346d057e85"
+    },
+    {
+      "path": "assets/pets/duelista-da-pedra-negra-thumb.webp",
+      "bytes": 6580,
+      "sha256": "aecdecd60bd3e88c0f8ae819d057d2f14f0e7c68ac60587e83d55349793a29d1"
+    },
+    {
+      "path": "assets/pets/duelista-da-pedra-negra.webp",
+      "bytes": 24200,
+      "sha256": "ea3586035706af5aba6533ce2a456a77184eed4f7003ddbf9562484d6aa3077b"
+    },
+    {
+      "path": "assets/pets/filha-da-cinza-thumb.webp",
+      "bytes": 22690,
+      "sha256": "d6622db6b09697749f39b507159f15df6134d8ecbb4c88c1979ab86ca3860ac4"
+    },
+    {
+      "path": "assets/pets/filha-da-cinza.webp",
+      "bytes": 135464,
+      "sha256": "92c4a0b02f8be3af500a28694b5dc6e3abed3d10a1b8e97d9e7aef2c9a80279e"
+    },
+    {
+      "path": "assets/pets/general-da-cicatriz-thumb.webp",
+      "bytes": 9694,
+      "sha256": "b8ea7443035dddffbb302c224b96c7f207f82fb9954cc1a04c8b5acd66ffe279"
+    },
+    {
+      "path": "assets/pets/general-da-cicatriz.webp",
+      "bytes": 103028,
+      "sha256": "d70b0ed68c1fe73bef0e10ea279c0cfba7d99d274c03114c81cdff612ac277aa"
+    },
+    {
+      "path": "assets/pets/herdeiro-dos-seis-veus-thumb.webp",
+      "bytes": 13218,
+      "sha256": "2e3e44bbd423fca5f0867af490dde7fa7ceb20013aff89af8b9a8c1ea7fe4ef0"
+    },
+    {
+      "path": "assets/pets/herdeiro-dos-seis-veus.webp",
+      "bytes": 121144,
+      "sha256": "765d864c4c0437cdd2a5292e57f97e16e1fd259d962b63492a7f7da5c86fa9b6"
+    },
+    {
+      "path": "assets/pets/marinheiro-da-ultima-vela-thumb.webp",
+      "bytes": 6372,
+      "sha256": "6a76f8e612b99995376f843ed55e129d607d7375138b41763f487c4dc0aa3080"
+    },
+    {
+      "path": "assets/pets/marinheiro-da-ultima-vela.webp",
+      "bytes": 24128,
+      "sha256": "699b91e53c6520047c034541281418f5e5ba13b0b25f632f9d61d4f92a3fd153"
+    },
+    {
+      "path": "assets/pets/mecanico-da-ponte-thumb.webp",
+      "bytes": 5444,
+      "sha256": "7d2ca97093b3455a8e656585b641dfeddbf16e5dd794daa112af2f4bff5a3e4e"
+    },
+    {
+      "path": "assets/pets/mecanico-da-ponte.webp",
+      "bytes": 20042,
+      "sha256": "c69edbe5b06d50d83c55f2c6ad94f30e4f8d4db72601db76fa2330d32ab65d7f"
+    },
+    {
+      "path": "assets/pets/menina-do-fio-vermelho-thumb.webp",
+      "bytes": 6434,
+      "sha256": "ad20bfbe5b6b22d597c476dfadcad987736c5e61c3403d2b35b7f6eb22f90023"
+    },
+    {
+      "path": "assets/pets/menina-do-fio-vermelho.webp",
+      "bytes": 25284,
+      "sha256": "c0c3433aaecb3f524cd05e72849ae259c7efc1243ff3a91870501d7c0e8e13ce"
+    },
+    {
+      "path": "assets/pets/novica-da-lanterna-thumb.webp",
+      "bytes": 14026,
+      "sha256": "f5c4c57c547fd6afbcb08b894b6bd0f5af032396452976315ad063e377d87f4b"
+    },
+    {
+      "path": "assets/pets/novica-da-lanterna.webp",
+      "bytes": 89086,
+      "sha256": "a25a1968da880b75e9afed3c58b34a04c27ef523ab1dc31b25a700a0e440d534"
+    },
+    {
+      "path": "assets/pets/oraculo-partido-thumb.webp",
+      "bytes": 7866,
+      "sha256": "887dbcad14fd7cdd88779939328e04a7ee682b751a1f85d2616462c3fbb43fdf"
+    },
+    {
+      "path": "assets/pets/oraculo-partido.webp",
+      "bytes": 78602,
+      "sha256": "72459047184152cb3dec309991cb5296efc52a126d7ba8935ac0c963a6ba6596"
+    },
+    {
+      "path": "assets/pets/porteiro-sem-rosto-thumb.webp",
+      "bytes": 16644,
+      "sha256": "fbb05bcd04994d33c2777756b371bb3399085d746eecc5c68627e791460992c7"
+    },
+    {
+      "path": "assets/pets/porteiro-sem-rosto.webp",
+      "bytes": 95440,
+      "sha256": "a56bbf914417bb973cf4b6dc3dbf252876949143a0638f4ba4de7ed7aaaa1296"
+    },
+    {
+      "path": "assets/pets/rainha-do-campo-cinzento-thumb.webp",
+      "bytes": 6282,
+      "sha256": "f30925c85bd8affc3c1e8312e4b9d8e6fdb2dde41d5faa37fed855f731936869"
+    },
+    {
+      "path": "assets/pets/rainha-do-campo-cinzento.webp",
+      "bytes": 24032,
+      "sha256": "705a8d5c12e596d5f711cf6056ec309d0f012cdbd581744223916100a50dcfd1"
+    },
+    {
+      "path": "assets/pets/santo-da-promessa-thumb.webp",
+      "bytes": 17296,
+      "sha256": "302528ffa28494465743c7c7adc0d196271c70709f2e16f634e81cb752f59564"
+    },
+    {
+      "path": "assets/pets/santo-da-promessa.webp",
+      "bytes": 109288,
+      "sha256": "197924d9219bc9c99460ea934528987c74a693acc49dfe78b4c91dc358826688"
+    },
+    {
+      "path": "assets/pets/tecela-de-brumas-thumb.webp",
+      "bytes": 9416,
+      "sha256": "3223d885f13ce4e7067fb0a0f6ede98502accd0e056790e0cebfd131a3990e74"
+    },
+    {
+      "path": "assets/pets/tecela-de-brumas.webp",
+      "bytes": 39194,
+      "sha256": "f2b0dd0731191bb9d6c00f7e438a636037fc05529adfb2691c95c860cd00c84c"
+    },
+    {
+      "path": "assets/pets/vazio-que-ri-thumb.webp",
+      "bytes": 8368,
+      "sha256": "09b5e5498b70e0c258736533c1ca9a29b77009178d7d021e1e292661dc666127"
+    },
+    {
+      "path": "assets/pets/vazio-que-ri.webp",
+      "bytes": 81342,
+      "sha256": "dd6b86c722af0b27c1e569664d07522c38413c815f334a81e7d63df6e0818671"
+    },
+    {
+      "path": "assets/pets/vigia-de-ferro-thumb.webp",
+      "bytes": 21058,
+      "sha256": "2c61e0f21679d15bf71b71c32a5587ef8688396945c44749420e4657a4b09a37"
+    },
+    {
+      "path": "assets/pets/vigia-de-ferro.webp",
+      "bytes": 130884,
+      "sha256": "d71fc130ed9412677bcc371f58227938ebc8588de0a80c9a1d83749ee42795f8"
+    },
+    {
+      "path": "assets/pets/vigia-de-telhado-thumb.webp",
+      "bytes": 8664,
+      "sha256": "f25adf9c67c6d9b4177336adbbd47ce05503f2c7f53f010ff80831eda8e84c50"
+    },
+    {
+      "path": "assets/pets/vigia-de-telhado.webp",
+      "bytes": 30992,
+      "sha256": "89a68bfa5c7fc029737b95710f52ab0295b5f22e43575fba701a3cd9838a7a42"
+    },
+    {
+      "path": "assets/pets/vigia-do-aqueduto-thumb.webp",
+      "bytes": 5454,
+      "sha256": "e9433d647ab8da64b4362d6f50652ad2e7231ebc659ed42ec89d12430bbecb46"
+    },
+    {
+      "path": "assets/pets/vigia-do-aqueduto.webp",
+      "bytes": 20784,
+      "sha256": "5c0d2abd9e676fd631db532cd7cfe218447c23f5b17c69ccd48640125db09d01"
+    },
+    {
+      "path": "assets/pets/violinista-da-chuva-thumb.webp",
+      "bytes": 6636,
+      "sha256": "38859f39226fbac804a098adee9dfbdec41dfad58d01fe14c6c5a60ab9ad0b0f"
+    },
+    {
+      "path": "assets/pets/violinista-da-chuva.webp",
+      "bytes": 25166,
+      "sha256": "f4b944ed8f7af49f844824099c83211a5ec935ce9db7b9835283ccc8d3ecc6cd"
+    },
+    {
+      "path": "assets/maps/abismo-frio-thumb.webp",
+      "bytes": 4412,
+      "sha256": "38410e0295f43645c87b698bfcf92a4fbf7c7b4d6ecab045d66970a5881796f4"
+    },
+    {
+      "path": "assets/maps/abismo-frio.webp",
+      "bytes": 24644,
+      "sha256": "e0746cebac024efe5fc8f4cafa5a7efb5fc51e0844496349e45fe24824c7e4e6"
+    },
+    {
+      "path": "assets/maps/aldeia-das-folhas-douradas-thumb.webp",
+      "bytes": 15616,
+      "sha256": "31e6a44e5079204ea72dceec5e360df39648f8c777269f6db71dd0e5020c09be"
+    },
+    {
+      "path": "assets/maps/aldeia-das-folhas-douradas.webp",
+      "bytes": 175844,
+      "sha256": "97c2feadde692d7c2d50b0e962d9ea8110514cb984676b884ade85a94027cd81"
+    },
+    {
+      "path": "assets/maps/arena-das-sete-esferas-thumb.webp",
+      "bytes": 10742,
+      "sha256": "b2808a038180a0eb6573112a7fa4941b4160025a35238ed886172d5eac9c7bbf"
+    },
+    {
+      "path": "assets/maps/arena-das-sete-esferas.webp",
+      "bytes": 193140,
+      "sha256": "5b23a41028807de91c2946700c1bcf33cca3f251a34557941f85119d21a8f4b8"
+    },
+    {
+      "path": "assets/maps/aurevia-thumb.webp",
+      "bytes": 14658,
+      "sha256": "b05fdcca09b56a4c2d03ac249ae45e35b101c79f6137716843a69b4fb1fd7722"
+    },
+    {
+      "path": "assets/maps/aurevia.webp",
+      "bytes": 228808,
+      "sha256": "a5463489db610e87effc7c9dde1f3ccd2eb62ae4ee84919c6e8935a74c9af9fc"
+    },
+    {
+      "path": "assets/maps/campos-dos-ossos-thumb.webp",
+      "bytes": 3808,
+      "sha256": "51f744484ad5d4b583213427a6ce67906ab1bb4912f23d9e9f38f0c6b1dc88d5"
+    },
+    {
+      "path": "assets/maps/campos-dos-ossos.webp",
+      "bytes": 19634,
+      "sha256": "f5b15cdcc45232e0348bfb11756eee0f51258abafd9e9ea82b1ec0b1d56312bc"
+    },
+    {
+      "path": "assets/maps/cordilheira-dente-branco-thumb.webp",
+      "bytes": 3744,
+      "sha256": "32d22df1bb60f76bca2933519b775e7679dc2077c2b69bbd1c34a1097696b685"
+    },
+    {
+      "path": "assets/maps/cordilheira-dente-branco.webp",
+      "bytes": 27382,
+      "sha256": "5393e3cd104e59abc9b91cb1c9dfd1c92fd19656dbb72ebc84a794bd3442cfed"
+    },
+    {
+      "path": "assets/maps/cruzamento-das-cortinas-thumb.webp",
+      "bytes": 16582,
+      "sha256": "a9315e88b95d73c782d769e534f6507b8fdd6cf40521117eaed678cc1a609f96"
+    },
+    {
+      "path": "assets/maps/cruzamento-das-cortinas.webp",
+      "bytes": 173538,
+      "sha256": "b2dc7c02ecb6d13e08e2eaec83fdca864284f7eafa6b8d54dc1ae7145ad2b2fa"
+    },
+    {
+      "path": "assets/maps/deserto-de-vidro-thumb.webp",
+      "bytes": 11816,
+      "sha256": "a8d77bc11cde93ba7c0e31da64d9a2eadd4befb3de19bdfcdcd49850513a7ebc"
+    },
+    {
+      "path": "assets/maps/deserto-de-vidro.webp",
+      "bytes": 178928,
+      "sha256": "3d89bd75e9bb8d6d4763674f25275492fd6bb2e6c19b877c1ff9753966b3f23c"
+    },
+    {
+      "path": "assets/maps/floresta-viva-thumb.webp",
+      "bytes": 2790,
+      "sha256": "36f117f51c0231925e817e6917550a26b63a631fdeef74ba8ed658dcdc458827"
+    },
+    {
+      "path": "assets/maps/floresta-viva.webp",
+      "bytes": 24762,
+      "sha256": "371b805aca3bf96eb3f3e0240b9b237cafeac88fc78350c3880f766f3199d357"
+    },
+    {
+      "path": "assets/maps/jardins-de-carne-thumb.webp",
+      "bytes": 5186,
+      "sha256": "4b7a66a48f4a74fe322d52b0317864e99ab7be4d4a85da978e481ef591e42c37"
+    },
+    {
+      "path": "assets/maps/jardins-de-carne.webp",
+      "bytes": 28920,
+      "sha256": "74e416cfbed8f4048ed8b6fbb38ffa0c259e6a9f74032689f2cf621fc735a83b"
+    },
+    {
+      "path": "assets/maps/mar-de-vidro-negro-thumb.webp",
+      "bytes": 3886,
+      "sha256": "2a8b89848f8fce5c58f6eb4d53b2ae41450ede2d761fb7e91924530f4ef0c8fb"
+    },
+    {
+      "path": "assets/maps/mar-de-vidro-negro.webp",
+      "bytes": 23794,
+      "sha256": "836a34353c674d864216755a38bd29c9a38eb22b2756547d01f64c51d4396967"
+    },
+    {
+      "path": "assets/maps/noctheryn-thumb.webp",
+      "bytes": 3600,
+      "sha256": "ec6a994dff159d03e7d52aa98f6c3d901a9aaa2094c5bca7289174b58f4a4079"
+    },
+    {
+      "path": "assets/maps/noctheryn.webp",
+      "bytes": 17136,
+      "sha256": "4b9b4dc9904952b00a8cd47e1550ca374a0653382113465108a4e7d94f280f37"
+    },
+    {
+      "path": "assets/maps/pantano-dos-sinos-thumb.webp",
+      "bytes": 8414,
+      "sha256": "ec2fa7b93eea85a97c3fa4335552867145bd7eabd2e5d0bf10049856dca2eb5d"
+    },
+    {
+      "path": "assets/maps/pantano-dos-sinos.webp",
+      "bytes": 26334,
+      "sha256": "0760d757bd9c57a1d93372b86a4803a2bee2004e16090ad5f2747bd1952e6ed0"
+    },
+    {
+      "path": "assets/maps/pantano-sinos-afogados-thumb.webp",
+      "bytes": 9198,
+      "sha256": "ee271db28413e5d0af84121470ef018af272f57f49296d53e4c32c533e01529d"
+    },
+    {
+      "path": "assets/maps/pantano-sinos-afogados.webp",
+      "bytes": 156524,
+      "sha256": "71803f71a182e5f72df5e3cc357a6a1cce6ac4c2abf6d12731b32492968c954d"
+    },
+    {
+      "path": "assets/maps/porto-millennium-thumb.webp",
+      "bytes": 3904,
+      "sha256": "7427d3a21ec23b48e5a97add7d7b8e9374856f42672bc76c5a165d62efa8496c"
+    },
+    {
+      "path": "assets/maps/porto-millennium.webp",
+      "bytes": 18776,
+      "sha256": "1e3f0031c41510774def7fe42b257aa47efd20d1cbd5acfecb8765001feda614"
+    },
+    {
+      "path": "assets/maps/reino-do-pecado-partido-thumb.webp",
+      "bytes": 15996,
+      "sha256": "0deeadce7aaaa788256a06d43971fafad5f6b10745b3e99472e1c7157a8efa68"
+    },
+    {
+      "path": "assets/maps/reino-do-pecado-partido.webp",
+      "bytes": 170372,
+      "sha256": "57f694e3c2a9d6751bd2d5047394cc3caba1642f19ee47efddaa94542b0b5555"
+    },
+    {
+      "path": "assets/maps/ruinas-de-kael-thumb.webp",
+      "bytes": 3598,
+      "sha256": "619503aefd77bb6919f25d284cc85a578516607d259276a349b79149da09441e"
+    },
+    {
+      "path": "assets/maps/ruinas-de-kael.webp",
+      "bytes": 18268,
+      "sha256": "00815c1249d5550bd5bc2c9488efbae271e21241cb8b313152ba1488f871f112"
+    },
+    {
+      "path": "assets/maps/sociedade-das-laminas-thumb.webp",
+      "bytes": 17328,
+      "sha256": "d6049f3fe84f20b0221c2ccc49d8c3b9e0bea1dfc7979d007483c6f9c1c5cf4d"
+    },
+    {
+      "path": "assets/maps/sociedade-das-laminas.webp",
+      "bytes": 187532,
+      "sha256": "18234a9a14938bc045e87cbd67d6c477ae79b5bb9fa4d1c28b4faa8227bb2071"
+    }
+  ]
+}

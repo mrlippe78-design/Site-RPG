@@ -108,7 +108,12 @@
     payload.affinityId = normalizeText(values.affinityId || character.affinityId, 80);
     payload.revision = Math.max(1, Number.parseInt(values.revision || 1, 10) || 1);
     payload.previousRequestId = normalizeText(values.previousRequestId, 160);
-    const required = ["title", "concept", "function", "manifestation", "range", "duration", "cost", "limitations", "countermeasures", "risks", "description"];
+    payload.description = payload.description || payload.concept;
+    // Cost, final limitations and countermeasures belong to the Oracle proposal.
+    payload.cost = "";
+    payload.limitations = "";
+    payload.countermeasures = "";
+    const required = ["title", "concept", "function", "manifestation", "range", "duration", "risks"];
     const missing = required.filter((field) => !payload[field]);
     if (payload.type === "technique" && !payload.basePowerId) missing.push("basePowerId");
     if (missing.length) throw new Error(`Complete os campos obrigatórios: ${[...new Set(missing)].join(", ")}.`);

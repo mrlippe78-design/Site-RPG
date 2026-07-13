@@ -1,4 +1,4 @@
-const MILLENNIUM_BUILD = "3.1.2";
+const MILLENNIUM_BUILD = "3.2.0";
 const CACHE_PREFIX = "millennium-shell-v";
 const CACHE_NAME = `${CACHE_PREFIX}${MILLENNIUM_BUILD}`;
 const NETWORK_TIMEOUT_MS = 8000;
@@ -8,6 +8,7 @@ const REQUIRED_SHELL = [
   "./index.html",
   `./build-info.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-stability.js?v=${MILLENNIUM_BUILD}`,
+  `./millennium-world-alive.js?v=${MILLENNIUM_BUILD}`,
   `./catalogs-3.1.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-core.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-journey.js?v=${MILLENNIUM_BUILD}`,
@@ -18,6 +19,7 @@ const REQUIRED_SHELL = [
   `./journey.css?v=${MILLENNIUM_BUILD}`,
   `./backend.css?v=${MILLENNIUM_BUILD}`,
   `./polish.css?v=${MILLENNIUM_BUILD}`,
+  `./world-alive.css?v=${MILLENNIUM_BUILD}`,
   `./content-v3.js?v=${MILLENNIUM_BUILD}`,
   `./app.js?v=${MILLENNIUM_BUILD}`,
   "./manifest.webmanifest",
@@ -33,6 +35,13 @@ const OPTIONAL_SHELL = [
   "./assets/maps/reino-do-pecado-partido.webp",
   "./assets/pets/cronista-de-vidro.webp",
   "./assets/pets/filha-da-cinza.webp",
+  "./assets/pets/oraculo-partido.webp",
+  "./assets/pets/herdeiro-dos-seis-veus.webp",
+  "./assets/pets/general-da-cicatriz.webp",
+  "./assets/pets/vazio-que-ri.webp",
+  "./assets/maps/aurevia.webp",
+  "./assets/maps/deserto-de-vidro.webp",
+  "./assets/maps/pantano-sinos-afogados.webp",
 ];
 
 async function fetchWithTimeout(request, timeout = NETWORK_TIMEOUT_MS) {

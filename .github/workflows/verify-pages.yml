@@ -1,4 +1,4 @@
-name: Verify Millennium 3.1
+name: Verify Millennium 3.2
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run Operation 1 checks
+      - name: Run Millennium 3.2 checks
         run: npm test
 
   verify-published:
@@ -35,4 +35,4 @@ jobs:
         with:
           node-version: 22
       - name: Verify published build and required files
-        run: node scripts/verify-deploy.mjs --build 3.1.2
+        run: node scripts/verify-deploy.mjs --build 3.2.0

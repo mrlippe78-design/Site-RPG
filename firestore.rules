@@ -327,9 +327,108 @@ service cloud.firestore {
     }
 
     function ownerGiftClaimUpdate() {
-      return changedOnly(["pendingGift", "updatedAt"])
+      let oldKeys = resource.data.get("giftClaimKeys", []);
+      let nextKeys = request.resource.data.get("giftClaimKeys", []);
+      return changedOnly(["pendingGift", "giftClaimKeys", "giftHistory", "updatedAt"])
         && resource.data.get("pendingGift", null) is map
-        && request.resource.data.get("pendingGift", null) == null;
+        && request.resource.data.get("pendingGift", null) == null
+        && oldKeys is list && nextKeys is list
+        && nextKeys.size() == oldKeys.size() + 1 && nextKeys.size() <= 80
+        && request.resource.data.get("giftHistory", []) is list
+        && request.resource.data.get("giftHistory", []).size() <= 40;
+    }
+
+    function ownerPetHuntStartUpdate() {
+      let oldEnergy = resource.data.get("gachaEnergy", 30);
+      let nextEnergy = request.resource.data.get("gachaEnergy", 30);
+      let oldActivities = resource.data.get("activeActivities", []);
+      let nextActivities = request.resource.data.get("activeActivities", []);
+      return changedOnly(["gachaEnergy", "gachaEnergyUpdatedAt", "gachaVault", "activeActivities", "updatedAt"])
+        && oldEnergy is int && nextEnergy is int
+        && nextEnergy >= 0 && nextEnergy < oldEnergy && oldEnergy - nextEnergy <= 5
+        && resource.data.get("gachaVault", []) is list
+        && request.resource.data.get("gachaVault", []) is list
+        && request.resource.data.get("gachaVault", []).size() == resource.data.get("gachaVault", []).size()
+        && oldActivities is list && nextActivities is list
+        && nextActivities.size() == oldActivities.size() + 1 && nextActivities.size() <= 10;
+    }
+
+    function ownerPetHuntCompleteUpdate() {
+      let oldActivities = resource.data.get("activeActivities", []);
+      let nextActivities = request.resource.data.get("activeActivities", []);
+      let oldKeys = resource.data.get("huntCompletionKeys", []);
+      let nextKeys = request.resource.data.get("huntCompletionKeys", []);
+      let oldCoins = resource.data.get("millenniumCoins", 0);
+      let nextCoins = request.resource.data.get("millenniumCoins", 0);
+      return changedOnly([
+          "gachaVault", "activeActivities", "huntCompletionKeys", "millenniumCoins",
+          "gachaFragments", "inventory", "huntHistory", "updatedAt"
+        ])
+        && oldActivities is list && nextActivities is list
+        && nextActivities.size() == oldActivities.size() - 1 && nextActivities.size() >= 0
+        && oldKeys is list && nextKeys is list
+        && nextKeys.size() == oldKeys.size() + 1 && nextKeys.size() <= 80
+        && oldCoins is int && nextCoins is int && nextCoins >= oldCoins && nextCoins <= oldCoins + 5000
+        && request.resource.data.get("gachaVault", []) is list
+        && request.resource.data.get("gachaVault", []).size() == resource.data.get("gachaVault", []).size()
+        && request.resource.data.get("gachaFragments", {}) is map
+        && request.resource.data.get("inventory", []) is list
+        && request.resource.data.get("inventory", []).size() <= 250
+        && request.resource.data.get("huntHistory", []) is list
+        && request.resource.data.get("huntHistory", []).size() <= 60;
+    }
+
+    function ownerGachaInvokeUpdate() {
+      let oldCoins = resource.data.get("millenniumCoins", 0);
+      let nextCoins = request.resource.data.get("millenniumCoins", 0);
+      let oldVault = resource.data.get("gachaVault", []);
+      let nextVault = request.resource.data.get("gachaVault", []);
+      let oldInventory = resource.data.get("inventory", []);
+      let nextInventory = request.resource.data.get("inventory", []);
+      let oldHistory = resource.data.get("gachaHistory", []);
+      let nextHistory = request.resource.data.get("gachaHistory", []);
+      let added = (nextVault.size() - oldVault.size()) + (nextInventory.size() - oldInventory.size());
+      let spent = oldCoins - nextCoins;
+      return changedOnly([
+          "millenniumCoins", "gachaVault", "inventory", "gachaHistory", "updatedAt"
+        ])
+        && oldCoins is int && nextCoins is int
+        && spent >= 100 && spent <= 1200
+        && nextCoins >= 0
+        && oldVault is list && nextVault is list
+        && oldInventory is list && nextInventory is list
+        && oldHistory is list && nextHistory is list
+        && nextVault.size() >= oldVault.size()
+        && nextInventory.size() >= oldInventory.size()
+        && added >= 1 && added <= 10
+        && nextVault.size() <= 250
+        && nextInventory.size() <= 250
+        && nextHistory.size() >= oldHistory.size()
+        && nextHistory.size() <= 120
+        && nextHistory.size() <= oldHistory.size() + 10;
+    }
+
+    function ownerVaultManagementUpdate() {
+      let oldVault = resource.data.get("gachaVault", []);
+      let nextVault = request.resource.data.get("gachaVault", []);
+      return changedOnly(["gachaVault", "gachaFragments", "updatedAt"])
+        && oldVault is list && nextVault is list
+        && request.resource.data.get("gachaFragments", {}) is map
+        && nextVault.size() >= oldVault.size() - 1
+        && nextVault.size() <= oldVault.size()
+        && nextVault.size() <= 250;
+    }
+
+    function ownerGachaRerollUpdate() {
+      let oldCoins = resource.data.get("millenniumCoins", 0);
+      let nextCoins = request.resource.data.get("millenniumCoins", 0);
+      return changedOnly(["millenniumCoins", "gachaVault", "updatedAt"])
+        && oldCoins is int && nextCoins is int
+        && oldCoins - nextCoins >= 10 && oldCoins - nextCoins <= 500
+        && nextCoins >= 0
+        && request.resource.data.get("gachaVault", []) is list
+        && request.resource.data.get("gachaVault", []).size() == resource.data.get("gachaVault", []).size()
+        && request.resource.data.get("gachaVault", []).size() <= 250;
     }
 
     function ownerMinigameResultUpdate() {
@@ -342,7 +441,7 @@ service cloud.firestore {
       return changedOnly([
           "gachaEnergy", "gachaEnergyUpdatedAt", "millenniumCoins", "gachaFragments",
           "minigameCompletionKeys", "minigameStats", "minigameHistory",
-          "lastAimRun", "lastTowerRun", "updatedAt"
+          "lastAimRun", "lastTowerRun", "lastSealRun", "updatedAt"
         ])
         && oldEnergy is int && nextEnergy is int
         && nextEnergy >= 0 && nextEnergy <= 30
@@ -356,7 +455,8 @@ service cloud.firestore {
         && request.resource.data.get("minigameHistory", []) is list
         && request.resource.data.get("minigameHistory", []).size() <= 30
         && request.resource.data.get("lastAimRun", {}) is map
-        && request.resource.data.get("lastTowerRun", {}) is map;
+        && request.resource.data.get("lastTowerRun", {}) is map
+        && request.resource.data.get("lastSealRun", {}) is map;
     }
 
     match /admins/{uid} {
@@ -397,6 +497,11 @@ service cloud.firestore {
           || ownerAffinityRollUpdate()
           || ownerAffinityChoiceUpdate()
           || ownerGiftClaimUpdate()
+          || ownerPetHuntStartUpdate()
+          || ownerPetHuntCompleteUpdate()
+          || ownerGachaInvokeUpdate()
+          || ownerVaultManagementUpdate()
+          || ownerGachaRerollUpdate()
           || ownerMinigameResultUpdate()
         );
       allow update: if auditedAdminMutation(uid);

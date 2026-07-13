@@ -42,6 +42,8 @@ const initialCharacter = (uid) => ({
   premiumPassUnlocked: false,
   affinityId: "",
   gachaVault: [],
+  gachaHistory: [],
+  gachaFragments: {},
   inventory: [],
   pets: [],
   titles: [],
@@ -50,6 +52,16 @@ const initialCharacter = (uid) => ({
   techniques: [],
   rollHistory: [],
   activeActivities: [],
+  minigameCompletionKeys: [],
+  minigameStats: {},
+  minigameHistory: [],
+  huntCompletionKeys: [],
+  huntHistory: [],
+  giftClaimKeys: [],
+  giftHistory: [],
+  lastAimRun: {},
+  lastTowerRun: {},
+  lastSealRun: {},
 });
 
 before(async () => {
@@ -80,6 +92,62 @@ test("player cannot mint economy, affinity, pets, titles, or role", async () => 
   await assertFails(updateDoc(doc(db, "characters", "player-a"), { pets: [{ id: "secret" }] }));
   await assertFails(updateDoc(doc(db, "characters", "player-a"), { titles: [{ id: "oracle" }] }));
   await assertFails(updateDoc(doc(db, "users", "player-a"), { role: "admin" }));
+});
+
+
+test("bounded gacha invocation spends coins before adding one to ten rewards", async () => {
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), {
+    millenniumCoins: 150,
+    gachaVault: [{ instanceId: "pet-001", kind: "pet", name: "Corvo do Eclipse", rarity: "Comum" }],
+    inventory: [],
+    gachaHistory: [{ id: "pet-001", kind: "pet", name: "Corvo do Eclipse", rarity: "Comum" }],
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(doc(db, "characters", "player-a"), {
+    millenniumCoins: 150,
+    gachaVault: [
+      { instanceId: "pet-001", kind: "pet", name: "Corvo do Eclipse", rarity: "Comum" },
+      { instanceId: "pet-forged", kind: "pet", name: "Pet forjado", rarity: "Secret" },
+    ],
+    gachaHistory: [
+      { id: "pet-001", kind: "pet", name: "Corvo do Eclipse", rarity: "Comum" },
+      { id: "pet-forged", kind: "pet", name: "Pet forjado", rarity: "Secret" },
+    ],
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test("Pet Hunt start and completion are bounded and idempotent", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "characters", "player-a"), {
+      ...initialCharacter("player-a"),
+      gachaVault: [{ instanceId: "pet-hunt-001", kind: "pet", name: "Vigia", status: "Livre" }],
+    });
+  });
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), {
+    gachaEnergy: 29,
+    gachaEnergyUpdatedAt: serverTimestamp(),
+    gachaVault: [{ instanceId: "pet-hunt-001", kind: "pet", name: "Vigia", status: "Em Hunt", activityId: "hunt-001" }],
+    activeActivities: [{ id: "hunt-001", type: "Pet Hunt", petId: "pet-hunt-001" }],
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), {
+    gachaVault: [{ instanceId: "pet-hunt-001", kind: "pet", name: "Vigia", status: "Livre", activityId: "" }],
+    activeActivities: [],
+    huntCompletionKeys: ["hunt-001"],
+    millenniumCoins: 280,
+    gachaFragments: { "Marcas de Caçada": 1 },
+    inventory: [],
+    huntHistory: [{ id: "history-001", completionKey: "hunt-001" }],
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(doc(db, "characters", "player-a"), {
+    huntCompletionKeys: ["hunt-001", "hunt-001"],
+    millenniumCoins: 5000,
+    updatedAt: serverTimestamp(),
+  }));
 });
 
 test("technical creation accepts exactly 20 points and rejects attribute 67", async () => {

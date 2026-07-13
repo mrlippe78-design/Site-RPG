@@ -38,9 +38,21 @@ const POLISH = window.MILLENNIUM_POLISH_31 || {
   diagnosticSnapshot: (input = {}) => input,
   installImageFallback: () => () => {},
 };
+const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || {
+  decorateCollection: (_collection, entries = []) => entries,
+  applyCatalogs: (content) => content,
+  petAssetFor: () => null,
+  locationAssetFor: () => null,
+  rotationId: (now = Date.now()) => Math.floor(now / 3600000),
+  selectBalancedRotation: (pool = [], type = "pets", now = Date.now()) => ({ type, hour: Math.floor(now / 3600000), rotationId: Math.floor(now / 3600000), name: "Rate-up rotativo", description: "Destaques automáticos alternam a cada hora.", featured: pool.slice(0, 6), startsAt: new Date(Math.floor(now / 3600000) * 3600000), endsAt: new Date((Math.floor(now / 3600000) + 1) * 3600000), configured: false }),
+  countdownParts: (endsAt, now = Date.now()) => { const remaining = Math.max(0, new Date(endsAt).getTime() - now); const minutes = Math.floor(remaining / 60000); const seconds = Math.floor((remaining % 60000) / 1000); return { remaining, minutes, seconds, label: `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` }; },
+  publicRates: () => [],
+  itemMatch: () => null,
+  sealSequence: () => ["◇", "△", "✦", "◈"],
+};
 
-const UPDATE_DRAFT_KEY = "millennium:3.1:update-draft";
-const LOCAL_DRAFT_PREFIX = "millennium:3.1:form-draft";
+const UPDATE_DRAFT_KEY = "millennium:3.2:update-draft";
+const LOCAL_DRAFT_PREFIX = "millennium:3.2:form-draft";
 
 const CLOUDINARY_CONFIG = {
   cloudName: "cakvvuqx",
@@ -93,7 +105,7 @@ const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
 ];
 
-const SEED_VERSION = 10;
+const SEED_VERSION = 11;
 const GUILD_CREATE_COST = 1000;
 const GUILD_MEMBER_LIMIT = 10;
 const CHAT_LIMIT = 60;
@@ -351,6 +363,7 @@ const DEFAULT_CONTENT = {
       name: "Chamado dos Companheiros",
       type: "pets",
       enabled: true,
+      rotationMode: "automatic",
       featuredIds: "sol-de-batalha,capitao-do-ceu-vermelho,ceifador-da-lua-branca,principe-do-trovao-negro,santo-da-promessa,vazio-que-ri",
       description: "Banner inaugural da Temporada do Despertar. Os ecos escolhidos recebem rate-up enquanto a interface está aberta.",
     },
@@ -359,6 +372,7 @@ const DEFAULT_CONTENT = {
       name: "Relíquias da Primeira Janela",
       type: "items",
       enabled: true,
+      rotationMode: "automatic",
       featuredIds: "relogio-quebrado,chave-do-mundo-invertido,olho-do-sistema,fragmento-do-heroi-quebrado,contrato-da-primeira-luz",
       description: "Relíquias que surgiram no instante em que Millennium despertou.",
     },
@@ -520,6 +534,7 @@ function applyEdition3Defaults() {
 }
 
 applyEdition3Defaults();
+WORLD.applyCatalogs(DEFAULT_CONTENT);
 
 const STATIC_CATALOGS_31 = window.MILLENNIUM_CATALOGS_31 || { cultures: [], professions: [] };
 DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry }));
@@ -651,6 +666,10 @@ const state = {
   minigameDifficulty: "facil",
   activeAimSession: null,
   activeTowerSession: null,
+  activeSealSession: null,
+  gachaRotationTimer: 0,
+  gachaRotationHour: WORLD.rotationId(Date.now()),
+  serverTimeOffsetMs: 0,
   resolvingActivityIds: new Set(),
   modalReturnFocus: null,
   imageFallbackCleanup: null,
@@ -1806,8 +1825,11 @@ function gachaPool(type = "pets") {
   return type === "items" ? (state.content.gachaItems || []) : (state.content.gachaPets || []);
 }
 
-function petImageFor(item = {}) {
-  if (item.imageUrl) return item.imageUrl;
+function petImageFor(item = {}, options = {}) {
+  const asset = WORLD.petAssetFor(item);
+  if (options.thumbnail && (item.imageThumbnail || asset?.thumbnail)) return item.imageThumbnail || asset.thumbnail;
+  if (item.imageHero || item.imageUrl) return item.imageHero || item.imageUrl;
+  if (asset?.hero) return asset.hero;
   if (SEASON_ART.pets[item.id]) return SEASON_ART.pets[item.id];
   if (item.sourceId && SEASON_ART.pets[item.sourceId]) return SEASON_ART.pets[item.sourceId];
   return generatedPetPortrait(item);
@@ -1845,8 +1867,10 @@ function generatedPetPortrait(item = {}) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-function towerMapImageFor(map = {}) {
-  return map.imageUrl || SEASON_ART.maps[map.id] || "";
+function towerMapImageFor(map = {}, options = {}) {
+  const asset = WORLD.locationAssetFor(map);
+  if (options.thumbnail) return map.imageThumbnail || asset?.thumbnail || map.imageUrl || SEASON_ART.maps[map.id] || "";
+  return map.imageHero || map.imageUrl || asset?.hero || SEASON_ART.maps[map.id] || "";
 }
 
 function stableNumber(seed) {
@@ -1867,47 +1891,104 @@ function pickRotating(items, count, seed) {
 
 function activeGachaBanner(type = "pets") {
   const pool = gachaPool(type);
-  const hour = Math.floor(Date.now() / 3600000);
-  const configured = (state.content.gachaBanners || []).find((banner) => {
+  const now = gachaNow();
+  const hour = WORLD.rotationId(now);
+  const eligible = (state.content.gachaBanners || []).filter((banner) => {
     if (!banner.enabled || banner.type !== type) return false;
     const startsAt = dateFromValue(banner.startsAt)?.getTime() || 0;
     const endsAt = dateFromValue(banner.endsAt)?.getTime() || Number.MAX_SAFE_INTEGER;
-    return Date.now() >= startsAt && Date.now() <= endsAt;
+    return now >= startsAt && now <= endsAt;
   });
+  const configured = eligible.find((banner) => banner.rotationMode === "fixed" || banner.fixed === true);
   if (configured) {
     const featuredIds = Array.isArray(configured.featuredIds)
       ? configured.featuredIds
       : String(configured.featuredIds || "").split(",").map((id) => id.trim()).filter(Boolean);
-    const featured = featuredIds
-      .map((id) => pool.find((item) => item.id === id))
-      .filter(Boolean);
+    const featured = featuredIds.map((id) => pool.find((item) => item.id === id)).filter(Boolean);
     if (featured.length) {
       return {
         type,
         hour,
-        name: configured.name || "Banner do Oráculo",
-        description: configured.description || "Rate-up configurado pelo Oráculo.",
-        featured,
-        endsAt: dateFromValue(configured.endsAt) || new Date((hour + 1) * 3600000),
+        rotationId: `fixed:${configured.id || hour}`,
+        name: configured.name || "Destaque fixado pelo Oráculo",
+        description: configured.description || "Rate-up temporário configurado pelo Oráculo.",
+        featured: featured.filter((item, index, list) => list.findIndex((entry) => entry.id === item.id) === index),
+        startsAt: dateFromValue(configured.startsAt) || new Date(hour * WORLD.HOUR_MS),
+        endsAt: dateFromValue(configured.endsAt) || new Date((hour + 1) * WORLD.HOUR_MS),
         configured: true,
       };
     }
   }
-  const byRarity = (rarity) => pool.filter((item) => rarityKey(item.rarity) === rarityKey(rarity));
-  const featured = [
-    ...pickRotating(byRarity("Mítico"), 3, `${type}-mythic-${hour}`),
-    ...pickRotating(byRarity("Cósmica"), 1, `${type}-cosmic-${hour}`),
-    ...pickRotating(byRarity("Celestial"), 1, `${type}-celestial-${hour}`),
-    ...pickRotating(byRarity("Secret"), 1, `${type}-secret-${hour}`),
-  ];
+  const automatic = eligible.find((banner) => (banner.rotationMode || "automatic") === "automatic");
+  const rotation = WORLD.selectBalancedRotation(pool, type, now);
   return {
-    type,
-    hour,
-    name: "Rate-up rotativo",
-    description: "Destaques automáticos alternam a cada hora.",
-    featured,
-    endsAt: new Date((hour + 1) * 3600000),
+    ...rotation,
+    name: automatic?.name || rotation.name,
+    description: automatic?.description || rotation.description,
+    configured: false,
   };
+}
+
+function gachaNow() {
+  return Date.now() + Number(state.serverTimeOffsetMs || 0);
+}
+
+function refreshGachaCountdown() {
+  const now = gachaNow();
+  const hour = WORLD.rotationId(now);
+  document.querySelectorAll("[data-gacha-countdown]").forEach((element) => {
+    const end = Number(element.dataset.gachaEnds || 0);
+    const parts = WORLD.countdownParts(end || activeGachaBanner(element.dataset.gachaType || "pets").endsAt, now);
+    element.textContent = `Próxima rotação em ${parts.label}`;
+  });
+  if (hour !== state.gachaRotationHour) {
+    state.gachaRotationHour = hour;
+    try { localStorage.setItem("millennium:last-pet-rotation", String(hour)); } catch { /* storage unavailable */ }
+    if (!state.rolling && ["gacha", "admin-economy"].includes(state.view)) {
+      scheduleRender({ preserveFocus: true, preserveScroll: true, reason: "gacha-hourly-rotation" });
+    }
+  }
+}
+
+function startGachaRotationTicker() {
+  if (state.gachaRotationTimer) window.clearInterval(state.gachaRotationTimer);
+  state.gachaRotationHour = WORLD.rotationId(gachaNow());
+  refreshGachaCountdown();
+  state.gachaRotationTimer = window.setInterval(refreshGachaCountdown, 1000);
+}
+
+function gachaRatesFor(type = "pets") {
+  return WORLD.publicRates(gachaPool(type), GACHA_RARITIES);
+}
+
+function openGachaOdds(type = "pets") {
+  const banner = activeGachaBanner(type);
+  const rates = gachaRatesFor(type);
+  const pity = Math.max(1, Number(state.settings.pityMax || 30));
+  $("#modalContent").innerHTML = `
+    <section class="gacha-info-modal">
+      <p class="eyebrow">Probabilidades publicadas</p>
+      <h2>${esc(type === "pets" ? "Companheiros" : "Relíquias")}</h2>
+      <p>As porcentagens abaixo derivam dos pesos ativos do catálogo. O rate-up aumenta a chance dentro da raridade destacada, sem inventar uma taxa separada.</p>
+      <div class="gacha-rate-list">${rates.map((entry) => `<div><span class="rarity-pill ${rarityClass(entry.name)}">${esc(entry.name)}</span><strong>${entry.percentage.toLocaleString("pt-BR", { minimumFractionDigits: entry.percentage < 1 ? 3 : 2, maximumFractionDigits: 4 })}%</strong></div>`).join("") || `<div class="empty-state">Nenhuma taxa disponível.</div>`}</div>
+      <div class="review-warning"><strong>Pity ${Number(currentCharacter().gachaPity?.[type] || 0)}/${pity}</strong><span>Ao atingir o limite configurado, a próxima invocação força uma raridade rara disponível e reinicia o contador.</span></div>
+      <div class="rotation-summary"><span>Banner atual</span><strong>${esc(banner.name)}</strong><small data-gacha-countdown data-gacha-type="${esc(type)}" data-gacha-ends="${banner.endsAt.getTime()}">Próxima rotação</small></div>
+    </section>`;
+  $("#modal").hidden = false;
+  refreshGachaCountdown();
+}
+
+function openGachaPool(type = "pets") {
+  const banner = activeGachaBanner(type);
+  const featuredIds = new Set((banner.featured || []).map((item) => item.id));
+  const pool = [...gachaPool(type)].sort((a, b) => rarityScore(b.rarity) - rarityScore(a.rarity) || String(a.name).localeCompare(String(b.name), "pt-BR"));
+  $("#modalContent").innerHTML = `
+    <section class="gacha-pool-modal">
+      <p class="eyebrow">Pool completo · rotação ${banner.rotationId || banner.hour}</p>
+      <h2>${esc(banner.name)}</h2>
+      <div class="gacha-pool-grid">${pool.map((item) => `<article class="${rarityClass(item.rarity)} ${featuredIds.has(item.id) ? "featured" : ""}">${type === "pets" ? `<img src="${esc(petImageFor(item, { thumbnail: true }))}" alt="${esc(item.altText || item.name)}" loading="lazy" />` : `<span class="relic-silhouette">${esc(item.name.slice(0, 1))}</span>`}<div><small>${esc(item.rarity || "Comum")}${featuredIds.has(item.id) ? " · rate-up" : ""}</small><strong>${esc(item.name)}</strong><p>${esc(item.trait || item.effect || item.description || "Registro do pool.")}</p></div></article>`).join("")}</div>
+    </section>`;
+  $("#modal").hidden = false;
 }
 
 function pickGachaRarity(type = "pets") {
@@ -2527,9 +2608,18 @@ function activateRouteSubscriptions(view = state.view) {
 
   if (view === "admin-content" && state.role === "admin") {
     CONTENT_COLLECTIONS.forEach((collection) => routeCollection(collection, (items) => {
-      state.content[collection] = items.length ? items : DEFAULT_CONTENT[collection];
+      state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
     }, (query) => query.limit(100)));
+  } else {
+    const routeCatalogs = new Set();
+    if (["character", "profile", "player-home", "ranking", "admin-users"].includes(view)) ["classes", "races", "affinities", "items"].forEach((entry) => routeCatalogs.add(entry));
+    if (["character", "character-life", "cultures", "professions", "codex"].includes(view)) ["classes", "races", "kingdoms", "regions", "biomes"].forEach((entry) => routeCatalogs.add(entry));
+    if (["gacha", "minigames", "inventory", "admin-economy"].includes(view)) ["gachaPets", "gachaItems", "gachaBanners", "biomes", "towerMaps", "items"].forEach((entry) => routeCatalogs.add(entry));
+    routeCatalogs.forEach((collection) => routeCollection(collection, (items) => {
+      state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: `catalog-${collection}` });
+    }, (query) => query.limit(120), `catalog-${collection}`));
   }
 
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
@@ -4060,11 +4150,8 @@ function renderCreationsIntroduction() {
           <label class="wide"><span>Manifestação</span><textarea name="manifestation" rows="3" maxlength="1200" required></textarea></label>
           <label><span>Alcance imaginado</span><input name="range" maxlength="300" required /></label>
           <label><span>Duração imaginada</span><input name="duration" maxlength="300" required /></label>
-          <label><span>Custo sugerido</span><textarea name="cost" rows="3" maxlength="1200" required></textarea></label>
-          <label><span>Limitações sugeridas</span><textarea name="limitations" rows="3" maxlength="1200" required></textarea></label>
-          <label><span>Contramedidas sugeridas</span><textarea name="countermeasures" rows="3" maxlength="1200" required></textarea></label>
-          <label><span>Riscos sugeridos</span><textarea name="risks" rows="3" maxlength="1200" required></textarea></label>
-          <label class="wide"><span>Descrição completa</span><textarea name="description" rows="5" maxlength="5000" required></textarea></label>
+          <label class="wide"><span>Riscos que você reconhece</span><textarea name="risks" rows="3" maxlength="1200" required placeholder="O que pode falhar, cobrar esforço ou gerar consequência?"></textarea></label>
+          <div class="wide review-warning"><strong>Balanceamento é função do Oráculo.</strong><span>Custo final, limitações, contramedidas, nerfs e versão definitiva serão apresentados na análise.</span></div>
           <label><span>Poder-base da técnica</span><select name="basePowerId"><option value="">Não se aplica / escolha</option>${approvedPowers.map((power) => `<option value="${esc(power.id || power.name)}">${esc(power.name)}</option>`).join("")}</select></label>
           <label><span>Exemplo de uso</span><textarea name="example" rows="3" maxlength="1200"></textarea></label>
           <button class="primary-button wide" type="submit">Enviar para análise</button>
@@ -4495,6 +4582,7 @@ function renderGacha() {
   const discovered = new Set(vaultItems.map((item) => item.sourceId || item.id).filter(Boolean));
   const collectionPercent = collectionPool.length ? Math.round((discovered.size / collectionPool.length) * 100) : 0;
   const spotlight = banner.featured?.[0] || collectionPool[0] || {};
+  const rates = gachaRatesFor(type);
   return `
     <div class="grid gacha-view">
       <article class="panel span-12 gacha-sanctum ${state.rolling ? "is-opening" : ""}">
@@ -4502,8 +4590,9 @@ function renderGacha() {
           <p class="eyebrow">Cofre dos Ecos · ${type === "pets" ? "Companheiros" : "Relíquias"}</p>
           <h2>${esc(banner.name || (type === "pets" ? "Companheiros do Despertar" : "Relíquias do Oráculo"))}</h2>
           <p>${esc(banner.description || "Rasgue o selo e descubra qual eco respondeu ao seu chamado.")}</p>
-          <div class="gacha-ledger"><span><small>Saldo</small><b>${coins.toLocaleString("pt-BR")} MC</b></span><span><small>Coleção</small><b>${discovered.size}/${collectionPool.length} · ${collectionPercent}%</b></span><span><small>Rotação</small><b>${esc(banner.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))}</b></span></div>
+          <div class="gacha-ledger"><span><small>Saldo</small><b>${coins.toLocaleString("pt-BR")} MC</b></span><span><small>Coleção</small><b>${discovered.size}/${collectionPool.length} · ${collectionPercent}%</b></span><span><small>Rotação global</small><b data-gacha-countdown data-gacha-type="${esc(type)}" data-gacha-ends="${banner.endsAt.getTime()}">${esc(WORLD.countdownParts(banner.endsAt, gachaNow()).label)}</b></span></div>
           <div class="tabs gacha-kind-tabs"><button class="tab ${type === "pets" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="pets">Companheiros</button><button class="tab ${type === "items" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="items">Relíquias</button></div>
+          <div class="action-row gacha-info-actions"><button class="ghost-button" type="button" data-action="gacha-odds" data-kind="${esc(type)}">Ver probabilidades</button><button class="ghost-button" type="button" data-action="gacha-pool" data-kind="${esc(type)}">Ver pool completo</button></div>
         </div>
         <div class="gacha-vault-gate" aria-label="Portal de invocação">
           <div class="gate-sigil"><i></i><i></i><i></i><span>${state.rolling ? "Rompendo o selo" : "Toque o impossível"}</span></div>
@@ -4515,13 +4604,13 @@ function renderGacha() {
         <div class="gacha-spotlight ${rarityClass(spotlight.rarity)}">
           ${(type === "pets" && petImageFor(spotlight)) ? `<img src="${esc(petImageFor(spotlight))}" alt="${esc(spotlight.name || "Destaque")}" />` : `<div class="relic-silhouette">${esc((spotlight.name || "?").slice(0, 1))}</div>`}
           <small>Eco em ascensão · ${esc(spotlight.rarity || "Desconhecido")}</small><strong>${esc(spotlight.name || "Registro oculto")}</strong><p>${esc(spotlight.trait || spotlight.effect || spotlight.description || "A Interface ainda não revelou esta presença.")}</p>
-          <span class="gacha-odds">Sem pity · taxas publicadas</span>
+          <span class="gacha-odds">Pity ${Number(character.gachaPity?.[type] || 0)}/${Math.max(1, Number(state.settings.pityMax || 30))} · taxas publicadas</span>
         </div>
       </article>
 
       <article class="panel span-12 gacha-rate-table">
-        <div class="panel-heading"><div><p class="eyebrow">Contrato de invocação</p><h3>Taxas do Cofre</h3></div><span class="tag">Secret 0,010% · rate-up 0,10%</span></div>
-        <div class="rarity-rate-strip">${GACHA_RARITIES.map((entry) => `<span class="${rarityClass(entry.name)}"><small>${esc(entry.name)}</small><b>${entry.weight >= 100 ? `${(entry.weight / 100).toFixed(1)}%` : `${(entry.weight / 100).toFixed(3)}%`}</b></span>`).join("")}</div>
+        <div class="panel-heading"><div><p class="eyebrow">Contrato de invocação</p><h3>Taxas reais do pool atual</h3></div><span class="tag">Pesos publicados · sem taxa escondida</span></div>
+        <div class="rarity-rate-strip">${rates.map((entry) => `<span class="${rarityClass(entry.name)}"><small>${esc(entry.name)}</small><b>${entry.percentage.toLocaleString("pt-BR", { minimumFractionDigits: entry.percentage < 1 ? 3 : 2, maximumFractionDigits: 4 })}%</b></span>`).join("")}</div>
       </article>
 
       <article class="panel span-5">
@@ -4529,7 +4618,7 @@ function renderGacha() {
         <div class="featured-gacha">
           ${banner.featured.map((item) => `
             <div class="featured-card ${rarityClass(item.rarity)}">
-              ${(type === "pets" && petImageFor(item)) ? `<img class="featured-pet-art" src="${esc(petImageFor(item))}" alt="${esc(item.name)}" />` : ""}
+              ${(type === "pets" && petImageFor(item)) ? `<img class="featured-pet-art" src="${esc(petImageFor(item, { thumbnail: true }))}" alt="${esc(item.altText || item.name)}" loading="lazy" />` : ""}
               <span>${esc(item.rarity)}</span>
               <strong>${esc(item.name)}</strong>
               <p>${esc(item.trait || item.effect || item.description || "")}</p>
@@ -4684,6 +4773,12 @@ function renderMinigames() {
         <div class="panel-heading"><div><p class="eyebrow">Skill</p><h3>Prova da Mira</h3></div></div>
         <p>Alvos rápidos, bônus raros, congelamento e pontuação por reflexo. Ideal para mobile e PC.</p>
         <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Jogar · ${difficulty.cost} energia</button>
+      </article>
+
+      <article class="panel span-4 minigame-card-world">
+        <div class="panel-heading"><div><p class="eyebrow">Memória ritual</p><h3>Ritual dos Selos</h3></div></div>
+        <p>Observe a sequência de sigilos e reconstrua o padrão antes que o eco desapareça.</p>
+        <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Iniciar ritual · ${difficulty.cost} energia</button>
       </article>
 
       <article class="panel span-4">
@@ -6251,13 +6346,8 @@ function renderMissions() {
       <article class="panel span-6">
         <p class="eyebrow">Nerf e aprovação</p>
         <h3>Poderes e técnicas novas</h3>
-        <p class="muted-text">Poderes liberados: ${usedPowers}/${powerSlots}. Técnicas dependem de um poder base aprovado.</p>
-        <form class="form-stack" data-form="creation-request">
-          <label><span>Tipo</span><select name="type"><option value="power">Poder</option><option value="technique">Técnica</option></select></label>
-          <label><span>Nome</span><input name="title" required /></label>
-          <label><span>Descrição completa</span><textarea name="description" rows="5" required></textarea></label>
-          <button class="primary-button" type="submit">Enviar para análise</button>
-        </form>
+        <p class="muted-text">Poderes liberados: ${usedPowers}/${powerSlots}. Técnicas dependem de um poder base aprovado. O player descreve a ideia; custo, limites e contramedidas são definidos pelo Oráculo.</p>
+        <button class="primary-button" type="button" data-nav="creations">Abrir oficina de Criações</button>
       </article>
       <article class="panel span-12">
         <div class="panel-heading"><div><p class="eyebrow">Fila pessoal</p><h3>Solicitações enviadas</h3></div></div>
@@ -6444,6 +6534,12 @@ function renderAdminEconomy() {
           ${renderStat("Atividades", activeActivities.length)}
         </div>
       </article>
+      <article class="panel span-12 admin-rotation-panel">
+        ${(() => { const banner = activeGachaBanner("pets"); const next = WORLD.selectBalancedRotation(gachaPool("pets"), "pets", gachaNow() + 3600000); return `
+          <div class="panel-heading"><div><p class="eyebrow">Banner de companheiros</p><h3>${esc(banner.configured ? "Destaque fixado pelo Oráculo" : "Rotação automática global")}</h3></div><span class="tag" data-gacha-countdown data-gacha-type="pets" data-gacha-ends="${banner.endsAt.getTime()}">${esc(WORLD.countdownParts(banner.endsAt, gachaNow()).label)}</span></div>
+          <div class="rotation-admin-grid"><section><small>Agora</small><div>${banner.featured.map((pet) => `<span class="tag ${rarityClass(pet.rarity)}">${esc(pet.name)}</span>`).join("") || "Sem pets elegíveis"}</div></section><section><small>Prévia da próxima hora</small><div>${next.featured.map((pet) => `<span class="tag ${rarityClass(pet.rarity)}">${esc(pet.name)}</span>`).join("") || "Sem pets elegíveis"}</div></section></div>
+          <p class="hint">Banners cadastrados e ativos na Forja substituem temporariamente a rotação automática. Ao expirar, o sistema volta para a seleção horária.</p>`; })()}
+      </article>
       <article class="panel span-7">
         <div class="panel-heading"><div><p class="eyebrow">Jogadores</p><h3>Quem precisa de atenção</h3></div><span class="tag">Clique para abrir a ficha</span></div>
         <div class="economy-player-list">
@@ -6537,6 +6633,7 @@ function renderAdminUsers() {
               <button class="danger-button" type="button" data-action="admin-delete-player" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Remover player do sistema</button>
             </div>
           </section>
+          <section class="panel admin-stat-composition" style="margin-top:18px"><div class="panel-heading"><div><p class="eyebrow">Mesma leitura do player</p><h3>Composição oficial dos atributos</h3></div><span class="tag">Fonte única</span></div>${characterStatComposition(character)}</section>
           <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>
            <div class="grid" style="margin-top:18px">
             <div class="panel span-6">
@@ -6810,6 +6907,7 @@ function forgeVisualFields(collection, item = {}) {
       <label><span>Nome do banner</span><input name="name" value="${esc(item.name || "")}" required /></label>
       <label><span>Tipo</span><select name="bannerType"><option value="pets" ${type === "pets" ? "selected" : ""}>Pets</option><option value="items" ${type === "items" ? "selected" : ""}>Itens</option></select></label>
       <label><span>Estado</span><select name="enabled"><option value="true" ${item.enabled !== false ? "selected" : ""}>Ativo</option><option value="false" ${item.enabled === false ? "selected" : ""}>Pausado</option></select></label>
+      <label><span>Rotação</span><select name="rotationMode"><option value="automatic" ${(item.rotationMode || "automatic") === "automatic" ? "selected" : ""}>Automática a cada hora</option><option value="fixed" ${item.rotationMode === "fixed" ? "selected" : ""}>Destaques fixos do Oráculo</option></select></label>
       <label><span>Início (opcional)</span><input name="startsAt" type="datetime-local" value="${esc(dateTimeLocalValue(item.startsAt))}" /></label>
       <label><span>Fim (opcional)</span><input name="endsAt" type="datetime-local" value="${esc(dateTimeLocalValue(item.endsAt))}" /></label>
       <fieldset class="forge-fieldset wide"><legend>Destaques em rate-up</legend><div class="forge-choice-grid">${pool.map((entry) => `<label><input data-featured-choice type="checkbox" value="${esc(entry.id)}" ${selected.has(entry.id) ? "checked" : ""} /> <span>${esc(entry.name)} · ${esc(entry.rarity)}</span></label>`).join("") || "<p>Cadastre pets ou itens antes de criar o banner.</p>"}</div></fieldset>
@@ -7883,6 +7981,14 @@ async function rollAffinity(qty = 1) {
       toast(`${results.length} giro(s): ${displayBest.affinity.name} saiu, mas sua afinidade atual é mais rara e foi mantida.`);
     }
     openAffinityReveal(results, displayBest, choices.length > 0);
+  } catch (error) {
+    state.lastRoll = null;
+    state.lastRollResults = [];
+    state.affinityChoices = [];
+    playSound("fail");
+    toast(error?.message?.includes("permission")
+      ? "O Firestore recusou o giro. Nenhuma essência foi consumida e nenhuma afinidade foi aplicada."
+      : "Não foi possível concluir o giro. Atualize a página e tente novamente.");
   } finally {
     window.clearInterval(interval);
     state.rolling = false;
@@ -7988,8 +8094,24 @@ async function equipTitle(titleId) {
 }
 
 async function claimPendingGift() {
-  await updateCharacter(state.user.uid, { pendingGift: null });
-  toast("Presente marcado como recebido.");
+  const character = currentCharacter();
+  const gift = character.pendingGift;
+  if (!gift || typeof gift !== "object") {
+    toast("Nenhum presente disponível para resgate.");
+    return;
+  }
+  const giftId = String(gift.id || gift.receiptId || `gift:${gift.createdAt || gift.sentAt || JSON.stringify(gift)}`);
+  const claimKeys = [...new Set(character.giftClaimKeys || [])].slice(-79);
+  if (claimKeys.includes(giftId)) {
+    toast("Este presente já foi confirmado.");
+    return;
+  }
+  await updateCharacter(state.user.uid, {
+    pendingGift: null,
+    giftClaimKeys: [...claimKeys, giftId],
+    giftHistory: [{ ...gift, id: giftId, claimedAt: new Date().toISOString(), status: "claimed" }, ...(character.giftHistory || [])].slice(0, 40),
+  });
+  toast("Presente confirmado e arquivado no correio.");
 }
 
 async function toggleEquip(instanceId) {
@@ -8028,49 +8150,63 @@ async function invokeGacha(type = "pets", qty = 1) {
   state.lastGachaResults = [];
   render();
   playSound("rolling");
-  await delay(amount >= 10 ? 1100 : 780);
-  const results = [];
-  for (let index = 0; index < amount; index += 1) {
-    const rarity = pickGachaRarity(kind);
-    const source = pickGachaReward(kind, rarity.name);
-    if (source) results.push(buildGachaInstance(source, kind));
+  try {
+    await delay(amount >= 10 ? 1100 : 780);
+    const results = [];
+    for (let index = 0; index < amount; index += 1) {
+      const rarity = pickGachaRarity(kind);
+      const source = pickGachaReward(kind, rarity.name);
+      if (source) results.push(buildGachaInstance(source, kind));
+    }
+    if (!results.length) throw new Error("O pool não retornou recompensas válidas.");
+    const history = [
+      ...(character.gachaHistory || []),
+      ...results.map((item) => ({
+        id: item.instanceId,
+        kind: item.kind,
+        name: item.name,
+        rarity: item.rarity,
+        shiny: item.shiny,
+        stars: item.stars,
+        createdAt: new Date().toISOString(),
+      })),
+    ].slice(-120);
+    const pets = results.filter((item) => item.kind === "pet");
+    const invokedItems = results
+      .filter((item) => item.kind === "item")
+      .map((item) => ({
+        ...item,
+        categoryId: item.categoryId || "especial",
+        source: "Invocacao dimensional",
+        status: undefined,
+        activityId: undefined,
+      }));
+
+    // Persist first. The reveal is only shown after Firestore confirms the operation.
+    await updateCharacter(state.user.uid, {
+      millenniumCoins: Number(character.millenniumCoins || 0) - cost,
+      gachaVault: [...(character.gachaVault || []), ...pets],
+      inventory: [...(character.inventory || []), ...invokedItems],
+      gachaHistory: history,
+    });
+
+    state.lastGachaResults = results;
+    const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
+    if (rare) {
+      announceRareReward(state.user.uid, rare.name, rare.rarity, rare.kind === "pet" ? "pet invocado" : "item invocado").catch(() => {});
+    }
+    render();
+    openGachaReveal(results, kind);
+  } catch (error) {
+    state.lastGachaResults = [];
+    playSound("fail");
+    toast(error?.message?.includes("permission")
+      ? "O Firestore recusou a invocação. Nenhuma moeda foi consumida e nenhum prêmio foi entregue."
+      : "A invocação não foi concluída. Seu saldo permanece preservado.");
+  } finally {
+    state.rolling = false;
+    if (document.querySelector("#modal")?.hidden !== false) render();
   }
-  const history = [
-    ...(character.gachaHistory || []),
-    ...results.map((item) => ({
-      id: item.instanceId,
-      kind: item.kind,
-      name: item.name,
-      rarity: item.rarity,
-      shiny: item.shiny,
-      stars: item.stars,
-      createdAt: new Date().toISOString(),
-    })),
-  ].slice(-120);
-  const pets = results.filter((item) => item.kind === "pet");
-  const invokedItems = results
-    .filter((item) => item.kind === "item")
-    .map((item) => ({
-      ...item,
-      categoryId: item.categoryId || "especial",
-      source: "Invocacao dimensional",
-      status: undefined,
-      activityId: undefined,
-    }));
-  await updateCharacter(state.user.uid, {
-    millenniumCoins: Number(character.millenniumCoins || 0) - cost,
-    gachaVault: [...(character.gachaVault || []), ...pets],
-    inventory: [...(character.inventory || []), ...invokedItems],
-    gachaHistory: history,
-  });
-  state.lastGachaResults = results;
-  state.rolling = false;
-  const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
-  if (rare) {
-    await announceRareReward(state.user.uid, rare.name, rare.rarity, rare.kind === "pet" ? "pet invocado" : "item invocado");
-  }
-  render();
-  openGachaReveal(results, kind);
 }
 
 function gachaRevealSound(item) {
@@ -8298,7 +8434,7 @@ function minigameReward(difficultyId, score = 0, mode = "aim") {
   const grade = minigameGrade(score, difficulty);
   const passed = grade.passed;
   const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier));
-  const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : "Fragmentos de Mira";
+  const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : mode === "seals" ? "Ecos de Selo" : "Fragmentos de Mira";
   const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier));
   const rareDrop = passed && Math.random() < 0.012 * difficulty.multiplier * grade.multiplier;
   const loot = [`${baseCoins} Millennium Coins`, `${fragments} ${fragmentName}`];
@@ -8378,6 +8514,99 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
   if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
   toast(`${reward.passed ? "Desafio concluído" : "Falha parcial"} · Rank ${reward.grade}: ${reward.loot.join(" · ")}`);
   return reward;
+}
+
+function stopActiveSealRitual(reason = "cancelled") {
+  const session = state.activeSealSession;
+  if (!session) return;
+  session.finished = true;
+  (session.timers || []).forEach((timer) => window.clearTimeout(timer));
+  if (session.lifecycle?.can?.("cancelled")) session.lifecycle.transition("cancelled", reason);
+  state.activeSealSession = null;
+}
+
+function refreshSealProgress(session) {
+  const progress = document.querySelector("[data-seal-progress]");
+  if (progress) progress.innerHTML = session.sequence.map((_, index) => `<i class="${index < session.input.length ? "done" : ""}"></i>`).join("");
+  const status = document.querySelector("[data-seal-status]");
+  if (status) status.textContent = session.phase === "showing" ? "Observe os sigilos." : `Repita o padrão · ${session.input.length}/${session.sequence.length}`;
+}
+
+async function resolveSealRitual(session, success) {
+  if (!session || session.finished) return;
+  session.finished = true;
+  if (session.lifecycle?.can?.("resolving")) session.lifecycle.transition("resolving", success ? "pattern-complete" : "pattern-failed");
+  const score = success ? Math.round(session.sequence.length * 1150 * session.difficulty.multiplier) : Math.round(session.input.length * 240);
+  try {
+    const reward = await applyMinigameReward("seals", session.difficulty.id, score, {
+      lastSealRun: { id: session.id, score, sequenceLength: session.sequence.length, success, createdAt: new Date().toISOString() },
+    }, session.id);
+    if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
+    state.activeSealSession = null;
+    showMinigameResult({ mode: "Ritual dos Selos", difficulty: session.difficulty, score, reward, detail: success ? "Sequência reconstruída" : "O selo se rompeu antes do fim" });
+  } catch (error) {
+    if (session.lifecycle?.can?.("failed")) session.lifecycle.transition("failed", error?.message || "reward-error");
+    state.activeSealSession = null;
+    throw error;
+  }
+}
+
+function handleSealInput(symbol) {
+  const session = state.activeSealSession;
+  if (!session || session.finished || session.phase !== "input") return;
+  const expected = session.sequence[session.input.length];
+  session.input.push(symbol);
+  const button = [...document.querySelectorAll("[data-seal-symbol]")].find((entry) => entry.dataset.sealSymbol === symbol);
+  button?.classList.add("active");
+  window.setTimeout(() => button?.classList.remove("active"), 160);
+  playSound(symbol === expected ? "common" : "fail");
+  refreshSealProgress(session);
+  if (symbol !== expected) {
+    resolveSealRitual(session, false).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+    return;
+  }
+  if (session.input.length === session.sequence.length) resolveSealRitual(session, true).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+}
+
+function startSealRitual(difficultyId) {
+  const difficulty = difficultyById(difficultyId);
+  if (currentGachaEnergy() < difficulty.cost) {
+    toast("Energia insuficiente para o Ritual dos Selos.");
+    return;
+  }
+  stopActiveSealRitual("new-run");
+  const length = ({ noob: 3, facil: 4, medio: 5, hard: 6, pesadelo: 7, "god-slayer": 8 })[difficulty.id] || 4;
+  const id = `seals:${state.user?.uid || "demo"}:${cryptoRandom()}`;
+  const sequence = WORLD.sealSequence(id, length);
+  const symbols = ["◇", "△", "✦", "◈", "⌁", "✥"];
+  const session = { id, difficulty, sequence, input: [], phase: "showing", timers: [], finished: false, lifecycle: POLISH.createLifecycle("preparing") };
+  state.activeSealSession = session;
+  $("#modalContent").innerHTML = `
+    <section class="seal-session" aria-labelledby="seal-title">
+      <div class="aim-session-head"><div><p class="eyebrow">Ritual dos Selos · ${esc(difficulty.name)}</p><h2 id="seal-title">Memorize a ordem.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <p class="seal-status" data-seal-status role="status" aria-live="polite">Observe os sigilos.</p>
+      <div class="seal-progress" data-seal-progress>${sequence.map(() => "<i></i>").join("")}</div>
+      <div class="seal-board" role="group" aria-label="Sigilos do ritual">${symbols.map((symbol, index) => `<button class="seal-button" type="button" data-action="seal-input" data-seal-symbol="${esc(symbol)}" aria-label="Sigilo ${index + 1}">${esc(symbol)}</button>`).join("")}</div>
+    </section>`;
+  $("#modal").hidden = false;
+  focusModal();
+  document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = true; });
+  sequence.forEach((symbol, index) => {
+    const on = window.setTimeout(() => {
+      const button = [...document.querySelectorAll("[data-seal-symbol]")].find((entry) => entry.dataset.sealSymbol === symbol);
+      button?.classList.add("active"); playSound("common");
+    }, 500 + index * 620);
+    const off = window.setTimeout(() => {
+      document.querySelectorAll("[data-seal-symbol]").forEach((button) => button.classList.remove("active"));
+      if (index === sequence.length - 1 && !session.finished) {
+        session.phase = "input";
+        if (session.lifecycle?.can?.("running")) session.lifecycle.transition("running", "sequence-hidden");
+        document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = false; });
+        refreshSealProgress(session);
+      }
+    }, 900 + index * 620);
+    session.timers.push(on, off);
+  });
 }
 
 function startAimGame(difficultyId) {
@@ -10654,6 +10883,7 @@ async function saveForgeVisual(form) {
       name: values.name,
       type: values.bannerType || "pets",
       enabled: values.enabled === "true",
+      rotationMode: values.rotationMode || "automatic",
       startsAt: values.startsAt ? new Date(values.startsAt).toISOString() : "",
       endsAt: values.endsAt ? new Date(values.endsAt).toISOString() : "",
       featuredIds: Array.from(form.querySelectorAll("[data-featured-choice]:checked")).map((input) => input.value),
@@ -11610,6 +11840,7 @@ function openReportModal() {
 
 function closeModal() {
   stopActiveAimGame("modal-closed");
+  stopActiveSealRitual("modal-closed");
   stopActiveTowerDefense("modal-closed");
   (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
   state.gachaRevealTimers = [];
@@ -11810,6 +12041,10 @@ function wireEvents() {
         render();
       }
       if (action === "start-aim-game") startAimGame(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "start-seal-ritual") startSealRitual(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "seal-input") handleSealInput(button.dataset.sealSymbol || "");
+      if (action === "gacha-odds") openGachaOdds(button.dataset.kind || state.gachaTab);
+      if (action === "gacha-pool") openGachaPool(button.dataset.kind || state.gachaTab);
       if (action === "tower-start-wave") startTowerWave();
       if (action === "tower-toggle-pause") toggleTowerPause();
       if (action === "tower-select-pet") selectTowerPet(Number(button.dataset.towerIndex || 0));
@@ -12221,6 +12456,7 @@ try {
   // The site still works when browser storage is unavailable.
 }
 wireEvents();
+startGachaRotationTicker();
 state.imageFallbackCleanup = POLISH.installImageFallback(document);
 updateBuildBadge();
 registerMillenniumServiceWorker();
@@ -12229,6 +12465,8 @@ window.addEventListener("beforeunload", () => {
     persistDirtyForms();
     saveUpdateDrafts();
   }
+  if (state.gachaRotationTimer) window.clearInterval(state.gachaRotationTimer);
+  stopActiveSealRitual("page-unload");
   setPresence(false);
 });
 initFirebase();

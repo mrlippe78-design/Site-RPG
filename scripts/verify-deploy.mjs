@@ -8,7 +8,7 @@ const valueFor = (name, fallback) => {
 };
 
 const baseUrl = new URL(valueFor("--url", "https://mrlippe78-design.github.io/Site-RPG/"));
-const expectedBuild = valueFor("--build", "3.1.2");
+const expectedBuild = valueFor("--build", "3.2.0");
 const expectedCommit = valueFor("--commit", "");
 const attempts = Math.max(1, Number(valueFor("--attempts", "4")) || 4);
 const waitMs = Math.max(0, Number(valueFor("--wait-ms", "15000")) || 15000);
@@ -16,6 +16,7 @@ const required = [
   "index.html",
   "build-info.js",
   "millennium-stability.js",
+  "millennium-world-alive.js",
   "catalogs-3.1.js",
   "millennium-core.js",
   "millennium-journey.js",
@@ -28,12 +29,20 @@ const required = [
   "journey.css",
   "backend.css",
   "polish.css",
+  "world-alive.css",
   "assets/first-awakening-portal.webp",
   "assets/maps/arena-das-sete-esferas.webp",
+  "assets/maps/aurevia.webp",
+  "assets/maps/noctheryn.webp",
+  "assets/maps/deserto-de-vidro.webp",
   "assets/maps/sociedade-das-laminas.webp",
   "assets/maps/reino-do-pecado-partido.webp",
   "assets/pets/cronista-de-vidro.webp",
   "assets/pets/filha-da-cinza.webp",
+  "assets/pets/oraculo-partido.webp",
+  "assets/pets/herdeiro-dos-seis-veus.webp",
+  "assets/pets/general-da-cicatriz.webp",
+  "assets/pets/vazio-que-ri.webp",
   "service-worker.js",
   "manifest.webmanifest",
   "favicon.svg",
@@ -43,7 +52,7 @@ function requestText(url, redirects = 0) {
   return new Promise((resolve, reject) => {
     const transport = url.protocol === "https:" ? https : http;
     const request = transport.get(url, {
-      headers: { "cache-control": "no-cache", connection: "close", "user-agent": "millennium-deploy-check/3.1" },
+      headers: { "cache-control": "no-cache", connection: "close", "user-agent": "millennium-deploy-check/3.2" },
     }, (response) => {
       if ([301, 302, 307, 308].includes(response.statusCode) && response.headers.location && redirects < 4) {
         response.resume();

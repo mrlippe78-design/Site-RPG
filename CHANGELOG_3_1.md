@@ -110,3 +110,15 @@
 - recompensa repetida por resolução duplicada;
 - foco perdido após fechar modal;
 - falta de redução de movimento.
+
+## 3.2.0 — Operação Mundo Vivo
+
+- Unificou o cálculo e a apresentação dos atributos entre player, perfil, admin e ranking.
+- Corrigiu resolução de equipamentos antigos e tratou snapshots de afinidade como histórico.
+- Adicionou rotação horária global do banner de pets com contador e probabilidades públicas.
+- Adicionou 25 artes dedicadas de pets e 18 artes dedicadas de localidades, sem repetição de bytes.
+- Adicionou Caçador, Guardião, Feiticeiro e Monge ao catálogo oficial.
+- Simplificou o envio de Poderes e Técnicas e consolidou a decisão final no Oráculo.
+- Reforçou gacha, Pet Hunt, correio e minigames com persistência, limites e chaves de conclusão.
+- Adicionou o minigame Ritual dos Selos.
+- Atualizou build, cache, Service Worker, testes, regras e documentação para 3.2.0.
