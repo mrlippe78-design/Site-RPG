@@ -8,7 +8,7 @@ const valueFor = (name, fallback) => {
 };
 
 const baseUrl = new URL(valueFor("--url", "https://mrlippe78-design.github.io/Site-RPG/"));
-const expectedBuild = valueFor("--build", "3.2.1");
+const expectedBuild = valueFor("--build", "3.3.0");
 const expectedCommit = valueFor("--commit", "");
 const attempts = Math.max(1, Number(valueFor("--attempts", "4")) || 4);
 const waitMs = Math.max(0, Number(valueFor("--wait-ms", "15000")) || 15000);
@@ -17,6 +17,7 @@ const required = [
   "build-info.js",
   "millennium-stability.js",
   "millennium-world-alive.js",
+  "millennium-echoes.js",
   "catalogs-3.1.js",
   "millennium-core.js",
   "millennium-journey.js",
@@ -30,6 +31,7 @@ const required = [
   "backend.css",
   "polish.css",
   "world-alive.css",
+  "echoes.css",
   "assets/first-awakening-portal.webp",
   "assets/maps/arena-das-sete-esferas.webp",
   "assets/maps/aurevia.webp",

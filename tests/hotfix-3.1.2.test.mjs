@@ -10,9 +10,9 @@ const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
 const build = await readFile(new URL("../build-info.js", import.meta.url), "utf8");
 
-test("build 3.2.1 is synchronized", () => {
-  assert.match(build, /version:\s*"3\.2\.1"/);
-  assert.match(build, /millennium-shell-v3\.2\.1/);
+test("current build is synchronized", () => {
+  assert.match(build, /version:\s*"3\.3\.0"/);
+  assert.match(build, /millennium-shell-v3\.3\.0/);
 });
 
 test("creation flow is controlled by the Oracle", () => {

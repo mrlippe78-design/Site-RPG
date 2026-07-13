@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.2.1", commit: "dev", cacheName: "millennium-shell-v3.2.1" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.3.0", commit: "dev", cacheName: "millennium-shell-v3.3.0" };
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -50,6 +50,16 @@ const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || {
   itemMatch: () => null,
   sealSequence: () => ["◇", "△", "✦", "◈"],
 };
+const ECHOES = window.MILLENNIUM_ECHOES_33 || {
+  themes: [],
+  themeById: () => null,
+  resolvedTheme: () => ({ id: "eclipse", name: "Eclipse", palette: { primary: "#8f3038", secondary: "#171319", accent: "#c48a72", danger: "#d35b62", success: "#6f9a7b" } }),
+  cartographyBoard: () => [1, 2, 3, 4, 5, 6, 7, 0, 8],
+  cartographySolved: (board = []) => board.join(",") === "1,2,3,4,5,6,7,8,0",
+  cartographyMove: (board = [], index = -1) => board,
+  alchemyChallenge: () => ({ ingredients: [], recipe: [], clues: [] }),
+  evaluateAlchemy: () => ({ correct: 0, total: 0, score: 0, passed: false }),
+};
 const ACCOUNT_MGMT = window.MILLENNIUM_ACCOUNT_MANAGEMENT_321 || {
   CHARACTER_SUBCOLLECTIONS: ["lore", "inventory", "pets", "titles", "powers", "techniques", "activities", "missions", "achievements", "discoveries", "history", "developmentLogs", "rewards", "minigameRuns"],
   normalizeStatus: (profile = {}, now = Date.now()) => { const status = profile.accountStatus || profile.status || "active"; const until = Date.parse(profile.suspendedUntil || profile.bannedUntil || "") || 0; return status === "suspended" && until && until <= now ? "active" : status; },
@@ -62,8 +72,8 @@ const ACCOUNT_MGMT = window.MILLENNIUM_ACCOUNT_MANAGEMENT_321 || {
   isPendingCharacterRequest: (request = {}) => ["pendente", "em análise", "aguardando resposta do player", "contestado pelo player"].includes(String(request.status || "").toLowerCase()),
 };
 
-const UPDATE_DRAFT_KEY = "millennium:3.2:update-draft";
-const LOCAL_DRAFT_PREFIX = "millennium:3.2:form-draft";
+const UPDATE_DRAFT_KEY = "millennium:3.3:update-draft";
+const LOCAL_DRAFT_PREFIX = "millennium:3.3:form-draft";
 
 const CLOUDINARY_CONFIG = {
   cloudName: "cakvvuqx",
@@ -203,7 +213,29 @@ const DEFAULT_CONTENT = {
     rareRateUpChance: 0.3,
     soundEnabled: true,
     theme: "default",
-    seasonTheme: "awakening",
+    seasonTheme: "eclipse",
+    seasonThemeState: "active",
+    seasonThemeMode: "season",
+    seasonThemeStartsAt: "",
+    seasonThemeEndsAt: "",
+    seasonThemeDescription: "A lua escura inaugura os Ecos da Interface.",
+    seasonThemePrimary: "",
+    seasonThemeSecondary: "",
+    seasonThemeAccent: "",
+    seasonThemeDanger: "",
+    seasonThemeSuccess: "",
+    seasonThemeBackground: "",
+    seasonThemeLoginArt: "",
+    seasonThemeCardTexture: "stone",
+    seasonThemeButtonStyle: "solid",
+    seasonThemeIcons: "runes",
+    seasonThemeMainMusic: "eclipse",
+    seasonThemeCodexMusic: "whispers",
+    seasonThemeGachaMusic: "summoning",
+    seasonThemeRaritySounds: "ritual",
+    seasonThemeAnimation: "normal",
+    seasonThemeMenuEffect: "mist",
+    seasonThemeHomeHighlight: "season",
     globalNotice: "A Interface do Oráculo está desperta. O WhatsApp conduz a história; este lugar preserva suas marcas.",
     rulesVersion: "3.0",
     termsText: "Millennium é um RPG textual contínuo jogado principalmente pelo WhatsApp. A Interface do Oráculo registra fichas, inventário, economia, chats de apoio, missões e decisões administrativas; ela não substitui interpretação nem concede vitória automática. Ao entrar, você concorda em respeitar autoria limitada, consentimento, localização, ferimentos, custos, consequências e decisões explicadas do Oráculo; não usar metagame, godmodding, spam de ações, manipulação do navegador, abuso de bugs, assédio ou fraude econômica; denunciar problemas com contexto; e proteger a experiência coletiva.",
@@ -673,11 +705,13 @@ const state = {
   rankingRange: "season",
   gachaTab: "pets",
   vaultTab: "all",
-  minigameTab: "hub",
+  minigameTab: "quick",
   minigameDifficulty: "facil",
   activeAimSession: null,
   activeTowerSession: null,
   activeSealSession: null,
+  activeCartographySession: null,
+  activeAlchemySession: null,
   gachaRotationTimer: 0,
   gachaRotationHour: WORLD.rotationId(Date.now()),
   serverTimeOffsetMs: 0,
@@ -790,11 +824,10 @@ const state = {
 
 const NAV_GROUPS = {
   player: [
-    { label: "Jornada", ids: ["character", "roulette", "missions", "creations", "character-life", "diary"] },
-    { label: "Mundo", ids: ["player-home", "codex", "cultures", "professions", "help"] },
-    { label: "Comunidade", ids: ["profile", "chat", "guild", "hall"] },
-    { label: "Coleção", ids: ["gacha", "inventory", "grimoire", "pass"] },
-    { label: "Atividades", ids: ["minigames", "market", "ranking"] },
+    { label: "Obrigatório", ids: ["character", "roulette", "missions", "chat"] },
+    { label: "Recomendado", ids: ["character-life", "creations", "guild", "cultures", "professions"] },
+    { label: "Opcional", ids: ["player-home", "profile", "codex", "help", "gacha", "inventory", "grimoire", "market", "pass", "ranking", "hall", "diary"] },
+    { label: "Lazer", ids: ["minigames"] },
     { label: "Suporte", ids: ["reports"] },
   ],
   admin: [
@@ -1406,7 +1439,10 @@ function accountIsRestricted(profile = state.profile, now = Date.now()) {
 }
 
 function stopPresenceTracking() {
-  stopPresenceTracking();
+  if (state.presenceTimer) window.clearInterval(state.presenceTimer);
+  state.presenceTimer = null;
+  if (state.idleTimer) window.clearInterval(state.idleTimer);
+  state.idleTimer = null;
   clearRestrictionTimer();
 }
 
@@ -2312,7 +2348,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.2.1.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.3.0.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2815,7 +2851,7 @@ function scheduleRender(views = null, options = {}) {
     critical: request.critical,
     activeText: hasActiveTextEntry() || state.textComposing || state.searchComposing,
     dirtyForm: hasDirtyForm(),
-    liveSession: Boolean(state.activeTowerSession || state.activeAimSession),
+    liveSession: Boolean(state.activeTowerSession || state.activeAimSession || state.activeSealSession || state.activeCartographySession || state.activeAlchemySession),
   });
 
   if (decision.defer) {
@@ -2843,7 +2879,7 @@ function scheduleRender(views = null, options = {}) {
       critical: pending.critical,
       activeText: hasActiveTextEntry() || state.textComposing || state.searchComposing,
       dirtyForm: hasDirtyForm(),
-      liveSession: Boolean(state.activeTowerSession || state.activeAimSession),
+      liveSession: Boolean(state.activeTowerSession || state.activeAimSession || state.activeSealSession || state.activeCartographySession || state.activeAlchemySession),
     });
     if (recheck.defer) {
       state.pendingRenderRequest = STABILITY.mergeRenderRequests(state.pendingRenderRequest, pending);
@@ -3338,11 +3374,32 @@ function render() {
 }
 
 function applyThemeClasses(settings = state.settings) {
+  const now = Date.now();
+  const startsAt = Date.parse(settings.seasonThemeStartsAt || "") || 0;
+  const endsAt = Date.parse(settings.seasonThemeEndsAt || "") || 0;
+  const scheduledNow = settings.seasonThemeState === "scheduled" && (!startsAt || startsAt <= now) && (!endsAt || endsAt > now);
+  const canApplyToPlayer = settings.seasonThemeState === "active" || scheduledNow;
+  const useStandard = state.role === "player" && state.profile?.themePreference === "standard";
+  const effectiveSettings = useStandard || (state.role === "player" && !canApplyToPlayer) ? { ...settings, seasonTheme: "spirit-veil", seasonThemePrimary: "", seasonThemeSecondary: "", seasonThemeAccent: "", seasonThemeBackground: "" } : settings;
+  const theme = ECHOES.resolvedTheme(effectiveSettings);
   document.body.className = [
     settings.theme && settings.theme !== "default" ? `theme-${settings.theme}` : "",
-    settings.seasonTheme ? `season-theme-${settings.seasonTheme}` : "season-theme-awakening",
+    settings.seasonTheme ? `season-theme-${settings.seasonTheme}` : "season-theme-eclipse",
+    "echoes-theme",
     `season-${Number(settings.seasonNumber || 1)}`,
   ].filter(Boolean).join(" ");
+  document.body.dataset.themeAnimation = state.profile?.interfaceAnimations || settings.seasonThemeAnimation || theme.animation || "normal";
+  document.body.dataset.themeMenuEffect = settings.seasonThemeMenuEffect || theme.menuEffect || "mist";
+  document.body.dataset.interfaceContrast = state.profile?.interfaceContrast || "normal";
+  document.body.dataset.dataEconomy = state.profile?.dataEconomy ? "on" : "off";
+  document.documentElement.style.setProperty("--season-primary", theme.palette.primary);
+  document.documentElement.style.setProperty("--season-secondary", theme.palette.secondary);
+  document.documentElement.style.setProperty("--season-accent", theme.palette.accent);
+  document.documentElement.style.setProperty("--season-danger", theme.palette.danger);
+  document.documentElement.style.setProperty("--season-success", theme.palette.success);
+  document.documentElement.style.setProperty("--season-background", theme.background ? `url("${theme.background.replace(/["'()]/g, "")}")` : "none");
+  const authArt = document.querySelector(".auth-art");
+  if (authArt && theme.loginArt) authArt.style.backgroundImage = `linear-gradient(90deg,rgba(5,6,8,.2),rgba(5,6,8,.72)),url("${theme.loginArt.replace(/["'()]/g, "")}")`;
 }
 
 function onboardingSteps() {
@@ -4925,13 +4982,67 @@ function renderMinigames() {
   const towerMaps = state.content.towerMaps || [];
   const companionPrompt = !freePets.length ? `<p class="minigame-empty-pets">Nenhum companheiro livre. <button class="link-button" type="button" data-nav="gacha">Invocar um companheiro</button> para liberar Hunt e Tower Defense.</p>` : "";
   const recentRuns = (character.minigameHistory || []).slice(0, 6);
+  const tab = ["quick", "challenges", "recreation"].includes(state.minigameTab) ? state.minigameTab : "quick";
+  const tabs = `
+    <article class="panel span-12 leisure-tabs" aria-label="Categorias da Área de Lazer">
+      ${[["quick", "Jogos rápidos"], ["challenges", "Desafios"], ["recreation", "Recreação"]].map(([id, label]) => `<button class="ghost-button ${tab === id ? "active" : ""}" type="button" data-action="leisure-tab" data-tab="${id}">${label}</button>`).join("")}
+    </article>`;
+  const quickGames = `
+    <article class="panel span-3 leisure-card">
+      <div class="panel-heading"><div><p class="eyebrow">Reflexo</p><h3>Prova da Mira</h3></div></div>
+      <p>Alvos rápidos e pontuação por precisão.</p><div class="leisure-meta"><span>30–90 s</span><span>Toque e mouse</span></div>
+      <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Jogar · ${difficulty.cost} energia</button>
+    </article>
+    <article class="panel span-3 leisure-card minigame-card-world">
+      <div class="panel-heading"><div><p class="eyebrow">Memória</p><h3>Ritual dos Selos</h3></div></div>
+      <p>Reproduza a sequência antes que o eco desapareça.</p><div class="leisure-meta"><span>1 minuto</span><span>Toque e teclado</span></div>
+      <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Iniciar · ${difficulty.cost} energia</button>
+    </article>
+    <article class="panel span-3 leisure-card">
+      <div class="panel-heading"><div><p class="eyebrow">Mapa</p><h3>Cartografia Perdida</h3></div></div>
+      <p>Reorganize uma região de Millennium antes do tempo acabar.</p><div class="leisure-meta"><span>2 minutos</span><span>Sem pets</span></div>
+      <button class="primary-button" type="button" data-action="start-cartography" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Reconstruir · ${difficulty.cost} energia</button>
+    </article>
+    <article class="panel span-3 leisure-card">
+      <div class="panel-heading"><div><p class="eyebrow">Lógica</p><h3>Alquimia Instável</h3></div></div>
+      <p>Leia as pistas e escolha a ordem segura dos ingredientes.</p><div class="leisure-meta"><span>2–4 minutos</span><span>Sem pets</span></div>
+      <button class="primary-button" type="button" data-action="start-alchemy" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Misturar · ${difficulty.cost} energia</button>
+    </article>`;
+  const challenges = `
+    <article class="panel span-6">
+      <div class="panel-heading"><div><p class="eyebrow">Estratégia</p><h3>Pet Hunt</h3></div></div>
+      <p class="risk-line">Risco ${Math.round(difficulty.risk * 100)}% · Duração base ${Math.round(8 + difficulty.cost * 7)} min.</p>${companionPrompt}
+      <form class="form-stack compact-form" data-form="pet-hunt">
+        <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("petId", huntDraft) : `<option>Nenhum pet livre</option>`}</select></label>
+        <label><span>Destino</span><select name="biome">${(state.content.biomes || []).map((biome) => `<option value="${esc(biome.id)}" ${draftValue(huntDraft, "biome", "") === biome.id ? "selected" : ""}>${esc(biome.name)}</option>`).join("")}</select></label>
+        <label><span>Rota</span><select name="route"><option value="cautious">Cautelosa</option><option value="balanced" selected>Equilibrada</option><option value="deep">Profunda</option></select></label>
+        <label><span>Duração</span><select name="durationMinutes"><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
+        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Enviar Hunt · ${difficulty.cost} energia</button>
+      </form>
+    </article>
+    <article class="panel span-6">
+      <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div><p>Monte um deck de até quatro companheiros e defenda as rotas.</p>${companionPrompt}
+      <form class="form-stack compact-form" data-form="tower-defense">
+        <label><span>Companheiro 1</span><select name="towerPet1" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("towerPet1", towerDraft) : `<option>Nenhum pet livre</option>`}</select></label>
+        <label><span>Companheiro 2</span><select name="towerPet2">${petOptions("towerPet2", towerDraft, true)}</select></label>
+        <label><span>Companheiro 3</span><select name="towerPet3">${petOptions("towerPet3", towerDraft, true)}</select></label>
+        <label><span>Companheiro 4</span><select name="towerPet4">${petOptions("towerPet4", towerDraft, true)}</select></label>
+        <label><span>Mapa</span><select name="mapId">${towerMaps.map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
+        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Iniciar · ${difficulty.cost} energia</button>
+      </form>
+    </article>
+    <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Em campo</p><h3>Atividades simultâneas</h3></div></div><div class="activity-list">${renderActivities(character)}</div></article>`;
+  const recreation = `
+    <article class="panel span-4 leisure-card"><p class="eyebrow">Som</p><h3>Jukebox</h3><p>Ouça os motivos da temporada sem iniciar uma partida.</p><button class="ghost-button" type="button" data-action="toggle-music">Alternar música</button></article>
+    <article class="panel span-4 leisure-card"><p class="eyebrow">Coleção</p><h3>Galeria</h3><p>Revisite mapas, títulos e artes que você já descobriu.</p><button class="ghost-button" type="button" data-nav="codex">Abrir galeria</button></article>
+    <article class="panel span-4 leisure-card"><p class="eyebrow">Registros</p><h3>Estatísticas pessoais</h3><p>${Object.values(character.minigameStats || {}).reduce((sum, item) => sum + Number(item.plays || 0), 0)} partidas registradas nesta conta.</p><button class="ghost-button" type="button" data-nav="ranking">Ver recordes</button></article>
+    <article class="panel span-12"><p class="eyebrow">Preferências</p><h3>Minha Interface</h3><form class="form-grid" data-form="interface-preferences"><label><span>Aparência</span><select name="themePreference"><option value="season" ${state.profile?.themePreference !== "standard" ? "selected" : ""}>Usar aparência da temporada</option><option value="standard" ${state.profile?.themePreference === "standard" ? "selected" : ""}>Usar aparência padrão</option></select></label><label><span>Animações</span><select name="interfaceAnimations"><option value="normal" ${state.profile?.interfaceAnimations !== "reduced" && state.profile?.interfaceAnimations !== "none" ? "selected" : ""}>Normal</option><option value="reduced" ${state.profile?.interfaceAnimations === "reduced" ? "selected" : ""}>Reduzidas</option><option value="none" ${state.profile?.interfaceAnimations === "none" ? "selected" : ""}>Desligadas</option></select></label><label><span>Contraste</span><select name="interfaceContrast"><option value="normal">Normal</option><option value="high" ${state.profile?.interfaceContrast === "high" ? "selected" : ""}>Alto</option></select></label><label><span>Economia de dados</span><select name="dataEconomy"><option value="false">Desligada</option><option value="true" ${state.profile?.dataEconomy ? "selected" : ""}>Ligada</option></select></label><button class="primary-button" type="submit">Salvar preferências</button></form></article>`;
   return `
     <div class="grid minigame-view">
       <article class="panel span-12 minigame-hero">
         <div>
-          <p class="eyebrow">Jogos do Oráculo</p>
-          <h2>Esforço sempre avança</h2>
-          <p>Minigames usam energia diária, têm dificuldades próprias, ranking por modo e drops de temporada. Sorte pode acelerar; dedicação nunca volta vazia.</p>
+          <p class="eyebrow">Área de Lazer</p><h2>Escolha o quanto deseja se envolver</h2>
+          <p>Jogos rápidos, desafios e recreação vivem separados. Nenhuma recompensa daqui é essencial para a progressão narrativa.</p>
         </div>
         <div class="stat-grid compact-stat-grid">
           ${renderStat("Energia", `${energy}/${GACHA_ENERGY_MAX}`)}
@@ -4944,58 +5055,10 @@ function renderMinigames() {
       <article class="panel span-12">
         ${renderDifficultyTabs()}
       </article>
-
-      <article class="panel span-4">
-        <div class="panel-heading"><div><p class="eyebrow">Skill</p><h3>Prova da Mira</h3></div></div>
-        <p>Alvos rápidos, bônus raros, congelamento e pontuação por reflexo. Ideal para mobile e PC.</p>
-        <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Jogar · ${difficulty.cost} energia</button>
-      </article>
-
-      <article class="panel span-4 minigame-card-world">
-        <div class="panel-heading"><div><p class="eyebrow">Memória ritual</p><h3>Ritual dos Selos</h3></div></div>
-        <p>Observe a sequência de sigilos e reconstrua o padrão antes que o eco desapareça.</p>
-        <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Iniciar ritual · ${difficulty.cost} energia</button>
-      </article>
-
-      <article class="panel span-4">
-        <div class="panel-heading"><div><p class="eyebrow">Estratégia</p><h3>Pet Hunt</h3></div></div>
-        <p class="risk-line">Risco atual: ${Math.round(difficulty.risk * 100)}% · Duração base: ${Math.round(8 + difficulty.cost * 7)} min · pets raros reduzem perigo.</p>
-        ${companionPrompt}
-        <form class="form-stack compact-form" data-form="pet-hunt">
-          <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("petId", huntDraft) : `<option>Nenhum pet livre</option>`}</select></label>
-          <label><span>Destino</span><select name="biome">${(state.content.biomes || []).map((biome) => `<option value="${esc(biome.id)}" ${draftValue(huntDraft, "biome", "") === biome.id ? "selected" : ""}>${esc(biome.name)}</option>`).join("")}</select></label>
-          <label><span>Rota</span><select name="route"><option value="cautious" ${draftValue(huntDraft, "route", "") === "cautious" ? "selected" : ""}>Cautelosa · menos risco, menos loot</option><option value="balanced" ${!draftValue(huntDraft, "route", "") || draftValue(huntDraft, "route", "") === "balanced" ? "selected" : ""}>Equilibrada · risco normal</option><option value="deep" ${draftValue(huntDraft, "route", "") === "deep" ? "selected" : ""}>Profunda · mais risco e materiais</option></select></label>
-          <label><span>Duração</span><select name="durationMinutes"><option value="15">15 min · reconhecimento</option><option value="30" ${draftValue(huntDraft, "durationMinutes", "") === "30" ? "selected" : ""}>30 min · incursão</option><option value="60" ${draftValue(huntDraft, "durationMinutes", "") === "60" ? "selected" : ""}>60 min · expedição</option></select></label>
-          <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" />
-          <button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Enviar Hunt · ${difficulty.cost} energia</button>
-        </form>
-      </article>
-
-      <article class="panel span-4">
-        <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div>
-        <p class="risk-line">Posicione o pet em uma runa, sobreviva às ondas, derrube elites para obter essência e melhore a defesa durante a partida.</p>
-        ${companionPrompt}
-        <form class="form-stack compact-form" data-form="tower-defense">
-          <label><span>Deck de torres</span><select name="towerPet1" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("towerPet1", towerDraft) : `<option>Nenhum pet livre</option>`}</select></label>
-          <label><span>Companheiro 2</span><select name="towerPet2">${petOptions("towerPet2", towerDraft, true)}</select></label>
-          <label><span>Companheiro 3</span><select name="towerPet3">${petOptions("towerPet3", towerDraft, true)}</select></label>
-          <label><span>Companheiro 4</span><select name="towerPet4">${petOptions("towerPet4", towerDraft, true)}</select></label>
-          <label><span>Mapa</span><select name="mapId">${towerMaps.map((map) => `<option value="${esc(map.id)}" ${draftValue(towerDraft, "mapId", "") === map.id ? "selected" : ""}>${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
-          <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" />
-          <button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Iniciar partida · ${difficulty.cost} energia</button>
-        </form>
-        <div class="tower-map-rail">
-          ${towerMaps.map((map) => `<div class="tower-map-chip"><img src="${esc(towerMapImageFor(map))}" alt="" /><span><strong>${esc(map.name)}</strong><small>${esc(map.enemyFaction || "Inimigos desconhecidos")} · ${esc(routeLabel(map.routeType))}</small></span></div>`).join("")}
-        </div>
-      </article>
-
-      <article class="panel span-7">
-        <div class="panel-heading"><div><p class="eyebrow">Companheiros em campo</p><h3>Atividades simultâneas</h3></div></div>
-        <div class="activity-list">${renderActivities(character)}</div>
-      </article>
-
-      <article class="panel span-5">
-        <div class="panel-heading"><div><p class="eyebrow">Lojas de fragmentos</p><h3>Temporada do Despertar</h3></div></div>
+      ${tabs}
+      ${tab === "quick" ? quickGames : tab === "challenges" ? challenges : recreation}
+      <article class="panel span-5 ${tab === "challenges" ? "" : "span-12"}">
+        <div class="panel-heading"><div><p class="eyebrow">Recompensas leves</p><h3>Loja recreativa</h3></div></div>
         ${renderFragmentWallet(character)}
         <div class="shop-list">
           ${(state.content.gachaShardShops || []).map((item) => renderShardOffer(item, character)).join("") || `<div class="empty-state">Nenhuma loja publicada.</div>`}
@@ -7557,10 +7620,11 @@ function renderAdminMissions() {
 }
 
 function renderAdminSettings() {
+  const theme = ECHOES.resolvedTheme(state.settings);
   return `
     <div class="grid admin-settings-view">
-      <article class="panel span-12 oracle-season-console">
-        <div><p class="eyebrow">Núcleo da Interface</p><h2>${esc(state.settings.seasonName || "Temporada do Despertar")}</h2><p>Controle visual, roleta e acesso narrativo em um único registro. Tema sazonal altera ambiente, partículas, portal e música; o tema de cor ajusta a leitura dos controles.</p></div>
+      <article class="panel span-12 oracle-season-console theme-preview" style="--preview-art:url('${esc(theme.background)}');--preview-primary:${esc(theme.palette.primary)}">
+        <div><p class="eyebrow">Millennium 3.3 · Ecos da Interface</p><h2>${esc(state.settings.seasonName || theme.name)}</h2><p>${esc(theme.description)} O tema agora coordena paleta, fundos, texturas, áudio e movimento sem alterar a estrutura das páginas.</p><div class="theme-swatches" aria-label="Paleta atual">${Object.values(theme.palette).map((color) => `<i style="--swatch:${esc(color)}" title="${esc(color)}"></i>`).join("")}</div></div>
         <div class="stat-grid compact-stat-grid">${renderStat("Afinidades", state.content.affinities.length)}${renderStat("Categorias", state.content.affinityCategories.length)}${renderStat("Pets no pool", state.content.gachaPets.length)}${renderStat("Facções", state.settings.factionsUnlocked ? "Abertas" : "Seladas")}</div>
       </article>
       <article class="panel span-7 settings-control-panel">
@@ -7583,27 +7647,28 @@ function renderAdminSettings() {
           <label><span>Nome do evento</span><input name="eventName" value="${esc(state.settings.eventName || "")}" /></label>
           <label><span>Categoria rate-up</span><select name="bannerRateUp"><option value="">Sem rate-up</option>${optionList(state.content.affinityCategories, state.settings.bannerRateUp || "")}</select></label>
           <label><span>Chance do rate-up</span><input name="rareRateUpChance" type="number" min="0" max="1" step="0.01" value="${Number(state.settings.rareRateUpChance ?? 0.3)}" /></label>
-          <label><span>Tema de cores</span><select name="theme">
-            <option value="default" ${state.settings.theme === "default" ? "selected" : ""}>Dourado</option>
-            <option value="arcane" ${state.settings.theme === "arcane" ? "selected" : ""}>Arcano</option>
-            <option value="blood" ${state.settings.theme === "blood" ? "selected" : ""}>Sangue</option>
-            <option value="forest" ${state.settings.theme === "forest" ? "selected" : ""}>Natureza</option>
-            <option value="ocean" ${state.settings.theme === "ocean" ? "selected" : ""}>Oceano</option>
-            <option value="void" ${state.settings.theme === "void" ? "selected" : ""}>Vazio</option>
-            <option value="ember" ${state.settings.theme === "ember" ? "selected" : ""}>Brasa</option>
-            <option value="frost" ${state.settings.theme === "frost" ? "selected" : ""}>Geada</option>
-          </select></label>
-          <label><span>Tema visual da temporada</span><select name="seasonTheme">
-            <option value="awakening" ${state.settings.seasonTheme === "awakening" ? "selected" : ""}>Despertar dos Heróis</option>
-            <option value="void" ${state.settings.seasonTheme === "void" ? "selected" : ""}>Vazio Cósmico</option>
-            <option value="blood" ${state.settings.seasonTheme === "blood" ? "selected" : ""}>Sangue e Pactos</option>
-            <option value="frost" ${state.settings.seasonTheme === "frost" ? "selected" : ""}>Geada Eterna</option>
-            <option value="ember" ${state.settings.seasonTheme === "ember" ? "selected" : ""}>Brasa da Forja</option>
-            <option value="forest" ${state.settings.seasonTheme === "forest" ? "selected" : ""}>Raízes Vivas</option>
-          </select></label>
+          <label><span>Pacote visual</span><select name="seasonTheme">${ECHOES.themes.map((item) => `<option value="${item.id}" ${state.settings.seasonTheme === item.id ? "selected" : ""}>${esc(item.name)} · ${esc(item.description)}</option>`).join("")}</select></label>
+          <div class="theme-status-row">
+            <label><span>Estado</span><select name="seasonThemeState">${[["draft","Rascunho"],["preview","Pré-visualização"],["scheduled","Agendado"],["active","Ativo"],["archived","Arquivado"]].map(([id,label]) => `<option value="${id}" ${state.settings.seasonThemeState === id ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+            <label><span>Aplicação</span><select name="seasonThemeMode">${[["cosmetic","Cosmético"],["season","Temporada"],["short-event","Evento curto"]].map(([id,label]) => `<option value="${id}" ${state.settings.seasonThemeMode === id ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+            <label><span>Animações</span><select name="seasonThemeAnimation"><option value="normal" ${state.settings.seasonThemeAnimation === "normal" ? "selected" : ""}>Normal</option><option value="reduced" ${state.settings.seasonThemeAnimation === "reduced" ? "selected" : ""}>Reduzidas</option><option value="none" ${state.settings.seasonThemeAnimation === "none" ? "selected" : ""}>Desligadas</option></select></label>
+          </div>
+          <label><span>Descrição curta</span><input name="seasonThemeDescription" value="${esc(state.settings.seasonThemeDescription || theme.description)}" /></label>
+          <label><span>Início</span><input name="seasonThemeStartsAt" type="datetime-local" value="${esc(String(state.settings.seasonThemeStartsAt || "").slice(0,16))}" /></label>
+          <label><span>Término</span><input name="seasonThemeEndsAt" type="datetime-local" value="${esc(String(state.settings.seasonThemeEndsAt || "").slice(0,16))}" /></label>
+          <details class="theme-advanced"><summary>Personalizar identidade, mídia e efeitos</summary>
+            <div class="form-stack">
+              <div class="theme-status-row"><label><span>Principal</span><input name="seasonThemePrimary" type="color" value="${esc(theme.palette.primary)}" /></label><label><span>Secundária</span><input name="seasonThemeSecondary" type="color" value="${esc(theme.palette.secondary)}" /></label><label><span>Destaque</span><input name="seasonThemeAccent" type="color" value="${esc(theme.palette.accent)}" /></label></div>
+              <div class="theme-status-row"><label><span>Perigo</span><input name="seasonThemeDanger" type="color" value="${esc(theme.palette.danger)}" /></label><label><span>Sucesso</span><input name="seasonThemeSuccess" type="color" value="${esc(theme.palette.success)}" /></label><label><span>Efeito do menu</span><select name="seasonThemeMenuEffect"><option value="mist">Névoa</option><option value="runes">Runas</option><option value="stars">Estrelas</option><option value="none">Nenhum</option></select></label></div>
+              <label><span>Fundo principal</span><input name="seasonThemeBackground" value="${esc(theme.background)}" /></label><label><span>Arte da tela de login</span><input name="seasonThemeLoginArt" value="${esc(theme.loginArt)}" /></label>
+              <div class="theme-status-row"><label><span>Textura dos cards</span><input name="seasonThemeCardTexture" value="${esc(theme.cardTexture)}" /></label><label><span>Botões</span><input name="seasonThemeButtonStyle" value="${esc(theme.buttonStyle)}" /></label><label><span>Ícones</span><input name="seasonThemeIcons" value="${esc(theme.icons)}" /></label></div>
+              <div class="theme-status-row"><label><span>Música principal</span><input name="seasonThemeMainMusic" value="${esc(theme.music.main)}" /></label><label><span>Música do Codex</span><input name="seasonThemeCodexMusic" value="${esc(theme.music.codex)}" /></label><label><span>Música do gacha</span><input name="seasonThemeGachaMusic" value="${esc(theme.music.gacha)}" /></label></div>
+              <label><span>Sons das raridades</span><input name="seasonThemeRaritySounds" value="${esc(theme.music.rarity)}" /></label><label><span>Destaque da Home</span><input name="seasonThemeHomeHighlight" value="${esc(theme.homeHighlight)}" /></label>
+            </div>
+          </details>
+          <div class="split-actions"><button class="ghost-button" type="button" data-action="preview-season-theme">Pré-visualizar celular e computador</button><button class="primary-button" type="submit">Publicar mudanças</button></div>
           <label><span>Juramentos de facção</span><select name="factionsUnlocked"><option value="false" ${!state.settings.factionsUnlocked ? "selected" : ""}>Bloqueados até a abertura narrativa</option><option value="true" ${state.settings.factionsUnlocked ? "selected" : ""}>Liberados para players</option></select></label>
           <label><span>Aviso global</span><textarea name="globalNotice" rows="5">${esc(state.settings.globalNotice || "")}</textarea></label>
-          <button class="primary-button" type="submit">Publicar mudanças</button>
         </form>
       </article>
       <article class="panel span-5 settings-category-panel">
@@ -7633,6 +7698,16 @@ function renderAdminSettings() {
       </article>
     </div>
   `;
+}
+
+function openSeasonThemePreview(form) {
+  if (!form) return;
+  const values = formValues(form);
+  const preview = ECHOES.resolvedTheme({ ...state.settings, ...values });
+  const sample = (device, className) => `<article class="panel theme-preview ${className}" style="--preview-art:url('${esc(preview.background)}');--preview-primary:${esc(preview.palette.primary)}"><p class="eyebrow">${device}</p><h3>${esc(preview.name)}</h3><p>${esc(values.seasonThemeDescription || preview.description)}</p><div class="theme-swatches">${Object.values(preview.palette).map((color) => `<i style="--swatch:${esc(color)}"></i>`).join("")}</div><button class="primary-button" type="button">Ação de exemplo</button></article>`;
+  $("#modalContent").innerHTML = `<section><div class="panel-heading"><div><p class="eyebrow">Pré-visualização segura</p><h2>${esc(preview.name)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Fechar</button></div><p>Esta prévia não publica nem ativa o tema.</p><div class="grid">${sample("Computador · 1440 px", "span-8")}${sample("Celular · 390 px", "span-4")}</div></section>`;
+  $("#modal").hidden = false;
+  focusModal();
 }
 
 function renderAdminReports() {
@@ -8623,7 +8698,7 @@ function minigameReward(difficultyId, score = 0, mode = "aim") {
   const grade = minigameGrade(score, difficulty);
   const passed = grade.passed;
   const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier));
-  const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : mode === "seals" ? "Ecos de Selo" : "Fragmentos de Mira";
+  const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : mode === "seals" ? "Ecos de Selo" : mode === "cartography" ? "Fragmentos Cartográficos" : mode === "alchemy" ? "Resíduos Alquímicos" : "Fragmentos de Mira";
   const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier));
   const rareDrop = passed && Math.random() < 0.012 * difficulty.multiplier * grade.multiplier;
   const loot = [`${baseCoins} Millennium Coins`, `${fragments} ${fragmentName}`];
@@ -8796,6 +8871,141 @@ function startSealRitual(difficultyId) {
     }, 900 + index * 620);
     session.timers.push(on, off);
   });
+}
+
+function stopActiveCartography(reason = "cancelled") {
+  const session = state.activeCartographySession;
+  if (!session) return;
+  session.finished = true;
+  if (session.timer) window.clearInterval(session.timer);
+  state.activeCartographySession = null;
+}
+
+function renderCartographyBoard(session) {
+  const host = document.querySelector("[data-cartography-board]");
+  if (!host || !session) return;
+  const size = session.size;
+  host.style.setProperty("--map-size", size);
+  host.innerHTML = session.board.map((tile, index) => {
+    if (!tile) return `<button class="map-tile empty" type="button" tabindex="-1" aria-hidden="true"></button>`;
+    const source = tile - 1;
+    const x = size === 1 ? 0 : ((source % size) / (size - 1)) * 100;
+    const y = size === 1 ? 0 : (Math.floor(source / size) / (size - 1)) * 100;
+    return `<button class="map-tile" type="button" data-action="cartography-move" data-index="${index}" style="--tile-x:${x}%;--tile-y:${y}%" aria-label="Mover peça ${tile}">${tile}</button>`;
+  }).join("");
+  const status = document.querySelector("[data-cartography-status]");
+  if (status) status.textContent = `${session.moves} movimentos · ${session.remaining}s restantes`;
+}
+
+async function resolveCartography(session, solved) {
+  if (!session || session.finished) return;
+  session.finished = true;
+  if (session.timer) window.clearInterval(session.timer);
+  const score = solved ? Math.max(500, Math.round(9800 * session.difficulty.multiplier + session.remaining * 40 - session.moves * 25)) : Math.max(100, session.moves * 35);
+  try {
+    const reward = await applyMinigameReward("cartography", session.difficulty.id, score, {
+      lastCartographyRun: { id: session.id, mapName: session.mapName, moves: session.moves, solved, score, createdAt: new Date().toISOString() },
+    }, session.id);
+    state.activeCartographySession = null;
+    showMinigameResult({ mode: "Cartografia Perdida", difficulty: session.difficulty, score, reward, detail: solved ? `${session.mapName} foi reconstruído em ${session.moves} movimentos` : "O mapa permaneceu incompleto" });
+  } catch (error) {
+    state.activeCartographySession = null;
+    throw error;
+  }
+}
+
+function handleCartographyMove(index) {
+  const session = state.activeCartographySession;
+  if (!session || session.finished) return;
+  const next = ECHOES.cartographyMove(session.board, Number(index));
+  if (next.join(",") === session.board.join(",")) return;
+  session.board = next;
+  session.moves += 1;
+  playSound("common");
+  renderCartographyBoard(session);
+  if (ECHOES.cartographySolved(session.board)) resolveCartography(session, true).catch((error) => toast(error?.message || "Não foi possível registrar o mapa."));
+}
+
+function startCartography(difficultyId) {
+  const difficulty = difficultyById(difficultyId);
+  if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Cartografia Perdida.");
+  stopActiveCartography("new-run");
+  const size = ["hard", "pesadelo", "god-slayer"].includes(difficulty.id) ? 4 : 3;
+  const maps = state.content.towerMaps || [];
+  const selected = maps[Math.floor(Math.random() * Math.max(1, maps.length))] || { name: "Cruzamento das Cortinas", imageUrl: SEASON_ART.maps["cruzamento-das-cortinas"] };
+  const id = `cartography:${state.user?.uid || "demo"}:${cryptoRandom()}`;
+  const session = { id, difficulty, size, board: ECHOES.cartographyBoard(id, size), mapName: selected.name, imageUrl: towerMapImageFor(selected), moves: 0, remaining: size === 4 ? 180 : 120, timer: 0, finished: false };
+  state.activeCartographySession = session;
+  $("#modalContent").innerHTML = `<section class="cartography-session"><div class="aim-session-head"><div><p class="eyebrow">Cartografia Perdida · ${esc(difficulty.name)}</p><h2>${esc(session.mapName)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><p data-cartography-status role="status"></p><div class="cartography-board" data-cartography-board style="--map-art:url('${esc(session.imageUrl)}')"></div><p class="hint">Toque numa peça ao lado do espaço vazio para movê-la.</p></section>`;
+  $("#modal").hidden = false;
+  focusModal();
+  renderCartographyBoard(session);
+  session.timer = window.setInterval(() => {
+    if (session.finished) return;
+    session.remaining -= 1;
+    renderCartographyBoard(session);
+    if (session.remaining <= 0) resolveCartography(session, false).catch((error) => toast(error?.message || "Não foi possível registrar o mapa."));
+  }, 1000);
+}
+
+function stopActiveAlchemy() {
+  if (state.activeAlchemySession) state.activeAlchemySession.finished = true;
+  state.activeAlchemySession = null;
+}
+
+function refreshAlchemySelection(session) {
+  const host = document.querySelector("[data-alchemy-selection]");
+  if (!host || !session) return;
+  const byId = Object.fromEntries(session.challenge.ingredients.map((item) => [item.id, item]));
+  host.innerHTML = session.selection.map((id, index) => `<span>${index + 1}. ${esc(byId[id]?.name || id)}</span>`).join("") || `<span class="muted-text">Nenhum ingrediente escolhido.</span>`;
+  document.querySelectorAll("[data-alchemy-id]").forEach((button) => { button.disabled = session.selection.includes(button.dataset.alchemyId); });
+}
+
+async function resolveAlchemy(session) {
+  if (!session || session.finished || session.selection.length !== session.challenge.recipe.length) return;
+  session.finished = true;
+  const result = ECHOES.evaluateAlchemy(session.selection, session.challenge.recipe);
+  const score = Math.round(result.score * session.difficulty.multiplier);
+  try {
+    const reward = await applyMinigameReward("alchemy", session.difficulty.id, score, {
+      lastAlchemyRun: { id: session.id, correct: result.correct, total: result.total, passed: result.passed, score, createdAt: new Date().toISOString() },
+    }, session.id);
+    state.activeAlchemySession = null;
+    showMinigameResult({ mode: "Alquimia Instável", difficulty: session.difficulty, score, reward, detail: result.passed ? "A mistura permaneceu estável" : `${result.correct}/${result.total} posições corretas` });
+  } catch (error) {
+    state.activeAlchemySession = null;
+    throw error;
+  }
+}
+
+function handleAlchemyIngredient(id) {
+  const session = state.activeAlchemySession;
+  if (!session || session.finished || session.selection.includes(id)) return;
+  session.selection.push(id);
+  playSound("common");
+  refreshAlchemySelection(session);
+  if (session.selection.length === session.challenge.recipe.length) resolveAlchemy(session).catch((error) => toast(error?.message || "Não foi possível registrar a mistura."));
+}
+
+function resetAlchemySelection() {
+  const session = state.activeAlchemySession;
+  if (!session || session.finished) return;
+  session.selection = [];
+  refreshAlchemySelection(session);
+}
+
+function startAlchemy(difficultyId) {
+  const difficulty = difficultyById(difficultyId);
+  if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Alquimia Instável.");
+  stopActiveAlchemy();
+  const id = `alchemy:${state.user?.uid || "demo"}:${cryptoRandom()}`;
+  const challenge = ECHOES.alchemyChallenge(id);
+  const session = { id, difficulty, challenge, selection: [], finished: false };
+  state.activeAlchemySession = session;
+  $("#modalContent").innerHTML = `<section class="alchemy-session"><div class="aim-session-head"><div><p class="eyebrow">Alquimia Instável · ${esc(difficulty.name)}</p><h2>Leia antes de misturar.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><ol class="alchemy-clues">${challenge.clues.map((clue) => `<li>${esc(clue)}</li>`).join("")}</ol><div class="alchemy-ingredients">${challenge.ingredients.map((ingredient) => `<button class="ghost-button alchemy-ingredient" type="button" data-action="alchemy-ingredient" data-alchemy-id="${ingredient.id}"><strong>${esc(ingredient.name)}</strong><small>Calor ${ingredient.heat} · Essência ${ingredient.essence} · Toxicidade ${ingredient.toxicity} · Estabilidade ${ingredient.stability}</small></button>`).join("")}</div><div class="alchemy-selection" data-alchemy-selection></div><button class="link-button" type="button" data-action="alchemy-reset">Limpar ordem</button></section>`;
+  $("#modal").hidden = false;
+  focusModal();
+  refreshAlchemySelection(session);
 }
 
 function startAimGame(difficultyId) {
@@ -10444,7 +10654,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.2.1",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.3.0",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -12264,6 +12474,9 @@ function activeMinigameDiagnostics() {
   return [
     state.activeAimSession ? { mode: "aim", state: state.activeAimSession.lifecycle?.state || (state.activeAimSession.finished ? "completed" : "running"), timers: state.activeAimSession.timers?.length || 0 } : null,
     state.activeTowerSession ? { mode: "tower", state: state.activeTowerSession.lifecycle?.state || (state.activeTowerSession.finished ? "completed" : state.activeTowerSession.paused ? "paused" : "running"), timers: state.activeTowerSession.spawnTimers?.length || 0 } : null,
+    state.activeSealSession ? { mode: "seals", state: state.activeSealSession.phase || "running", timers: state.activeSealSession.timers?.length || 0 } : null,
+    state.activeCartographySession ? { mode: "cartography", state: state.activeCartographySession.finished ? "completed" : "running", timers: state.activeCartographySession.timer ? 1 : 0 } : null,
+    state.activeAlchemySession ? { mode: "alchemy", state: state.activeAlchemySession.finished ? "completed" : "running", timers: 0 } : null,
   ].filter(Boolean);
 }
 
@@ -12304,6 +12517,8 @@ function openReportModal() {
 function closeModal() {
   stopActiveAimGame("modal-closed");
   stopActiveSealRitual("modal-closed");
+  stopActiveCartography("modal-closed");
+  stopActiveAlchemy("modal-closed");
   stopActiveTowerDefense("modal-closed");
   (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
   state.gachaRevealTimers = [];
@@ -12503,9 +12718,19 @@ function wireEvents() {
         state.minigameDifficulty = button.dataset.difficulty;
         render();
       }
+      if (action === "leisure-tab") {
+        state.minigameTab = button.dataset.tab || "quick";
+        render();
+      }
       if (action === "start-aim-game") startAimGame(button.dataset.difficulty || state.minigameDifficulty);
       if (action === "start-seal-ritual") startSealRitual(button.dataset.difficulty || state.minigameDifficulty);
       if (action === "seal-input") handleSealInput(button.dataset.sealSymbol || "");
+      if (action === "start-cartography") startCartography(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "cartography-move") handleCartographyMove(button.dataset.index);
+      if (action === "start-alchemy") startAlchemy(button.dataset.difficulty || state.minigameDifficulty);
+      if (action === "alchemy-ingredient") handleAlchemyIngredient(button.dataset.alchemyId || "");
+      if (action === "alchemy-reset") resetAlchemySelection();
+      if (action === "preview-season-theme") openSeasonThemePreview(button.closest("form"));
       if (action === "gacha-odds") openGachaOdds(button.dataset.kind || state.gachaTab);
       if (action === "gacha-pool") openGachaPool(button.dataset.kind || state.gachaTab);
       if (action === "tower-start-wave") startTowerWave();
@@ -12899,13 +13124,42 @@ function wireEvents() {
           bannerRateUp: v.bannerRateUp,
           rareRateUpChance: Number(v.rareRateUpChance ?? 0.3),
           soundEnabled: v.soundEnabled !== "false",
-          theme: v.theme,
-          seasonTheme: v.seasonTheme || "awakening",
+          theme: "default",
+          seasonTheme: v.seasonTheme || "eclipse",
+          seasonThemeState: v.seasonThemeState || "draft",
+          seasonThemeMode: v.seasonThemeMode || "cosmetic",
+          seasonThemeStartsAt: v.seasonThemeStartsAt || "",
+          seasonThemeEndsAt: v.seasonThemeEndsAt || "",
+          seasonThemeDescription: v.seasonThemeDescription || "",
+          seasonThemePrimary: v.seasonThemePrimary || "",
+          seasonThemeSecondary: v.seasonThemeSecondary || "",
+          seasonThemeAccent: v.seasonThemeAccent || "",
+          seasonThemeDanger: v.seasonThemeDanger || "",
+          seasonThemeSuccess: v.seasonThemeSuccess || "",
+          seasonThemeBackground: v.seasonThemeBackground || "",
+          seasonThemeLoginArt: v.seasonThemeLoginArt || "",
+          seasonThemeCardTexture: v.seasonThemeCardTexture || "stone",
+          seasonThemeButtonStyle: v.seasonThemeButtonStyle || "solid",
+          seasonThemeIcons: v.seasonThemeIcons || "runes",
+          seasonThemeMainMusic: v.seasonThemeMainMusic || "",
+          seasonThemeCodexMusic: v.seasonThemeCodexMusic || "",
+          seasonThemeGachaMusic: v.seasonThemeGachaMusic || "",
+          seasonThemeRaritySounds: v.seasonThemeRaritySounds || "",
+          seasonThemeAnimation: v.seasonThemeAnimation || "normal",
+          seasonThemeMenuEffect: v.seasonThemeMenuEffect || "mist",
+          seasonThemeHomeHighlight: v.seasonThemeHomeHighlight || "season",
           factionsUnlocked: v.factionsUnlocked === "true",
           globalNotice: v.globalNotice,
           seedVersion: SEED_VERSION,
         });
         toast("Configurações publicadas.");
+      }
+      if (type === "interface-preferences") {
+        const v = formValues(form);
+        await writeDoc("users", state.user.uid, { themePreference: v.themePreference === "standard" ? "standard" : "season", interfaceAnimations: ["normal", "reduced", "none"].includes(v.interfaceAnimations) ? v.interfaceAnimations : "normal", interfaceContrast: v.interfaceContrast === "high" ? "high" : "normal", dataEconomy: v.dataEconomy === "true" });
+        state.profile = { ...(state.profile || {}), themePreference: v.themePreference, interfaceAnimations: v.interfaceAnimations, interfaceContrast: v.interfaceContrast, dataEconomy: v.dataEconomy === "true" };
+        applyThemeClasses();
+        toast("Preferências da Interface salvas.");
       }
       form.dataset.dirty = "false";
       clearUpdateDraft(type);

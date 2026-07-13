@@ -469,7 +469,7 @@ service cloud.firestore {
       return changedOnly([
           "gachaEnergy", "gachaEnergyUpdatedAt", "millenniumCoins", "gachaFragments",
           "minigameCompletionKeys", "minigameStats", "minigameHistory",
-          "lastAimRun", "lastTowerRun", "lastSealRun", "updatedAt"
+          "lastAimRun", "lastTowerRun", "lastSealRun", "lastCartographyRun", "lastAlchemyRun", "updatedAt"
         ])
         && oldEnergy is int && nextEnergy is int
         && nextEnergy >= 0 && nextEnergy <= 30
@@ -484,7 +484,9 @@ service cloud.firestore {
         && request.resource.data.get("minigameHistory", []).size() <= 30
         && request.resource.data.get("lastAimRun", {}) is map
         && request.resource.data.get("lastTowerRun", {}) is map
-        && request.resource.data.get("lastSealRun", {}) is map;
+        && request.resource.data.get("lastSealRun", {}) is map
+        && request.resource.data.get("lastCartographyRun", {}) is map
+        && request.resource.data.get("lastAlchemyRun", {}) is map;
     }
 
     match /admins/{uid} {
@@ -503,8 +505,13 @@ service cloud.firestore {
         && accountIsActive()
         && changedOnly([
           "displayName", "online", "lastSeen", "lastAnnouncedAt", "acceptedTermsVersion",
-          "acceptedTermsAt", "tutorialSeenVersion", "panicOfflineAt", "updatedAt"
-        ]);
+          "acceptedTermsAt", "tutorialSeenVersion", "panicOfflineAt", "themePreference",
+          "interfaceAnimations", "interfaceContrast", "dataEconomy", "updatedAt"
+        ])
+        && request.resource.data.get("themePreference", "season") in ["season", "standard"]
+        && request.resource.data.get("interfaceAnimations", "normal") in ["normal", "reduced", "none"]
+        && request.resource.data.get("interfaceContrast", "normal") in ["normal", "high"]
+        && request.resource.data.get("dataEconomy", false) is bool;
       allow update: if auditedAdminMutation(uid);
       allow delete: if isAdmin() && request.auth.uid != uid;
     }
