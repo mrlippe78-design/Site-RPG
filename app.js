@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.5.1", commit: "dev", cacheName: "millennium-shell-v3.5.1" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.5.2", commit: "dev", cacheName: "millennium-shell-v3.5.2" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -610,8 +610,7 @@ function defaultContentState() {
   return Object.fromEntries(CONTENT_COLLECTIONS.map((collection) => [collection, [...DEFAULT_CONTENT[collection]]]));
 }
 
-const NAVS = {
-  player: [
+const PLAYER_NAVIGATION = [
     { id: "player-home", label: "Início", icon: "⌂" },
     { id: "profile", label: "Perfil", icon: "◈" },
     { id: "character", label: "Personagem", icon: "✎" },
@@ -635,8 +634,9 @@ const NAVS = {
     { id: "chat", label: "Chat", icon: "☷" },
     { id: "missions", label: "Missões", icon: "☰" },
     { id: "reports", label: "Reports", icon: "!" },
-  ],
-  admin: [
+];
+
+const ADMIN_NAVIGATION = [
     { id: "admin-home", label: "Controle", icon: "⚙" },
     { id: "admin-users", label: "Usuários", icon: "◈" },
     { id: "admin-content", label: "Forja", icon: "✚" },
@@ -645,14 +645,15 @@ const NAVS = {
     { id: "admin-mail", label: "Correio", icon: "@" },
     { id: "admin-requests", label: "Validações", icon: "✓" },
     { id: "admin-ops", label: "Operações", icon: "◆" },
-    { id: "pass", label: "Passe", icon: "◆" },
-    { id: "diary", label: "Diário", icon: "✒" },
-    { id: "guild", label: "Guildas", icon: "⚔" },
     { id: "admin-chat", label: "Chat", icon: "☷" },
     { id: "admin-missions", label: "Missões", icon: "☰" },
     { id: "admin-settings", label: "Temporada", icon: "◌" },
     { id: "admin-reports", label: "Denúncias", icon: "!" },
-  ],
+];
+
+const NAVS = {
+  player: PLAYER_NAVIGATION,
+  admin: [...PLAYER_NAVIGATION, ...ADMIN_NAVIGATION],
 };
 
 const VIEW_TITLES = {
@@ -863,7 +864,11 @@ const NAV_GROUPS = {
     { label: "Oráculo", ids: ["admin-home", "admin-users", "admin-requests", "admin-reports"] },
     { label: "Mundo e economia", ids: ["admin-content", "admin-rewards", "admin-economy", "admin-mail"] },
     { label: "Operação", ids: ["admin-ops", "admin-chat", "admin-missions", "admin-settings"] },
-    { label: "Visões", ids: ["pass", "diary", "guild"] },
+    { label: "Jogador · Obrigatório", ids: ["character", "roulette", "missions", "chat"] },
+    { label: "Jogador · Recomendado", ids: ["character-life", "creations", "guild", "cultures", "professions"] },
+    { label: "Jogador · Opcional", ids: ["player-home", "profile", "codex", "help", "gacha", "inventory", "grimoire", "market", "pass", "ranking", "hall", "diary"] },
+    { label: "Jogador · Lazer", ids: ["minigames"] },
+    { label: "Jogador · Suporte", ids: ["reports"] },
   ],
 };
 
@@ -2512,7 +2517,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.5.1 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.5.2 Spark.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -3714,7 +3719,7 @@ function renderGroupedNavigation(nav, compact = false) {
 
 function renderMobileBottomNav(nav) {
   const preferred = state.role === "admin"
-    ? ["admin-home", "admin-users", "admin-economy", "admin-requests", "admin-reports"]
+    ? ["admin-home", "admin-users", "ranking", "admin-requests", "admin-settings"]
     : ["player-home", "profile", "roulette", "chat", "missions"];
   const quick = preferred.map((id) => nav.find((item) => item.id === id)).filter(Boolean);
   return [
@@ -5502,7 +5507,10 @@ function renderRanking() {
             <p class="eyebrow">Ranking</p>
             <h2>Ranks vivos de Millennium</h2>
           </div>
-          <span class="tag">${supportsRange ? (range === "daily" ? "Últimas 24h" : range === "weekly" ? "Últimos 7 dias" : range === "all" ? "Todos os tempos" : "Temporada atual") : "Patrimônio atual"}</span>
+          <div class="action-row">
+            <span class="tag">${supportsRange ? (range === "daily" ? "Últimas 24h" : range === "weekly" ? "Últimos 7 dias" : range === "all" ? "Todos os tempos" : "Temporada atual") : "Patrimônio atual"}</span>
+            ${state.role === "admin" ? `<button class="primary-button" type="button" data-action="rebuild-rankings">Reconstruir todos os ranks</button>` : ""}
+          </div>
         </div>
         <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}">${label}</button>`).join("")}</div>
         ${supportsRange ? `<div class="ranking-range-row" role="group" aria-label="Período do ranking">
@@ -6988,6 +6996,10 @@ function renderAdminHome() {
           ${renderStat("Missões semanais", state.weeklyMissions.length)}
           ${renderStat("MC no servidor", totalCoins)}
           ${renderStat("Pets em campo", activePets)}
+        </div>
+        <div class="action-row admin-home-shortcuts">
+          <button class="primary-button" type="button" data-nav="ranking">Abrir Central de Ranks</button>
+          <button class="ghost-button" type="button" data-action="rebuild-rankings">Reconstruir todos os ranks</button>
         </div>
       </article>
       <article class="panel span-7">
@@ -11288,7 +11300,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.5.1",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.5.2",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
