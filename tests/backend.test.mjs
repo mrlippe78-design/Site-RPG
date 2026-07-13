@@ -27,7 +27,7 @@ test("report payload is bounded and receives a friendly id", () => {
   assert.equal(payload.route, "codex");
 });
 
-test("creation payload requires counterplay and base power for a technique", () => {
+test("creation payload keeps Oracle balance fields empty and requires base power for a technique", () => {
   const common = {
     title: "Lança Solar", concept: "Condensar luz", function: "Ataque", manifestation: "Lança",
     range: "20 metros", duration: "Instantânea", cost: "Cansaço", limitations: "Uma vez por cena",
@@ -35,6 +35,9 @@ test("creation payload requires counterplay and base power for a technique", () 
   };
   const power = backend.sanitizeCreationPayload({ ...common, type: "power" }, { affinityId: "solar" });
   assert.equal(power.affinityId, "solar");
+  assert.equal(power.cost, "");
+  assert.equal(power.limitations, "");
+  assert.equal(power.countermeasures, "");
   assert.throws(() => backend.sanitizeCreationPayload({ ...common, type: "technique" }, { affinityId: "solar" }), /basePowerId/);
   const technique = backend.sanitizeCreationPayload({ ...common, type: "technique", basePowerId: "poder-solar" }, { affinityId: "solar" });
   assert.equal(technique.type, "technique");

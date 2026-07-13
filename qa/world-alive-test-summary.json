@@ -1,0 +1,16 @@
+{
+  "version": "3.2.0",
+  "nodeTests": 58,
+  "nodeFailed": 0,
+  "browserChecks": 23,
+  "browserFailed": 0,
+  "productionVulnerabilities": 0,
+  "rulesEmulatorCompleted": false,
+  "rulesEmulatorReason": "download of cloud-firestore-emulator-v1.21.0.jar failed",
+  "petsTotal": 91,
+  "petsDedicatedArt": 25,
+  "petsUniqueFallback": 66,
+  "locationsDedicatedArt": 18,
+  "webpFiles": 86,
+  "webpOver500KB": 0
+}

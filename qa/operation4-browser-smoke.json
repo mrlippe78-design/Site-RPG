@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T12:07:15.119527+00:00",
+  "generatedAt": "2026-07-13T01:18:51.469252+00:00",
   "mode": "Chromium local DOM; mobile emulation and desktop",
   "checks": [
     {
@@ -64,6 +64,38 @@
       }
     },
     {
+      "name": "Motor unificado produz 9/5/5/5/6",
+      "passed": true,
+      "details": {
+        "for": 9,
+        "vel": 5,
+        "hab": 5,
+        "res": 5,
+        "pod": 6
+      }
+    },
+    {
+      "name": "Gacha mostra contagem regressiva horária",
+      "passed": true,
+      "details": {
+        "countdown": "41:12"
+      }
+    },
+    {
+      "name": "Gacha abre probabilidades públicas",
+      "passed": true,
+      "details": {
+        "rows": 9
+      }
+    },
+    {
+      "name": "Player não define custo, limitações ou contramedidas finais",
+      "passed": true,
+      "details": {
+        "forbiddenFields": 0
+      }
+    },
+    {
       "name": "Prova da Mira inicia com sessão explícita",
       "passed": true,
       "details": null
@@ -72,6 +104,13 @@
       "name": "Fechar minigame encerra o modal",
       "passed": true,
       "details": null
+    },
+    {
+      "name": "Ritual dos Selos inicia em toque e teclado",
+      "passed": true,
+      "details": {
+        "buttons": 6
+      }
     },
     {
       "name": "Reduced motion remove animação contínua",
@@ -115,23 +154,24 @@
       }
     }
   ],
-  "passed": 18,
+  "passed": 23,
   "failed": 0,
   "pageErrors": [],
   "consoleErrors": [],
   "ignoredExternalErrors": [
     "Failed to load resource: net::ERR_FAILED",
     "Failed to load resource: net::ERR_FAILED",
-    "Failed to load resource: net::ERR_FAILED",
-    "Failed to load resource: net::ERR_FAILED",
     "Failed to load resource: net::ERR_FAILED"
   ],
   "screenshots": {
-    "baselineAvailable": true,
-    "beforeScreenshot": "qa/screenshots/codex-mobile-before.png",
+    "baselineAvailable": false,
     "after": [
       "qa/screenshots/codex-mobile-after.png",
-      "qa/screenshots/admin-diagnostics-after.png"
+      "qa/screenshots/admin-diagnostics-after.png",
+      "qa/screenshots/gacha-rotation-mobile.png",
+      "qa/screenshots/gacha-probabilidades-mobile.png",
+      "qa/screenshots/criacoes-player-mobile.png",
+      "qa/screenshots/ritual-dos-selos-mobile.png"
     ]
   }
 }

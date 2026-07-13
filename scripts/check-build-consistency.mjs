@@ -8,6 +8,7 @@ const requiredFiles = [
   "index.html",
   "build-info.js",
   "millennium-stability.js",
+  "millennium-world-alive.js",
   "catalogs-3.1.js",
   "millennium-core.js",
   "millennium-journey.js",
@@ -20,6 +21,7 @@ const requiredFiles = [
   "journey.css",
   "backend.css",
   "polish.css",
+  "world-alive.css",
   "service-worker.js",
   "manifest.webmanifest",
   "favicon.svg",
@@ -53,12 +55,12 @@ expectMatch("service-worker.js", /MILLENNIUM_BUILD\s*=\s*"([^"]+)"/, "versão do
 expectMatch("manifest.webmanifest", /"version"\s*:\s*"([^"]+)"/, "versão do manifesto");
 
 const index = texts.get("index.html") || "";
-for (const file of ["styles.css", "overrides.css", "journey.css", "backend.css", "polish.css", "build-info.js", "millennium-stability.js", "catalogs-3.1.js", "millennium-core.js", "millennium-journey.js", "millennium-backend.js", "millennium-polish.js", "content-v3.js", "app.js"]) {
+for (const file of ["styles.css", "overrides.css", "journey.css", "backend.css", "polish.css", "world-alive.css", "build-info.js", "millennium-stability.js", "millennium-world-alive.js", "catalogs-3.1.js", "millennium-core.js", "millennium-journey.js", "millennium-backend.js", "millennium-polish.js", "content-v3.js", "app.js"]) {
   if (!index.includes(`${file}?v=${expectedBuild}`)) failures.push(`index.html: referência versionada ausente para ${file}`);
 }
 
 const serviceWorker = texts.get("service-worker.js") || "";
-for (const file of ["build-info.js", "millennium-stability.js", "catalogs-3.1.js", "millennium-core.js", "millennium-journey.js", "millennium-backend.js", "millennium-polish.js", "content-v3.js", "app.js", "styles.css", "overrides.css", "journey.css", "backend.css", "polish.css"]) {
+for (const file of ["build-info.js", "millennium-stability.js", "millennium-world-alive.js", "catalogs-3.1.js", "millennium-core.js", "millennium-journey.js", "millennium-backend.js", "millennium-polish.js", "content-v3.js", "app.js", "styles.css", "overrides.css", "journey.css", "backend.css", "polish.css", "world-alive.css"]) {
   if (!serviceWorker.includes(`./${file}?v=\${MILLENNIUM_BUILD}`)) failures.push(`service-worker.js: precache versionado ausente para ${file}`);
 }
 

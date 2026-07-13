@@ -2,6 +2,7 @@
   "use strict";
 
   const ATTRIBUTE_KEYS = Object.freeze(["for", "vel", "hab", "res", "pod"]);
+  const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || { itemMatch: (instance, catalog) => (catalog || []).find((item) => item?.id === (instance?.catalogId || instance?.itemId || instance?.sourceId || instance?.id)) || null };
   const ZERO_ATTRIBUTES = Object.freeze({ for: 0, vel: 0, hab: 0, res: 0, pod: 0 });
   const BASE_MIN = 2;
   const BASE_MAX = 6;
@@ -98,8 +99,8 @@
     let defense = 0;
 
     equipped.forEach((instance, index) => {
-      const sourceId = instance.catalogId || instance.itemId || instance.id || "";
-      const official = byId(itemCatalog, sourceId);
+      const sourceId = instance.catalogId || instance.itemId || instance.sourceId || instance.id || "";
+      const official = WORLD.itemMatch(instance, itemCatalog) || byId(itemCatalog, sourceId);
       const instanceKey = instance.instanceId || instance.uid || instance.inventoryId || "";
 
       if (instanceKey && seenInstances.has(instanceKey)) {
@@ -108,7 +109,7 @@
       }
       if (instanceKey) seenInstances.add(instanceKey);
       if (!official) {
-        unresolvedItems.push({ index, sourceId, instanceId: instanceKey });
+        unresolvedItems.push({ index, sourceId, instanceId: instanceKey, name: instance.name || "" });
         return;
       }
 
@@ -282,7 +283,7 @@
     else if (freePoints.value < 0) issues.push({ code: "free-points-negative", severity: "critical", message: "Pontos de Desenvolvimento estão negativos." });
 
     if (stats.diagnostics.duplicateEquipmentInstances.length) issues.push({ code: "equipment-duplicate", severity: "high", message: "Uma mesma instância equipada foi contada mais de uma vez.", instances: stats.diagnostics.duplicateEquipmentInstances });
-    if (stats.diagnostics.unresolvedEquipmentItems.length) issues.push({ code: "equipment-unresolved", severity: "high", message: "Há equipamento equipado sem item correspondente no catálogo.", items: stats.diagnostics.unresolvedEquipmentItems });
+    if (stats.diagnostics.unresolvedEquipmentItems.length) issues.push({ code: "equipment-unresolved", severity: "warning", message: "Há equipamento equipado sem item correspondente no catálogo. Use a associação de item legado no painel do Oráculo.", items: stats.diagnostics.unresolvedEquipmentItems });
     if (stats.diagnostics.unresolvedCatalogs.length) issues.push({ code: "catalog-reference-missing", severity: "high", message: "A ficha referencia raça, classe ou afinidade inexistente no catálogo atual.", references: stats.diagnostics.unresolvedCatalogs });
 
     if (character.affinitySnapshot?.bonus && character.affinityId) {

@@ -18,6 +18,7 @@ SHOTS.mkdir(parents=True, exist_ok=True)
 SCRIPT_ORDER = [
     'build-info.js',
     'millennium-stability.js',
+    'millennium-world-alive.js',
     'catalogs-3.1.js',
     'millennium-core.js',
     'millennium-journey.js',
@@ -26,7 +27,7 @@ SCRIPT_ORDER = [
     'content-v3.js',
     'app.js',
 ]
-CSS_ORDER = ['styles.css', 'overrides.css', 'journey.css', 'backend.css', 'polish.css']
+CSS_ORDER = ['styles.css', 'overrides.css', 'journey.css', 'backend.css', 'polish.css', 'world-alive.css']
 
 
 def load_project_inline(page, root: Path):
@@ -54,7 +55,7 @@ def load_project_inline(page, root: Path):
 
     page.route('**/*', route_handler)
     html = (root / 'index.html').read_text(encoding='utf-8')
-    html = re.sub(r'<link[^>]+(?:styles\.css|overrides\.css|journey\.css|backend\.css|polish\.css)[^>]*>', '', html)
+    html = re.sub(r'<link[^>]+(?:styles\.css|overrides\.css|journey\.css|backend\.css|polish\.css|world-alive\.css)[^>]*>', '', html)
     html = re.sub(r'<script\s+src="[^"]+"[^>]*></script>', '', html)
     css = '\n'.join((root / name).read_text(encoding='utf-8') for name in CSS_ORDER if (root / name).exists())
     html = html.replace('<head>', '<head><base href="http://millennium.local/"><style>' + css + '</style>', 1)
@@ -167,6 +168,44 @@ def run_current(browser):
     failed_images = [item for item in image_health if item['complete'] and item['width'] == 0 and not item['fallback']]
     check('Imagens visíveis carregam ou usam fallback', len(failed_images) == 0, {'failed': failed_images[:5]})
 
+    stat_fixture = page.evaluate('''() => {
+      const content = {
+        classes: [{ id: "guerreiro", bonus: { for: 2, res: 1 } }],
+        races: [{ id: "demonio", bonus: { for: 2, vel: 1 } }],
+        affinities: [{ id: "tempo", bonus: { for: 1, hab: 1, pod: 2 } }],
+        items: [{ id: "espada-curta", name: "Espada Curta", bonus: {} }],
+      };
+      const character = {
+        base: { for: 4, vel: 4, hab: 4, res: 4, pod: 4 },
+        development: { for: 0, vel: 0, hab: 0, res: 0, pod: 0 },
+        raceId: "demonio", classId: "guerreiro", affinityId: "tempo",
+        inventory: [{ instanceId: "legacy-1", name: "espada curta", equipped: true }],
+      };
+      return window.MILLENNIUM_CORE_31.calculateCharacterStats(character, content).total;
+    }''')
+    check('Motor unificado produz 9/5/5/5/6', stat_fixture == {'for': 9, 'vel': 5, 'hab': 5, 'res': 5, 'pod': 6}, stat_fixture)
+
+    click_nav(page, 'gacha')
+    page.wait_for_selector('[data-gacha-countdown]', timeout=8000)
+    countdown = page.locator('[data-gacha-countdown]').first.inner_text().strip()
+    page.screenshot(path=str(SHOTS / 'gacha-rotation-mobile.png'), full_page=False)
+    check('Gacha mostra contagem regressiva horária', bool(re.search(r'\d{1,2}:\d{2}', countdown)), {'countdown': countdown})
+    odds_button = page.locator('[data-action="gacha-odds"]').first
+    if odds_button.count():
+        odds_button.evaluate('(el) => el.click()')
+        page.wait_for_selector('.gacha-info-modal', timeout=5000)
+        check('Gacha abre probabilidades públicas', page.locator('.gacha-rate-list > div').count() > 0, {'rows': page.locator('.gacha-rate-list > div').count()})
+        page.screenshot(path=str(SHOTS / 'gacha-probabilidades-mobile.png'), full_page=False)
+        page.keyboard.press('Escape')
+    else:
+        check('Gacha abre probabilidades públicas', False, {'reason': 'button missing'})
+
+    click_nav(page, 'creations')
+    page.wait_for_timeout(350)
+    page.screenshot(path=str(SHOTS / 'criacoes-player-mobile.png'), full_page=False)
+    forbidden_creation_fields = page.locator('form[data-form="creation-request"] [name="cost"], form[data-form="creation-request"] [name="limitations"], form[data-form="creation-request"] [name="countermeasures"]').count()
+    check('Player não define custo, limitações ou contramedidas finais', forbidden_creation_fields == 0, {'forbiddenFields': forbidden_creation_fields})
+
     click_nav(page, 'minigames')
     start = page.locator('[data-action="start-aim-game"]:not([disabled])').first
     if start.count():
@@ -179,6 +218,17 @@ def run_current(browser):
     else:
         check('Prova da Mira inicia com sessão explícita', False, {'reason': 'no enabled difficulty'})
         check('Fechar minigame encerra o modal', False, {'reason': 'not started'})
+
+    seal = page.locator('[data-action="start-seal-ritual"]:not([disabled])').first
+    if seal.count():
+        seal.evaluate('(el) => el.click()')
+        page.wait_for_selector('.seal-session', timeout=5000)
+        check('Ritual dos Selos inicia em toque e teclado', page.locator('.seal-button').count() == 6, {'buttons': page.locator('.seal-button').count()})
+        page.screenshot(path=str(SHOTS / 'ritual-dos-selos-mobile.png'), full_page=False)
+        page.keyboard.press('Escape')
+        page.wait_for_function("document.querySelector('#modal')?.hidden === true", timeout=5000)
+    else:
+        check('Ritual dos Selos inicia em toque e teclado', False, {'reason': 'no enabled ritual'})
     context.close()
 
     # Reduced motion
@@ -239,6 +289,10 @@ def main():
     result['screenshots'] = {**before, 'after': [
         'qa/screenshots/codex-mobile-after.png',
         'qa/screenshots/admin-diagnostics-after.png',
+        'qa/screenshots/gacha-rotation-mobile.png',
+        'qa/screenshots/gacha-probabilidades-mobile.png',
+        'qa/screenshots/criacoes-player-mobile.png',
+        'qa/screenshots/ritual-dos-selos-mobile.png',
     ]}
     (QA / 'operation4-browser-smoke.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(result, ensure_ascii=False, indent=2))

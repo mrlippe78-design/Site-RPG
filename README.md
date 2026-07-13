@@ -190,3 +190,7 @@ python scripts/browser_smoke_op4.py
 ```
 
 Consulte `OPERATION_4_REPORT.md`, `VALIDATION_OPERATION_4.md` e `FINAL_DELIVERY_3_1.md`.
+
+## Millennium 3.2 — Mundo Vivo
+
+A versão 3.2 adiciona o módulo `millennium-world-alive.js`, a camada visual `world-alive.css`, rotação horária global do banner de pets, novas classes, artes exclusivas, composição unificada de atributos e o Ritual dos Selos. Consulte `OPERATION_WORLD_ALIVE_3_2.md`, `VALIDATION_3_2.md` e `FIRESTORE_SECURITY_3_2.md` antes da publicação.
