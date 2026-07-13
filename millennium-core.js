@@ -4,6 +4,19 @@
   const ATTRIBUTE_KEYS = Object.freeze(["for", "vel", "hab", "res", "pod"]);
   const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || { itemMatch: (instance, catalog) => (catalog || []).find((item) => item?.id === (instance?.catalogId || instance?.itemId || instance?.sourceId || instance?.id)) || null };
   const ZERO_ATTRIBUTES = Object.freeze({ for: 0, vel: 0, hab: 0, res: 0, pod: 0 });
+  const OFFICIAL_TRADEOFFS = Object.freeze({
+    race: Object.freeze({
+      humano: { pod: 1 }, elfo: { res: 2 }, goblin: { res: 2 }, anjo: { vel: 2 },
+      demonio: { hab: 2 }, vampiro: { res: 2 }, zoofolk: { pod: 2 }, anao: { vel: 2 },
+      draconato: { vel: 2 }, "morto-vivo": { vel: 1, hab: 1 }, silvanico: { for: 2 },
+      lunariano: { res: 2 }, sombranato: { res: 2 }, maresio: { vel: 2 }, forjado: { vel: 2 },
+      cineriano: { hab: 2 }, titanico: { vel: 2 },
+    }),
+    class: Object.freeze({
+      acolito: { for: 1 }, mago: { res: 1 }, guerreiro: { pod: 1 }, ladino: { res: 1 },
+      cacador: { pod: 1 }, guardiao: { vel: 1 }, feiticeiro: { res: 1 }, monge: { pod: 1 },
+    }),
+  });
   const BASE_MIN = 0;
   const BASE_MAX = Number.POSITIVE_INFINITY;
   const BASE_TOTAL = 20;
@@ -42,6 +55,11 @@
       key,
       sources.reduce((sum, source) => sum + finite(source?.[key]), 0),
     ]));
+  }
+
+  function catalogTradeoff(type, entry = {}) {
+    const group = type === "race" ? "race" : type === "class" ? "class" : "";
+    return attributes(entry.penalty || (group ? OFFICIAL_TRADEOFFS[group]?.[entry.id] : null), { min: 0 });
   }
 
   function inspectAttributeMap(source, options = {}) {
@@ -149,10 +167,14 @@
     const raceBonus = attributes(race?.bonus);
     const classBonus = attributes(classEntry?.bonus);
     const affinityBonus = attributes(affinity?.bonus);
+    const racePenalty = attributes(race?.penalty || OFFICIAL_TRADEOFFS.race[character.raceId], { min: 0 });
+    const classPenalty = attributes(classEntry?.penalty || OFFICIAL_TRADEOFFS.class[character.classId], { min: 0 });
+    const affinityPenalty = attributes(affinity?.penalty, { min: 0 });
     const equipment = officialEquipmentBonus(character, catalogs);
     const equipmentBonus = equipment.bonus;
     const temporaryBonus = attributes(context.temporaryBonus || context.effects);
-    const penalties = attributes(context.penalties, { min: 0 });
+    const situationalPenalties = attributes(context.penalties, { min: 0 });
+    const penalties = add(racePenalty, classPenalty, affinityPenalty, situationalPenalties);
     const positive = add(base, development, raceBonus, classBonus, affinityBonus, equipmentBonus, temporaryBonus);
     const total = Object.fromEntries(ATTRIBUTE_KEYS.map((key) => [key, Math.max(0, positive[key] - penalties[key])]));
     const defense = Math.max(0, equipment.defense + finite(context.defenseBonus) - finite(context.defensePenalty));
@@ -168,10 +190,14 @@
       base,
       development,
       raceBonus,
+      racePenalty,
       classBonus,
+      classPenalty,
       affinityBonus,
+      affinityPenalty,
       equipmentBonus,
       temporaryBonus,
+      situationalPenalties,
       penalties,
       total,
       derived: { def: defense, hpMax, ppMax },
@@ -431,6 +457,7 @@
     BASE_MIN,
     BASE_MAX,
     BASE_TOTAL,
+    catalogTradeoff,
     calculateCharacterStats,
     validateBaseAllocation,
     validateDevelopmentSpend,

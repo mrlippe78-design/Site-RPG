@@ -47,10 +47,15 @@
 .manifestation-panel.compact { grid-template-columns:auto minmax(0,1fr); }
 .manifestation-seal { width:82px; aspect-ratio:1; display:grid; place-items:center; border:1px solid rgba(235,199,111,.4); border-radius:50%; box-shadow:inset 0 0 0 8px rgba(216,180,93,.04); }
 .manifestation-seal span { font:700 38px/1 Cinzel,serif; color:#e8c971; }
+.prestige-comparison .manifestation-seal span { font-size:clamp(19px,2.2vw,29px); }
 .manifestation-copy h3 { margin:2px 0 6px; font-size:clamp(24px,3vw,34px); }
 .manifestation-copy p { margin:0 0 14px; color:rgba(239,228,204,.7); }
 .manifestation-meta { display:flex; justify-content:space-between; gap:14px; margin-top:7px; color:#aa9b7d; font-size:12px; }
 .manifestation-meta strong { color:#ead39a; }
+.prestige-criteria { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.prestige-criteria span { padding:5px 8px; border:1px solid rgba(225,188,96,.16); background:rgba(255,255,255,.025); color:#c8b992; font-size:11px; }
+.ranking-relative-bar { height:5px; max-width:620px; margin-top:8px; overflow:hidden; border:1px solid rgba(229,196,111,.16); background:rgba(0,0,0,.3); }
+.ranking-relative-bar i { display:block; height:100%; background:linear-gradient(90deg,#735329,#efce75); }
 .potential-brief { display:grid; gap:5px; padding-left:20px; border-left:1px solid rgba(225,188,96,.2); }
 .potential-brief span,.potential-brief small { color:#9e927b; }
 .potential-brief strong { color:#f2dfb5; font-size:22px; }
