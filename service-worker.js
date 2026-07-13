@@ -1,4 +1,4 @@
-const MILLENNIUM_BUILD = "3.3.0";
+const MILLENNIUM_BUILD = "3.4.0";
 const CACHE_PREFIX = "millennium-shell-v";
 const CACHE_NAME = `${CACHE_PREFIX}${MILLENNIUM_BUILD}`;
 const NETWORK_TIMEOUT_MS = 8000;
@@ -10,6 +10,7 @@ const REQUIRED_SHELL = [
   `./millennium-stability.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-world-alive.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-echoes.js?v=${MILLENNIUM_BUILD}`,
+  `./millennium-foundations.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-account-management.js?v=${MILLENNIUM_BUILD}`,
   `./catalogs-3.1.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-core.js?v=${MILLENNIUM_BUILD}`,

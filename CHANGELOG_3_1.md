@@ -1,4 +1,18 @@
 
+## 3.4.0 — Fundações Vivas
+
+- corrige a edição dos 20 pontos de atributos e preserva o rascunho antes de cada render;
+- torna o salvamento da ficha canônico, com estado visível e falhas secundárias não destrutivas;
+- adiciona três níveis internos progressivos a cada dificuldade de todos os minigames;
+- define uma Afinidade como base de um único Poder e libera uma Técnica a cada cinco níveis;
+- completa as descrições, limites, exemplos e orientações de uso das afinidades;
+- atualiza missões do Passe a partir de atividades reais e permite coletar o XP concluído;
+- liga Ranking e Hall da Fama a projeções ao vivo do Firestore e inclui reconstrução administrativa;
+- expande a Jukebox para doze trilhas sintetizadas, sem dependência de arquivos externos;
+- preserva cada pacote visual na biblioteca de temas e permite carregar, editar e pré-visualizar presets;
+- adiciona atualização emergencial com aviso, contagem regressiva e preservação de rascunhos;
+- atualiza regras, cache, build, testes, documentação e rollback para 3.4.0.
+
 ## 3.1.2 — Administração, rankings e criações
 
 - classes dinâmicas integradas ao Codex e às fichas;

@@ -1,0 +1,13 @@
+{
+  "build": "3.4.0",
+  "suite": "npm test",
+  "tests": 79,
+  "passed": 79,
+  "failed": 0,
+  "buildConsistencyFailures": 0,
+  "cssAudit": "passed",
+  "firestoreEmulator": "not_started",
+  "firestoreEmulatorReason": "npm ci received corrupted package archives and did not complete in this environment",
+  "browserSmoke": "not_run",
+  "browserSmokeReason": "Chromium and Playwright were unavailable in this environment"
+}

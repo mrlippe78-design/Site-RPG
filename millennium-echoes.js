@@ -119,20 +119,27 @@
     { id: "dew", name: "Orvalho Lunar", heat: 0, essence: 4, toxicity: 0, stability: 4 },
     { id: "moss", name: "Musgo de Ossos", heat: 1, essence: 2, toxicity: 2, stability: 3 },
     { id: "glass", name: "Pó de Vidro Negro", heat: 2, essence: 3, toxicity: 3, stability: 1 },
+    { id: "salt", name: "Sal de Aurora", heat: 1, essence: 3, toxicity: 0, stability: 5 },
+    { id: "ichor", name: "Ícor do Abismo", heat: 3, essence: 5, toxicity: 5, stability: 0 },
   ];
 
-  function alchemyChallenge(seed = "alchemy") {
+  function alchemyChallenge(seed = "alchemy", level = 1) {
     const random = randomFromSeed(seed);
-    const recipe = [...INGREDIENTS].sort(() => random() - 0.5).map((ingredient) => ingredient.id);
-    const byId = Object.fromEntries(INGREDIENTS.map((ingredient) => [ingredient.id, ingredient]));
+    const stage = Math.max(1, Math.min(3, Number(level) || 1));
+    const count = stage + 3;
+    const selected = [...INGREDIENTS].sort(() => random() - 0.5).slice(0, count);
+    const recipe = [...selected].sort(() => random() - 0.5).map((ingredient) => ingredient.id);
+    const byId = Object.fromEntries(selected.map((ingredient) => [ingredient.id, ingredient]));
+    const chain = recipe.slice(0, -1).map((id, index) => `${byId[id].name} deve vir antes de ${byId[recipe[index + 1]].name}.`);
+    const clues = stage === 1
+      ? [`Comece por ${byId[recipe[0]].name}.`, ...chain.slice(1, -1), `Finalize com ${byId[recipe.at(-1)].name}.`]
+      : stage === 2
+        ? [`${byId[recipe[0]].name} abre a mistura.`, ...chain.slice(1)]
+        : chain.sort(() => random() - 0.5);
     return {
-      ingredients: INGREDIENTS.map((ingredient) => ({ ...ingredient })),
+      ingredients: selected.map((ingredient) => ({ ...ingredient })),
       recipe,
-      clues: [
-        `Comece por ${byId[recipe[0]].name}, a base que estabiliza a mistura.`,
-        `${byId[recipe[1]].name} deve vir antes de ${byId[recipe[2]].name}.`,
-        `Finalize com ${byId[recipe[3]].name}; antecipá-lo rompe o recipiente.`,
-      ],
+      clues,
     };
   }
 
