@@ -84,6 +84,118 @@
     return (Math.floor(safe / 5) + 1) * 5;
   }
 
+  function xpForNextLevel(level) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    return 100 + (safeLevel - 1) * 50;
+  }
+
+  function progressionSnapshot(character = {}, levelMax = 99) {
+    const maximum = Math.max(1, Math.floor(Number(levelMax) || 99));
+    const level = Math.max(1, Math.min(maximum, Math.floor(Number(character.level) || 1)));
+    const required = xpForNextLevel(level);
+    const storedProgress = Math.max(0, Math.floor(Number(character.levelProgressXp) || 0));
+    const progressXp = level >= maximum ? 0 : Math.min(storedProgress, required - 1);
+    return {
+      level,
+      levelMax: maximum,
+      totalXp: Math.max(0, Math.floor(Number(character.xp) || 0)),
+      progressXp,
+      requiredXp: required,
+      remainingXp: level >= maximum ? 0 : Math.max(0, required - progressXp),
+      percentage: level >= maximum ? 100 : Math.round((progressXp / required) * 100),
+      freePoints: Math.max(0, Math.floor(Number(character.freePoints) || 0)),
+    };
+  }
+
+  function applyApprovedXp(character = {}, approvedXp = 0, levelMax = 99) {
+    const gain = Math.max(0, Math.floor(Number(approvedXp) || 0));
+    const before = progressionSnapshot(character, levelMax);
+    let level = before.level;
+    let progressXp = before.progressXp + gain;
+    let gainedLevels = 0;
+
+    while (level < before.levelMax && progressXp >= xpForNextLevel(level)) {
+      progressXp -= xpForNextLevel(level);
+      level += 1;
+      gainedLevels += 1;
+    }
+    if (level >= before.levelMax) progressXp = 0;
+
+    return {
+      xp: before.totalXp + gain,
+      level,
+      levelProgressXp: progressXp,
+      freePoints: before.freePoints + gainedLevels,
+      gainedLevels,
+      gainedAttributePoints: gainedLevels,
+      unlockedTechniqueLevels: Array.from({ length: gainedLevels }, (_, index) => before.level + index + 1).filter((value) => value % 5 === 0),
+      before,
+      after: progressionSnapshot({
+        xp: before.totalXp + gain,
+        level,
+        levelProgressXp: progressXp,
+        freePoints: before.freePoints + gainedLevels,
+      }, before.levelMax),
+    };
+  }
+
+  function validateAttributeAllocation(character = {}, allocation = {}) {
+    const keys = ["for", "vel", "hab", "res", "pod"];
+    const normalized = Object.fromEntries(keys.map((key) => [key, Math.max(0, Math.floor(Number(allocation?.[key]) || 0))]));
+    const hasInvalid = keys.some((key) => !Number.isInteger(Number(allocation?.[key] ?? 0)) || Number(allocation?.[key] ?? 0) < 0);
+    const points = keys.reduce((sum, key) => sum + normalized[key], 0);
+    const freePoints = Math.max(0, Math.floor(Number(character.freePoints) || 0));
+    const errors = [];
+    if (hasInvalid) errors.push("Use apenas números inteiros não negativos na distribuição.");
+    if (points < 1) errors.push("Distribua pelo menos um ponto antes de enviar.");
+    if (points > freePoints) errors.push(`A distribuição usa ${points} ponto(s), mas somente ${freePoints} estão disponíveis.`);
+    return { valid: !errors.length, errors, allocation: normalized, points, freePoints };
+  }
+
+  function inspectBaseAllocation(base = {}) {
+    const keys = ["for", "vel", "hab", "res", "pod"];
+    const source = base && typeof base === "object" && !Array.isArray(base) ? base : {};
+    const normalized = Object.fromEntries(keys.map((key) => [key, Number(source[key])]));
+    const exactKeys = Object.keys(source).length === keys.length && Object.keys(source).every((key) => keys.includes(key));
+    const integers = keys.every((key) => Number.isInteger(normalized[key]));
+    const nonNegative = keys.every((key) => normalized[key] >= 0);
+    const total = keys.reduce((sum, key) => sum + (Number.isFinite(normalized[key]) ? normalized[key] : 0), 0);
+    return { valid: exactKeys && integers && nonNegative && total === 20, normalized, total, exactKeys, integers, nonNegative };
+  }
+
+  function attributeRedistributionEligibility(character = {}) {
+    const inspection = inspectBaseAllocation(character.base || {});
+    const status = String(character.attributeRedistributionStatus || "").toLowerCase();
+    const used = character.attributeRedistributionUsed === true || ["approved", "completed"].includes(status);
+    const pending = status === "requested";
+    const currentRules = Number(character.attributeRulesVersion || 0) >= 2;
+    const explicitlyAvailable = ["available", "required", "rejected"].includes(status);
+    const legacy = !currentRules;
+    return {
+      eligible: !used && (legacy || explicitlyAvailable || !inspection.valid),
+      required: !inspection.valid,
+      pending,
+      used,
+      legacy,
+      status: status || (legacy ? "available" : "not_required"),
+      reason: !inspection.valid ? "A base armazenada não segue a regra dos 20 pontos." : legacy ? "Ficha criada antes da regra de distribuição livre." : explicitlyAvailable ? "Redistribuição liberada pelo Oráculo." : "Ficha já criada sob a regra atual.",
+      inspection,
+    };
+  }
+
+  function validateBaseRedistribution(character = {}, proposedBase = {}) {
+    const eligibility = attributeRedistributionEligibility(character);
+    const proposed = inspectBaseAllocation(proposedBase);
+    const errors = [];
+    if (!eligibility.eligible) errors.push(eligibility.used ? "A redistribuição extraordinária já foi utilizada." : "Esta ficha não é elegível para redistribuição.");
+    if (eligibility.pending) errors.push("Já existe uma redistribuição aguardando o Oráculo.");
+    if (!proposed.exactKeys) errors.push("Informe exatamente os cinco atributos-base.");
+    if (!proposed.integers) errors.push("Use somente números inteiros.");
+    if (!proposed.nonNegative) errors.push("Atributos-base não podem ser negativos.");
+    if (proposed.total !== 20) errors.push(`A nova base soma ${proposed.total}; distribua exatamente 20 pontos.`);
+    return { valid: !errors.length, errors, proposedBase: proposed.normalized, eligibility, total: proposed.total };
+  }
+
   function affinityGuide(affinity = {}, category = {}) {
     const domain = String(affinity.domain || affinity.description || "Manifestação ainda não descrita.").trim();
     const limitations = String(affinity.limitations || affinity.limit || "Todo uso exige alcance, custo, condição e contramedida definidos.").trim();
@@ -133,6 +245,13 @@
     recordMinigameProgress,
     techniqueSlotsForLevel,
     nextTechniqueLevel,
+    xpForNextLevel,
+    progressionSnapshot,
+    applyApprovedXp,
+    validateAttributeAllocation,
+    inspectBaseAllocation,
+    attributeRedistributionEligibility,
+    validateBaseRedistribution,
     affinityGuide,
     enrichAffinities,
     musicTrack,

@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.5.2", commit: "dev", cacheName: "millennium-shell-v3.5.2" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.1", commit: "dev", cacheName: "millennium-shell-v3.6.1" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -1471,9 +1471,14 @@ function defaultCharacter(uid, displayName = "") {
     totalRares: 0,
     prestige: 0,
     base: { for: 4, vel: 4, hab: 4, res: 4, pod: 4 },
+    attributeRulesVersion: 2,
+    attributeRedistributionStatus: "not_required",
+    attributeRedistributionUsed: false,
     development: { for: 0, vel: 0, hab: 0, res: 0, pod: 0 },
     xp: 0,
     level: 1,
+    levelProgressXp: 0,
+    progressionVersion: 1,
     freePoints: 0,
     gold: 100,
     millenniumCoins: 250,
@@ -2411,8 +2416,36 @@ function levelFromXp(xp = 0) {
   return Math.max(1, Math.min(Number(state.settings.levelMax || 99), 1 + Math.floor(Number(xp || 0) / 100)));
 }
 
+function progressionFor(character = currentCharacter()) {
+  return FOUNDATIONS.progressionSnapshot(character, Number(state.settings.levelMax || 99));
+}
+
 function pendingProgressRequests(uid = state.user?.uid) {
   return state.progressRequests.filter((request) => request.uid === uid && request.status === "pendente");
+}
+
+function pendingAttributeAllocation(uid = state.user?.uid) {
+  return state.progressRequests.find((request) => request.uid === uid
+    && request.type === "attributeAllocation"
+    && !["aprovado", "reprovado"].includes(creationRequestStatus(request))) || null;
+}
+
+function pendingAttributeRedistribution(uid = state.user?.uid) {
+  return state.progressRequests.find((request) => request.uid === uid
+    && request.type === "attributeRedistribution"
+    && !["aprovado", "reprovado"].includes(creationRequestStatus(request))) || null;
+}
+
+function baseAllocationSummary(base = {}) {
+  return ATTRIBUTES.map((attribute) => `${attribute.short} ${Number(base?.[attribute.key] || 0)}`).join(" · ");
+}
+
+function attributeAllocationSummary(allocation = {}) {
+  return ATTRIBUTES
+    .map((attribute) => ({ label: attribute.short, amount: Math.max(0, Number(allocation?.[attribute.key] || 0)) }))
+    .filter((entry) => entry.amount > 0)
+    .map((entry) => `+${entry.amount} ${entry.label}`)
+    .join(" · ") || "Nenhum ponto distribuído";
 }
 
 function syncPrivateMessages() {
@@ -2449,6 +2482,12 @@ function progressTypeLabel(type) {
     training: "Treino",
     mission: "Missão",
     guildMission: "Missão de guilda",
+    session: "Sessão de campanha",
+    event: "Evento",
+    achievement: "Conquista",
+    minigame: "Minigame",
+    attributeAllocation: "Distribuição de atributos",
+    attributeRedistribution: "Redistribuição extraordinária",
     power: "Poder",
     technique: "Técnica",
     premiumPass: "Passe premium",
@@ -2456,9 +2495,13 @@ function progressTypeLabel(type) {
 }
 
 function defaultXpForRequest(type, rarity = "Comum") {
-  const byRarity = { Comum: 40, Incomum: 60, Raro: 90, "Épico": 130, Lendário: 180, Cósmica: 240 };
-  if (type === "training") return 30;
-  if (type === "power" || type === "technique" || type === "premiumPass") return 0;
+  const byRarity = { Comum: 50, Incomum: 75, Raro: 100, "Épico": 150, Lendário: 225, Cósmica: 300 };
+  if (type === "training") return 50;
+  if (type === "session") return 100;
+  if (type === "event") return 150;
+  if (type === "achievement") return 100;
+  if (type === "minigame") return 20;
+  if (["power", "technique", "premiumPass", "attributeAllocation", "attributeRedistribution"].includes(type)) return 0;
   return byRarity[rarity] || 50;
 }
 
@@ -2517,7 +2560,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.5.2 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.1 Spark.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2812,7 +2855,7 @@ function activateRouteSubscriptions(view = state.view) {
   const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports", "admin-settings"].includes(view);
   if (needsDirectory) subscribeUserDirectory();
 
-  if (["admin-home", "admin-users", "admin-ops", "admin-settings"].includes(view) && state.role === "admin") {
+  if (["admin-home", "admin-users", "admin-requests", "admin-ops", "admin-settings", "ranking"].includes(view) && state.role === "admin") {
     routeCollection("characters", (characters) => {
       state.characters = characters;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
@@ -3283,6 +3326,9 @@ function enterDemo(role) {
     cultureId: state.content.cultures?.[0]?.id || "",
     professionId: state.content.professions?.[0]?.id || "",
     base: { for: 3, vel: 4, hab: 5, res: 4, pod: 4 },
+    attributeRulesVersion: 0,
+    attributeRedistributionStatus: "",
+    attributeRedistributionUsed: false,
     gold: 180,
     titles: [{ id: "arquivo-vivo", name: "Arquivo Vivo", rarity: "Raro" }],
     pets: [{ id: "luma", name: "Luma", imageUrl: "" }],
@@ -3424,8 +3470,8 @@ async function pruneMessages(collection, messages, predicate = () => true) {
   await Promise.all(overflow.map((message) => deleteDoc(collection, message.id).catch(() => {})));
 }
 
-async function updateCharacter(uid, patch) {
-  await writeDoc("characters", uid, { ...patch, ownerId: uid });
+async function updateCharacter(uid, patch, options = {}) {
+  await writeDoc("characters", uid, { ...patch, ownerId: uid }, options);
   const merged = { ...getCharacterFor(uid), ...patch, ownerId: uid };
   if (uid === state.user?.uid) state.character = merged;
   await syncRankingProjection(merged).catch((error) => console.warn("Ranking projection deferred:", error));
@@ -4271,7 +4317,7 @@ function renderLegacyCharacterForm() {
             <h2>Sua existência em Millennium</h2>
             <p>Raça define herança; cultura define formação. A ficha protege sua base sem aprisionar sua história.</p>
           </div>
-          <div class="character-save-stack"><span class="tag">${locked ? "Base protegida" : "20 pontos · mínimo 2 · máximo 6"}</span><button class="primary-button" type="submit">Registrar ficha</button></div>
+          <div class="character-save-stack"><span class="tag">${locked ? "Base protegida" : "20 pontos · distribuição livre"}</span><button class="primary-button" type="submit">Registrar ficha</button></div>
         </div>
         <div class="character-stepper"><span class="done">1 · Identidade</span><span class="${locked ? "done" : "active"}">2 · Atributos</span><span>3 · Vínculos</span><span>4 · Poder</span></div>
       </article>
@@ -4306,12 +4352,12 @@ function renderLegacyCharacterForm() {
             <h3>${remaining} ponto(s) restante(s)</h3>
           </div>
         </div>
-        <p class="hint">${locked ? "Você só pode adicionar Pontos de Desenvolvimento liberados; nunca retirar o que conquistou." : "Distribua exatamente 20 pontos. Cada atributo começa entre 2 e 6 antes dos bônus."}</p>
+        <p class="hint">${locked ? "A evolução usa Pontos de Desenvolvimento e aprovação do Oráculo." : "Distribua exatamente 20 pontos sem mínimo ou teto individual."}</p>
         <div class="attribute-editor-grid">
           ${ATTRIBUTES.map((attr) => `
             <label>
               <span>${attr.label} (${attr.short})</span>
-              <input name="base_${attr.key}" type="number" min="${locked ? Number(character.base?.[attr.key] || 0) : 2}" max="${locked ? 99 : 6}" value="${Number(visibleBase[attr.key] || 0)}" />
+              <input name="base_${attr.key}" type="number" min="0" value="${Number(visibleBase[attr.key] || 0)}" ${locked ? "readonly" : ""} />
             </label>
           `).join("")}
         </div>
@@ -4730,6 +4776,31 @@ function renderCharacterIntroduction() {
     </section>`;
 }
 
+function renderAttributeRedistributionPanel(character) {
+  const eligibility = FOUNDATIONS.attributeRedistributionEligibility(character);
+  const pending = pendingAttributeRedistribution(character.ownerId || state.user?.uid);
+  if (eligibility.used) return `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Redistribuição extraordinária</p><h3>Migração concluída</h3></div><span class="tag success">Uso único encerrado</span></div><p>A base foi revisada sob a regra atual. Desenvolvimento, nível e demais dados permaneceram preservados.</p></article>`;
+  if (pending) return `
+    <article class="panel span-12 attribute-redistribution-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Redistribuição extraordinária</p><h3>Aguardando o Oráculo</h3></div><span class="tag">Pendente</span></div>
+      <div class="stat-grid">${renderStat("Base anterior", baseAllocationSummary(pending.currentBase))}${renderStat("Base solicitada", baseAllocationSummary(pending.proposedBase))}${renderStat("Desenvolvimento", "Preservado")}${renderStat("Total novo", "20 pontos")}</div>
+      <p>${esc(pending.description || "A solicitação será aplicada somente depois da aprovação administrativa.")}</p>
+    </article>`;
+  if (!eligibility.eligible) return "";
+  const base = eligibility.inspection.normalized;
+  return `
+    <article class="panel span-12 attribute-redistribution-panel ${eligibility.required ? "diagnostic-warning" : ""}">
+      <div class="panel-heading"><div><p class="eyebrow">Correção para fichas antigas</p><h3>${eligibility.required ? "Regularização necessária" : "Redistribuição única disponível"}</h3></div><span class="tag ${eligibility.required ? "danger" : "success"}">${eligibility.required ? "Base inconsistente" : "Sem resetar a ficha"}</span></div>
+      <p>${esc(eligibility.reason)} Você pode reorganizar somente os 20 pontos-base. Desenvolvimento, XP, nível, afinidade, poder, técnicas, inventário, pets e história não serão alterados.</p>
+      <div class="review-warning"><strong>Base armazenada</strong><span>${esc(baseAllocationSummary(character.base))} · soma detectada: ${Number(eligibility.inspection.total || 0)}</span></div>
+      <form class="form-grid compact-form" data-form="attribute-redistribution-request">
+        ${ATTRIBUTES.map((attribute) => `<label><span>${esc(attribute.label)} (${esc(attribute.short)})</span><input name="base_${attribute.key}" type="number" min="0" step="1" value="${Math.max(0, Number.isFinite(base[attribute.key]) ? base[attribute.key] : 0)}" required /></label>`).join("")}
+        <label class="wide"><span>Explique sua escolha</span><textarea name="description" rows="3" maxlength="1200" required placeholder="Descreva por que esta distribuição representa melhor o personagem."></textarea></label>
+        <button class="primary-button wide" type="submit">Enviar nova base ao Oráculo</button>
+      </form>
+    </article>`;
+}
+
 function renderLockedCharacterRecord(character) {
   const race = getRace(character.raceId);
   const classEntry = getClass(character.classId);
@@ -4738,13 +4809,23 @@ function renderLockedCharacterRecord(character) {
   const kingdom = characterCatalogEntry("kingdoms", character.kingdomId);
   const region = characterCatalogEntry("regions", character.regionId);
   const diagnostics = window.MILLENNIUM_CORE_31.diagnoseAttributeSources(character, state.content);
+  const progression = progressionFor(character);
+  const allocationRequest = pendingAttributeAllocation(character.ownerId || state.user?.uid);
+  const nextTechnique = FOUNDATIONS.nextTechniqueLevel(progression.level);
   return `
     <div class="grid character-registered">
       <article class="panel span-12 registered-hero">
         <div><p class="eyebrow">Registro técnico concluído</p><h2>${esc(character.characterName || "Escolhido sem nome")}</h2><p>${esc(character.originType || "Retornado")} · ${esc(race?.name || "Sem raça")} · ${esc(classEntry?.name || "Sem classe")}</p></div>
         <div class="action-row"><span class="tag success">Base protegida</span><button class="primary-button" type="button" data-nav="character-life">Dar Vida</button><button class="ghost-button" type="button" data-nav="creations">Poderes e técnicas</button></div>
       </article>
+      ${renderAttributeRedistributionPanel(character)}
       <div class="span-12">${renderManifestationPanel(character)}</div>
+      <article class="panel span-12 progression-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Caminho da evolução</p><h3>Nível ${progression.level}</h3></div><span class="tag">${progression.totalXp.toLocaleString("pt-BR")} XP total</span></div>
+        <div class="stat-grid compact-stat-grid">${renderStat("Progresso", `${progression.progressXp}/${progression.requiredXp} XP`)}${renderStat("Faltam", `${progression.remainingXp} XP`)}${renderStat("Pontos livres", progression.freePoints)}${renderStat("Próxima técnica", `Nível ${nextTechnique}`)}</div>
+        <div class="journey-home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progression.percentage}"><i style="width:${progression.percentage}%"></i></div>
+        <p class="hint">XP só entra após aprovação do Oráculo. Cada nível concede 1 ponto de atributo; níveis 5, 10, 15 e seguintes liberam novas técnicas.</p>
+      </article>
       <article class="panel span-5 registered-summary">
         <p class="eyebrow">Identidade registrada</p>
         <dl class="record-list">
@@ -4759,7 +4840,13 @@ function renderLockedCharacterRecord(character) {
       <article class="panel span-7">
         <div class="panel-heading"><div><p class="eyebrow">Capacidade registrada</p><h3>Composição dos atributos</h3></div><span class="tag">${Number(character.freePoints || 0)} ponto(s) de desenvolvimento</span></div>
         ${characterStatComposition(character)}
-        ${Number(character.freePoints || 0) > 0 ? `<div class="development-controls"><p>Adicione um ponto conquistado. A base inicial nunca é reescrita.</p>${ATTRIBUTES.map((attr) => `<button class="ghost-button" type="button" data-action="spend-development" data-attr="${attr.key}" ${state.developmentSpending ? "disabled" : ""}>+1 ${esc(attr.short)}</button>`).join("")}</div>` : ""}
+        ${allocationRequest ? `<div class="review-warning"><strong>Distribuição aguardando o Oráculo</strong><span>${esc(attributeAllocationSummary(allocationRequest.allocation))}. Seus pontos continuam reservados na ficha até a decisão.</span></div>` : Number(character.freePoints || 0) > 0 ? `
+          <form class="form-grid compact-form development-allocation-form" data-form="attribute-allocation-request">
+            <p class="wide">Escolha como deseja usar até ${Number(character.freePoints || 0)} ponto(s). A alteração só será aplicada depois da aprovação administrativa.</p>
+            ${ATTRIBUTES.map((attr) => `<label><span>${esc(attr.label)} (${esc(attr.short)})</span><input name="allocation_${attr.key}" type="number" min="0" max="${Number(character.freePoints || 0)}" step="1" value="0" /></label>`).join("")}
+            <label class="wide"><span>Justificativa da evolução</span><textarea name="description" rows="3" maxlength="1200" required placeholder="Explique como as conquistas recentes desenvolveram esses atributos."></textarea></label>
+            <button class="primary-button wide" type="submit">Enviar distribuição ao Oráculo</button>
+          </form>` : `<p class="hint">Nenhum ponto livre. Conclua missões, sessões, eventos ou treinos e aguarde a aprovação de XP.</p>`}
       </article>
       ${diagnostics.ok ? "" : `<article class="panel span-12 diagnostic-warning"><p class="eyebrow">Atenção</p><h3>A Interface encontrou ${diagnostics.issues.length} inconsistência(s)</h3><p>Nada foi reparado automaticamente. Valores fora das regras foram isolados do cálculo e exigem revisão do Oráculo.</p><ul class="diagnostic-issue-list">${diagnostics.issues.map((issue) => `<li class="severity-${esc(issue.severity)}"><strong>${esc(issue.code)}</strong><span>${esc(issue.message)}</span></li>`).join("")}</ul></article>`}
       ${renderOriginCompletionForm(character)}
@@ -4775,7 +4862,7 @@ function renderCharacterStep(step, draft, character) {
   const region = characterCatalogEntry("regions", draft.regionId);
   const culture = characterCatalogEntry("cultures", draft.cultureId);
   const profession = characterCatalogEntry("professions", draft.professionId);
-  const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Math.max(2, Math.min(6, Number(draft[`base_${attr.key}`] ?? 4)))]));
+  const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Math.max(0, Math.floor(Number(draft[`base_${attr.key}`] ?? 4) || 0))]));
   const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
   const previewCharacter = { ...character, raceId: draft.raceId, classId: draft.classId, kingdomId: draft.kingdomId, regionId: draft.regionId, cultureId: draft.cultureId, professionId: draft.professionId, base };
   const ageInput = (name, label) => `<label><span>${label}</span><input name="${name}" type="number" inputmode="numeric" min="0" max="99999" step="1" value="${esc(draft[name])}" /></label>`;
@@ -4808,9 +4895,9 @@ function renderCharacterStep(step, draft, character) {
       <div class="action-row origin-catalog-actions"><button class="ghost-button" type="button" data-nav="cultures">Comparar culturas</button><button class="ghost-button" type="button" data-nav="professions">Comparar ofícios</button><button class="text-button" type="button" data-nav="codex" data-codex-target="kingdoms">Ler reinos e regiões</button></div>
     </div>`;
   if (step === 5) return `
-    <div class="registration-stage attribute-stage"><div class="stage-heading"><span>05</span><div><p class="eyebrow">Atributos-base</p><h2>Distribua exatamente 20 pontos</h2><p>Cada atributo começa entre 2 e 6. Os bônus aparecem depois e nunca contaminam a base.</p></div></div>
+    <div class="registration-stage attribute-stage"><div class="stage-heading"><span>05</span><div><p class="eyebrow">Atributos-base</p><h2>Distribua exatamente 20 pontos</h2><p>Não existe mínimo nem teto individual. Você pode criar uma base equilibrada ou extremamente especializada; os bônus continuam separados.</p></div></div>
       <div class="allocation-status ${allocation.valid ? "valid" : ""}"><strong>${allocation.remaining >= 0 ? allocation.remaining : Math.abs(allocation.remaining)} ${allocation.remaining >= 0 ? "restante(s)" : "acima do limite"}</strong><span>${allocation.spent}/20 distribuídos</span></div>
-      <div class="attribute-steppers">${ATTRIBUTES.map((attr) => `<div class="attribute-stepper"><div><span>${esc(attr.label)}</span><small>${esc(attr.short)}</small></div><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="-1" aria-label="Remover um ponto de ${esc(attr.label)}" ${base[attr.key] <= 2 ? "disabled" : ""}>−</button><output>${base[attr.key]}</output><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="1" aria-label="Adicionar um ponto de ${esc(attr.label)}" ${base[attr.key] >= 6 || allocation.remaining <= 0 ? "disabled" : ""}>+</button><input type="hidden" name="base_${attr.key}" value="${base[attr.key]}" /></div>`).join("")}</div>
+      <div class="attribute-steppers">${ATTRIBUTES.map((attr) => `<div class="attribute-stepper"><div><span>${esc(attr.label)}</span><small>${esc(attr.short)}</small></div><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="-1" aria-label="Remover um ponto de ${esc(attr.label)}" ${base[attr.key] <= 0 ? "disabled" : ""}>−</button><output>${base[attr.key]}</output><button type="button" data-action="attribute-step" data-attr="${attr.key}" data-delta="1" aria-label="Adicionar um ponto de ${esc(attr.label)}" ${allocation.remaining <= 0 ? "disabled" : ""}>+</button><input type="hidden" name="base_${attr.key}" value="${base[attr.key]}" /></div>`).join("")}</div>
       <div class="attribute-preview"><p class="eyebrow">Total previsto com bônus</p>${characterStatComposition(previewCharacter)}</div>
     </div>`;
   if (step === 6) return `
@@ -6843,12 +6930,13 @@ function renderMissions() {
         <div class="content-grid">${renderPlayerMissionList(state.weeklyMissions, activeIds, pending)}</div>
       </article>
       <article class="panel span-6">
-        <p class="eyebrow">Treino</p>
-        <h3>Relatar treino para XP</h3>
-        <form class="form-stack" data-form="training-request">
-          <label><span>Título do treino</span><input name="title" required placeholder="Ex: Controle de mana sob pressão" /></label>
+        <p class="eyebrow">Progresso narrativo</p>
+        <h3>Solicitar XP ao Oráculo</h3>
+        <form class="form-stack" data-form="progression-request">
+          <label><span>Origem do progresso</span><select name="type"><option value="training">Treino</option><option value="session">Sessão de campanha</option><option value="event">Evento</option><option value="achievement">Conquista importante</option><option value="minigame">Desempenho em minigame</option></select></label>
+          <label><span>Título</span><input name="title" required placeholder="Ex.: Controle de mana sob pressão" /></label>
           <label><span>O que foi feito?</span><textarea name="description" rows="5" required></textarea></label>
-          <button class="primary-button" type="submit">Enviar treino ao Oráculo</button>
+          <button class="primary-button" type="submit">Enviar progresso ao Oráculo</button>
         </form>
       </article>
       <article class="panel span-6">
@@ -6915,6 +7003,9 @@ function renderProgressRequests(requests, adminMode = false) {
   return requests.map((request) => {
     const status = creationRequestStatus(request);
     const creation = ["power", "technique"].includes(request.type);
+    const attributeAllocation = request.type === "attributeAllocation";
+    const attributeRedistribution = request.type === "attributeRedistribution";
+    const attributeRequest = attributeAllocation || attributeRedistribution;
     const canAdminAct = adminMode && (!creation || window.MILLENNIUM_BACKEND_31.creationNeedsAdminAction(request));
     const accepted = status === "aceito pelo player";
     const contested = status === "contestado pelo player";
@@ -6936,18 +7027,20 @@ function renderProgressRequests(requests, adminMode = false) {
         <span>${esc(progressTypeLabel(request.type))} · ${esc(status)}</span>
         <h3>${esc(request.title || "Solicitação")}</h3>
         <p>${esc(request.description || "")}</p>
+        ${attributeAllocation ? `<p><strong>Distribuição:</strong> ${esc(attributeAllocationSummary(request.allocation))}</p>` : ""}
+        ${attributeRedistribution ? `<div class="review-warning"><strong>Comparação da base</strong><span>Antes: ${esc(baseAllocationSummary(request.currentBase))}<br />Depois: ${esc(baseAllocationSummary(request.proposedBase))}<br />Desenvolvimento e demais dados: preservados</span></div>${request.detectedIssue ? `<p><strong>Elegibilidade:</strong> ${esc(request.detectedIssue)}</p>` : ""}` : ""}
         <p>${esc(requestRewardHint(request))}</p>
         ${request.adminNote ? `<p><strong>Nota do Oráculo:</strong> ${esc(request.adminNote)}</p>` : ""}
         ${request.playerResponse ? `<p><strong>Resposta do player:</strong> ${esc(request.playerResponse)}</p>` : ""}
         ${contested ? `<div class="review-warning"><strong>O player apontou uma contradição.</strong><span>Revise a proposta antes de reenviar.</span></div>` : ""}
         ${canAdminAct ? `
-          ${!creation && status === "pendente" ? `<div class="action-row"><button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button></div>` : ""}
+          ${!creation && !attributeRequest && status === "pendente" ? `<div class="action-row"><button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button></div>` : ""}
           <form class="form-grid compact-form" data-form="review-request">
             <input type="hidden" name="requestId" value="${esc(request.id)}" />
             ${proposalFields}
-            ${creation ? "" : `<label><span>XP</span><input name="xp" type="number" min="0" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label><label><span>PO</span><input name="gold" type="number" min="0" value="0" /></label><label><span>Essências</span><input name="essences" type="number" min="0" value="0" /></label>`}
+            ${creation || attributeRequest ? "" : `<label><span>XP aprovado</span><input name="xp" type="number" min="0" max="5000" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label><label><span>PO</span><input name="gold" type="number" min="0" value="0" /></label><label><span>Essências</span><input name="essences" type="number" min="0" value="0" /></label>`}
             <label><span>Decisão do Oráculo</span><select name="decision">${decisionOptions}</select></label>
-            <label class="wide"><span>Análise e justificativa</span><textarea name="adminNote" rows="4" maxlength="2000" placeholder="Explique o balanceamento, o nerf, as limitações e as contramedidas.">${esc(request.adminNote || "")}</textarea></label>
+            <label class="wide"><span>Análise e justificativa</span><textarea name="adminNote" rows="4" maxlength="2000" ${attributeRequest ? "required" : ""} placeholder="Explique a decisão e o efeito sobre a progressão.">${esc(request.adminNote || "")}</textarea></label>
             <button class="primary-button wide" type="submit">${creation && accepted ? "Registrar decisão final" : "Enviar análise"}</button>
           </form>
         ` : ""}
@@ -7134,6 +7227,24 @@ function renderAdminUsers() {
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
+          <section class="panel admin-progression-console" style="margin-top:18px">
+            <div class="panel-heading"><div><p class="eyebrow">Evolução e correção</p><h3>Nível ${progressionFor(character).level} · ${progressionFor(character).progressXp}/${progressionFor(character).requiredXp} XP · ${Number(character.freePoints || 0)} ponto(s) livre(s)</h3></div><span class="tag">Auditoria obrigatória</span></div>
+            <div class="action-row"><span class="tag">Redistribuição: ${esc(FOUNDATIONS.attributeRedistributionEligibility(character).used ? "concluída" : FOUNDATIONS.attributeRedistributionEligibility(character).eligible ? "disponível" : "não liberada")}</span><button class="ghost-button" type="button" data-action="release-attribute-redistribution" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || FOUNDATIONS.attributeRedistributionEligibility(character).used ? "disabled" : ""}>Liberar redistribuição única</button></div>
+            <form class="form-grid" data-form="admin-progression-correction">
+              <input type="hidden" name="uid" value="${esc(selectedId)}" />
+              <label><span>Ajuste de XP</span><input name="xpDelta" type="number" step="1" value="0" /><small>Positivo adiciona XP e calcula níveis. Negativo corrige o total sem retirar níveis automaticamente.</small></label>
+              <label><span>Definir nível final (opcional)</span><input name="levelOverride" type="number" min="1" max="${Number(state.settings.levelMax || 99)}" placeholder="Manter nível ${Number(character.level || 1)}" /></label>
+              <label><span>Ajuste de pontos livres</span><input name="freePointsDelta" type="number" step="1" value="0" /><small>Use negativo para remover e positivo para devolver pontos.</small></label>
+              <label><span>Atributo de desenvolvimento</span><select name="attributeKey"><option value="">Nenhum</option>${ATTRIBUTES.map((attribute) => `<option value="${attribute.key}">${esc(attribute.label)} (${esc(attribute.short)})</option>`).join("")}</select></label>
+              <label><span>Ajuste no desenvolvimento</span><input name="attributeDelta" type="number" step="1" value="0" /><small>Adicionar consome pontos livres; remover devolve pontos.</small></label>
+              <div></div>
+              <label><span>Mover ponto-base de</span><select name="baseFrom"><option value="">Não corrigir base</option>${ATTRIBUTES.map((attribute) => `<option value="${attribute.key}">${esc(attribute.label)} (${Number(character.base?.[attribute.key] || 0)})</option>`).join("")}</select></label>
+              <label><span>Para</span><select name="baseTo"><option value="">Escolha o destino</option>${ATTRIBUTES.map((attribute) => `<option value="${attribute.key}">${esc(attribute.label)}</option>`).join("")}</select></label>
+              <label><span>Quantidade movida</span><input name="baseAmount" type="number" min="0" step="1" value="0" /></label>
+              <label class="wide"><span>Motivo obrigatório</span><textarea name="reason" rows="4" maxlength="500" required placeholder="Explique a correção, a origem do XP ou a devolução de pontos."></textarea></label>
+              <button class="primary-button wide" type="submit" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Aplicar correção auditada</button>
+            </form>
+          </section>
           <section class="account-management-grid ${state.adminOperationInProgress ? "operation-busy" : ""}" aria-label="Gestão administrativa da conta">
             <article class="account-management-card management">
               <p class="eyebrow">Gestão da ficha</p>
@@ -7820,6 +7931,12 @@ function renderAdminRequests() {
     ["all", "Todos"],
     ["mission", "Missões"],
     ["training", "Treinos"],
+    ["session", "Sessões"],
+    ["event", "Eventos"],
+    ["achievement", "Conquistas"],
+    ["minigame", "Minigames"],
+    ["attributeAllocation", "Atributos"],
+    ["attributeRedistribution", "Migração da base"],
     ["power", "Poderes"],
     ["technique", "Técnicas"],
     ["guildMission", "Guilda"],
@@ -7841,6 +7958,7 @@ function renderAdminRequests() {
           ${renderStat("Treinos", pending.filter((item) => item.type === "training").length)}
           ${renderStat("Criações", pending.filter((item) => item.type === "power" || item.type === "technique").length)}
         </div>
+        <div class="action-row"><button class="ghost-button" type="button" data-action="mark-legacy-redistributions">Marcar fichas antigas como elegíveis</button><span class="hint">A detecção já é automática; este botão grava a liberação administrativa nas fichas legadas.</span></div>
         <div class="tabs codex-tabs">
           ${filters.map(([id, label]) => `<button class="tab ${filter === id ? "active" : ""}" type="button" data-action="request-filter" data-filter="${id}">${label}</button>`).join("")}
         </div>
@@ -7897,7 +8015,7 @@ function renderAdminSettings() {
   return `
     <div class="grid admin-settings-view">
       <article class="panel span-12 oracle-season-console theme-preview" style="--preview-art:url('${esc(theme.background)}');--preview-primary:${esc(theme.palette.primary)}">
-        <div><p class="eyebrow">Millennium 3.5 · Fundação Segura</p><h2>${esc(state.settings.seasonName || theme.name)}</h2><p>${esc(theme.description)} O tema agora coordena paleta, fundos, texturas, áudio e movimento sem alterar a estrutura das páginas.</p><div class="theme-swatches" aria-label="Paleta atual">${Object.values(theme.palette).map((color) => `<i style="--swatch:${esc(color)}" title="${esc(color)}"></i>`).join("")}</div></div>
+        <div><p class="eyebrow">Millennium 3.6 · Caminhos da Evolução</p><h2>${esc(state.settings.seasonName || theme.name)}</h2><p>${esc(theme.description)} O tema agora coordena paleta, fundos, texturas, áudio e movimento sem alterar a estrutura das páginas.</p><div class="theme-swatches" aria-label="Paleta atual">${Object.values(theme.palette).map((color) => `<i style="--swatch:${esc(color)}" title="${esc(color)}"></i>`).join("")}</div></div>
         <div class="stat-grid compact-stat-grid">${renderStat("Afinidades", state.content.affinities.length)}${renderStat("Categorias", state.content.affinityCategories.length)}${renderStat("Pets no pool", state.content.gachaPets.length)}${renderStat("Facções", state.settings.factionsUnlocked ? "Abertas" : "Seladas")}</div>
       </article>
       <article class="panel span-7 settings-control-panel">
@@ -8115,7 +8233,7 @@ async function saveLegacyCharacter(form) {
   const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(values[`base_${attr.key}`])]));
   const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
   if (!allocation.valid) {
-    toast(allocation.errors[0] || "Distribua exatamente 20 pontos entre 2 e 6.");
+    toast(allocation.errors[0] || "Distribua exatamente 20 pontos não negativos.");
     return;
   }
 
@@ -8151,6 +8269,9 @@ async function saveLegacyCharacter(form) {
     creationLocked: true,
     creationStatus: "registered",
     technicalCreationComplete: true,
+    attributeRulesVersion: 2,
+    attributeRedistributionStatus: "not_required",
+    attributeRedistributionUsed: false,
     base: allocation.normalized,
     story: values.story,
     personality: values.personality,
@@ -8332,7 +8453,7 @@ function saveCharacterLocationPatch(source, options = {}) {
 }
 
 function saveCharacterStatePatch(source, options = {}) {
-  return saveCharacterPatch(source, ["creationLocked", "creationStatus", "technicalCreationComplete", "narrativeCreationComplete"], options);
+  return saveCharacterPatch(source, ["creationLocked", "creationStatus", "technicalCreationComplete", "narrativeCreationComplete", "attributeRulesVersion", "attributeRedistributionStatus", "attributeRedistributionUsed"], options);
 }
 
 async function saveCharacterLorePatch(source, options = {}) {
@@ -8372,7 +8493,7 @@ function validateRegistrationStep(step, draft) {
   if (step === 5) {
     const base = Object.fromEntries(ATTRIBUTES.map((attr) => [attr.key, Number(draft[`base_${attr.key}`])]));
     const allocation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
-    if (!allocation.valid) return allocation.errors[0] || "Distribua exatamente 20 pontos entre 2 e 6.";
+    if (!allocation.valid) return allocation.errors[0] || "Distribua exatamente 20 pontos não negativos.";
   }
   return "";
 }
@@ -8402,10 +8523,10 @@ function moveCharacterStep(direction, form) {
 function adjustRegistrationAttribute(attribute, delta, form) {
   if (!ATTRIBUTES.some((entry) => entry.key === attribute)) return;
   const draft = captureCharacterStep(form);
-  const current = Math.max(2, Math.min(6, Number(draft[`base_${attribute}`] || 4)));
+  const current = Math.max(0, Math.floor(Number(draft[`base_${attribute}`] ?? 4) || 0));
   const spent = ATTRIBUTES.reduce((sum, entry) => sum + Number(draft[`base_${entry.key}`] || 4), 0);
-  if (delta > 0 && (current >= 6 || spent >= 20)) return;
-  if (delta < 0 && current <= 2) return;
+  if (delta > 0 && spent >= 20) return;
+  if (delta < 0 && current <= 0) return;
   const next = current + Math.sign(delta);
   state.characterDraft[`base_${attribute}`] = next;
   const input = form?.elements?.namedItem?.(`base_${attribute}`);
@@ -8448,6 +8569,9 @@ async function saveCharacter(form) {
     creationLocked: true,
     creationStatus: "registered",
     technicalCreationComplete: true,
+    attributeRulesVersion: 2,
+    attributeRedistributionStatus: "not_required",
+    attributeRedistributionUsed: false,
   };
   state.characterSaving = true;
   state.characterSaveStatus = "saving";
@@ -8479,59 +8603,6 @@ async function saveCharacter(form) {
   } finally {
     state.characterSaving = false;
     scheduleRender({ critical: true });
-  }
-}
-
-async function spendDevelopmentPoint(attribute) {
-  if (state.developmentSpending) return;
-  const character = currentCharacter();
-  const initialValidation = window.MILLENNIUM_CORE_31.validateDevelopmentSpend(character, attribute);
-  if (!initialValidation.valid) {
-    toast(initialValidation.errors[0] || "Não foi possível aplicar o ponto.");
-    return;
-  }
-
-  state.developmentSpending = true;
-  scheduleRender({ preserveScroll: true, reason: "development-start" });
-  try {
-    const operationId = cryptoRandom();
-    if (state.demo) {
-      await updateCharacter(state.user.uid, {
-        development: { ...initialValidation.development, [attribute]: initialValidation.next },
-        freePoints: initialValidation.nextFreePoints,
-      });
-    } else {
-      const ref = state.db.collection("characters").doc(state.user.uid);
-      const logRef = ref.collection("developmentLogs").doc(operationId);
-      await state.db.runTransaction(async (transaction) => {
-        const snapshot = await transaction.get(ref);
-        const current = snapshot.data() || {};
-        const validation = window.MILLENNIUM_CORE_31.validateDevelopmentSpend(current, attribute);
-        if (!validation.valid) throw new Error(validation.errors[0] || "Evolução recusada.");
-        const development = { ...validation.development, [attribute]: validation.next };
-        transaction.update(ref, {
-          development,
-          freePoints: validation.nextFreePoints,
-          updatedAt: nowValue(),
-        });
-        transaction.set(logRef, {
-          ownerId: state.user.uid,
-          attribute,
-          amount: 1,
-          before: validation.previous,
-          after: validation.next,
-          freePointsBefore: validation.freePoints,
-          freePointsAfter: validation.nextFreePoints,
-          idempotencyKey: operationId,
-          createdAt: nowValue(),
-        });
-      });
-      state.diagnostics.writes += 2;
-    }
-    toast(`+1 ${ATTRIBUTES.find((entry) => entry.key === attribute).short} registrado.`);
-  } finally {
-    state.developmentSpending = false;
-    scheduleRender({ preserveScroll: true, reason: "development-finish" });
   }
 }
 
@@ -11002,19 +11073,74 @@ async function finishMission(missionId) {
 
 async function submitTrainingRequest(form) {
   const values = formValues(form);
+  const type = ["training", "session", "event", "achievement", "minigame"].includes(values.type) ? values.type : "training";
   await addDoc("progressRequests", {
     uid: state.user.uid,
     playerName: state.profile?.displayName || state.user.email,
     characterName: currentCharacter().characterName || "",
-    type: "training",
+    type,
     status: "pendente",
     title: values.title,
     description: values.description,
-    xp: defaultXpForRequest("training"),
+    xp: defaultXpForRequest(type),
     createdAt: state.demo ? new Date().toISOString() : nowValue(),
   });
   form.reset();
-  toast("Treino enviado para validação.");
+  toast(`${progressTypeLabel(type)} enviado(a) para validação.`);
+}
+
+async function submitAttributeAllocationRequest(form) {
+  const character = currentCharacter();
+  if (pendingAttributeAllocation()) throw new Error("Já existe uma distribuição aguardando decisão do Oráculo.");
+  const values = formValues(form);
+  const allocation = Object.fromEntries(ATTRIBUTES.map((attribute) => [attribute.key, Number(values[`allocation_${attribute.key}`] || 0)]));
+  const validation = FOUNDATIONS.validateAttributeAllocation(character, allocation);
+  if (!validation.valid) throw new Error(validation.errors[0] || "Distribuição inválida.");
+  const description = String(values.description || "").trim().slice(0, 1200);
+  if (!description) throw new Error("Explique brevemente a evolução dos atributos.");
+  await addDoc("progressRequests", {
+    uid: state.user.uid,
+    playerName: state.profile?.displayName || state.user.email,
+    characterName: character.characterName || "",
+    type: "attributeAllocation",
+    status: "pendente",
+    title: `Distribuição de ${validation.points} ponto(s)`,
+    description,
+    allocation: validation.allocation,
+    points: validation.points,
+    xp: 0,
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  form.reset();
+  toast("Distribuição enviada. Os atributos só mudarão após a aprovação do Oráculo.");
+}
+
+async function submitAttributeRedistributionRequest(form) {
+  const character = currentCharacter();
+  if (pendingAttributeRedistribution()) throw new Error("Já existe uma redistribuição aguardando o Oráculo.");
+  const values = formValues(form);
+  const proposedBase = Object.fromEntries(ATTRIBUTES.map((attribute) => [attribute.key, Number(values[`base_${attribute.key}`])]));
+  const validation = FOUNDATIONS.validateBaseRedistribution(character, proposedBase);
+  if (!validation.valid) throw new Error(validation.errors[0] || "Redistribuição inválida.");
+  const description = String(values.description || "").trim().slice(0, 1200);
+  if (!description) throw new Error("Explique por que a nova base representa melhor o personagem.");
+  await addDoc("progressRequests", {
+    uid: state.user.uid,
+    playerName: state.profile?.displayName || state.user.email,
+    characterName: character.characterName || "",
+    type: "attributeRedistribution",
+    status: "pendente",
+    title: validation.eligibility.required ? "Regularização da base antiga" : "Redistribuição única da base",
+    description,
+    currentBase: Object.fromEntries(ATTRIBUTES.map((attribute) => [attribute.key, Number(character.base?.[attribute.key] || 0)])),
+    proposedBase: validation.proposedBase,
+    migrationVersion: 1,
+    detectedIssue: validation.eligibility.reason,
+    xp: 0,
+    createdAt: state.demo ? new Date().toISOString() : nowValue(),
+  });
+  form.reset();
+  toast("Nova base enviada. Nada da ficha será alterado antes da aprovação do Oráculo.");
 }
 
 async function submitCreationRequest(form) {
@@ -11300,7 +11426,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.5.2",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.1",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -12003,6 +12129,148 @@ async function saveAdminUser(form) {
   toast("Player atualizado. Restrições são controladas separadamente.");
 }
 
+async function saveAdminProgressionCorrection(form) {
+  const values = formValues(form);
+  const uid = values.uid;
+  const user = state.users.find((entry) => entry.id === uid);
+  if (!user || user.role === "admin" || uid === state.user?.uid) throw new Error("A progressão de contas administrativas não pode ser alterada por este painel.");
+  const reason = String(values.reason || "").trim().slice(0, 500);
+  if (!reason) throw new Error("Informe o motivo da correção administrativa.");
+  const character = getCharacterFor(uid);
+  const beforeProgression = progressionFor(character);
+  const xpDelta = Math.trunc(Number(values.xpDelta || 0));
+  const freePointsDelta = Math.trunc(Number(values.freePointsDelta || 0));
+  const attributeDelta = Math.trunc(Number(values.attributeDelta || 0));
+  const baseAmount = Math.max(0, Math.trunc(Number(values.baseAmount || 0)));
+  if (![xpDelta, freePointsDelta, attributeDelta, baseAmount].every(Number.isFinite)) throw new Error("Use somente números inteiros válidos na correção.");
+  if (Math.abs(xpDelta) > 5000 || Math.abs(freePointsDelta) > 100 || Math.abs(attributeDelta) > 100 || baseAmount > 20) throw new Error("A correção excede o limite seguro de uma única operação.");
+
+  let patch = {};
+  let working = { ...character };
+  if (xpDelta >= 0) {
+    const progression = approvedProgressionPatch(working, xpDelta);
+    patch = { ...patch, ...progression.patch };
+    working = { ...working, ...progression.patch };
+  } else {
+    patch.xp = Math.max(0, Number(working.xp || 0) + xpDelta);
+    patch.levelProgressXp = Math.max(0, Number(working.levelProgressXp || 0) + xpDelta);
+    patch.progressionVersion = 1;
+    working = { ...working, ...patch };
+  }
+
+  if (String(values.levelOverride || "").trim()) {
+    const nextLevel = Math.max(1, Math.min(Number(state.settings.levelMax || 99), Math.trunc(Number(values.levelOverride))));
+    if (!Number.isFinite(nextLevel)) throw new Error("Nível final inválido.");
+    const gainedLevels = Math.max(0, nextLevel - Number(working.level || 1));
+    patch.level = nextLevel;
+    patch.levelProgressXp = 0;
+    patch.freePoints = Number(working.freePoints || 0) + gainedLevels;
+    working = { ...working, ...patch };
+  }
+
+  let freePoints = Number(working.freePoints || 0) + freePointsDelta;
+  if (freePoints < 0) throw new Error("O ajuste deixaria o saldo de pontos livres negativo.");
+  const development = { ...window.MILLENNIUM_CORE_31.calculateCharacterStats(working, state.content).development };
+  if (values.attributeKey && attributeDelta) {
+    if (!ATTRIBUTES.some((attribute) => attribute.key === values.attributeKey)) throw new Error("Atributo de desenvolvimento inválido.");
+    const nextValue = Number(development[values.attributeKey] || 0) + attributeDelta;
+    if (nextValue < 0) throw new Error("A correção deixaria o desenvolvimento do atributo negativo.");
+    if (attributeDelta > 0 && freePoints < attributeDelta) throw new Error("Não há pontos livres suficientes para aumentar esse atributo.");
+    development[values.attributeKey] = nextValue;
+    freePoints -= attributeDelta;
+    patch.development = development;
+  }
+  patch.freePoints = freePoints;
+
+  if (baseAmount > 0) {
+    if (!values.baseFrom || !values.baseTo || values.baseFrom === values.baseTo) throw new Error("Escolha atributos-base diferentes para origem e destino.");
+    const base = { ...character.base };
+    if (Number(base[values.baseFrom] || 0) < baseAmount) throw new Error("A origem não possui pontos-base suficientes.");
+    base[values.baseFrom] = Number(base[values.baseFrom] || 0) - baseAmount;
+    base[values.baseTo] = Number(base[values.baseTo] || 0) + baseAmount;
+    const validation = window.MILLENNIUM_CORE_31.validateBaseAllocation(base);
+    if (!validation.valid) throw new Error(validation.errors[0] || "A correção da base é inválida.");
+    patch.base = validation.normalized;
+  }
+
+  if (!xpDelta && !freePointsDelta && !attributeDelta && !baseAmount && !String(values.levelOverride || "").trim()) throw new Error("Nenhuma alteração de progressão foi informada.");
+  patch.pendingGift = {
+    id: cryptoRandom(),
+    message: "O Oráculo realizou uma correção auditada em sua progressão.",
+    rewards: [`XP ${xpDelta >= 0 ? "+" : ""}${xpDelta}`, `Nível ${patch.level ?? character.level ?? 1}`, `Pontos livres ${patch.freePoints}`],
+    createdAt: new Date().toISOString(),
+    from: state.profile?.displayName || ORACLE_LABEL,
+  };
+  await updateCharacter(uid, patch, {
+    reason,
+    previousValue: { xp: character.xp || 0, level: character.level || 1, levelProgressXp: character.levelProgressXp || 0, freePoints: character.freePoints || 0, base: character.base, development: character.development },
+    nextValue: patch,
+  });
+  state.adminUserDraft = null;
+  form.reset();
+  toast(`Progressão corrigida: nível ${patch.level ?? beforeProgression.level}, ${patch.freePoints} ponto(s) livre(s).`);
+}
+
+async function releaseAttributeRedistribution(uid) {
+  if (state.role !== "admin") throw new Error("Apenas o Oráculo pode liberar esta migração.");
+  const user = state.users.find((entry) => entry.id === uid);
+  const character = getCharacterFor(uid);
+  if (!user || user.role === "admin" || uid === state.user?.uid) throw new Error("Escolha uma conta de jogador válida.");
+  const eligibility = FOUNDATIONS.attributeRedistributionEligibility(character);
+  if (eligibility.used) throw new Error("Esta ficha já utilizou a redistribuição extraordinária.");
+  await updateCharacter(uid, {
+    attributeRedistributionStatus: "available",
+    attributeRedistributionUsed: false,
+  }, {
+    reason: "Redistribuição extraordinária liberada individualmente para corrigir a ficha antiga.",
+    previousValue: { attributeRedistributionStatus: character.attributeRedistributionStatus || "legacy" },
+    nextValue: { attributeRedistributionStatus: "available" },
+  });
+  toast("Redistribuição única liberada para este jogador.");
+}
+
+async function markLegacyRedistributionsEligible() {
+  if (state.role !== "admin") throw new Error("Apenas o Oráculo pode liberar migrações.");
+  const candidates = state.characters.filter((character) => character.creationLocked
+    && Number(character.attributeRulesVersion || 0) < 2
+    && character.attributeRedistributionUsed !== true);
+  if (!candidates.length) {
+    toast("Nenhuma ficha antiga precisa ser marcada.");
+    return;
+  }
+  if (state.demo) {
+    candidates.forEach((character) => writeDemo("characters", character.ownerId || character.id, { attributeRedistributionStatus: "available", attributeRedistributionUsed: false }));
+  } else {
+    for (let offset = 0; offset < candidates.length; offset += 200) {
+      const batch = state.db.batch();
+      candidates.slice(offset, offset + 200).forEach((character) => {
+        const uid = character.ownerId || character.id;
+        const auditId = `audit-${cryptoRandom()}`;
+        batch.set(state.db.collection("auditLogs").doc(auditId), {
+          adminId: state.user.uid,
+          targetId: uid,
+          field: "attributeRedistributionStatus",
+          previousValue: character.attributeRedistributionStatus || "legacy",
+          nextValue: "available",
+          reason: "Liberação coletiva da redistribuição extraordinária para fichas anteriores à regra atual.",
+          createdAt: nowValue(),
+        });
+        batch.set(state.db.collection("characters").doc(uid), {
+          attributeRedistributionStatus: "available",
+          attributeRedistributionUsed: false,
+          lastAuditId: auditId,
+          updatedAt: nowValue(),
+        }, { merge: true });
+      });
+      await batch.commit();
+      state.diagnostics.writes += candidates.slice(offset, offset + 200).length * 2;
+    }
+    state.characters = state.characters.map((character) => candidates.includes(character) ? { ...character, attributeRedistributionStatus: "available", attributeRedistributionUsed: false } : character);
+  }
+  scheduleRender({ preserveScroll: true });
+  toast(`${candidates.length} ficha(s) antiga(s) marcada(s) como elegível(is).`);
+}
+
 function adminAccountTarget(uid) {
   const user = state.users.find((entry) => entry.id === uid);
   const character = findCharacter(uid) || getCharacterFor(uid);
@@ -12545,13 +12813,249 @@ function effectiveCreationRequest(request = {}) {
   };
 }
 
+function approvedProgressionPatch(character, xpGain) {
+  const result = FOUNDATIONS.applyApprovedXp(character, xpGain, Number(state.settings.levelMax || 99));
+  return {
+    result,
+    patch: {
+      xp: result.xp,
+      level: result.level,
+      levelProgressXp: result.levelProgressXp,
+      freePoints: result.freePoints,
+      progressionVersion: 1,
+    },
+  };
+}
+
+async function applyApprovedAttributeAllocation(request, adminNote) {
+  if (!adminNote) throw new Error("A justificativa do Oráculo é obrigatória para aprovar atributos.");
+  const character = getCharacterFor(request.uid);
+  const validation = FOUNDATIONS.validateAttributeAllocation(character, request.allocation || {});
+  if (!validation.valid) throw new Error(validation.errors[0] || "A distribuição não é mais válida para esta ficha.");
+  const previousDevelopment = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content).development;
+  const development = Object.fromEntries(ATTRIBUTES.map((attribute) => [
+    attribute.key,
+    Number(previousDevelopment[attribute.key] || 0) + Number(validation.allocation[attribute.key] || 0),
+  ]));
+  const freePoints = validation.freePoints - validation.points;
+
+  if (state.demo) {
+    await updateCharacter(request.uid, { development, freePoints });
+    await writeDoc("progressRequests", request.id, {
+      status: "aprovado",
+      decision: "approved",
+      adminNote,
+      allocationApplied: true,
+      pointsApproved: validation.points,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: new Date().toISOString(),
+    });
+    return validation;
+  }
+
+  const characterRef = state.db.collection("characters").doc(request.uid);
+  const requestRef = state.db.collection("progressRequests").doc(request.id);
+  const characterAuditId = `audit-${cryptoRandom()}`;
+  const requestAuditId = `audit-${cryptoRandom()}`;
+  await state.db.runTransaction(async (transaction) => {
+    const [characterSnapshot, requestSnapshot] = await Promise.all([
+      transaction.get(characterRef),
+      transaction.get(requestRef),
+    ]);
+    const storedCharacter = characterSnapshot.data() || {};
+    const storedRequest = requestSnapshot.data() || {};
+    if (storedRequest.allocationApplied === true || storedRequest.status === "aprovado") return;
+    if (storedRequest.status !== "pendente") throw new Error("Esta distribuição já recebeu outra decisão.");
+    const liveValidation = FOUNDATIONS.validateAttributeAllocation(storedCharacter, storedRequest.allocation || request.allocation || {});
+    if (!liveValidation.valid) throw new Error(liveValidation.errors[0] || "Saldo de pontos alterado antes da aprovação.");
+    const liveDevelopment = window.MILLENNIUM_CORE_31.calculateCharacterStats(storedCharacter, state.content).development;
+    const nextDevelopment = Object.fromEntries(ATTRIBUTES.map((attribute) => [
+      attribute.key,
+      Number(liveDevelopment[attribute.key] || 0) + Number(liveValidation.allocation[attribute.key] || 0),
+    ]));
+    const nextFreePoints = liveValidation.freePoints - liveValidation.points;
+    transaction.set(state.db.collection("auditLogs").doc(characterAuditId), {
+      adminId: state.user.uid,
+      targetId: request.uid,
+      field: "development,freePoints",
+      previousValue: { development: liveDevelopment, freePoints: liveValidation.freePoints },
+      nextValue: { development: nextDevelopment, freePoints: nextFreePoints },
+      reason: adminNote,
+      createdAt: nowValue(),
+    });
+    transaction.set(state.db.collection("auditLogs").doc(requestAuditId), {
+      adminId: state.user.uid,
+      targetId: request.id,
+      field: "status,allocationApplied,pointsApproved",
+      previousValue: { status: storedRequest.status },
+      nextValue: { status: "aprovado", pointsApproved: liveValidation.points },
+      reason: adminNote,
+      createdAt: nowValue(),
+    });
+    transaction.set(characterRef, {
+      development: nextDevelopment,
+      freePoints: nextFreePoints,
+      lastAuditId: characterAuditId,
+      updatedAt: nowValue(),
+    }, { merge: true });
+    transaction.set(requestRef, {
+      status: "aprovado",
+      decision: "approved",
+      adminNote,
+      allocationApplied: true,
+      pointsApproved: liveValidation.points,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: nowValue(),
+      lastAuditId: requestAuditId,
+      updatedAt: nowValue(),
+    }, { merge: true });
+  });
+  state.diagnostics.writes += 4;
+  state.characters = state.characters.map((entry) => (entry.ownerId || entry.id) === request.uid ? { ...entry, development, freePoints } : entry);
+  return validation;
+}
+
+async function applyApprovedAttributeRedistribution(request, adminNote) {
+  if (!adminNote) throw new Error("A justificativa do Oráculo é obrigatória para migrar a base.");
+  const character = getCharacterFor(request.uid);
+  const validation = FOUNDATIONS.validateBaseRedistribution(character, request.proposedBase || {});
+  if (!validation.valid) throw new Error(validation.errors[0] || "A redistribuição não é mais válida.");
+  const nextBase = validation.proposedBase;
+  const migrationPatch = {
+    base: nextBase,
+    attributeRulesVersion: 2,
+    attributeRedistributionStatus: "completed",
+    attributeRedistributionUsed: true,
+    attributeRedistributionOriginalBase: character.attributeRedistributionOriginalBase || character.base,
+    attributeRedistributionRequestId: request.id,
+    attributeRedistributedBy: state.user.uid,
+    attributeRedistributedAt: state.demo ? new Date().toISOString() : nowValue(),
+  };
+
+  if (state.demo) {
+    await updateCharacter(request.uid, migrationPatch);
+    await writeDoc("progressRequests", request.id, {
+      status: "aprovado",
+      decision: "approved",
+      adminNote,
+      redistributionApplied: true,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: new Date().toISOString(),
+    });
+    return { previousBase: character.base, nextBase };
+  }
+
+  const characterRef = state.db.collection("characters").doc(request.uid);
+  const requestRef = state.db.collection("progressRequests").doc(request.id);
+  const characterAuditId = `audit-${cryptoRandom()}`;
+  const requestAuditId = `audit-${cryptoRandom()}`;
+  let appliedPreviousBase = character.base;
+  await state.db.runTransaction(async (transaction) => {
+    const [characterSnapshot, requestSnapshot] = await Promise.all([transaction.get(characterRef), transaction.get(requestRef)]);
+    const storedCharacter = characterSnapshot.data() || {};
+    const storedRequest = requestSnapshot.data() || {};
+    if (storedRequest.redistributionApplied === true && storedRequest.status === "aprovado") return;
+    if (storedRequest.status !== "pendente") throw new Error("Esta redistribuição já recebeu outra decisão.");
+    if (storedCharacter.attributeRedistributionUsed === true) throw new Error("A ficha já utilizou a redistribuição extraordinária.");
+    const baseUnchanged = ATTRIBUTES.every((attribute) => Number(storedCharacter.base?.[attribute.key]) === Number(storedRequest.currentBase?.[attribute.key]));
+    if (!baseUnchanged) throw new Error("A base foi alterada depois da solicitação. Peça ao jogador para revisar e enviar novamente.");
+    const liveValidation = FOUNDATIONS.validateBaseRedistribution(storedCharacter, storedRequest.proposedBase || request.proposedBase || {});
+    if (!liveValidation.valid) throw new Error(liveValidation.errors[0] || "A migração deixou de ser elegível.");
+    appliedPreviousBase = storedCharacter.base;
+    const livePatch = {
+      base: liveValidation.proposedBase,
+      attributeRulesVersion: 2,
+      attributeRedistributionStatus: "completed",
+      attributeRedistributionUsed: true,
+      attributeRedistributionOriginalBase: storedCharacter.attributeRedistributionOriginalBase || storedCharacter.base,
+      attributeRedistributionRequestId: request.id,
+      attributeRedistributedBy: state.user.uid,
+      attributeRedistributedAt: nowValue(),
+    };
+    transaction.set(state.db.collection("auditLogs").doc(characterAuditId), {
+      adminId: state.user.uid,
+      targetId: request.uid,
+      field: "base,attributeRulesVersion,attributeRedistributionStatus",
+      previousValue: { base: storedCharacter.base, status: storedCharacter.attributeRedistributionStatus || "legacy" },
+      nextValue: { base: liveValidation.proposedBase, status: "completed" },
+      reason: adminNote,
+      createdAt: nowValue(),
+    });
+    transaction.set(state.db.collection("auditLogs").doc(requestAuditId), {
+      adminId: state.user.uid,
+      targetId: request.id,
+      field: "status,redistributionApplied",
+      previousValue: { status: storedRequest.status },
+      nextValue: { status: "aprovado", redistributionApplied: true },
+      reason: adminNote,
+      createdAt: nowValue(),
+    });
+    transaction.set(characterRef, { ...livePatch, lastAuditId: characterAuditId, updatedAt: nowValue() }, { merge: true });
+    transaction.set(requestRef, {
+      status: "aprovado",
+      decision: "approved",
+      adminNote,
+      redistributionApplied: true,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: nowValue(),
+      lastAuditId: requestAuditId,
+      updatedAt: nowValue(),
+    }, { merge: true });
+  });
+  state.diagnostics.writes += 4;
+  const nextCharacter = { ...character, ...migrationPatch, base: nextBase };
+  state.characters = state.characters.map((entry) => (entry.ownerId || entry.id) === request.uid ? { ...entry, ...nextCharacter } : entry);
+  await syncRankingProjection(nextCharacter);
+  return { previousBase: appliedPreviousBase, nextBase };
+}
+
 async function reviewProgressRequestValues(values) {
   const storedRequest = state.progressRequests.find((item) => item.id === values.requestId);
   if (!storedRequest) return;
 
   const creation = ["power", "technique"].includes(storedRequest.type);
+  const attributeAllocation = storedRequest.type === "attributeAllocation";
+  const attributeRedistribution = storedRequest.type === "attributeRedistribution";
   const decision = values.decision;
   const adminNote = String(values.adminNote || "").trim().slice(0, 2000);
+
+  if (!creation && !adminNote) throw new Error("Informe a justificativa administrativa da decisão.");
+
+  if (attributeRedistribution) {
+    if (decision === "approved") {
+      const result = await applyApprovedAttributeRedistribution(storedRequest, adminNote);
+      await addGlobalMessage({ senderId: "system", senderName: "Sistema", type: "system", text: `${getUserName(storedRequest.uid)} concluiu a migração justa de atributos sem perder a ficha.` });
+      toast(`Base migrada: ${baseAllocationSummary(result.previousBase)} → ${baseAllocationSummary(result.nextBase)}.`);
+      return;
+    }
+    await writeDoc("progressRequests", storedRequest.id, {
+      status: "reprovado",
+      decision: "rejected",
+      adminNote,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+    }, { reason: adminNote });
+    toast("Redistribuição recusada. A ficha permaneceu intacta e o jogador pode enviar outra proposta.");
+    return;
+  }
+
+  if (attributeAllocation) {
+    if (decision === "approved") {
+      const validation = await applyApprovedAttributeAllocation(storedRequest, adminNote);
+      await addGlobalMessage({ senderId: "system", senderName: "Sistema", type: "system", text: `${getUserName(storedRequest.uid)} teve ${validation.points} ponto(s) de atributo aprovado(s) pelo Oráculo.` });
+      toast("Distribuição de atributos aprovada e aplicada.");
+      return;
+    }
+    await writeDoc("progressRequests", storedRequest.id, {
+      status: "reprovado",
+      decision: "rejected",
+      adminNote,
+      reviewedBy: state.profile?.displayName || state.user.email,
+      reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
+    }, { reason: adminNote });
+    toast("Distribuição reprovada. Os pontos continuam disponíveis ao jogador.");
+    return;
+  }
 
   if (creation && decision === "reviewing") {
     await writeDoc("progressRequests", storedRequest.id, {
@@ -12608,7 +13112,7 @@ async function reviewProgressRequestValues(values) {
 
   const request = creation ? effectiveCreationRequest(storedRequest) : storedRequest;
   const status = decision === "approved" ? "aprovado" : "reprovado";
-  const xpGain = decision === "approved" && !creation ? Math.max(0, Number(values.xp || 0)) : 0;
+  const xpGain = decision === "approved" && !creation ? Math.max(0, Math.min(5000, Math.floor(Number(values.xp || 0)))) : 0;
   const goldGain = decision === "approved" && !creation ? Math.max(0, Number(values.gold || 0)) : 0;
   const essenceGain = decision === "approved" && !creation ? Math.max(0, Number(values.essences || 0)) : 0;
   const character = getCharacterFor(request.uid);
@@ -12618,35 +13122,27 @@ async function reviewProgressRequestValues(values) {
     const targetIds = (request.partyIds || []).length ? request.partyIds : [request.uid];
     for (const uid of targetIds) {
       const memberCharacter = getCharacterFor(uid);
-      const xp = Number(memberCharacter.xp || 0) + xpGain;
-      const oldLevel = Math.max(Number(memberCharacter.level || 0), levelFromXp(memberCharacter.xp || 0));
-      const level = levelFromXp(xp);
+      const progression = approvedProgressionPatch(memberCharacter, xpGain);
       const memberPatch = {
-        xp,
-        level,
+        ...progression.patch,
         gold: Number(memberCharacter.gold || 0) + goldGain,
         affinityAttempts: Number(memberCharacter.affinityAttempts || 0) + essenceGain,
         pendingGift: {
           id: cryptoRandom(),
           message: `Missão de guilda aprovada: ${request.title}.`,
-          rewards: [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 ")),
+          rewards: [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`, progression.result.gainedLevels ? `+${progression.result.gainedLevels} nível(is) e ponto(s) de atributo` : ""].filter(Boolean).filter((item) => !item.startsWith("0 ")),
           createdAt: new Date().toISOString(),
           from: state.profile?.displayName || ORACLE_LABEL,
         },
       };
-      if (level > oldLevel) memberPatch.freePoints = Number(memberCharacter.freePoints || 0) + (level - oldLevel);
       memberPatch.prestige = prestigeFor({ ...memberCharacter, ...memberPatch });
-      await updateCharacter(uid, memberPatch);
+      await updateCharacter(uid, memberPatch, { reason: adminNote });
     }
   } else if (decision === "approved") {
-    const xp = Number(character.xp || 0) + xpGain;
-    const oldLevel = Math.max(Number(character.level || 0), levelFromXp(character.xp || 0));
-    const level = levelFromXp(xp);
-    patch.xp = xp;
-    patch.level = level;
+    const progression = approvedProgressionPatch(character, xpGain);
+    Object.assign(patch, progression.patch);
     patch.gold = Number(character.gold || 0) + goldGain;
     patch.affinityAttempts = Number(character.affinityAttempts || 0) + essenceGain;
-    if (level > oldLevel) patch.freePoints = Number(character.freePoints || 0) + (level - oldLevel);
     if (request.type === "premiumPass") {
       patch.premiumPassUnlocked = true;
       patch.gold = Math.max(0, Number(character.gold || 0) - Number(request.goldCost || 1000)) + goldGain;
@@ -12691,7 +13187,14 @@ async function reviewProgressRequestValues(values) {
       }];
     }
     patch.prestige = prestigeFor({ ...character, ...patch });
-    const approvedRewards = [`${xpGain} XP`, `${goldGain} PO`, `${essenceGain} essência(s)`].filter((item) => !item.startsWith("0 "));
+    const approvedRewards = [
+      `${xpGain} XP`,
+      `${goldGain} PO`,
+      `${essenceGain} essência(s)`,
+      progression.result.gainedLevels ? `+${progression.result.gainedLevels} nível(is)` : "",
+      progression.result.gainedAttributePoints ? `+${progression.result.gainedAttributePoints} ponto(s) de atributo` : "",
+      progression.result.unlockedTechniqueLevels.length ? `Técnica liberada no nível ${progression.result.unlockedTechniqueLevels.join(", ")}` : "",
+    ].filter(Boolean).filter((item) => !item.startsWith("0 "));
     if (creation) approvedRewards.push(`${progressTypeLabel(request.type)} aprovado`);
     if (request.type === "premiumPass") approvedRewards.push("Passe premium liberado");
     patch.pendingGift = {
@@ -12701,7 +13204,7 @@ async function reviewProgressRequestValues(values) {
       createdAt: new Date().toISOString(),
       from: state.profile?.displayName || ORACLE_LABEL,
     };
-    await updateCharacter(request.uid, patch);
+    await updateCharacter(request.uid, patch, { reason: adminNote });
     await writeApprovedCreationRecord(request, adminNote);
   }
 
@@ -12714,6 +13217,8 @@ async function reviewProgressRequestValues(values) {
     xpApproved: xpGain,
     goldApproved: goldGain,
     essencesApproved: essenceGain,
+    levelsGranted: decision === "approved" && !creation ? Math.max(0, Number(patch.level || character.level || 1) - Number(character.level || 1)) : 0,
+    attributePointsGranted: decision === "approved" && !creation ? Math.max(0, Number(patch.freePoints || 0) - Number(character.freePoints || 0)) : 0,
     reviewedBy: state.profile?.displayName || state.user.email,
     reviewedAt: state.demo ? new Date().toISOString() : nowValue(),
   }, { reason: `Decisão final em ${progressTypeLabel(request.type)}: ${request.title}.` });
@@ -12734,6 +13239,9 @@ async function quickApproveRequest(requestId) {
   if (!request) return;
   if (["power", "technique"].includes(request.type)) {
     throw new Error("Poderes e técnicas exigem análise, confirmação do player e aprovação final.");
+  }
+  if (["attributeAllocation", "attributeRedistribution"].includes(request.type)) {
+    throw new Error("Alterações de atributo exigem comparação e justificativa explícita do Oráculo.");
   }
   await reviewProgressRequestValues({
     requestId,
@@ -13369,7 +13877,6 @@ function wireEvents() {
       if (action === "character-step-next") moveCharacterStep(1, button.closest("form"));
       if (action === "character-step-prev") moveCharacterStep(-1, button.closest("form"));
       if (action === "attribute-step") adjustRegistrationAttribute(button.dataset.attr, Number(button.dataset.delta || 0), button.closest("form"));
-      if (action === "spend-development") await spendDevelopmentPoint(button.dataset.attr);
       if (action === "add-emoji") {
         const textarea = button.closest("form")?.querySelector("textarea[name='text']");
         if (textarea) {
@@ -13583,6 +14090,8 @@ function wireEvents() {
       if (action === "recycle-missions") await resetWeeklyMissions(true);
       if (action === "mark-report") await markReport(button.dataset.reportId, button.dataset.status);
       if (action === "rebuild-rankings") await rebuildRankingProjections();
+      if (action === "mark-legacy-redistributions") await markLegacyRedistributionsEligible();
+      if (action === "release-attribute-redistribution") await releaseAttributeRedistribution(button.dataset.userId);
       if (action === "panic-refresh") await panicRefresh();
       if (action === "toggle-maintenance") await toggleMaintenance(button.dataset.mode);
       if (action === "start-rpg") await startRpg();
@@ -13710,7 +14219,9 @@ function wireEvents() {
       if (type === "guild-invite") await sendGuildInvite(form);
       if (type === "guild-chat") await sendGuildChat(form);
       if (type === "start-guild-mission") await startGuildMission(form);
-      if (type === "training-request") await submitTrainingRequest(form);
+      if (["training-request", "progression-request"].includes(type)) await submitTrainingRequest(form);
+      if (type === "attribute-allocation-request") await submitAttributeAllocationRequest(form);
+      if (type === "attribute-redistribution-request") await submitAttributeRedistributionRequest(form);
       if (type === "creation-request") await submitCreationRequest(form);
       if (type === "bug-report") await submitReport("bug", form);
       if (type === "player-report") await submitReport("denuncia", form);
@@ -13795,6 +14306,7 @@ function wireEvents() {
         form.reset();
       }
       if (type === "admin-user-edit") await saveAdminUser(form);
+      if (type === "admin-progression-correction") await saveAdminProgressionCorrection(form);
       if (type === "admin-add-item") await adminAddItem(form);
       if (type === "admin-reward") await sendReward(form);
       if (type === "admin-mail") await sendAdminMail(form);

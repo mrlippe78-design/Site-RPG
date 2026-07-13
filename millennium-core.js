@@ -4,8 +4,8 @@
   const ATTRIBUTE_KEYS = Object.freeze(["for", "vel", "hab", "res", "pod"]);
   const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || { itemMatch: (instance, catalog) => (catalog || []).find((item) => item?.id === (instance?.catalogId || instance?.itemId || instance?.sourceId || instance?.id)) || null };
   const ZERO_ATTRIBUTES = Object.freeze({ for: 0, vel: 0, hab: 0, res: 0, pod: 0 });
-  const BASE_MIN = 2;
-  const BASE_MAX = 6;
+  const BASE_MIN = 0;
+  const BASE_MAX = Number.POSITIVE_INFINITY;
   const BASE_TOTAL = 20;
 
   function numeric(value) {
@@ -130,7 +130,6 @@
   function calculateCharacterStats(character = {}, catalogs = {}, context = {}) {
     const baseInspection = inspectAttributeMap(character.base, {
       min: 0,
-      max: BASE_MAX,
       integer: true,
       requireAll: true,
     });
@@ -142,7 +141,7 @@
 
     // Corrupted values are quarantined for calculations, but retained in raw diagnostics.
     // Nothing is silently written back to Firestore.
-    const base = attributes(character.base, { min: 0, max: BASE_MAX, integer: true });
+    const base = attributes(character.base, { min: 0, integer: true });
     const development = attributes(character.development, { min: 0, integer: true });
     const race = byId(catalogs.races, character.raceId);
     const classEntry = byId(catalogs.classes, character.classId);
@@ -199,7 +198,6 @@
   function validateBaseAllocation(base = {}) {
     const inspection = inspectAttributeMap(base, {
       min: BASE_MIN,
-      max: BASE_MAX,
       integer: true,
       requireAll: true,
     });
@@ -211,15 +209,14 @@
     if (inspection.unexpectedKeys.length) errors.push("A base contém campos de atributo não reconhecidos.");
     if (inspection.invalidKeys.length) errors.push("Use somente números válidos nos cinco atributos.");
     if (inspection.nonIntegerKeys.length) errors.push("Atributos-base aceitam apenas números inteiros.");
-    if (inspection.belowMinimumKeys.length) errors.push(`Cada atributo-base deve ter no mínimo ${BASE_MIN}.`);
-    if (inspection.aboveMaximumKeys.length) errors.push(`Cada atributo-base deve ter no máximo ${BASE_MAX}.`);
+    if (inspection.belowMinimumKeys.length) errors.push("Atributos-base não podem ser negativos.");
     if (spent !== BASE_TOTAL) errors.push(`Distribua exatamente ${BASE_TOTAL} pontos-base.`);
 
     return {
       ...inspection,
       valid: inspection.valid && spent === BASE_TOTAL,
       integer: !inspection.nonIntegerKeys.length,
-      withinRange: !inspection.belowMinimumKeys.length && !inspection.aboveMaximumKeys.length,
+      withinRange: !inspection.belowMinimumKeys.length,
       spent,
       remaining: BASE_TOTAL - spent,
       normalized: inspection.normalized,
@@ -271,7 +268,6 @@
     if (base.invalidKeys.length) issues.push({ code: "base-invalid", severity: "critical", message: "A base contém valor vazio, NaN ou infinito.", keys: base.invalidKeys });
     if (base.nonIntegerKeys.length) issues.push({ code: "base-non-integer", severity: "critical", message: "A base contém valor fracionário.", keys: base.nonIntegerKeys });
     if (base.belowMinimumKeys.length) issues.push({ code: "base-below-min", severity: "critical", message: "A base contém atributo abaixo do mínimo permitido.", keys: base.belowMinimumKeys });
-    if (base.aboveMaximumKeys.length) issues.push({ code: "base-over-cap", severity: "critical", message: "A base contém atributo acima do limite inicial 6. O valor foi isolado do cálculo até revisão do Oráculo.", keys: base.aboveMaximumKeys });
     if (character.creationLocked && rawBaseSum !== BASE_TOTAL) issues.push({ code: "base-sum", severity: "high", message: `A soma da base bloqueada é ${rawBaseSum ?? "inválida"}; o esperado é ${BASE_TOTAL}.` });
 
     if (development.missingKeys.length || development.invalidKeys.length || development.nonIntegerKeys.length || development.belowMinimumKeys.length) {
@@ -306,7 +302,7 @@
   }
 
   function manifestationGrade(character = {}, statsResult = null) {
-    const stats = statsResult || { total: attributes(character.base, { min: 0, max: BASE_MAX, integer: true }) };
+    const stats = statsResult || { total: attributes(character.base, { min: 0, integer: true }) };
     const total = ATTRIBUTE_KEYS.reduce((sum, key) => sum + finite(stats.total?.[key]), 0);
     const officialMilestones = finite(character.level) * 3
       + finite(character.prestige) / 20
@@ -363,7 +359,7 @@
       regionId: character.regionId || "",
       currentLocation: character.currentLocation || "Limiar das Cortinas",
       affinityId: character.affinityId || "",
-      base: attributes(character.base, { min: 0, max: BASE_MAX, integer: true }),
+      base: attributes(character.base, { min: 0, integer: true }),
       development: attributes(character.development, { min: 0, integer: true }),
       level: finite(character.level) || 1,
       xp: finite(character.xp),
