@@ -1,0 +1,22 @@
+{
+  "build": "3.2.1",
+  "generatedAt": "2026-07-13",
+  "nodeTests": {
+    "passed": 67,
+    "failed": 0
+  },
+  "chromiumChecks": {
+    "passed": 27,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "productionVulnerabilities": {
+    "total": 0
+  },
+  "firestoreEmulator": {
+    "completed": false,
+    "reason": "Download of cloud-firestore-emulator-v1.21.0.jar was blocked in this environment.",
+    "command": "npm run test:rules"
+  }
+}

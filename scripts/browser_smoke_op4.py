@@ -19,6 +19,7 @@ SCRIPT_ORDER = [
     'build-info.js',
     'millennium-stability.js',
     'millennium-world-alive.js',
+    'millennium-account-management.js',
     'catalogs-3.1.js',
     'millennium-core.js',
     'millennium-journey.js',
@@ -27,7 +28,7 @@ SCRIPT_ORDER = [
     'content-v3.js',
     'app.js',
 ]
-CSS_ORDER = ['styles.css', 'overrides.css', 'journey.css', 'backend.css', 'polish.css', 'world-alive.css']
+CSS_ORDER = ['styles.css', 'overrides.css', 'journey.css', 'backend.css', 'polish.css', 'world-alive.css', 'account-management.css']
 
 
 def load_project_inline(page, root: Path):
@@ -55,7 +56,7 @@ def load_project_inline(page, root: Path):
 
     page.route('**/*', route_handler)
     html = (root / 'index.html').read_text(encoding='utf-8')
-    html = re.sub(r'<link[^>]+(?:styles\.css|overrides\.css|journey\.css|backend\.css|polish\.css|world-alive\.css)[^>]*>', '', html)
+    html = re.sub(r'<link[^>]+(?:styles\.css|overrides\.css|journey\.css|backend\.css|polish\.css|world-alive\.css|account-management\.css)[^>]*>', '', html)
     html = re.sub(r'<script\s+src="[^"]+"[^>]*></script>', '', html)
     css = '\n'.join((root / name).read_text(encoding='utf-8') for name in CSS_ORDER if (root / name).exists())
     html = html.replace('<head>', '<head><base href="http://millennium.local/"><style>' + css + '</style>', 1)
@@ -245,6 +246,13 @@ def run_current(browser):
     page.on('pageerror', lambda exc: page_errors.append(str(exc)))
     load_project_inline(page, ROOT)
     enter_demo(page, 'admin')
+    click_nav(page, 'admin-users')
+    page.wait_for_selector('.account-management-grid', timeout=8000)
+    check('Painel separa reset, moderação e exclusão', page.locator('.account-management-card').count() == 3, {'cards': page.locator('.account-management-card').count()})
+    check('Reset de ficha está disponível ao Oráculo', page.locator('[data-action="admin-reset-character"]').count() == 1)
+    check('Suspensão e banimento estão separados', page.locator('[data-action="admin-suspend-account"]').count() == 1 and page.locator('[data-action="admin-ban-account"]').count() == 1)
+    check('Exclusão definitiva possui ação própria', page.locator('[data-action="admin-delete-account"]').count() == 1)
+    page.screenshot(path=str(SHOTS / 'account-management-admin-3.2.1.png'), full_page=False)
     click_nav(page, 'admin-ops')
     page.wait_for_selector('.diagnostic-console', timeout=8000)
     text = page.locator('.diagnostic-console').inner_text()
@@ -289,12 +297,13 @@ def main():
     result['screenshots'] = {**before, 'after': [
         'qa/screenshots/codex-mobile-after.png',
         'qa/screenshots/admin-diagnostics-after.png',
+        'qa/screenshots/account-management-admin-3.2.1.png',
         'qa/screenshots/gacha-rotation-mobile.png',
         'qa/screenshots/gacha-probabilidades-mobile.png',
         'qa/screenshots/criacoes-player-mobile.png',
         'qa/screenshots/ritual-dos-selos-mobile.png',
     ]}
-    (QA / 'operation4-browser-smoke.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    (QA / 'account-management-browser-smoke-3.2.1.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(result, ensure_ascii=False, indent=2))
     raise SystemExit(1 if result['failed'] or result['pageErrors'] or result['consoleErrors'] else 0)
 

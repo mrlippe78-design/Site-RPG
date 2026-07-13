@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T02:46:17.654860+00:00",
+  "generatedAt": "2026-07-13T02:58:01.717787+00:00",
   "mode": "Chromium local DOM; mobile emulation and desktop",
   "checks": [
     {
@@ -78,7 +78,7 @@
       "name": "Gacha mostra contagem regressiva horária",
       "passed": true,
       "details": {
-        "countdown": "13:47"
+        "countdown": "Próxima rotação em 02:03"
       }
     },
     {
@@ -120,6 +120,28 @@
       }
     },
     {
+      "name": "Painel separa reset, moderação e exclusão",
+      "passed": true,
+      "details": {
+        "cards": 3
+      }
+    },
+    {
+      "name": "Reset de ficha está disponível ao Oráculo",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Suspensão e banimento estão separados",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Exclusão definitiva possui ação própria",
+      "passed": true,
+      "details": null
+    },
+    {
       "name": "Demo Admin abre diagnóstico da Interface",
       "passed": true,
       "details": null
@@ -154,7 +176,7 @@
       }
     }
   ],
-  "passed": 23,
+  "passed": 27,
   "failed": 0,
   "pageErrors": [],
   "consoleErrors": [],
@@ -168,6 +190,7 @@
     "after": [
       "qa/screenshots/codex-mobile-after.png",
       "qa/screenshots/admin-diagnostics-after.png",
+      "qa/screenshots/account-management-admin-3.2.1.png",
       "qa/screenshots/gacha-rotation-mobile.png",
       "qa/screenshots/gacha-probabilidades-mobile.png",
       "qa/screenshots/criacoes-player-mobile.png",

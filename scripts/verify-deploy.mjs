@@ -8,7 +8,7 @@ const valueFor = (name, fallback) => {
 };
 
 const baseUrl = new URL(valueFor("--url", "https://mrlippe78-design.github.io/Site-RPG/"));
-const expectedBuild = valueFor("--build", "3.2.0");
+const expectedBuild = valueFor("--build", "3.2.1");
 const expectedCommit = valueFor("--commit", "");
 const attempts = Math.max(1, Number(valueFor("--attempts", "4")) || 4);
 const waitMs = Math.max(0, Number(valueFor("--wait-ms", "15000")) || 15000);
