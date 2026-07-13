@@ -35,4 +35,4 @@ jobs:
         with:
           node-version: 22
       - name: Verify published build and required files
-        run: node scripts/verify-deploy.mjs --build 3.2.0
+        run: node scripts/verify-deploy.mjs --build 3.2.1

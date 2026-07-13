@@ -122,3 +122,12 @@
 - Reforçou gacha, Pet Hunt, correio e minigames com persistência, limites e chaves de conclusão.
 - Adicionou o minigame Ritual dos Selos.
 - Atualizou build, cache, Service Worker, testes, regras e documentação para 3.2.0.
+## 3.2.1 — Gestão de contas
+
+- Separação entre reset de ficha, suspensão, banimento e exclusão definitiva.
+- Tela de restrição sem carregamento das funções do jogador.
+- Exclusão do Firestore com confirmação manual posterior no Firebase Authentication.
+- Proteção contra recriação automática durante exclusão pendente.
+- Auditoria, idempotência e lock transacional por conta.
+- Regras e testes atualizados.
+

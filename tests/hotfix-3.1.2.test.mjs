@@ -10,9 +10,9 @@ const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
 const build = await readFile(new URL("../build-info.js", import.meta.url), "utf8");
 
-test("build 3.2.0 is synchronized", () => {
-  assert.match(build, /version:\s*"3\.2\.0"/);
-  assert.match(build, /millennium-shell-v3\.2\.0/);
+test("build 3.2.1 is synchronized", () => {
+  assert.match(build, /version:\s*"3\.2\.1"/);
+  assert.match(build, /millennium-shell-v3\.2\.1/);
 });
 
 test("creation flow is controlled by the Oracle", () => {
@@ -35,12 +35,14 @@ test("ranking is derived from eligible registered sheets", () => {
   assert.doesNotMatch(app, /prestige:\s*Number\(values\.prestige/);
 });
 
-test("Oracle can manage classes and remove test records", () => {
+test("Oracle can manage classes and account lifecycle", () => {
   assert.match(app, /Classes salvas aqui aparecem automaticamente no Codex/);
   assert.match(app, /classOwnerCount\(item\.id\)/);
-  assert.match(app, /admin-delete-character/);
-  assert.match(app, /admin-delete-player/);
-  assert.match(rules, /match \/deletedUsers\/\{uid\}/);
+  assert.match(app, /admin-reset-character/);
+  assert.match(app, /admin-suspend-account/);
+  assert.match(app, /admin-ban-account/);
+  assert.match(app, /admin-delete-account/);
+  assert.match(rules, /match \/accountDeletionQueue\/\{uid\}/);
   assert.match(rules, /allow delete: if isAdmin\(\) && request\.auth\.uid != uid/);
   assert.match(rules, /function validCreationPlayerResponse\(/);
 });

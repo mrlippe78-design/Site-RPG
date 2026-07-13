@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.1.2", commit: "dev", cacheName: "millennium-shell-v3.1.2" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.2.1", commit: "dev", cacheName: "millennium-shell-v3.2.1" };
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -49,6 +49,17 @@ const WORLD = window.MILLENNIUM_WORLD_ALIVE_32 || {
   publicRates: () => [],
   itemMatch: () => null,
   sealSequence: () => ["◇", "△", "✦", "◈"],
+};
+const ACCOUNT_MGMT = window.MILLENNIUM_ACCOUNT_MANAGEMENT_321 || {
+  CHARACTER_SUBCOLLECTIONS: ["lore", "inventory", "pets", "titles", "powers", "techniques", "activities", "missions", "achievements", "discoveries", "history", "developmentLogs", "rewards", "minigameRuns"],
+  normalizeStatus: (profile = {}, now = Date.now()) => { const status = profile.accountStatus || profile.status || "active"; const until = Date.parse(profile.suspendedUntil || profile.bannedUntil || "") || 0; return status === "suspended" && until && until <= now ? "active" : status; },
+  isRestricted: (profile = {}, now = Date.now()) => ["suspended", "banned", "deletion_pending"].includes((profile.accountStatus || profile.status || "active").toLowerCase()) && !((profile.accountStatus || profile.status) === "suspended" && (Date.parse(profile.suspendedUntil || profile.bannedUntil || "") || 0) <= now),
+  suspensionUntil: (_preset, now = Date.now()) => now + 3600000,
+  restrictionCountdown: () => ({ status: "active", remainingMs: 0, label: "" }),
+  validateOperation: () => true,
+  operationRecord: (data) => data,
+  deletionQueueRecord: (data) => data,
+  isPendingCharacterRequest: (request = {}) => ["pendente", "em análise", "aguardando resposta do player", "contestado pelo player"].includes(String(request.status || "").toLowerCase()),
 };
 
 const UPDATE_DRAFT_KEY = "millennium:3.2:update-draft";
@@ -730,6 +741,12 @@ const state = {
   characterSaving: false,
   developmentSpending: false,
   adminUserDraft: null,
+  adminOperationInProgress: false,
+  adminOperationKey: "",
+  adminOperationTargetUid: "",
+  accountDeletionQueue: null,
+  accountDeletionQueueEntries: [],
+  restrictionTimer: 0,
   minigameDrafts: {},
   forceChatBottom: "",
   renderFrame: 0,
@@ -751,6 +768,7 @@ const state = {
   routeSubscriptionKey: "",
   routeSubscriptionNames: [],
   privateUnsub: null,
+  characterUnsub: null,
   renderContext: null,
   diagnostics: {
     renders: 0,
@@ -1372,6 +1390,54 @@ function currentCharacter() {
   const fallback = defaultCharacter(state.user?.uid || "demo", state.profile?.displayName || "");
   state.character = fallback;
   return fallback;
+}
+
+function normalizedAccountStatus(profile = state.profile, now = Date.now()) {
+  const merged = state.accountDeletionQueue
+    ? { ...(profile || {}), accountStatus: "deletion_pending", deletionQueue: state.accountDeletionQueue }
+    : (profile || {});
+  return ACCOUNT_MGMT.normalizeStatus(merged, now);
+}
+
+function accountIsRestricted(profile = state.profile, now = Date.now()) {
+  if (state.role === "admin") return false;
+  if (state.accountDeletionQueue) return true;
+  return ACCOUNT_MGMT.isRestricted(profile || {}, now);
+}
+
+function stopPresenceTracking() {
+  stopPresenceTracking();
+  clearRestrictionTimer();
+}
+
+function clearRestrictionTimer() {
+  if (state.restrictionTimer) window.clearInterval(state.restrictionTimer);
+  state.restrictionTimer = 0;
+}
+
+function updateRestrictionCountdown() {
+  const element = document.querySelector("[data-restriction-countdown]");
+  const status = normalizedAccountStatus();
+  if (status !== "suspended") {
+    clearRestrictionTimer();
+    if (!accountIsRestricted()) {
+      document.body.classList.remove("account-restricted");
+      activateRouteSubscriptions(state.view);
+      startPresence();
+      scheduleRender({ critical: true, reason: "restriction-expired" });
+    }
+    return;
+  }
+  const countdown = ACCOUNT_MGMT.restrictionCountdown(state.profile || {}, Date.now());
+  if (element) element.textContent = countdown.label || "Encerrando...";
+}
+
+function startRestrictionCountdown() {
+  clearRestrictionTimer();
+  updateRestrictionCountdown();
+  if (normalizedAccountStatus() === "suspended") {
+    state.restrictionTimer = window.setInterval(updateRestrictionCountdown, 1000);
+  }
 }
 
 function getUserName(uid) {
@@ -2220,6 +2286,8 @@ function mondayResetKey(date = new Date()) {
 }
 
 function showAuth() {
+  document.body.classList.remove("account-restricted");
+  clearRestrictionTimer();
   $("#authScreen").hidden = false;
   $("#appShell").hidden = true;
   updateMusicButton();
@@ -2244,7 +2312,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Atualize o site e as regras para o Hotfix 3.1.2.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.2.1.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2297,10 +2365,9 @@ function cleanupListeners() {
   clearRouteSubscriptions();
   if (state.privateUnsub) state.privateUnsub();
   state.privateUnsub = null;
-  if (state.presenceTimer) window.clearInterval(state.presenceTimer);
-  state.presenceTimer = null;
-  if (state.idleTimer) window.clearInterval(state.idleTimer);
-  state.idleTimer = null;
+  state.characterUnsub = null;
+  stopPresenceTracking();
+  clearRestrictionTimer();
   if (state.renderFrame) window.cancelAnimationFrame(state.renderFrame);
   state.renderFrame = 0;
   if (state.renderTimer) window.clearTimeout(state.renderTimer);
@@ -2382,11 +2449,27 @@ async function initFirebase() {
 }
 
 async function ensureUserProfile(user) {
+  const queueRef = state.db.collection("accountDeletionQueue").doc(user.uid);
+  const queueSnap = await queueRef.get().catch(() => null);
+  if (queueSnap?.exists && queueSnap.data()?.status === "awaiting-auth-delete") {
+    state.accountDeletionQueue = { id: user.uid, ...queueSnap.data() };
+    state.profile = {
+      id: user.uid,
+      email: user.email || queueSnap.data()?.email || "",
+      displayName: queueSnap.data()?.displayName || "Usuário removido",
+      role: "player",
+      accountStatus: "deletion_pending",
+      restrictionReason: "Os dados desta conta foram removidos. A exclusão da credencial está pendente no Firebase Authentication.",
+    };
+    return;
+  }
+
+  state.accountDeletionQueue = null;
   const ref = state.db.collection("users").doc(user.uid);
   const snap = await ref.get();
 
   if (snap.exists) {
-    state.profile = { id: user.uid, ...snap.data() };
+    state.profile = { id: user.uid, accountStatus: "active", ...snap.data() };
     return;
   }
 
@@ -2395,6 +2478,9 @@ async function ensureUserProfile(user) {
     email: user.email,
     displayName: user.email?.split("@")[0] || "Player",
     role: "player",
+    accountStatus: "active",
+    restrictionReason: "",
+    suspendedUntil: null,
     createdAt: nowValue(),
   };
   await ref.set(profile, { merge: true });
@@ -2435,6 +2521,7 @@ function subscribeDoc(path, id, cb) {
   }, (error) => console.error(`Listener ${path}/${id}:`, error));
   state.unsubs.push(unsub);
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + (state.privateUnsub ? 1 : 0);
+  return unsub;
 }
 
 function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsubs) {
@@ -2517,6 +2604,10 @@ function activateRouteSubscriptions(view = state.view) {
       state.characters = characters;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
     }, (query) => query.limit(80));
+    routeCollection("accountDeletionQueue", (entries) => {
+      state.accountDeletionQueueEntries = entries;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
+    }, (query) => query.orderBy("createdAt", "desc").limit(30), "account-deletion-queue");
   }
 
   if (["player-home", "missions", "guild", "admin-home", "admin-missions"].includes(view)) {
@@ -2790,30 +2881,97 @@ function profileRenderKey(profile = {}) {
   return JSON.stringify({
     displayName: profile.displayName || "",
     role: profile.role || "player",
-    status: profile.status || "",
-    bannedUntil: timeValue(profile.bannedUntil),
-    moderationReason: profile.moderationReason || "",
+    accountStatus: profile.accountStatus || profile.status || "active",
+    suspendedUntil: timeValue(profile.suspendedUntil || profile.bannedUntil),
+    restrictionReason: profile.restrictionReason || profile.moderationReason || "",
+    restrictedAt: timeValue(profile.restrictedAt),
+    restrictedBy: profile.restrictedBy || "",
     acceptedTermsVersion: profile.acceptedTermsVersion || "",
     panicOfflineAt: timeValue(profile.panicOfflineAt),
+    deletionQueue: Boolean(state.accountDeletionQueue),
+  });
+}
+
+function stopCharacterSubscription() {
+  if (!state.characterUnsub) return;
+  try { state.characterUnsub(); } catch { /* no-op */ }
+  state.unsubs = state.unsubs.filter((unsub) => unsub !== state.characterUnsub);
+  state.characterUnsub = null;
+  state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + (state.privateUnsub ? 1 : 0);
+}
+
+function startCharacterSubscription() {
+  if (state.demo || !state.db || !state.user || state.characterUnsub || accountIsRestricted(state.profile)) return;
+  state.characterUnsub = subscribeDoc("characters", state.user.uid, async (character) => {
+    if (!character) {
+      state.character = null;
+      if (state.accountDeletionQueue || accountIsRestricted(state.profile)) {
+        scheduleRender({ critical: true, preserveFocus: true, preserveScroll: true, reason: "character-removed-restricted" });
+        return;
+      }
+      await state.db.collection("characters").doc(state.user.uid).set(defaultCharacter(state.user.uid, state.profile?.displayName), { merge: true });
+      return;
+    }
+    state.character = character;
+    if (state.role !== "admin") state.characters = [character];
+    scheduleRender({ preserveFocus: true, preserveScroll: true });
   });
 }
 
 function subscribeCore() {
+  subscribeDoc("accountDeletionQueue", state.user.uid, (queue) => {
+    state.accountDeletionQueue = queue?.status === "awaiting-auth-delete" ? queue : null;
+    if (state.accountDeletionQueue) {
+      state.profile = {
+        ...(state.profile || {}),
+        id: state.user.uid,
+        accountStatus: "deletion_pending",
+        restrictionReason: "Os dados desta conta foram removidos. A exclusão da credencial está pendente no Firebase Authentication.",
+      };
+      clearRouteSubscriptions();
+      stopCharacterSubscription();
+      stopPresenceTracking();
+    }
+    scheduleRender({ critical: true, preserveFocus: true, preserveScroll: true, reason: "account-deletion-queue" });
+  });
+
   subscribeDoc("users", state.user.uid, (profile) => {
     const previousRole = state.role;
+    const previousBlocked = accountIsRestricted(state.profile);
     const previousKey = profileRenderKey(state.profile || {});
-    state.profile = profile || state.profile;
+    if (profile) {
+      state.profile = { accountStatus: "active", ...profile };
+    } else if (state.accountDeletionQueue) {
+      state.profile = {
+        ...(state.profile || {}),
+        id: state.user.uid,
+        accountStatus: "deletion_pending",
+        restrictionReason: "Os dados desta conta foram removidos. A exclusão da credencial está pendente no Firebase Authentication.",
+      };
+    }
     state.role = state.profile?.role === "admin" ? "admin" : "player";
+    const blocked = accountIsRestricted(state.profile);
     if (!NAVS[state.role].some((item) => item.id === state.view)) state.view = NAVS[state.role][0].id;
     if (previousRole !== state.role) {
       clearRouteSubscriptions();
+      if (!blocked) activateRouteSubscriptions(state.view);
+    }
+    if (blocked) {
+      clearRouteSubscriptions();
+      stopCharacterSubscription();
+      stopPresenceTracking();
+      setPresence(false).catch(() => {});
+    } else if (previousBlocked && !blocked) {
+      startCharacterSubscription();
       activateRouteSubscriptions(state.view);
+      startPresence();
     }
     if (previousKey !== profileRenderKey(state.profile || {})) {
       scheduleRender({
-        critical: previousRole !== state.role || ["suspended", "banned"].includes(state.profile?.status),
+        critical: previousRole !== state.role || blocked || previousBlocked !== blocked,
         preserveFocus: true,
         preserveScroll: true,
+        reason: "profile-access-change",
       });
     }
   });
@@ -2848,21 +3006,20 @@ function subscribeCore() {
     });
   });
 
-  subscribeDoc("characters", state.user.uid, async (character) => {
-    if (!character) {
-      await state.db.collection("characters").doc(state.user.uid).set(defaultCharacter(state.user.uid, state.profile?.displayName));
-      return;
-    }
-    state.character = character;
-    if (state.role !== "admin") state.characters = [character];
-    scheduleRender({ preserveFocus: true, preserveScroll: true });
-  });
+  startCharacterSubscription();
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
-  activateRouteSubscriptions(state.view);
-  startPresence();
-  announceSessionEntry();
+  if (accountIsRestricted(state.profile)) {
+    clearRouteSubscriptions();
+    stopCharacterSubscription();
+    stopPresenceTracking();
+  } else {
+    startCharacterSubscription();
+    activateRouteSubscriptions(state.view);
+    startPresence();
+    announceSessionEntry();
+  }
   render();
 }
 
@@ -3136,7 +3293,10 @@ function render() {
   updateMusicButton();
   const nav = NAVS[state.role];
   if (!nav.some((item) => item.id === state.view)) state.view = nav[0].id;
-  activateRouteSubscriptions(state.view);
+  const accessRestricted = accountIsRestricted(state.profile);
+  document.body.classList.toggle("account-restricted", accessRestricted);
+  if (accessRestricted) clearRouteSubscriptions();
+  else activateRouteSubscriptions(state.view);
   $("#roleLabel").textContent = state.role === "admin" ? ORACLE_LABEL : "Player";
   $("#seasonLabel").textContent = state.settings.seasonName || `Temporada ${state.settings.seasonNumber || 1}`;
   $("#contextLabel").textContent = state.role === "admin" ? "Oráculo da interface" : "Suporte do personagem";
@@ -3149,11 +3309,13 @@ function render() {
   updateLiveShell();
   STABILITY.replaceHtmlIfChanged($("#mobileBottomNav"), renderMobileBottomNav(nav));
 
-  if (state.role !== "admin" && ["suspended", "banned"].includes(state.profile?.status)) {
-    STABILITY.replaceHtmlIfChanged($("#viewHost"), renderSuspendedGate());
+  if (accessRestricted) {
+    STABILITY.replaceHtmlIfChanged($("#viewHost"), renderAccountRestrictionGate());
+    startRestrictionCountdown();
     finishRender(startedAt);
     return;
   }
+  clearRestrictionTimer();
   if (state.role !== "admin" && state.settings.maintenanceMode) {
     STABILITY.replaceHtmlIfChanged($("#viewHost"), renderMaintenanceGate());
     finishRender(startedAt);
@@ -3343,18 +3505,32 @@ function renderMaintenanceGate() {
   `;
 }
 
-function renderSuspendedGate() {
-  const banned = state.profile?.status === "banned";
-  const until = dateFromValue(state.profile?.bannedUntil);
+function renderAccountRestrictionGate() {
+  const status = normalizedAccountStatus();
+  const profile = state.profile || {};
+  const suspended = status === "suspended";
+  const banned = status === "banned";
+  const deletionPending = status === "deletion_pending" || Boolean(state.accountDeletionQueue);
+  const until = dateFromValue(profile.suspendedUntil || profile.bannedUntil);
+  const reason = profile.restrictionReason || profile.moderationReason || state.accountDeletionQueue?.reason || "Entre em contato com o Oráculo para obter mais informações.";
+  const heading = deletionPending ? "Exclusão pendente" : banned ? "Conta banida" : "Conta suspensa";
+  const title = deletionPending
+    ? "Os dados desta conta foram removidos"
+    : banned
+      ? "A Interface recusou este registro"
+      : "Seu acesso foi pausado pelo Oráculo";
   return `
-    <div class="grid">
-      <article class="panel span-12 center-panel danger-zone">
-        <p class="eyebrow">${banned ? "Acesso banido" : "Conta suspensa"}</p>
-        <h2>${banned ? "A Interface recusou este registro" : "Seu acesso foi pausado pelo Oráculo"}</h2>
-        <p>${esc(state.profile?.moderationReason || "Entre em contato com o Oráculo pelo canal combinado para entender a decisão e o caminho de recurso.")}</p>
-        ${until ? `<span class="tag danger">Revisão prevista: ${esc(until.toLocaleString("pt-BR"))}</span>` : ""}
+    <section class="restriction-shell" aria-labelledby="restriction-title">
+      <article class="restriction-card">
+        <p class="eyebrow">${esc(heading)}</p>
+        <h1 id="restriction-title">${esc(title)}</h1>
+        <p>${esc(reason)}</p>
+        ${suspended && until ? `<p>Suspensão válida até <strong>${esc(until.toLocaleString("pt-BR"))}</strong>.</p><span class="restriction-countdown" data-restriction-countdown>${esc(ACCOUNT_MGMT.restrictionCountdown(profile).label)}</span>` : ""}
+        ${banned ? `<p>Entre em contato com o Oráculo caso deseje solicitar revisão.</p>` : ""}
+        ${deletionPending ? `<div class="deletion-checklist"><p>A credencial ainda precisa ser removida no Firebase Authentication pelo administrador.</p><code>UID: ${esc(state.user?.uid || "")}</code><code>Email: ${esc(state.user?.email || state.accountDeletionQueue?.email || "")}</code></div>` : ""}
+        <button class="ghost-button" type="button" data-action="logout">Sair</button>
       </article>
-    </div>
+    </section>
   `;
 }
 
@@ -6578,6 +6754,7 @@ function renderAdminUsers() {
   const selectedUser = state.users.find((user) => user.id === selectedId);
   const character = selectedId ? getCharacterFor(selectedId) : null;
   const draft = state.adminUserDraft?.uid === selectedId ? state.adminUserDraft.values : null;
+  const selectedStatus = normalizedAccountStatus(selectedUser || {});
   const affinityOptions = `<option value="">Sem afinidade</option>${optionList(state.content.affinities, draftValue(draft, "affinityId", character?.affinityId || ""))}`;
   return `
     <div class="grid">
@@ -6587,10 +6764,11 @@ function renderAdminUsers() {
           ${state.users.map((user) => `
             <button class="user-row ${selectedId === user.id ? "active" : ""}" type="button" data-action="select-user" data-user-id="${esc(user.id)}">
               <strong>${esc(user.displayName || user.email)}</strong>
-              <span>${esc(user.role || "player")} · ${esc(user.status || "active")} · ${isUserOnline(user) ? "online" : "offline"}</span>
+              <span>${esc(user.role || "player")} · ${esc(normalizedAccountStatus(user))} · ${isUserOnline(user) ? "online" : "offline"}</span>
             </button>
           `).join("")}
         </div>
+        ${state.accountDeletionQueueEntries.length ? `<div class="pending-auth-deletions"><p class="eyebrow">Authentication pendente</p>${state.accountDeletionQueueEntries.map((entry) => `<div class="item-row"><strong>${esc(entry.displayName || entry.email || entry.id)}</strong><small>${esc(entry.email || "Sem e-mail")}</small><button class="unban-button" type="button" data-action="admin-auth-deletion-details" data-user-id="${esc(entry.id || entry.ownerId)}">Concluir</button></div>`).join("")}</div>` : ""}
       </article>
       <article class="panel span-8">
         ${selectedUser && character ? `
@@ -6605,9 +6783,7 @@ function renderAdminUsers() {
             <input type="hidden" name="uid" value="${esc(selectedId)}" />
             <label><span>Nome exibido</span><input name="displayName" value="${esc(draftValue(draft, "displayName", selectedUser.displayName || ""))}" /></label>
             <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Oráculo</option></select></label>
-            <label><span>Status</span><select name="status"><option value="active" ${draftValue(draft, "status", selectedUser.status || "active") === "active" ? "selected" : ""}>Ativo</option><option value="muted" ${draftValue(draft, "status", selectedUser.status || "active") === "muted" ? "selected" : ""}>Mutado</option><option value="suspended" ${draftValue(draft, "status", selectedUser.status || "active") === "suspended" ? "selected" : ""}>Suspenso</option><option value="banned" ${draftValue(draft, "status", selectedUser.status || "active") === "banned" ? "selected" : ""}>Banido</option></select></label>
-            <label><span>Fim da punição</span><input name="bannedUntil" type="datetime-local" value="${esc(dateTimeLocalValue(draftValue(draft, "bannedUntil", selectedUser.bannedUntil || "")))}" /></label>
-            <label class="wide"><span>Motivo e orientação de recurso</span><textarea name="moderationReason" rows="3" placeholder="Registre fatos, duração e condição de revisão.">${esc(draftValue(draft, "moderationReason", selectedUser.moderationReason || ""))}</textarea></label>
+            <div class="wide"><span>Status da conta</span><p><span class="account-status-chip ${esc(selectedStatus)}">${esc(selectedStatus === "active" ? "Ativa" : selectedStatus === "suspended" ? "Suspensa" : selectedStatus === "banned" ? "Banida" : selectedStatus === "deletion_pending" ? "Exclusão pendente" : selectedStatus)}</span></p><small>Suspensão, banimento e exclusão são controlados nos blocos abaixo e não por este formulário.</small></div>
             <label><span>PO</span><input name="gold" type="number" value="${Number(draftValue(draft, "gold", character.gold || 0))}" /></label>
             <label><span>Millennium Coins</span><input name="millenniumCoins" type="number" value="${Number(draftValue(draft, "millenniumCoins", character.millenniumCoins || 0))}" /></label>
             <label><span>Energia diária</span><input name="gachaEnergy" type="number" min="0" max="${GACHA_ENERGY_MAX}" value="${Number(draftValue(draft, "gachaEnergy", currentGachaEnergy(character)))}" /></label>
@@ -6622,16 +6798,29 @@ function renderAdminUsers() {
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
           </form>
-          <section class="admin-danger-zone" style="margin-top:18px">
-            <div>
-              <p class="eyebrow">Zona de exclusão</p>
-              <h3>Limpeza de fichas e contas de teste</h3>
-              <p>Apagar ficha remove os dados do personagem. Remover player bloqueia o retorno ao sistema e limpa os registros ligados ao UID. A conta do Firebase Authentication precisa ser apagada manualmente no Console.</p>
-            </div>
-            <div class="action-row">
-              <button class="danger-button" type="button" data-action="admin-delete-character" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Apagar somente a ficha</button>
-              <button class="danger-button" type="button" data-action="admin-delete-player" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Remover player do sistema</button>
-            </div>
+          <section class="account-management-grid ${state.adminOperationInProgress ? "operation-busy" : ""}" aria-label="Gestão administrativa da conta">
+            <article class="account-management-card management">
+              <p class="eyebrow">Gestão da ficha</p>
+              <h3>Resetar ficha</h3>
+              <p>Apaga o personagem e o progresso da ficha. A conta, o e-mail, a senha e as restrições são preservados.</p>
+              <div class="action-row"><button class="warning-button" type="button" data-action="admin-reset-character" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || state.adminOperationInProgress ? "disabled" : ""}>↻ Resetar ficha</button></div>
+            </article>
+            <article class="account-management-card moderation">
+              <p class="eyebrow">Moderação</p>
+              <h3>Suspender ou banir</h3>
+              <p>Bloqueia o acesso sem apagar ficha, inventário, mensagens ou progresso.</p>
+              <div class="action-row">
+                <button class="suspend-button" type="button" data-action="admin-suspend-account" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || state.adminOperationInProgress ? "disabled" : ""}>◷ Suspender acesso</button>
+                <button class="danger-button" type="button" data-action="admin-ban-account" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || state.adminOperationInProgress ? "disabled" : ""}>⊘ Banir conta</button>
+                <button class="unban-button" type="button" data-action="admin-remove-restriction" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || selectedStatus === "active" || state.adminOperationInProgress ? "disabled" : ""}>✓ Remover restrição</button>
+              </div>
+            </article>
+            <article class="account-management-card danger">
+              <p class="eyebrow">Zona perigosa</p>
+              <h3>Excluir conta definitivamente</h3>
+              <p>Remove os dados do Firestore. Para liberar o e-mail, a credencial ainda precisa ser apagada manualmente no Firebase Authentication.</p>
+              <div class="action-row"><button class="delete-account-button" type="button" data-action="admin-delete-account" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || state.adminOperationInProgress ? "disabled" : ""}>⚠ Excluir conta definitivamente</button></div>
+            </article>
           </section>
           <section class="panel admin-stat-composition" style="margin-top:18px"><div class="panel-heading"><div><p class="eyebrow">Mesma leitura do player</p><h3>Composição oficial dos atributos</h3></div><span class="tag">Fonte única</span></div>${characterStatComposition(character)}</section>
           <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>
@@ -10246,8 +10435,8 @@ function canSendChat() {
     toast("Você está mutado e não pode enviar mensagens agora.");
     return false;
   }
-  if (state.profile?.status === "suspended") {
-    toast("Sua conta está suspensa. Fale com o Oráculo.");
+  if (["suspended", "banned", "deletion_pending"].includes(normalizedAccountStatus())) {
+    toast("Sua conta está com acesso restrito. Fale com o Oráculo.");
     return false;
   }
   return true;
@@ -10255,7 +10444,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.1.2",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.2.1",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -10913,10 +11102,7 @@ async function saveAdminUser(form) {
   await writeDoc("users", uid, {
     displayName: values.displayName,
     role: values.role,
-    status: values.status || "active",
-    bannedUntil: values.bannedUntil ? new Date(values.bannedUntil).toISOString() : "",
-    moderationReason: values.moderationReason || "",
-  });
+  }, { reason: "Atualização administrativa de perfil e papel." });
   await updateCharacter(uid, {
     displayName: values.displayName,
     gold: Number(values.gold || 0),
@@ -10936,17 +11122,16 @@ async function saveAdminUser(form) {
     profilePublic: values.profilePublic === "true",
   });
   state.adminUserDraft = null;
-  toast("Player atualizado.");
+  toast("Player atualizado. Restrições são controladas separadamente.");
 }
 
-
-function adminDeletionTarget(uid) {
+function adminAccountTarget(uid) {
   const user = state.users.find((entry) => entry.id === uid);
-  const character = getCharacterFor(uid);
-  if (!uid || uid === state.user?.uid || user?.role === "admin") {
-    throw new Error("A conta do próprio Oráculo ou de outro administrador não pode ser excluída por este painel.");
-  }
-  return { user, character, label: character?.characterName || user?.displayName || user?.email || uid };
+  const character = findCharacter(uid) || getCharacterFor(uid);
+  if (!uid || !user) throw new Error("Usuário não encontrado.");
+  if (uid === state.user?.uid) throw new Error("O Oráculo não pode executar esta ação sobre a própria conta.");
+  if (user.role === "admin") throw new Error("Contas administrativas exigem revisão fora deste painel.");
+  return { user, character, label: character?.characterName || user.displayName || user.email || uid };
 }
 
 async function deleteQueryDocuments(query, beforeDelete = null) {
@@ -10968,117 +11153,395 @@ async function deleteQueryDocuments(query, beforeDelete = null) {
 
 async function deleteCharacterSubcollections(uid) {
   if (state.demo) return 0;
-  const names = [
-    "lore", "developmentLogs", "inventory", "pets", "titles", "powers", "techniques",
-    "activities", "missions", "achievements", "discoveries", "history", "rewards", "minigameRuns",
-  ];
   let removed = 0;
-  for (const name of names) {
+  for (const name of ACCOUNT_MGMT.CHARACTER_SUBCOLLECTIONS) {
     removed += await deleteQueryDocuments(state.db.collection("characters").doc(uid).collection(name));
   }
   return removed;
 }
 
-async function recordAdminDeletion(uid, action, reason) {
-  if (state.demo) return;
-  const auditId = `audit-delete-${cryptoRandom()}`;
+async function recordAccountAudit({ uid, email = "", action, reason, previousStatus = "", nextStatus = "", details = {} }) {
+  if (state.demo) return `demo-audit-${cryptoRandom()}`;
+  const auditId = `audit-account-${cryptoRandom()}`;
   await state.db.collection("auditLogs").doc(auditId).set({
     adminId: state.user.uid,
+    adminName: state.profile?.displayName || state.user.email || ORACLE_LABEL,
     targetId: uid,
+    targetUid: uid,
+    targetEmail: email,
     field: action,
-    previousValue: null,
-    nextValue: { deleted: true },
-    reason: String(reason || "Limpeza administrativa de dados de teste.").slice(0, 500),
+    action,
+    previousValue: { accountStatus: previousStatus },
+    nextValue: { accountStatus: nextStatus },
+    previousStatus,
+    nextStatus,
+    reason: String(reason || "").slice(0, 500),
+    details,
     createdAt: nowValue(),
   });
   state.diagnostics.writes += 1;
+  return auditId;
+}
+
+async function beginAdminAccountOperation({ action, target, reason, confirmation = "" }) {
+  if (state.adminOperationInProgress) throw new Error("Outra operação administrativa ainda está em andamento.");
+  ACCOUNT_MGMT.validateOperation({
+    action,
+    adminId: state.user?.uid,
+    targetUid: target.user.id,
+    targetRole: target.user.role,
+    reason,
+    confirmation,
+  });
+  const key = `${action}:${target.user.id}:${cryptoRandom()}`;
+  state.adminOperationInProgress = true;
+  state.adminOperationKey = key;
+  state.adminOperationTargetUid = target.user.id;
+  scheduleRender({ critical: true, preserveScroll: true, reason: "admin-operation-start" });
+  try {
+    if (!state.demo) {
+      const lockRef = state.db.collection("adminOperationLocks").doc(target.user.id);
+      const expiresAt = new Date(Date.now() + (15 * 60 * 1000)).toISOString();
+      await state.db.runTransaction(async (transaction) => {
+        const lockSnapshot = await transaction.get(lockRef);
+        const lock = lockSnapshot.exists ? lockSnapshot.data() : null;
+        const lockExpiry = Date.parse(lock?.expiresAt || "") || 0;
+        if (lock?.status === "running" && lockExpiry > Date.now()) {
+          throw new Error("Outro Oráculo já está executando uma operação sobre esta conta.");
+        }
+        transaction.set(lockRef, {
+          targetUid: target.user.id,
+          operationId: key,
+          operationType: action,
+          adminId: state.user.uid,
+          status: "running",
+          expiresAt,
+          startedAt: nowValue(),
+        });
+      });
+      await state.db.collection("adminOperations").doc(key).set(ACCOUNT_MGMT.operationRecord({
+        operationType: action,
+        adminId: state.user.uid,
+        targetUid: target.user.id,
+        targetEmail: target.user.email || "",
+        reason,
+        idempotencyKey: key,
+        nowValue: nowValue(),
+      }));
+      state.diagnostics.writes += 2;
+    }
+    return key;
+  } catch (error) {
+    state.adminOperationInProgress = false;
+    state.adminOperationKey = "";
+    state.adminOperationTargetUid = "";
+    scheduleRender({ critical: true, preserveScroll: true, reason: "admin-operation-start-failed" });
+    throw error;
+  }
+}
+
+async function finishAdminAccountOperation(key, patch = {}) {
+  const targetUid = state.adminOperationTargetUid;
+  if (!state.demo && key) {
+    await state.db.collection("adminOperations").doc(key).set({
+      ...patch,
+      status: patch.status || "completed",
+      completedAt: nowValue(),
+    }, { merge: true }).catch(() => {});
+    if (targetUid) {
+      await state.db.collection("adminOperationLocks").doc(targetUid).delete().catch(() => {});
+    }
+    state.diagnostics.writes += targetUid ? 2 : 1;
+  }
+  state.adminOperationInProgress = false;
+  state.adminOperationKey = "";
+  state.adminOperationTargetUid = "";
+  scheduleRender({ critical: true, preserveScroll: true, reason: "admin-operation-finish" });
 }
 
 async function removeConversationTree(snapshot) {
   await deleteQueryDocuments(snapshot.ref.collection("messages"));
 }
 
-async function cleanupCharacterData(uid) {
-  await deleteCharacterSubcollections(uid);
+async function cleanupCharacterData(uid, { recreateDraft = false, displayName = "", auditId = "" } = {}) {
+  let removed = await deleteCharacterSubcollections(uid);
   if (!state.demo) {
     await state.db.collection("characters").doc(uid).delete().catch(() => {});
     await state.db.collection("publicProfiles").doc(uid).delete().catch(() => {});
     state.diagnostics.writes += 2;
+    removed += 2;
+    if (recreateDraft) {
+      await state.db.collection("characters").doc(uid).set({
+        ...defaultCharacter(uid, displayName),
+        lastAuditId: auditId,
+        updatedAt: nowValue(),
+      });
+      state.diagnostics.writes += 1;
+      removed -= 1;
+    }
+  } else if (recreateDraft) {
+    writeDemo("characters", uid, defaultCharacter(uid, displayName));
   }
   state.characters = state.characters.filter((entry) => (entry.ownerId || entry.id) !== uid);
   state.publicProfiles = state.publicProfiles.filter((entry) => entry.id !== uid && entry.ownerId !== uid);
-  if (state.character?.ownerId === uid) state.character = null;
+  if (recreateDraft) {
+    const draft = defaultCharacter(uid, displayName);
+    state.characters.push(draft);
+    if (state.character?.ownerId === uid) state.character = draft;
+  } else if (state.character?.ownerId === uid) {
+    state.character = null;
+  }
+  return Math.max(0, removed);
 }
 
-async function adminDeleteCharacter(uid) {
-  const { label } = adminDeletionTarget(uid);
-  const typed = window.prompt(`Digite APAGAR FICHA para confirmar a exclusão de "${label}".`);
-  if (typed !== "APAGAR FICHA") return;
-  const reason = window.prompt("Informe o motivo da exclusão para o registro administrativo.", "Limpeza de ficha de teste.") || "Limpeza de ficha de teste.";
-  await recordAdminDeletion(uid, "delete-character", reason);
-  await cleanupCharacterData(uid);
-  state.selectedUserId = uid;
-  toast(`A ficha de ${label} foi apagada. A conta de acesso foi mantida.`);
-  render();
-}
-
-async function adminDeletePlayer(uid) {
-  const { label } = adminDeletionTarget(uid);
-  const typed = window.prompt(`Digite REMOVER PLAYER para excluir os dados de "${label}" e bloquear o retorno ao sistema.`);
-  if (typed !== "REMOVER PLAYER") return;
-  const reason = window.prompt("Informe o motivo da remoção para o registro administrativo.", "Remoção de conta de teste.") || "Remoção de conta de teste.";
-  await recordAdminDeletion(uid, "delete-player", reason);
-
+async function deletePendingCharacterRequests(uid) {
   if (state.demo) {
-    await cleanupCharacterData(uid);
+    const before = state.progressRequests.length;
+    state.progressRequests = state.progressRequests.filter((entry) => entry.uid !== uid || !ACCOUNT_MGMT.isPendingCharacterRequest(entry));
+    return before - state.progressRequests.length;
+  }
+  const snapshot = await state.db.collection("progressRequests").where("uid", "==", uid).get();
+  let removed = 0;
+  for (const request of snapshot.docs) {
+    if (!ACCOUNT_MGMT.isPendingCharacterRequest(request.data())) continue;
+    await request.ref.delete();
+    state.diagnostics.writes += 1;
+    removed += 1;
+  }
+  return removed;
+}
+
+async function adminResetCharacter(uid) {
+  const target = adminAccountTarget(uid);
+  const confirmation = window.prompt(`Digite RESETAR FICHA para apagar o personagem de "${target.label}" e manter a conta.`) || "";
+  if (confirmation !== "RESETAR FICHA") return;
+  const reason = window.prompt("Informe o motivo do reset da ficha.", "Reset de ficha solicitado pelo Oráculo.") || "";
+  if (!reason.trim()) throw new Error("Informe o motivo do reset.");
+  const key = await beginAdminAccountOperation({ action: "character-reset", target, reason, confirmation });
+  try {
+    const auditId = await recordAccountAudit({ uid, email: target.user.email, action: "character-reset", reason, previousStatus: normalizedAccountStatus(target.user), nextStatus: normalizedAccountStatus(target.user), details: { preservesAccount: true } });
+    let removed = await cleanupCharacterData(uid, { recreateDraft: true, displayName: target.user.displayName || target.user.email || "Player", auditId });
+    removed += await deletePendingCharacterRequests(uid);
+    await finishAdminAccountOperation(key, { deletedDocuments: removed, authDeletionRequired: false });
+    state.selectedUserId = uid;
+    toast(`Ficha de ${target.label} resetada. Conta, e-mail, senha e restrições foram preservados.`);
+  } catch (error) {
+    await finishAdminAccountOperation(key, { status: "failed", failedDocuments: [String(error?.message || error)] });
+    throw error;
+  }
+}
+
+async function adminSuspendAccount(uid) {
+  const target = adminAccountTarget(uid);
+  const preset = (window.prompt("Duração da suspensão: 1h, 6h, 1d, 3d, 7d, 30d ou custom.", "1d") || "").trim().toLowerCase();
+  if (!preset) return;
+  let customValue = "";
+  if (preset === "custom") customValue = window.prompt("Informe data e hora futuras, por exemplo 2026-07-20T18:00.", "") || "";
+  const reason = window.prompt("Informe o motivo da suspensão.", "Suspensão administrativa temporária.") || "";
+  if (!reason.trim()) throw new Error("Informe o motivo da suspensão.");
+  const untilMs = ACCOUNT_MGMT.suspensionUntil(preset, Date.now(), customValue);
+  const key = await beginAdminAccountOperation({ action: "account-suspend", target, reason });
+  try {
+    await writeDoc("users", uid, {
+      accountStatus: "suspended",
+      suspendedUntil: new Date(untilMs),
+      restrictionReason: reason,
+      restrictedAt: nowValue(),
+      restrictedBy: state.user.uid,
+      status: "suspended",
+      bannedUntil: new Date(untilMs),
+      moderationReason: reason,
+    }, { reason });
+    await recordAccountAudit({ uid, email: target.user.email, action: "account-suspend", reason, previousStatus: normalizedAccountStatus(target.user), nextStatus: "suspended", details: { suspendedUntil: new Date(untilMs).toISOString() } });
+    await finishAdminAccountOperation(key, { authDeletionRequired: false });
+    toast(`${target.label} suspenso até ${new Date(untilMs).toLocaleString("pt-BR")}. Nenhum dado foi apagado.`);
+  } catch (error) {
+    await finishAdminAccountOperation(key, { status: "failed", failedDocuments: [String(error?.message || error)] });
+    throw error;
+  }
+}
+
+async function adminBanAccount(uid) {
+  const target = adminAccountTarget(uid);
+  if (!window.confirm(`Banir a conta de "${target.label}" sem apagar ficha ou progresso?`)) return;
+  const reason = window.prompt("Informe o motivo do banimento.", "Banimento administrativo.") || "";
+  if (!reason.trim()) throw new Error("Informe o motivo do banimento.");
+  const key = await beginAdminAccountOperation({ action: "account-ban", target, reason });
+  try {
+    await writeDoc("users", uid, {
+      accountStatus: "banned",
+      suspendedUntil: null,
+      restrictionReason: reason,
+      restrictedAt: nowValue(),
+      restrictedBy: state.user.uid,
+      status: "banned",
+      bannedUntil: null,
+      moderationReason: reason,
+    }, { reason });
+    await recordAccountAudit({ uid, email: target.user.email, action: "account-ban", reason, previousStatus: normalizedAccountStatus(target.user), nextStatus: "banned" });
+    await finishAdminAccountOperation(key, { authDeletionRequired: false });
+    toast(`${target.label} foi banido. Conta, ficha, inventário e histórico foram preservados.`);
+  } catch (error) {
+    await finishAdminAccountOperation(key, { status: "failed", failedDocuments: [String(error?.message || error)] });
+    throw error;
+  }
+}
+
+async function adminRemoveRestriction(uid) {
+  const target = adminAccountTarget(uid);
+  const previousStatus = normalizedAccountStatus(target.user);
+  if (previousStatus === "active") return;
+  const reason = window.prompt("Informe o motivo da remoção da restrição.", "Restrição removida após revisão do Oráculo.") || "";
+  if (!reason.trim()) throw new Error("Informe o motivo da revisão.");
+  const key = await beginAdminAccountOperation({ action: "account-unban", target, reason });
+  try {
+    await writeDoc("users", uid, {
+      accountStatus: "active",
+      suspendedUntil: null,
+      restrictionReason: "",
+      restrictionRemovedAt: nowValue(),
+      restrictionRemovedBy: state.user.uid,
+      status: "active",
+      bannedUntil: null,
+      moderationReason: "",
+    }, { reason });
+    await recordAccountAudit({ uid, email: target.user.email, action: "account-unban", reason, previousStatus, nextStatus: "active" });
+    await finishAdminAccountOperation(key, { authDeletionRequired: false });
+    toast(`Restrição de ${target.label} removida. O acesso foi restaurado.`);
+  } catch (error) {
+    await finishAdminAccountOperation(key, { status: "failed", failedDocuments: [String(error?.message || error)] });
+    throw error;
+  }
+}
+
+async function resolveGuildMembershipBeforeDeletion(uid) {
+  const guilds = state.demo
+    ? state.guilds.filter((entry) => (entry.memberIds || []).includes(uid))
+    : (await state.db.collection("guilds").where("memberIds", "array-contains", uid).get()).docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  for (const guild of guilds) {
+    const nextMembers = (guild.memberIds || []).filter((memberId) => memberId !== uid);
+    let leaderId = guild.leaderId;
+    let archived = Boolean(guild.archived);
+    if (guild.leaderId === uid) {
+      if (nextMembers.length) {
+        const options = nextMembers.map((memberId, index) => `${index + 1}: ${getUserName(memberId)} (${memberId})`).join("\n");
+        const choice = window.prompt(`O usuário lidera a guilda ${guild.name}. Escolha o número do novo líder ou digite ARQUIVAR:\n${options}`, "1");
+        if (!choice) throw new Error("Escolha um novo líder ou arquive a guilda antes de excluir a conta.");
+        if (choice.trim().toUpperCase() === "ARQUIVAR") {
+          leaderId = "";
+          archived = true;
+        } else {
+          const index = Number(choice) - 1;
+          if (!nextMembers[index]) throw new Error("Novo líder inválido.");
+          leaderId = nextMembers[index];
+        }
+      } else {
+        leaderId = "";
+        archived = true;
+      }
+    }
+    if (!state.demo) {
+      await state.db.collection("guilds").doc(guild.id).set({ memberIds: nextMembers, leaderId, archived, updatedAt: nowValue() }, { merge: true });
+      state.diagnostics.writes += 1;
+    }
+    state.guilds = state.guilds.map((entry) => entry.id === guild.id ? { ...entry, memberIds: nextMembers, leaderId, archived } : entry);
+  }
+}
+
+function showAuthenticationDeletionChecklist(entry) {
+  if (!entry) return;
+  const uid = entry.id || entry.ownerId || "";
+  $("#modalContent").innerHTML = `
+    <p class="eyebrow">Exclusão definitiva · Etapa 2</p>
+    <h2>Remova a credencial no Firebase Authentication</h2>
+    <p>Os dados do Firestore foram removidos. O e-mail só ficará disponível para um novo cadastro depois que a conta for apagada em Authentication.</p>
+    <div class="deletion-checklist">
+      <code>UID: ${esc(uid)}</code>
+      <code>Email: ${esc(entry.email || "")}</code>
+      <button class="ghost-button" type="button" data-action="copy-admin-value" data-copy-value="${esc(uid)}">Copiar UID</button>
+      <button class="ghost-button" type="button" data-action="copy-admin-value" data-copy-value="${esc(entry.email || "")}">Copiar e-mail</button>
+      <p>Firebase Console → Authentication → Users → localizar pelo UID ou e-mail → Delete account.</p>
+    </div>
+    <button class="unban-button" type="button" data-action="admin-confirm-auth-deletion" data-user-id="${esc(uid)}">Conta removida do Authentication</button>
+  `;
+  $("#modal").hidden = false;
+}
+
+function adminAuthDeletionDetails(uid) {
+  const entry = state.accountDeletionQueueEntries.find((item) => (item.id || item.ownerId) === uid);
+  if (!entry) throw new Error("Registro de exclusão pendente não encontrado.");
+  showAuthenticationDeletionChecklist(entry);
+}
+
+async function adminDeleteAccount(uid) {
+  const target = adminAccountTarget(uid);
+  const confirmation = window.prompt(`Digite EXCLUIR CONTA DEFINITIVAMENTE para remover os dados de "${target.label}".`) || "";
+  if (confirmation !== "EXCLUIR CONTA DEFINITIVAMENTE") return;
+  if (!window.confirm("Esta ação é irreversível no Firestore. A conta do Authentication ainda precisará ser removida manualmente. Continuar?")) return;
+  const reason = window.prompt("Informe o motivo da exclusão definitiva.", "Exclusão definitiva solicitada pelo Oráculo.") || "";
+  if (!reason.trim()) throw new Error("Informe o motivo da exclusão.");
+  const key = await beginAdminAccountOperation({ action: "firestore-account-delete", target, reason, confirmation });
+  let deletedDocuments = 0;
+  try {
+    await resolveGuildMembershipBeforeDeletion(uid);
+    const queueRecord = ACCOUNT_MGMT.deletionQueueRecord({
+      uid,
+      email: target.user.email || "",
+      displayName: target.user.displayName || target.label,
+      adminId: state.user.uid,
+      reason,
+      nowValue: nowValue(),
+      idempotencyKey: key,
+    });
+    if (!state.demo) {
+      await state.db.collection("accountDeletionQueue").doc(uid).set(queueRecord);
+      state.diagnostics.writes += 1;
+    }
+    await recordAccountAudit({ uid, email: target.user.email, action: "firestore-account-delete", reason, previousStatus: normalizedAccountStatus(target.user), nextStatus: "deletion_pending", details: { authenticationDeletionRequired: true } });
+    deletedDocuments += await cleanupCharacterData(uid);
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("progressRequests").where("uid", "==", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("profileViews").where("targetId", "==", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("profileViews").where("viewerId", "==", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("socialRequests").where("participants", "array-contains", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("directMessages").where("participants", "array-contains", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("conversations").where("participantIds", "array-contains", uid), removeConversationTree);
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("globalMessages").where("senderId", "==", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("guildMessages").where("senderId", "==", uid));
+    deletedDocuments += await deleteQueryDocuments(state.db.collection("campaignDiary").where("authorId", "==", uid));
+    if (!state.demo) {
+      await state.db.collection("deletedUsers").doc(uid).delete().catch(() => {});
+      await state.db.collection("users").doc(uid).delete();
+      state.diagnostics.writes += 2;
+      deletedDocuments += 1;
+    }
     state.users = state.users.filter((entry) => entry.id !== uid);
     state.progressRequests = state.progressRequests.filter((entry) => entry.uid !== uid);
-    state.reports = state.reports.filter((entry) => entry.reporterId !== uid && entry.targetId !== uid);
     state.selectedUserId = state.users.find((entry) => entry.role !== "admin")?.id || "";
-    toast(`Player ${label} removido do modo Demo.`);
-    render();
-    return;
+    const localQueue = { id: uid, ...queueRecord };
+    state.accountDeletionQueueEntries = state.accountDeletionQueueEntries.filter((entry) => (entry.id || entry.ownerId) !== uid).concat(localQueue);
+    await finishAdminAccountOperation(key, { deletedDocuments, authDeletionRequired: true });
+    showAuthenticationDeletionChecklist(localQueue);
+    toast(`Dados de ${target.label} removidos do Firestore. Falta apagar a credencial no Authentication.`);
+  } catch (error) {
+    await finishAdminAccountOperation(key, { status: "failed", deletedDocuments, failedDocuments: [String(error?.message || error)], authDeletionRequired: true });
+    throw error;
   }
+}
 
-  await state.db.collection("deletedUsers").doc(uid).set({
-    uid,
-    displayName: label,
-    reason: String(reason).slice(0, 500),
-    deletedBy: state.user.uid,
-    createdAt: nowValue(),
-  });
-  state.diagnostics.writes += 1;
-
-  await cleanupCharacterData(uid);
-  await deleteQueryDocuments(state.db.collection("progressRequests").where("uid", "==", uid));
-  await deleteQueryDocuments(state.db.collection("reports").where("reporterId", "==", uid));
-  await deleteQueryDocuments(state.db.collection("profileViews").where("targetId", "==", uid));
-  await deleteQueryDocuments(state.db.collection("profileViews").where("viewerId", "==", uid));
-  await deleteQueryDocuments(state.db.collection("socialRequests").where("participants", "array-contains", uid));
-  await deleteQueryDocuments(state.db.collection("directMessages").where("participants", "array-contains", uid));
-  await deleteQueryDocuments(state.db.collection("conversations").where("participantIds", "array-contains", uid), removeConversationTree);
-  await deleteQueryDocuments(state.db.collection("globalMessages").where("senderId", "==", uid));
-  await deleteQueryDocuments(state.db.collection("guildMessages").where("senderId", "==", uid));
-  await deleteQueryDocuments(state.db.collection("campaignDiary").where("authorId", "==", uid));
-
-  for (const guild of state.guilds.filter((entry) => (entry.memberIds || []).includes(uid))) {
-    const nextMembers = (guild.memberIds || []).filter((memberId) => memberId !== uid);
-    await state.db.collection("guilds").doc(guild.id).set({
-      memberIds: nextMembers,
-      leaderId: guild.leaderId === uid ? (nextMembers[0] || "") : guild.leaderId,
-      updatedAt: nowValue(),
-    }, { merge: true });
+async function adminConfirmAuthenticationDeletion(uid) {
+  const entry = state.accountDeletionQueueEntries.find((item) => (item.id || item.ownerId) === uid);
+  if (!entry) throw new Error("Exclusão pendente não encontrada.");
+  const confirmation = window.prompt("Digite AUTH EXCLUÍDO para confirmar que a conta foi removida no Firebase Authentication.") || "";
+  if (confirmation !== "AUTH EXCLUÍDO") return;
+  const reason = "Credencial removida manualmente no Firebase Authentication.";
+  await recordAccountAudit({ uid, email: entry.email || "", action: "authentication-delete-confirmed", reason, previousStatus: "deletion_pending", nextStatus: "deleted", details: { emailReusable: true } });
+  if (!state.demo) {
+    await state.db.collection("accountDeletionQueue").doc(uid).delete();
     state.diagnostics.writes += 1;
   }
-
-  await state.db.collection("users").doc(uid).delete().catch(() => {});
-  state.diagnostics.writes += 1;
-  state.users = state.users.filter((entry) => entry.id !== uid);
-  state.progressRequests = state.progressRequests.filter((entry) => entry.uid !== uid);
-  state.reports = state.reports.filter((entry) => entry.reporterId !== uid && entry.targetId !== uid);
-  state.selectedUserId = state.users.find((entry) => entry.role !== "admin")?.id || "";
-
-  toast(`Player ${label} removido e bloqueado no sistema. Apague também o UID em Firebase Authentication para remover a credencial.`);
+  state.accountDeletionQueueEntries = state.accountDeletionQueueEntries.filter((item) => (item.id || item.ownerId) !== uid);
+  closeModal();
+  toast("Exclusão concluída. O e-mail pode ser usado em um novo cadastro com novo UID e nova senha.");
   render();
 }
 
@@ -12210,8 +12673,17 @@ function wireEvents() {
       if (action === "toggle-maintenance") await toggleMaintenance(button.dataset.mode);
       if (action === "start-rpg") await startRpg();
       if (action === "quick-approve") await quickApproveRequest(button.dataset.requestId);
-      if (action === "admin-delete-character") await adminDeleteCharacter(button.dataset.userId);
-      if (action === "admin-delete-player") await adminDeletePlayer(button.dataset.userId);
+      if (action === "admin-reset-character") await adminResetCharacter(button.dataset.userId);
+      if (action === "admin-suspend-account") await adminSuspendAccount(button.dataset.userId);
+      if (action === "admin-ban-account") await adminBanAccount(button.dataset.userId);
+      if (action === "admin-remove-restriction") await adminRemoveRestriction(button.dataset.userId);
+      if (action === "admin-delete-account") await adminDeleteAccount(button.dataset.userId);
+      if (action === "admin-auth-deletion-details") adminAuthDeletionDetails(button.dataset.userId);
+      if (action === "admin-confirm-auth-deletion") await adminConfirmAuthenticationDeletion(button.dataset.userId);
+      if (action === "copy-admin-value") {
+        await navigator.clipboard?.writeText(button.dataset.copyValue || "").catch(() => {});
+        toast("Valor copiado.");
+      }
       if (action === "accept-creation-proposal") await respondCreationProposal(button.dataset.requestId, "accepted");
       if (action === "contest-creation-proposal") await respondCreationProposal(button.dataset.requestId, "contested");
     } catch (error) {

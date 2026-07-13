@@ -8,7 +8,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 test("operation 4 modules and CSS load before the application and are precached", async () => {
   const [html, sw] = await Promise.all([read("../index.html"), read("../service-worker.js")]);
   assert.ok(html.indexOf("millennium-polish.js") < html.indexOf("app.js"));
-  assert.match(html, /polish\.css\?v=3\.2\.0/);
+  assert.match(html, /polish\.css\?v=3\.2\.1/);
   assert.match(html, /class="skip-link"/);
   assert.match(html, /id="mainContent"/);
   assert.match(sw, /millennium-polish\.js/);

@@ -442,26 +442,57 @@ test("private public-profile projection is visible only to owner and admin", asy
   await assertSucceeds(getDoc(doc(adminDb, "publicProfiles", "player-a")));
 });
 
-test("admin can delete test records and a tombstone blocks profile recreation", async () => {
+test("admin deletion queue prevents the old UID from recreating a profile until Authentication cleanup", async () => {
   const adminDb = environment.authenticatedContext("oracle", { email: "oracle@example.invalid" }).firestore();
   const playerDb = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
   await assertFails(deleteDoc(doc(playerDb, "characters", "player-a")));
   await assertSucceeds(deleteDoc(doc(adminDb, "characters", "player-a")));
-  await assertSucceeds(setDoc(doc(adminDb, "deletedUsers", "player-a"), {
-    uid: "player-a",
+  await assertSucceeds(setDoc(doc(adminDb, "accountDeletionQueue", "player-a"), {
+    ownerId: "player-a",
+    email: "a@example.invalid",
     displayName: "A",
+    status: "awaiting-auth-delete",
+    adminId: "oracle",
     reason: "Conta de teste",
-    deletedBy: "oracle",
+    idempotencyKey: "delete-player-a-0001",
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   }));
+  await assertSucceeds(getDoc(doc(playerDb, "accountDeletionQueue", "player-a")));
   await environment.withSecurityRulesDisabled(async (context) => {
     await deleteDoc(doc(context.firestore(), "users", "player-a"));
   });
   await assertFails(setDoc(doc(playerDb, "users", "player-a"), {
     role: "player",
+    accountStatus: "active",
     email: "a@example.invalid",
     displayName: "A",
   }));
+  await assertSucceeds(deleteDoc(doc(adminDb, "accountDeletionQueue", "player-a")));
+  await assertSucceeds(setDoc(doc(playerDb, "users", "player-a"), {
+    role: "player",
+    accountStatus: "active",
+    email: "a@example.invalid",
+    displayName: "A",
+  }));
+});
+
+test("suspended and banned players can read only their own account and settings", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await updateDoc(doc(db, "users", "player-a"), {
+      accountStatus: "suspended",
+      suspendedUntil: new Date(Date.now() + 3600000),
+      restrictionReason: "Teste",
+    });
+    await setDoc(doc(db, "settings", "system"), { seasonName: "Teste" });
+    await setDoc(doc(db, "globalMessages", "hello"), { senderId: "oracle", text: "Oi", type: "global", createdAt: new Date() });
+  });
+  const playerDb = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertSucceeds(getDoc(doc(playerDb, "users", "player-a")));
+  await assertSucceeds(getDoc(doc(playerDb, "settings", "system")));
+  await assertFails(getDoc(doc(playerDb, "globalMessages", "hello")));
+  await assertFails(updateDoc(doc(playerDb, "characters", "player-a"), { characterDescription: "Bloqueado" }));
 });
 
 test("report review requires an audit record in the same batch", async () => {

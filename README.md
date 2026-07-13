@@ -194,3 +194,7 @@ Consulte `OPERATION_4_REPORT.md`, `VALIDATION_OPERATION_4.md` e `FINAL_DELIVERY_
 ## Millennium 3.2 — Mundo Vivo
 
 A versão 3.2 adiciona o módulo `millennium-world-alive.js`, a camada visual `world-alive.css`, rotação horária global do banner de pets, novas classes, artes exclusivas, composição unificada de atributos e o Ritual dos Selos. Consulte `OPERATION_WORLD_ALIVE_3_2.md`, `VALIDATION_3_2.md` e `FIRESTORE_SECURITY_3_2.md` antes da publicação.
+## Build 3.2.1 — Gestão de contas
+
+O painel do Oráculo separa reset de ficha, suspensão, banimento e exclusão definitiva. A exclusão da credencial do Firebase Authentication permanece manual para liberar o e-mail com segurança. Consulte `ACCOUNT_MANAGEMENT_3_2_1.md`.
+
