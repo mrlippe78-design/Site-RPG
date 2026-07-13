@@ -6,8 +6,13 @@
   "failed": 0,
   "buildConsistencyFailures": 0,
   "cssAudit": "passed",
-  "firestoreEmulator": "not_started",
-  "firestoreEmulatorReason": "npm ci received corrupted package archives and did not complete in this environment",
+  "firestoreEmulator": "passed",
+  "firestoreRulesTests": 18,
+  "firestoreRulesPassed": 18,
+  "firestoreRulesFailed": 0,
+  "firebaseTools": "14.27.0",
+  "javaRuntime": "17",
+  "productionVulnerabilities": 0,
   "browserSmoke": "not_run",
   "browserSmokeReason": "Chromium and Playwright were unavailable in this environment"
 }

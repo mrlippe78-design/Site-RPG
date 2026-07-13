@@ -7,10 +7,13 @@
 - testes Node da aplicação: 79 aprovados, 0 falhas;
 - auditoria estrutural de CSS: aprovada;
 - testes específicos de progressão, afinidades, Jukebox, Passe, ranking e salvamento: aprovados;
-- Firebase Emulator: não executado neste ambiente, pois `npm ci` recebeu pacotes corrompidos repetidamente e não concluiu a instalação;
+- Firebase Emulator: 18 cenários aprovados, 0 falhas;
+- regras compiladas pelo Firestore Emulator `cloud-firestore-emulator-v1.19.8.jar`;
+- `firebase-tools` fixado em 14.27.0 para manter compatibilidade operacional com Java 17;
+- vulnerabilidades de produção: 0;
 - teste visual Chromium: não executado neste ambiente.
 
-As regras não devem ser declaradas aprovadas até o Emulator terminar no computador de publicação.
+As regras estão aprovadas pelo Emulator nesta cópia. Ainda é recomendado repetir `npm run test:rules` no computador de publicação antes do deploy.
 
 ## Validação obrigatória antes da publicação
 

@@ -12,6 +12,7 @@
 - preserva cada pacote visual na biblioteca de temas e permite carregar, editar e pré-visualizar presets;
 - adiciona atualização emergencial com aviso, contagem regressiva e preservação de rascunhos;
 - atualiza regras, cache, build, testes, documentação e rollback para 3.4.0.
+- fixa `firebase-tools` em 14.27.0, isola cache/configuração do Emulator e aprova 18 testes de regras com Java 17.
 
 ## 3.1.2 — Administração, rankings e criações
 
