@@ -7,7 +7,10 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.5.0", commit: "dev", cacheName: "millennium-shell-v3.5.0" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.5.1", commit: "dev", cacheName: "millennium-shell-v3.5.1" };
+// Spark não oferece Cloud Functions. Todas as operações desta edição usam
+// Firestore/Auth e são limitadas pelas regras publicadas junto do site.
+const MILLENNIUM_SPARK_MODE = true;
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -137,9 +140,7 @@ const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
-  "https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js",
 ];
-const FIREBASE_FUNCTIONS_REGION = "southamerica-east1";
 
 const SEED_VERSION = 12;
 const GUILD_CREATE_COST = 1000;
@@ -1304,7 +1305,8 @@ function nowValue() {
 
 async function callTrustedOperation(type, payload = {}) {
   if (state.demo) return null;
-  if (!state.functions || !state.user) throw new Error("O serviço seguro do Firebase ainda não está disponível. Recarregue a página após publicar as Functions 3.5.");
+  if (MILLENNIUM_SPARK_MODE) throw new Error(`A operação ${type} tentou usar Cloud Functions na edição Spark.`);
+  if (!state.functions || !state.user) throw new Error("O serviço seguro do Firebase ainda não está disponível.");
   const callable = state.functions.httpsCallable("executeTrustedOperation");
   const response = await callable({ type, payload });
   return response?.data || null;
@@ -1312,6 +1314,10 @@ async function callTrustedOperation(type, payload = {}) {
 
 async function beginTrustedMinigame(session, mode) {
   if (state.demo || !session) return null;
+  if (MILLENNIUM_SPARK_MODE) {
+    session.serverRunPromise = Promise.resolve({ data: { runId: session.id, mode, spark: true } });
+    return session.serverRunPromise;
+  }
   if (!state.functions) throw new Error("O serviço seguro de minigames não foi carregado.");
   const callable = state.functions.httpsCallable("beginTrustedMinigame");
   const request = callable({
@@ -2506,7 +2512,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.5.0.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.5.1 Spark.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2537,14 +2543,14 @@ function loadScript(src, timeoutMs = 10000) {
 }
 
 async function loadFirebaseScripts() {
-  if (window.firebase?.initializeApp && window.firebase?.auth && window.firebase?.firestore && window.firebase?.functions) return true;
+  if (window.firebase?.initializeApp && window.firebase?.auth && window.firebase?.firestore) return true;
 
   for (const src of FIREBASE_SCRIPTS) {
     const loaded = await loadScript(src);
     if (!loaded) return false;
   }
 
-  return Boolean(window.firebase?.initializeApp && window.firebase?.auth && window.firebase?.firestore && window.firebase?.functions);
+  return Boolean(window.firebase?.initializeApp && window.firebase?.auth && window.firebase?.firestore);
 }
 
 function cleanupListeners() {
@@ -2625,7 +2631,7 @@ async function initFirebase() {
   state.app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
   state.auth = firebase.auth();
   state.db = firebase.firestore();
-  state.functions = firebase.app().functions(FIREBASE_FUNCTIONS_REGION);
+  state.functions = null;
   await state.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
   state.auth.onAuthStateChanged(async (user) => {
@@ -8181,8 +8187,24 @@ function rankingProjection(character = currentCharacter()) {
   const level = Math.max(1, Number(character.level || 1));
   const vault = character.gachaVault || [];
   const inventory = character.inventory || [];
+  const ownerId = character.ownerId || state.user?.uid || "";
+  const periods = ["daily", "weekly", "season", "all"];
+  const periodCounts = (items, field = "createdAt") => Object.fromEntries(periods.map((period) => [
+    period,
+    items.filter((item) => period === "season" && !item?.[field] ? true : isWithinRankingRange(item, period, field)).length,
+  ]));
+  const periodBests = (items, mode) => Object.fromEntries(periods.map((period) => [
+    period,
+    Math.max(0, ...items.filter((item) => item.mode === mode && isWithinRankingRange(item, period)).map((item) => Number(item.score || 0))),
+  ]));
+  const rolls = [...(character.rollHistory || []), ...(character.gachaHistory || [])];
+  const missions = (state.progressRequests || []).filter((request) => request.uid === ownerId && request.status === "aprovado" && ["mission", "guildMission", "training"].includes(request.type));
+  const views = (state.profileViews || []).filter((view) => view.targetId === ownerId);
+  const invoked = [...vault, ...inventory.filter((item) => item.source === "Invocacao dimensional")];
+  const secrets = invoked.filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial"));
+  const minigameHistory = character.minigameHistory || [];
   return {
-    ownerId: character.ownerId || state.user?.uid || "",
+    ownerId,
     characterName: character.characterName || "",
     displayName: character.displayName || character.playerName || "Player",
     eligible: rankingEligible({ ...character, ownerId: character.ownerId || state.user?.uid }),
@@ -8194,22 +8216,24 @@ function rankingProjection(character = currentCharacter()) {
     totalRares: Math.max(0, Number(character.totalRares || 0)),
     totalRolls: Math.max(0, Number(character.totalRolls || 0)),
     prestige: Math.max(0, Number(character.prestige || prestigeFor(character))),
-    rolls: { all: Math.max(0, Number(character.totalRolls || 0)), season: Math.max(0, Number(character.totalRolls || 0)), weekly: 0, daily: 0 },
-    missions: { all: 0, season: 0, weekly: 0, daily: 0 },
-    minigameBest: Object.fromEntries(["aim", "hunt", "tower", "seals", "cartography", "alchemy"].map((mode) => [mode, {
-      all: Math.max(0, Number(character.minigameStats?.[mode]?.bestScore || 0)),
-      season: Math.max(0, Number(character.minigameStats?.[mode]?.bestScore || 0)), weekly: 0, daily: 0,
-    }])),
-    views: { all: 0, season: 0, weekly: 0, daily: 0 },
+    rolls: { ...periodCounts(rolls), all: Math.max(0, Number(character.totalRolls || rolls.length)) },
+    missions: periodCounts(missions, "reviewedAt"),
+    minigameBest: Object.fromEntries(["aim", "hunt", "tower", "seals", "cartography", "alchemy"].map((mode) => {
+      const best = periodBests(minigameHistory, mode);
+      best.all = Math.max(best.all, Number(character.minigameStats?.[mode]?.bestScore || 0));
+      best.season = Math.max(best.season, Number(character.minigameStats?.[mode]?.bestScore || 0));
+      return [mode, best];
+    })),
+    views: periodCounts(views, "viewedAt"),
     petCount: vault.filter((item) => item?.kind === "pet").length,
     itemCount: inventory.length,
     passXp: Math.max(0, Number(character.seasonPassXp || 0)),
     premiumPassUnlocked: character.premiumPassUnlocked === true,
     achievementCount: derivedAchievementIds(character).size,
-    collection: { all: vault.length + inventory.filter((item) => item.source === "Invocacao dimensional").length, season: vault.length + inventory.filter((item) => item.source === "Invocacao dimensional").length, weekly: 0, daily: 0 },
-    secrets: { all: [...vault, ...inventory].filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length, season: [...vault, ...inventory].filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length, weekly: 0, daily: 0 },
-    collectionCount: vault.length + inventory.filter((item) => item.source === "Invocacao dimensional").length,
-    secretCount: [...vault, ...inventory].filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length,
+    collection: periodCounts(invoked, "obtainedAt"),
+    secrets: periodCounts(secrets, "obtainedAt"),
+    collectionCount: invoked.length,
+    secretCount: secrets.length,
     powerCount: (character.powers || []).filter((item) => item?.name).length,
     techniqueCount: (character.techniques || []).filter((item) => item?.name).length,
   };
@@ -8226,8 +8250,8 @@ async function syncRankingProjection(character = currentCharacter()) {
     if (uid === state.user?.uid) state.rankingProjectionHash = hash;
     return;
   }
-  // Produção: a projeção é escrita exclusivamente pelas Cloud Functions.
-  // O cliente não pode publicar a própria pontuação.
+  await state.db.collection("rankings").doc(uid).set({ ...projection, updatedAt: nowValue() });
+  state.diagnostics.writes += 1;
   if (uid === state.user?.uid) state.rankingProjectionHash = hash;
 }
 
@@ -8246,10 +8270,22 @@ async function rebuildRankingProjections() {
     return;
   }
 
-  if (!state.functions) throw new Error("Publique as Cloud Functions 3.5 antes de reconstruir o ranking.");
-  const callable = state.functions.httpsCallable("rebuildAllRankings");
-  const response = await callable({});
-  toast(`Ranking reconstruído pelo servidor: ${Number(response?.data?.count || 0)} ficha(s) processada(s).`);
+  const batchSize = 400;
+  let written = 0;
+  for (let offset = 0; offset < characters.length; offset += batchSize) {
+    const batch = state.db.batch();
+    characters.slice(offset, offset + batchSize).forEach((character) => {
+      const ownerId = character.ownerId || character.id;
+      if (!ownerId) return;
+      batch.set(state.db.collection("rankings").doc(ownerId), {
+        ...rankingProjection({ ...character, ownerId }),
+        updatedAt: nowValue(),
+      });
+      written += 1;
+    });
+    await batch.commit();
+  }
+  toast(`Ranking Spark reconstruído: ${written} ficha(s) processada(s).`);
 }
 
 function pickCharacterPatch(source, keys) {
@@ -8523,7 +8559,7 @@ async function rollAffinity(qty = 1) {
   }, amount > 1 ? 58 : 74);
 
   try {
-    if (!state.demo) {
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
       const server = await callTrustedOperation("affinity", { action: "roll", qty: amount });
       await delay(amount > 1 ? 3300 : 2200);
       window.clearInterval(interval);
@@ -8696,7 +8732,7 @@ async function chooseAffinity(affinityId) {
   const choice = choices.find((item) => item.affinityId === affinityId);
   if (!choice) return;
   if (choice.current) {
-    if (!state.demo) await callTrustedOperation("affinity", { action: "choose", affinityId });
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) await callTrustedOperation("affinity", { action: "choose", affinityId });
     state.affinityChoices = [];
     toast("Afinidade atual mantida.");
     render();
@@ -8709,7 +8745,7 @@ async function chooseAffinity(affinityId) {
     affinityId: affinity.id,
     affinitySnapshot: { ...affinity, categoryName: category?.name || "", rarity: category?.rarity || "" },
   };
-  if (!state.demo) await callTrustedOperation("affinity", { action: "choose", affinityId });
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) await callTrustedOperation("affinity", { action: "choose", affinityId });
   else await updateCharacter(state.user.uid, affinityPatch);
   await syncPublicProfileProjection({ ...currentCharacter(), ...affinityPatch });
   state.affinityChoices = [];
@@ -8784,7 +8820,7 @@ async function claimPendingGift() {
 }
 
 async function toggleEquip(instanceId) {
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("inventory", { action: "equip", instanceId });
     return;
   }
@@ -8825,7 +8861,7 @@ async function invokeGacha(type = "pets", qty = 1) {
   playSound("rolling");
   try {
     await delay(amount >= 10 ? 1100 : 780);
-    if (!state.demo) {
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
       const trusted = await callTrustedOperation("gacha", { kind, qty: amount });
       const results = Array.isArray(trusted?.results) ? trusted.results : [];
       if (!results.length) throw new Error("O servidor não retornou recompensas válidas.");
@@ -8937,7 +8973,7 @@ function openGachaReveal(results, kind) {
 }
 
 async function toggleVaultEquip(instanceId) {
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("inventory", { action: "vault-toggle", instanceId });
     return;
   }
@@ -8976,7 +9012,7 @@ async function fuseVaultItem(instanceId) {
     toast(`Você precisa de outro ${item.baseName || item.name} com ${Number(item.stars || 1)} estrela(s) e a mesma raridade.`);
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("inventory", { action: "fuse", instanceId });
     toast(`${item.name} subiu para ${Number(result?.stars || Number(item.stars || 1) + 1)} estrela(s).`);
     return;
@@ -8994,7 +9030,7 @@ async function shardVaultItem(instanceId) {
   if (!item || item.locked || petBusy(item)) return;
   const fragmentName = gachaFragmentName(item);
   const amount = fragmentGainFor(item);
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("inventory", { action: "shard", instanceId });
     toast(`${result?.name || item.name} virou ${Number(result?.amount || amount)} ${result?.fragmentName || fragmentName}.`);
     return;
@@ -9010,7 +9046,7 @@ async function sendVaultMain(instanceId) {
   const character = currentCharacter();
   const item = (character.gachaVault || []).find((entry) => entry.instanceId === instanceId);
   if (!item) return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("inventory", { action: "export", instanceId });
     toast(result?.kind === "pet" ? "Pet enviado para a vitrine do perfil." : "Item enviado para o inventário principal.");
     return;
@@ -9046,7 +9082,7 @@ async function recoverPet(instanceId) {
     toast(`Você precisa de ${cost} Millennium Coins para recuperar este pet.`);
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("inventory", { action: "recover", instanceId });
     toast(`${result?.name || item.name} voltou a ficar livre por ${Number(result?.cost || cost)} Millennium Coins.`);
     return;
@@ -9072,7 +9108,7 @@ async function redeemShardShop(shopId) {
     toast(`Você precisa de ${cost} ${fragmentName}.`);
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("inventory", { action: "redeem", shopId });
     toast(`${result?.name || shopItem.name} resgatado.`);
     return;
@@ -9189,7 +9225,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
     toast("Esta partida já foi resolvida. Nenhuma recompensa duplicada foi aplicada.");
     return { duplicate: true, passed: false, grade: "-", coins: 0, fragments: 0, fragmentName: "", loot: [] };
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const session = ({
       aim: state.activeAimSession,
       seals: state.activeSealSession,
@@ -9742,7 +9778,7 @@ async function startPetHunt(form) {
     ],
   };
   const vault = (character.gachaVault || []).map((item) => item.instanceId === pet.instanceId ? { ...item, status: "Em Hunt", activityId: activity.id, equipped: false } : item);
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await beginTrustedMinigame({ id: activity.id, difficulty, level, petId: pet.instanceId, activity }, "hunt");
     delete state.minigameDrafts["pet-hunt"];
     form.reset();
@@ -9779,7 +9815,7 @@ async function completeActivity(activityId, cancelled = false) {
     const pet = (character.gachaVault || []).find((item) => item.instanceId === activity.petId);
     const level = FOUNDATIONS.clampLevel(activity.stageLevel || 1);
     const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier * (1 + (level - 1) * 0.18));
-    if (!state.demo) {
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
       const reward = await callTrustedOperation("minigame", { mode: "hunt", difficultyId: difficulty.id, score, runId: activityId, level, cancelled });
       toast(`${activity.petName} voltou${reward.petStatus && reward.petStatus !== "Livre" ? ` ${String(reward.petStatus).toLowerCase()}` : ""}: ${(reward.loot || []).join(" · ")}${reward.unlockedNext ? ` · Nível ${level + 1} liberado` : ""}`);
       return;
@@ -10486,7 +10522,7 @@ async function claimPassReward(tierId, track) {
   patch.prestige = prestigeFor({ ...character, ...patch });
   state.passClaiming = true;
   try {
-    if (!state.demo) {
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
       const result = await callTrustedOperation("pass", { action: "reward", id: tierId, track });
       toast(result?.duplicate ? "Essa recompensa já foi coletada." : `Recompensa ${track === "premium" ? "Premium" : "Free"} coletada: ${result?.rewardText || rewardText}.`);
       return;
@@ -10525,7 +10561,7 @@ async function claimPassMission(missionId) {
   };
   state.passClaiming = true;
   try {
-    if (!state.demo) {
+    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
       const result = await callTrustedOperation("pass", { action: "mission", id: missionId });
       toast(result?.duplicate ? "Este objetivo já foi coletado no período atual." : `+${Number(result?.xp || xp)} XP do Passe.`);
       return;
@@ -10549,7 +10585,7 @@ async function requestPremiumPass() {
     toast("Você precisa de 1.000 PO para desbloquear o passe premium.");
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("pass", { action: "premium" });
     toast("Passe Premium desbloqueado. As recompensas estão prontas para coleta.");
     return;
@@ -10608,7 +10644,7 @@ async function craftMarketItem(recipeId) {
     toast(`Faltam materiais: ${missing.map((entry) => `${entry.name} x${entry.quantity}`).join(" · ")}.`);
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("market-official", { action: "craft", itemId: recipeId });
     toast(`${result?.item?.name || recipe.result || recipe.name} foi forjado e entrou no inventário.`);
     return;
@@ -10678,7 +10714,7 @@ async function buyOfficialMarketItem(itemId) {
     toast("PO insuficiente para esta compra.");
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("market-official", { action: "buy", itemId });
     toast(`${result?.item?.name || listing.name} entrou no seu inventário.`);
     return;
@@ -10712,7 +10748,7 @@ async function publishPlayerListing(form) {
     toast("Escolha um item disponível e informe um preço válido.");
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "publish", itemInstance: values.itemInstance, price, currency: values.currency });
     form.reset();
     toast("Anúncio publicado no Bazar.");
@@ -10749,7 +10785,7 @@ async function fundMarketTrade(listingId) {
     toast("Você já deixou uma garantia para este anúncio.");
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "fund", id: listingId });
     toast("Garantia depositada. O vendedor pode entregar o item agora.");
     return;
@@ -10777,7 +10813,7 @@ async function acceptMarketTrade(tradeId) {
   const listing = (state.content.playerListings || []).find((entry) => entry.id === trade?.listingId);
   const character = currentCharacter();
   if (!trade || !listing || trade.sellerId !== state.user.uid || trade.status !== "funded") return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "accept", id: tradeId });
     toast("Item entregue. A garantia foi liberada para você.");
     return;
@@ -10796,7 +10832,7 @@ async function acceptMarketTrade(tradeId) {
 async function declineMarketTrade(tradeId) {
   const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
   if (!trade || trade.sellerId !== state.user.uid || trade.status !== "funded") return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "decline", id: tradeId });
     toast("Venda recusada. O comprador já pode reaver a garantia.");
     return;
@@ -10809,7 +10845,7 @@ async function collectMarketTrade(tradeId) {
   const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
   const character = currentCharacter();
   if (!trade || trade.buyerId !== state.user.uid || trade.status !== "ready") return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "collect", id: tradeId });
     toast("Item coletado no seu inventário.");
     return;
@@ -10825,7 +10861,7 @@ async function refundMarketTrade(tradeId) {
   const trade = (state.marketTrades || []).find((entry) => entry.id === tradeId);
   const character = currentCharacter();
   if (!trade || trade.buyerId !== state.user.uid || trade.status !== "rejected") return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("market-player", { action: "refund", id: tradeId });
     toast("Garantia devolvida para sua carteira.");
     return;
@@ -10876,7 +10912,7 @@ async function placeAuctionBid(form) {
     toast(`Seu lance precisa ser de pelo menos ${minimum} PO e caber na sua carteira.`);
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("auction", { action: "bid", auctionId: auction.id, amount });
     closeModal();
     toast("Lance registrado.");
@@ -10908,7 +10944,7 @@ async function claimAuction(auctionId) {
     toast("Você não tem mais PO suficiente para cobrir o lance vencedor.");
     return;
   }
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("auction", { action: "claim", auctionId });
     toast("Vitória confirmada. A relíquia entrou no seu inventário.");
     return;
@@ -11252,7 +11288,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.5.0",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.5.1",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -11357,7 +11393,7 @@ async function respondSocialRequest(id, accept) {
     toast("Esse pedido não é seu.");
     return;
   }
-  if (!state.demo && ["guildInvite", "guildJoinRequest"].includes(request.type)) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE && ["guildInvite", "guildJoinRequest"].includes(request.type)) {
     await callTrustedOperation("guild-respond", { requestId: id, accept });
     toast(accept ? "Pedido aceito." : "Pedido recusado.");
     return;
@@ -11394,7 +11430,7 @@ async function createGuild(form) {
     return;
   }
   const guildId = slug(values.name || `guild-${cryptoRandom()}`);
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     const result = await callTrustedOperation("guild-create", {
       guildId,
       name: values.name,
@@ -11509,7 +11545,7 @@ async function requestGuildJoin(guildId) {
 async function removeGuildMember(guildId, uid) {
   const guild = state.guilds.find((item) => item.id === guildId);
   if (!guild || !isGuildLeader(guild) || uid === guild.leaderId) return;
-  if (!state.demo) {
+  if (!state.demo && !MILLENNIUM_SPARK_MODE) {
     await callTrustedOperation("guild-remove", { guildId, memberId: uid });
     toast("Membro removido da guilda.");
     return;
