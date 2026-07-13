@@ -11,8 +11,8 @@ const rules = await readFile(new URL("../firestore.rules", import.meta.url), "ut
 const build = await readFile(new URL("../build-info.js", import.meta.url), "utf8");
 
 test("current build is synchronized", () => {
-  assert.match(build, /version:\s*"3\.3\.0"/);
-  assert.match(build, /millennium-shell-v3\.3\.0/);
+  assert.match(build, /version:\s*"3\.4\.0"/);
+  assert.match(build, /millennium-shell-v3\.4\.0/);
 });
 
 test("creation flow is controlled by the Oracle", () => {
@@ -22,7 +22,8 @@ test("creation flow is controlled by the Oracle", () => {
   assert.equal(backend.creationPlayerResponseAllowed({ status: "pendente" }, "accepted"), false);
   assert.equal(backend.creationNeedsAdminAction({ status: "contestado pelo player" }), true);
   assert.equal(backend.canResubmitCreation({ status: "nerf solicitado" }), false);
-  assert.match(app, /O player envia a ideia\. O Oráculo analisa, ajusta/);
+  assert.match(app, /A Afinidade é a fundação\. Dela nasce um único Poder central/);
+  assert.match(app, /Oráculo fará a análise e apresentará a versão balanceada/);
   assert.match(app, /accept-creation-proposal/);
   assert.match(app, /contest-creation-proposal/);
   assert.doesNotMatch(app, /Ajustar e reenviar/);

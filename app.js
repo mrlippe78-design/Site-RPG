@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.3.0", commit: "dev", cacheName: "millennium-shell-v3.3.0" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.4.0", commit: "dev", cacheName: "millennium-shell-v3.4.0" };
 const STABILITY = window.MILLENNIUM_STABILITY_31 || {
   mergeRenderRequests: (previous, next) => ({ ...(previous || {}), ...next, critical: Boolean(previous?.critical || next?.critical) }),
   shouldDeferRender: ({ critical, activeText, dirtyForm, liveSession }) => ({ defer: critical ? false : Boolean(liveSession || activeText || dirtyForm) }),
@@ -59,6 +59,19 @@ const ECHOES = window.MILLENNIUM_ECHOES_33 || {
   cartographyMove: (board = [], index = -1) => board,
   alchemyChallenge: () => ({ ingredients: [], recipe: [], clues: [] }),
   evaluateAlchemy: () => ({ correct: 0, total: 0, score: 0, passed: false }),
+};
+const FOUNDATIONS = window.MILLENNIUM_FOUNDATIONS_34 || {
+  minigameLevels: [{ id: 1, name: "Nível 1", rewardFactor: 1 }, { id: 2, name: "Nível 2", rewardFactor: 1.12 }, { id: 3, name: "Nível 3", rewardFactor: 1.28 }],
+  musicTracks: [],
+  clampLevel: (level) => Math.max(1, Math.min(3, Number(level) || 1)),
+  minigameProgress: () => ({ unlockedLevel: 1, bestScores: {}, clearedLevels: [] }),
+  minigameTarget: (difficulty) => Number(difficulty?.minScore || 1),
+  isMinigameLevelUnlocked: (_character, _mode, _difficulty, level) => Number(level || 1) === 1,
+  recordMinigameProgress: (character) => ({ passed: false, target: 0, unlockedNext: false, progress: character.minigameProgress || {} }),
+  techniqueSlotsForLevel: (level) => Math.max(0, Math.floor(Number(level || 1) / 5)),
+  nextTechniqueLevel: (level) => (Math.floor(Number(level || 1) / 5) + 1) * 5,
+  enrichAffinities: (affinities) => affinities,
+  musicTrack: () => null,
 };
 const ACCOUNT_MGMT = window.MILLENNIUM_ACCOUNT_MANAGEMENT_321 || {
   CHARACTER_SUBCOLLECTIONS: ["lore", "inventory", "pets", "titles", "powers", "techniques", "activities", "missions", "achievements", "discoveries", "history", "developmentLogs", "rewards", "minigameRuns"],
@@ -126,7 +139,7 @@ const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
 ];
 
-const SEED_VERSION = 11;
+const SEED_VERSION = 12;
 const GUILD_CREATE_COST = 1000;
 const GUILD_MEMBER_LIMIT = 10;
 const CHAT_LIMIT = 60;
@@ -240,6 +253,10 @@ const DEFAULT_CONTENT = {
     rulesVersion: "3.0",
     termsText: "Millennium é um RPG textual contínuo jogado principalmente pelo WhatsApp. A Interface do Oráculo registra fichas, inventário, economia, chats de apoio, missões e decisões administrativas; ela não substitui interpretação nem concede vitória automática. Ao entrar, você concorda em respeitar autoria limitada, consentimento, localização, ferimentos, custos, consequências e decisões explicadas do Oráculo; não usar metagame, godmodding, spam de ações, manipulação do navegador, abuso de bugs, assédio ou fraude econômica; denunciar problemas com contexto; e proteger a experiência coletiva.",
     maintenanceMode: false,
+    emergencyTitle: "Atualização emergencial",
+    emergencyMessage: "A Interface receberá uma correção e preservará seus rascunhos locais.",
+    emergencyAction: "reload",
+    emergencyCountdown: 5,
     gameStarted: false,
     betaGranted: false,
     panicVersion: "",
@@ -578,6 +595,7 @@ function applyEdition3Defaults() {
 
 applyEdition3Defaults();
 WORLD.applyCatalogs(DEFAULT_CONTENT);
+DEFAULT_CONTENT.affinities = FOUNDATIONS.enrichAffinities(DEFAULT_CONTENT.affinities, DEFAULT_CONTENT.affinityCategories);
 
 const STATIC_CATALOGS_31 = window.MILLENNIUM_CATALOGS_31 || { cultures: [], professions: [] };
 DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry }));
@@ -707,6 +725,7 @@ const state = {
   vaultTab: "all",
   minigameTab: "quick",
   minigameDifficulty: "facil",
+  minigameLevel: 1,
   activeAimSession: null,
   activeTowerSession: null,
   activeSealSession: null,
@@ -728,11 +747,14 @@ const state = {
   rolling: false,
   musicOn: false,
   musicVolume: 0.16,
+  musicTrack: localStorage.getItem("millenniumMusicTrack") || "",
   musicNodes: null,
   settings: { ...DEFAULT_CONTENT.settings },
   content: defaultContentState(),
   users: [],
   characters: [],
+  rankingProfiles: [],
+  rankingProjectionHash: "",
   publicProfiles: [],
   character: null,
   characterLore: null,
@@ -769,10 +791,12 @@ const state = {
   lastActivityAt: Date.now(),
   sessionAnnounced: false,
   lastPanicVersion: "",
+  emergencyTimer: 0,
   characterDraft: null,
   characterStep: 0,
   characterIntroSeen: false,
   characterSaving: false,
+  characterSaveStatus: "",
   developmentSpending: false,
   adminUserDraft: null,
   adminOperationInProgress: false,
@@ -794,6 +818,7 @@ const state = {
   textComposing: false,
   localDraftTimer: 0,
   passClaiming: false,
+  passActivityTracking: false,
   onboardingShown: false,
   onboardingStep: 0,
   pendingLiveRender: false,
@@ -1033,6 +1058,40 @@ function applyAvailableUpdate() {
   saveUpdateDrafts();
   state.updateReloadRequested = true;
   state.waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
+function handleEmergencyUpdate(settings = state.settings) {
+  if (state.role === "admin") return;
+  persistDirtyForms();
+  saveUpdateDrafts();
+  const title = settings.emergencyTitle || "Atualização emergencial";
+  const message = settings.emergencyMessage || "A Interface está recebendo uma correção.";
+  const action = ["reload", "signout", "maintenance"].includes(settings.emergencyAction) ? settings.emergencyAction : "reload";
+  const seconds = Math.max(0, Math.min(30, Number(settings.emergencyCountdown || 5)));
+  window.clearTimeout(state.emergencyTimer);
+  const notice = $("#updateNotice");
+  if (notice) {
+    notice.querySelector("strong").textContent = title;
+    notice.querySelector("span").textContent = `${message} Rascunhos preservados. Ação em ${seconds}s.`;
+    notice.querySelector('[data-action="apply-update"]')?.setAttribute("hidden", "");
+    notice.hidden = false;
+  }
+  state.emergencyTimer = window.setTimeout(() => {
+    if (action === "signout") {
+      setPresence(false);
+      cleanupListeners();
+      state.auth?.signOut?.();
+      state.user = null;
+      state.demo = false;
+      showAuth();
+      return;
+    }
+    if (action === "maintenance") {
+      scheduleRender({ critical: true, reason: "emergency-maintenance" });
+      return;
+    }
+    window.location.reload();
+  }, seconds * 1000);
 }
 
 async function registerMillenniumServiceWorker() {
@@ -1387,6 +1446,12 @@ function defaultCharacter(uid, displayName = "") {
     gachaHistory: [],
     activeActivities: [],
     minigameStats: {},
+    minigameProgress: {},
+    minigameHistory: [],
+    minigameCompletionKeys: [],
+    huntCompletionKeys: [],
+    huntHistory: [],
+    passActivity: {},
     activeTitleId: "",
     pendingGift: null,
     activeMissions: [],
@@ -1782,7 +1847,8 @@ async function startAmbientMusic() {
     ember: { drone: [73.42, 110, 146.83], melody: [220, 293.66, 349.23, 329.63, 261.63, 220], interval: 2850, filter: 900 },
     forest: { drone: [65.41, 98, 146.83], melody: [196, 246.94, 293.66, 261.63, 220, 174.61], interval: 3450, filter: 920 },
   };
-  const motif = motifs[state.settings.seasonTheme] || motifs.awakening;
+  const requestedTrack = state.musicTrack || state.settings.seasonThemeMainMusic || state.settings.seasonTheme || "awakening";
+  const motif = FOUNDATIONS.musicTrack(requestedTrack) || motifs[requestedTrack] || motifs[state.settings.seasonTheme] || motifs.awakening;
   const notes = motif.drone;
   const oscillators = notes.map((freq, index) => {
     const osc = ctx.createOscillator();
@@ -1825,7 +1891,7 @@ async function startAmbientMusic() {
     osc.start();
     osc.stop(ctx.currentTime + 1.5);
   }, motif.interval);
-  state.musicNodes = { ctx, master, filter, lfo, lfoGain, oscillators, timers: [melodyTimer] };
+  state.musicNodes = { ctx, master, filter, lfo, lfoGain, oscillators, timers: [melodyTimer], trackId: requestedTrack };
   state.musicOn = true;
   localStorage.setItem("millenniumMusic", "on");
   updateMusicButton();
@@ -1859,6 +1925,27 @@ async function toggleAmbientMusic() {
     return;
   }
   await startAmbientMusic();
+}
+
+async function selectMusicTrack(trackId) {
+  const track = FOUNDATIONS.musicTrack(trackId);
+  if (!track) return;
+  state.musicTrack = track.id;
+  try { localStorage.setItem("millenniumMusicTrack", track.id); } catch { /* no-op */ }
+  if (state.musicOn) {
+    stopAmbientMusic();
+    await startAmbientMusic();
+  }
+  toast(`Jukebox: ${track.name}.`);
+  scheduleRender({ preserveScroll: true, reason: "jukebox-track" });
+}
+
+function nextMusicTrack() {
+  const tracks = FOUNDATIONS.musicTracks || [];
+  if (!tracks.length) return;
+  const currentId = state.musicTrack || state.settings.seasonThemeMainMusic || state.settings.seasonTheme;
+  const index = tracks.findIndex((track) => track.id === currentId);
+  return selectMusicTrack(tracks[(index + 1 + tracks.length) % tracks.length].id);
 }
 
 function delay(ms) {
@@ -2228,10 +2315,30 @@ function rankingEligible(character = {}) {
   const ownerId = character.ownerId || character.id || "";
   const user = state.users.find((entry) => entry.id === ownerId);
   if (!ownerId || !character.characterName) return false;
+  if (character.__rankingProjection && character.eligible !== true) return false;
   if (character.excludeFromRanking === true) return false;
   if (user?.role === "admin") return false;
   if (["deleted", "removed"].includes(String(user?.status || "").toLowerCase())) return false;
-  return Boolean(character.creationLocked || character.technicalCreationComplete || character.characterName);
+  return Boolean(character.creationLocked || character.technicalCreationComplete);
+}
+
+function rankingCharacters() {
+  if (!state.rankingProfiles.length) return [...state.characters];
+  return state.rankingProfiles.map((profile) => ({
+    ...profile,
+    id: profile.id || profile.ownerId,
+    ownerId: profile.ownerId || profile.id,
+    __rankingProjection: true,
+    creationLocked: profile.eligible === true,
+    technicalCreationComplete: profile.eligible === true,
+    millenniumCoins: Number(profile.coins || 0),
+    seasonPassXp: Number(profile.passXp || 0),
+    minigameStats: {
+      aim: { bestScore: Number(profile.aimBest || 0) },
+      hunt: { bestScore: Number(profile.huntBest || 0) },
+      tower: { bestScore: Number(profile.towerBest || 0) },
+    },
+  }));
 }
 
 function classOwnerCount(classId) {
@@ -2301,7 +2408,7 @@ function requestRewardHint(request) {
 }
 
 function leaderboard() {
-  return [...state.characters]
+  return rankingCharacters()
     .filter(rankingEligible)
     .sort((a, b) => prestigeFor(b) - prestigeFor(a)
       || Number(b.totalRares || 0) - Number(a.totalRares || 0)
@@ -2348,7 +2455,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.3.0.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.4.0.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2609,7 +2716,7 @@ function subscribeUserDirectory() {
   routeCollection("users", (users) => {
     state.users = users;
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
-  }, (query) => query.limit(100));
+  }, (query) => query.limit(state.role === "admin" ? 250 : 100));
   routeCollection("publicProfiles", (profiles) => {
     state.publicProfiles = profiles;
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
@@ -2632,18 +2739,25 @@ function activateRouteSubscriptions(view = state.view) {
   clearRouteSubscriptions();
   state.routeSubscriptionKey = key;
 
-  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports"].includes(view);
+  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports", "admin-settings"].includes(view);
   if (needsDirectory) subscribeUserDirectory();
 
-  if (["admin-home", "admin-users", "admin-ops"].includes(view) && state.role === "admin") {
+  if (["admin-home", "admin-users", "admin-ops", "admin-settings"].includes(view) && state.role === "admin") {
     routeCollection("characters", (characters) => {
       state.characters = characters;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query.limit(80));
+    }, (query) => query.limit(250));
     routeCollection("accountDeletionQueue", (entries) => {
       state.accountDeletionQueueEntries = entries;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
     }, (query) => query.orderBy("createdAt", "desc").limit(30), "account-deletion-queue");
+  }
+
+  if (["player-home", "ranking", "hall"].includes(view)) {
+    routeCollection("rankings", (profiles) => {
+      state.rankingProfiles = profiles;
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: "ranking-live" });
+    }, (query) => query.limit(250), "ranking-projections");
   }
 
   if (["player-home", "missions", "guild", "admin-home", "admin-missions"].includes(view)) {
@@ -2672,7 +2786,7 @@ function activateRouteSubscriptions(view = state.view) {
     }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30), "legacy-direct-messages");
   }
 
-  if (["player-home", "missions", "guild", "creations", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
+  if (["player-home", "missions", "guild", "creations", "pass", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
 
   if (view === "character-life") {
     routeDocument(`characters/${state.user.uid}/lore`, "main", (lore) => {
@@ -2736,6 +2850,7 @@ function activateRouteSubscriptions(view = state.view) {
   if (view === "admin-content" && state.role === "admin") {
     CONTENT_COLLECTIONS.forEach((collection) => routeCollection(collection, (items) => {
       state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
+      if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
     }, (query) => query.limit(100)));
   } else {
@@ -2745,6 +2860,7 @@ function activateRouteSubscriptions(view = state.view) {
     if (["gacha", "minigames", "inventory", "admin-economy"].includes(view)) ["gachaPets", "gachaItems", "gachaBanners", "biomes", "towerMaps", "items"].forEach((entry) => routeCatalogs.add(entry));
     routeCatalogs.forEach((collection) => routeCollection(collection, (items) => {
       state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
+      if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: `catalog-${collection}` });
     }, (query) => query.limit(120), `catalog-${collection}`));
   }
@@ -2950,6 +3066,7 @@ function startCharacterSubscription() {
     }
     state.character = character;
     if (state.role !== "admin") state.characters = [character];
+    if (state.role !== "admin" && character.characterName) syncRankingProjection(character).catch((error) => console.warn("Ranking projection deferred:", error));
     scheduleRender({ preserveFocus: true, preserveScroll: true });
   });
 }
@@ -3023,13 +3140,7 @@ function subscribeCore() {
     }
     if (!state.lastPanicVersion) state.lastPanicVersion = state.settings.panicVersion || "";
     if (previousPanic && state.settings.panicVersion && state.settings.panicVersion !== previousPanic && state.role !== "admin") {
-      toast(`Atualização emergencial iniciada pelo ${ORACLE_LABEL}. Você será desconectado.`);
-      setPresence(false);
-      cleanupListeners();
-      state.auth?.signOut?.();
-      state.user = null;
-      state.demo = false;
-      showAuth();
+      handleEmergencyUpdate(state.settings);
       return;
     }
     state.lastPanicVersion = state.settings.panicVersion || "";
@@ -3234,6 +3345,9 @@ async function pruneMessages(collection, messages, predicate = () => true) {
 
 async function updateCharacter(uid, patch) {
   await writeDoc("characters", uid, { ...patch, ownerId: uid });
+  const merged = { ...getCharacterFor(uid), ...patch, ownerId: uid };
+  if (uid === state.user?.uid) state.character = merged;
+  await syncRankingProjection(merged).catch((error) => console.warn("Ranking projection deferred:", error));
 }
 
 async function addGlobalMessage(data) {
@@ -4355,7 +4469,11 @@ function renderCreationsIntroduction() {
   const filter = state.creationFilter || "all";
   const filtered = requests.filter((request) => filter === "all" || creationRequestStatus(request) === filter);
   const approvedPowers = (character.powers || []).filter((power) => power.status !== "reprovado");
-  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
+  const approvedTechniques = (character.techniques || []).filter((technique) => technique.status !== "reprovado" && technique.name);
+  const characterLevel = Math.max(1, Number(character.level || levelFromXp(character.xp || 0)));
+  const techniqueSlots = FOUNDATIONS.techniqueSlotsForLevel(characterLevel);
+  const nextTechniqueLevel = FOUNDATIONS.nextTechniqueLevel(characterLevel);
+  const affinity = getAffinity(character.affinityId);
   const statuses = ["all", "pendente", "em análise", "aguardando confirmação", "aceito pelo player", "contestado pelo player", "aprovado", "reprovado"];
 
   const proposalBlock = (request) => {
@@ -4369,17 +4487,18 @@ function renderCreationsIntroduction() {
 
   return `
     <div class="grid creation-workbench">
-      <article class="catalog-hero span-12"><div><p class="eyebrow">Jornada · Criações</p><h2>Poderes e Técnicas</h2><p>O player envia a ideia. O Oráculo analisa, ajusta e apresenta a versão balanceada. O player apenas confirma se concorda ou aponta uma contradição antes da aprovação final.</p></div><div class="creation-summary-grid"><span class="tag">Poderes ${approvedPowers.length}/${powerSlots}</span><span class="tag">Afinidade ${esc(getAffinity(character.affinityId)?.name || "não revelada")}</span><span class="tag">${requests.length} registro(s)</span></div></article>
+      <article class="catalog-hero span-12"><div><p class="eyebrow">Jornada · Criações</p><h2>Um Poder, várias Técnicas</h2><p>A Afinidade é a fundação. Dela nasce um único Poder central; desse Poder nascem aplicações específicas, liberadas a cada 5 níveis.</p></div><div class="creation-summary-grid"><span class="tag">Poder ${approvedPowers.length}/1</span><span class="tag">Técnicas ${approvedTechniques.length}/${techniqueSlots}</span><span class="tag">Afinidade ${esc(affinity?.name || "não revelada")}</span><span class="tag">Próximo espaço: nível ${nextTechniqueLevel}</span></div></article>
+      <article class="panel span-12 power-foundation-guide"><p class="eyebrow">Fundação do personagem</p><div class="power-chain"><section><strong>Afinidade · ${esc(affinity?.name || "pendente")}</strong><p>${esc(affinity?.powerFoundation || "Descubra uma afinidade para definir a linguagem e os limites do poder.")}</p></section><section><strong>Poder central · ${esc(approvedPowers[0]?.name || "a criar")}</strong><p>É a manifestação principal e única desta ficha.</p></section><section><strong>Técnicas · ${approvedTechniques.length}/${techniqueSlots}</strong><p>${esc(affinity?.techniqueGuide || "Cada técnica registra uma aplicação específica do poder.")}</p></section></div></article>
       <article class="panel span-7">
         <div class="panel-heading"><div><p class="eyebrow">Nova proposta</p><h3>Enviar ideia ao Oráculo</h3></div></div>
         <form class="creation-form-grid" data-form="creation-request">
           <input type="hidden" name="previousRequestId" value="" />
           <input type="hidden" name="revision" value="1" />
-          <label><span>Tipo</span><select name="type"><option value="power">Poder</option><option value="technique">Técnica</option></select></label>
+          <label><span>Tipo</span><select name="type"><option value="power" ${approvedPowers.length ? "disabled" : ""}>Poder central</option><option value="technique" ${!approvedPowers.length || approvedTechniques.length >= techniqueSlots ? "disabled" : ""}>Técnica (${approvedTechniques.length}/${techniqueSlots})</option></select></label>
           <label><span>Nome</span><input name="title" maxlength="120" required /></label>
           <label class="wide"><span>Conceito</span><textarea name="concept" rows="3" maxlength="1200" required></textarea></label>
           <label><span>Função</span><input name="function" maxlength="500" placeholder="Ataque, defesa, suporte, mobilidade..." required /></label>
-          <label><span>Afinidade</span><select name="affinityId"><option value="${esc(character.affinityId || "")}">${esc(getAffinity(character.affinityId)?.name || "Afinidade da ficha")}</option></select></label>
+          <label><span>Afinidade-base</span><select name="affinityId" required><option value="${esc(character.affinityId || "")}">${esc(affinity?.name || "Escolha a afinidade primeiro")}</option></select></label>
           <label class="wide"><span>Manifestação</span><textarea name="manifestation" rows="3" maxlength="1200" required></textarea></label>
           <label><span>Alcance imaginado</span><input name="range" maxlength="300" required /></label>
           <label><span>Duração imaginada</span><input name="duration" maxlength="300" required /></label>
@@ -4638,7 +4757,7 @@ function renderCharacterForm() {
   const draft = mergedCharacterDraft(character);
   return `
     <form class="character-registration" data-form="character" novalidate>
-      <header class="registration-header"><div><p class="eyebrow">Registrar o Escolhido</p><h2>Seu Primeiro Despertar</h2><p>Etapa ${step} de 7 · o rascunho fica neste dispositivo até a confirmação.</p></div><span id="draftStatus" class="draft-status" aria-live="polite"></span></header>
+      <header class="registration-header"><div><p class="eyebrow">Registrar o Escolhido</p><h2>Seu Primeiro Despertar</h2><p>Etapa ${step} de 7 · o rascunho fica neste dispositivo até a confirmação.</p></div><span id="draftStatus" class="draft-status" aria-live="polite">${state.characterSaveStatus === "saving" ? "Salvando ficha…" : state.characterSaveStatus === "error" ? "Falha ao salvar · rascunho preservado" : state.characterSaveStatus === "saved" ? "Ficha salva" : ""}</span></header>
       ${registrationStepper(step)}
       ${renderCharacterStep(step, draft, character)}
       <footer class="registration-actions">
@@ -4899,6 +5018,23 @@ function renderDifficultyTabs() {
   `).join("")}</div>`;
 }
 
+function renderMinigameLevelTabs() {
+  const level = FOUNDATIONS.clampLevel(state.minigameLevel);
+  return `<div class="minigame-level-row" role="group" aria-label="Nível interno do desafio">${FOUNDATIONS.minigameLevels.map((stage) => `<button class="difficulty-chip ${level === stage.id ? "active" : ""}" type="button" data-action="minigame-level" data-level="${stage.id}">${esc(stage.name)}<small>${stage.id === 1 ? "inicial" : `exige nível ${stage.id - 1}`}</small></button>`).join("")}</div>`;
+}
+
+function minigameStageStatus(mode, difficulty = difficultyById(state.minigameDifficulty), level = state.minigameLevel) {
+  const stage = FOUNDATIONS.clampLevel(level);
+  const progress = FOUNDATIONS.minigameProgress(currentCharacter(), mode, difficulty.id);
+  const unlocked = FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), mode, difficulty.id, stage);
+  return { stage, progress, unlocked, target: FOUNDATIONS.minigameTarget(difficulty, stage) };
+}
+
+function minigameStageMeta(mode, difficulty = difficultyById(state.minigameDifficulty)) {
+  const status = minigameStageStatus(mode, difficulty);
+  return `<div class="minigame-stage-meta ${status.unlocked ? "unlocked" : "locked"}"><span>Nível ${status.stage}</span><strong>${status.unlocked ? `Meta ${status.target.toLocaleString("pt-BR")}` : `Conclua o nível ${status.stage - 1}`}</strong></div>`;
+}
+
 function huntSceneFor(activity = {}) {
   const biome = (state.content.biomes || []).find((item) => item.name === activity.biome || item.id === activity.biomeId) || {};
   if (biome.imageUrl) return biome.imageUrl;
@@ -4971,6 +5107,12 @@ function renderActivities(character = currentCharacter()) {
   }).join("");
 }
 
+function renderJukebox() {
+  const activeId = state.musicTrack || state.settings.seasonThemeMainMusic || state.settings.seasonTheme || "awakening";
+  const active = FOUNDATIONS.musicTrack(activeId);
+  return `<article class="panel span-12 jukebox-panel"><div class="panel-heading"><div><p class="eyebrow">Som · Jukebox</p><h3>${esc(active?.name || "Motivo da temporada")}</h3><p>${esc(active?.mood || "Escolha uma trilha para explorar Millennium.")}</p></div><div class="action-row"><button class="ghost-button" type="button" data-action="toggle-music">${state.musicOn ? "Pausar" : "Tocar"}</button><button class="primary-button" type="button" data-action="next-music-track">Próxima</button></div></div><div class="jukebox-track-grid">${(FOUNDATIONS.musicTracks || []).map((track) => `<button class="jukebox-track ${track.id === activeId ? "active" : ""}" type="button" data-action="select-music-track" data-track-id="${esc(track.id)}"><span>♪</span><strong>${esc(track.name)}</strong><small>${esc(track.mood)}</small></button>`).join("")}</div></article>`;
+}
+
 function renderMinigames() {
   const character = currentCharacter();
   const energy = currentGachaEnergy(character);
@@ -4980,6 +5122,13 @@ function renderMinigames() {
   const towerDraft = state.minigameDrafts["tower-defense"] || {};
   const petOptions = (field, draft, includeEmpty = false) => `${includeEmpty ? `<option value="">Sem torre</option>` : ""}${freePets.map((pet) => `<option value="${esc(pet.instanceId)}" ${draftValue(draft, field, "") === pet.instanceId ? "selected" : ""}>${esc(pet.name)} · ${esc(pet.rarity)} · ${"★".repeat(Number(pet.stars || 1))}</option>`).join("")}`;
   const towerMaps = state.content.towerMaps || [];
+  const stageLevel = FOUNDATIONS.clampLevel(state.minigameLevel);
+  const aimStage = minigameStageStatus("aim", difficulty, stageLevel);
+  const sealStage = minigameStageStatus("seals", difficulty, stageLevel);
+  const mapStage = minigameStageStatus("cartography", difficulty, stageLevel);
+  const alchemyStage = minigameStageStatus("alchemy", difficulty, stageLevel);
+  const huntStage = minigameStageStatus("hunt", difficulty, stageLevel);
+  const towerStage = minigameStageStatus("tower", difficulty, stageLevel);
   const companionPrompt = !freePets.length ? `<p class="minigame-empty-pets">Nenhum companheiro livre. <button class="link-button" type="button" data-nav="gacha">Invocar um companheiro</button> para liberar Hunt e Tower Defense.</p>` : "";
   const recentRuns = (character.minigameHistory || []).slice(0, 6);
   const tab = ["quick", "challenges", "recreation"].includes(state.minigameTab) ? state.minigameTab : "quick";
@@ -4990,50 +5139,50 @@ function renderMinigames() {
   const quickGames = `
     <article class="panel span-3 leisure-card">
       <div class="panel-heading"><div><p class="eyebrow">Reflexo</p><h3>Prova da Mira</h3></div></div>
-      <p>Alvos rápidos e pontuação por precisão.</p><div class="leisure-meta"><span>30–90 s</span><span>Toque e mouse</span></div>
-      <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Jogar · ${difficulty.cost} energia</button>
+      <p>Alvos rápidos e pontuação por precisão.</p><div class="leisure-meta"><span>30–90 s</span><span>Toque e mouse</span></div>${minigameStageMeta("aim", difficulty)}
+      <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && aimStage.unlocked ? "" : "disabled"}>${aimStage.unlocked ? `Jogar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
     <article class="panel span-3 leisure-card minigame-card-world">
       <div class="panel-heading"><div><p class="eyebrow">Memória</p><h3>Ritual dos Selos</h3></div></div>
-      <p>Reproduza a sequência antes que o eco desapareça.</p><div class="leisure-meta"><span>1 minuto</span><span>Toque e teclado</span></div>
-      <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Iniciar · ${difficulty.cost} energia</button>
+      <p>Reproduza a sequência antes que o eco desapareça.</p><div class="leisure-meta"><span>1 minuto</span><span>Toque e teclado</span></div>${minigameStageMeta("seals", difficulty)}
+      <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && sealStage.unlocked ? "" : "disabled"}>${sealStage.unlocked ? `Iniciar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
     <article class="panel span-3 leisure-card">
       <div class="panel-heading"><div><p class="eyebrow">Mapa</p><h3>Cartografia Perdida</h3></div></div>
-      <p>Reorganize uma região de Millennium antes do tempo acabar.</p><div class="leisure-meta"><span>2 minutos</span><span>Sem pets</span></div>
-      <button class="primary-button" type="button" data-action="start-cartography" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Reconstruir · ${difficulty.cost} energia</button>
+      <p>Reorganize uma região de Millennium antes do tempo acabar.</p><div class="leisure-meta"><span>2 minutos</span><span>Sem pets</span></div>${minigameStageMeta("cartography", difficulty)}
+      <button class="primary-button" type="button" data-action="start-cartography" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && mapStage.unlocked ? "" : "disabled"}>${mapStage.unlocked ? `Reconstruir · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
     <article class="panel span-3 leisure-card">
       <div class="panel-heading"><div><p class="eyebrow">Lógica</p><h3>Alquimia Instável</h3></div></div>
-      <p>Leia as pistas e escolha a ordem segura dos ingredientes.</p><div class="leisure-meta"><span>2–4 minutos</span><span>Sem pets</span></div>
-      <button class="primary-button" type="button" data-action="start-alchemy" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost ? "" : "disabled"}>Misturar · ${difficulty.cost} energia</button>
+      <p>Leia as pistas e escolha a ordem segura dos ingredientes.</p><div class="leisure-meta"><span>2–4 minutos</span><span>Sem pets</span></div>${minigameStageMeta("alchemy", difficulty)}
+      <button class="primary-button" type="button" data-action="start-alchemy" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && alchemyStage.unlocked ? "" : "disabled"}>${alchemyStage.unlocked ? `Misturar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>`;
   const challenges = `
     <article class="panel span-6">
       <div class="panel-heading"><div><p class="eyebrow">Estratégia</p><h3>Pet Hunt</h3></div></div>
-      <p class="risk-line">Risco ${Math.round(difficulty.risk * 100)}% · Duração base ${Math.round(8 + difficulty.cost * 7)} min.</p>${companionPrompt}
+      <p class="risk-line">Risco ${Math.round(difficulty.risk * 100)}% · Duração base ${Math.round(8 + difficulty.cost * 7)} min.</p>${minigameStageMeta("hunt", difficulty)}${companionPrompt}
       <form class="form-stack compact-form" data-form="pet-hunt">
         <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("petId", huntDraft) : `<option>Nenhum pet livre</option>`}</select></label>
         <label><span>Destino</span><select name="biome">${(state.content.biomes || []).map((biome) => `<option value="${esc(biome.id)}" ${draftValue(huntDraft, "biome", "") === biome.id ? "selected" : ""}>${esc(biome.name)}</option>`).join("")}</select></label>
         <label><span>Rota</span><select name="route"><option value="cautious">Cautelosa</option><option value="balanced" selected>Equilibrada</option><option value="deep">Profunda</option></select></label>
         <label><span>Duração</span><select name="durationMinutes"><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
-        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Enviar Hunt · ${difficulty.cost} energia</button>
+        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><input type="hidden" name="stageLevel" value="${stageLevel}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length && huntStage.unlocked ? "" : "disabled"}>${huntStage.unlocked ? `Enviar Hunt · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
       </form>
     </article>
     <article class="panel span-6">
-      <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div><p>Monte um deck de até quatro companheiros e defenda as rotas.</p>${companionPrompt}
+      <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div><p>Monte um deck de até quatro companheiros e defenda as rotas.</p>${minigameStageMeta("tower", difficulty)}${companionPrompt}
       <form class="form-stack compact-form" data-form="tower-defense">
         <label><span>Companheiro 1</span><select name="towerPet1" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("towerPet1", towerDraft) : `<option>Nenhum pet livre</option>`}</select></label>
         <label><span>Companheiro 2</span><select name="towerPet2">${petOptions("towerPet2", towerDraft, true)}</select></label>
         <label><span>Companheiro 3</span><select name="towerPet3">${petOptions("towerPet3", towerDraft, true)}</select></label>
         <label><span>Companheiro 4</span><select name="towerPet4">${petOptions("towerPet4", towerDraft, true)}</select></label>
         <label><span>Mapa</span><select name="mapId">${towerMaps.map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
-        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length ? "" : "disabled"}>Iniciar · ${difficulty.cost} energia</button>
+        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><input type="hidden" name="stageLevel" value="${stageLevel}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length && towerStage.unlocked ? "" : "disabled"}>${towerStage.unlocked ? `Iniciar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
       </form>
     </article>
     <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Em campo</p><h3>Atividades simultâneas</h3></div></div><div class="activity-list">${renderActivities(character)}</div></article>`;
   const recreation = `
-    <article class="panel span-4 leisure-card"><p class="eyebrow">Som</p><h3>Jukebox</h3><p>Ouça os motivos da temporada sem iniciar uma partida.</p><button class="ghost-button" type="button" data-action="toggle-music">Alternar música</button></article>
+    ${renderJukebox()}
     <article class="panel span-4 leisure-card"><p class="eyebrow">Coleção</p><h3>Galeria</h3><p>Revisite mapas, títulos e artes que você já descobriu.</p><button class="ghost-button" type="button" data-nav="codex">Abrir galeria</button></article>
     <article class="panel span-4 leisure-card"><p class="eyebrow">Registros</p><h3>Estatísticas pessoais</h3><p>${Object.values(character.minigameStats || {}).reduce((sum, item) => sum + Number(item.plays || 0), 0)} partidas registradas nesta conta.</p><button class="ghost-button" type="button" data-nav="ranking">Ver recordes</button></article>
     <article class="panel span-12"><p class="eyebrow">Preferências</p><h3>Minha Interface</h3><form class="form-grid" data-form="interface-preferences"><label><span>Aparência</span><select name="themePreference"><option value="season" ${state.profile?.themePreference !== "standard" ? "selected" : ""}>Usar aparência da temporada</option><option value="standard" ${state.profile?.themePreference === "standard" ? "selected" : ""}>Usar aparência padrão</option></select></label><label><span>Animações</span><select name="interfaceAnimations"><option value="normal" ${state.profile?.interfaceAnimations !== "reduced" && state.profile?.interfaceAnimations !== "none" ? "selected" : ""}>Normal</option><option value="reduced" ${state.profile?.interfaceAnimations === "reduced" ? "selected" : ""}>Reduzidas</option><option value="none" ${state.profile?.interfaceAnimations === "none" ? "selected" : ""}>Desligadas</option></select></label><label><span>Contraste</span><select name="interfaceContrast"><option value="normal">Normal</option><option value="high" ${state.profile?.interfaceContrast === "high" ? "selected" : ""}>Alto</option></select></label><label><span>Economia de dados</span><select name="dataEconomy"><option value="false">Desligada</option><option value="true" ${state.profile?.dataEconomy ? "selected" : ""}>Ligada</option></select></label><button class="primary-button" type="submit">Salvar preferências</button></form></article>`;
@@ -5054,6 +5203,7 @@ function renderMinigames() {
 
       <article class="panel span-12">
         ${renderDifficultyTabs()}
+        ${renderMinigameLevelTabs()}
       </article>
       ${tabs}
       ${tab === "quick" ? quickGames : tab === "challenges" ? challenges : recreation}
@@ -5320,7 +5470,7 @@ function isWithinRankingRange(item, range, field = "createdAt") {
 }
 
 function rankRows(tab, range = "season") {
-  const chars = [...state.characters].filter(rankingEligible);
+  const chars = rankingCharacters().filter(rankingEligible);
   const byChar = (score, sub = "pontos", detailFn = null) => chars
     .map((character) => ({
       uid: character.ownerId,
@@ -5352,12 +5502,12 @@ function rankRows(tab, range = "season") {
   if (tab === "aim") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.aim?.bestScore || 0) : bestRun(char, "aim"), "melhor score");
   if (tab === "hunt") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.hunt?.bestScore || 0) : bestRun(char, "hunt"), "melhor score");
   if (tab === "tower") return byChar((char) => range === "all" || range === "season" ? Number(char.minigameStats?.tower?.bestScore || 0) : bestRun(char, "tower"), "melhor score");
-  if (tab === "pets") return byChar((char) => Math.max(0, ...(char.gachaVault || []).filter((item) => item.kind === "pet").map(instancePower)), "poder pet");
-  if (tab === "items") return byChar((char) => Math.max(0, ...(char.inventory || []).map(instancePower)), "poder item");
+  if (tab === "pets") return byChar((char) => char.__rankingProjection ? Number(char.petCount || 0) : (char.gachaVault || []).filter((item) => item.kind === "pet").length, "companheiros");
+  if (tab === "items") return byChar((char) => char.__rankingProjection ? Number(char.itemCount || 0) : (char.inventory || []).length, "itens");
   if (tab === "views") return byChar((char) => state.profileViews.filter((view) => view.targetId === char.ownerId && isWithinRankingRange(view, range, "viewedAt")).length, "visualizações únicas");
   if (tab === "achievements") return byChar((char) => derivedAchievementIds(char).size, "conquistas");
   if (tab === "pass") return byChar((char) => seasonPassLevel(char), "níveis do passe", (char) => `${Number(char.seasonPassXp || 0).toLocaleString("pt-BR")} XP · ${char.premiumPassUnlocked ? "Premium ativo" : "Trilha Free"}`);
-  if (tab === "collection") return byChar((char) => collectionItems(char).length || (range === "all" || range === "season" ? (char.gachaVault || []).length + (char.inventory || []).filter((item) => item.source === "Invocacao dimensional").length : 0), "registros invocados");
+  if (tab === "collection") return byChar((char) => char.__rankingProjection ? Number(char.collectionCount || 0) : collectionItems(char).length || (range === "all" || range === "season" ? (char.gachaVault || []).length + (char.inventory || []).filter((item) => item.source === "Invocacao dimensional").length : 0), "registros invocados");
   if (tab === "secrets") return byChar((char) => collectionItems(char).filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length || ((range === "all" || range === "season") ? [...(char.gachaVault || []), ...(char.inventory || []).filter((item) => item.source === "Invocacao dimensional")].filter((item) => rarityScore(item.rarity) >= rarityScore("Celestial")).length : 0), "Celestial/Secret");
   if (tab === "guilds") {
     return [...state.guilds].map((guild) => ({
@@ -5570,6 +5720,7 @@ function openCodexEntry(collection, id) {
         <div class="codex-entry-meta">${presentation.meta.map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
         <p>${esc(item.summary || item.description || "Registro ainda incompleto.")}</p>
         ${item.summary && item.description ? `<p>${esc(item.description)}</p>` : ""}
+        ${collection === "affinities" ? `<div class="affinity-usage-guide"><section><strong>Como vira Poder</strong><p>${esc(item.powerFoundation || "A afinidade serve como fundação de um único Poder central.")}</p></section><section><strong>Como vira Técnica</strong><p>${esc(item.techniqueGuide || "As técnicas são aplicações específicas do Poder, liberadas a cada 5 níveis.")}</p></section><section><strong>Limites obrigatórios</strong><p>${esc(item.limitations || "Defina alcance, custo, duração, risco e contramedida.")}</p></section><section><strong>Exemplo de construção</strong><p>${esc(item.usageExample || "Use domínio e limites para propor uma manifestação coerente.")}</p></section></div>` : ""}
         ${item.benefit ? `<div class="tag-row"><span class="tag">${esc(item.benefit)}</span><span class="tag danger">${esc(item.risk || "Risco desconhecido")}</span></div>` : ""}
         ${item.quote ? `<blockquote>${esc(item.quote)}</blockquote>` : ""}
       </div>
@@ -6010,9 +6161,41 @@ function passMissionPeriodKey(mission, date = new Date()) {
   return `season-${Number(state.settings.seasonNumber || 1)}`;
 }
 
+function trackPassActivity(view) {
+  if (view !== "codex" || state.role !== "player" || !state.user || state.passActivityTracking) return;
+  const previous = timeValue(currentCharacter().passActivity?.codexAt);
+  if (previous && Date.now() - previous < 5 * 60 * 1000) return;
+  state.passActivityTracking = true;
+  updateCharacter(state.user.uid, { passActivity: { codexAt: state.demo ? new Date().toISOString() : nowValue() } })
+    .catch((error) => console.warn("Pass activity deferred:", error))
+    .finally(() => { state.passActivityTracking = false; });
+}
+
 function passMissionProgress(character, mission) {
-  if (!mission.mode) return { complete: false, claimed: false, percent: 0, label: "Validada durante a narrativa" };
   const periodKey = passMissionPeriodKey(mission);
+  const claimKey = `${mission.id}:${periodKey}`;
+  const claimed = (character.passMissionClaims || []).includes(claimKey);
+  if (!mission.mode) {
+    const id = mission.id || "";
+    let complete = false;
+    let label = "Aguardando atividade";
+    if (id === "pass-login") {
+      complete = Boolean(state.user);
+      label = complete ? "Entrada registrada hoje" : "Entre na Interface";
+    } else if (id === "pass-codex") {
+      const visitedAt = dateFromValue(character.passActivity?.codexAt);
+      complete = Boolean(visitedAt && localDayKey(visitedAt) >= periodKey);
+      label = complete ? "Consulta ao Codex registrada" : "Abra o Codex durante esta semana";
+    } else if (id === "pass-affinity") {
+      const rolls = [...(character.rollHistory || []), ...(character.affinityHistory || [])].filter((run) => localDayKey(dateFromValue(run.createdAt) || new Date(0)) >= periodKey);
+      complete = rolls.length > 0;
+      label = complete ? `${rolls.length} giro(s) registrado(s)` : "Faça um giro de afinidade nesta semana";
+    } else if (id === "pass-guild") {
+      complete = Boolean(guildForUser() || state.progressRequests.some((request) => request.uid === state.user?.uid && request.status === "aprovado" && request.type === "guildMission"));
+      label = complete ? "Vínculo de guilda registrado" : "Entre em uma guilda ou conclua uma missão de guilda";
+    }
+    return { complete, claimed, claimKey, percent: complete ? 100 : 0, label };
+  }
   const daily = normalize(mission.type).includes("diaria");
   const weekly = normalize(mission.type).includes("semanal");
   const runs = (character.minigameHistory || []).filter((run) => {
@@ -6027,8 +6210,6 @@ function passMissionProgress(character, mission) {
   const runsRatio = runsDone / targetRuns;
   const scoreRatio = targetScore ? Math.min(1, bestScore / targetScore) : 1;
   const complete = runs.length >= targetRuns && bestScore >= targetScore;
-  const claimKey = `${mission.id}:${periodKey}`;
-  const claimed = (character.passMissionClaims || []).includes(claimKey);
   return {
     complete,
     claimed,
@@ -6131,7 +6312,7 @@ function renderSeasonPassView() {
                 <div class="pass-mission-progress"><i style="width:${progress.percent}%"></i></div>
                 <small>${esc(progress.label)}</small>
                 <b>+${Number(mission.xp || 0)} XP do passe</b>
-                ${mission.mode ? `<button class="pass-claim-button" type="button" data-action="claim-pass-mission" data-mission-id="${esc(mission.id)}" ${progress.complete && !progress.claimed ? "" : "disabled"}>${progress.claimed ? "Coletado" : progress.complete ? "Coletar XP" : "Em progresso"}</button>` : `<span class="tag">Validação narrativa</span>`}
+                <button class="pass-claim-button" type="button" data-action="claim-pass-mission" data-mission-id="${esc(mission.id)}" ${progress.complete && !progress.claimed ? "" : "disabled"}>${progress.claimed ? "Coletado" : progress.complete ? "Coletar XP" : "Em progresso"}</button>
               </div>
             `;
           }).join("") || `<div class="empty-state">Nenhuma missão do passe cadastrada.</div>`}
@@ -6143,8 +6324,9 @@ function renderSeasonPassView() {
 
 function renderHallOfFame() {
   const byPrestige = leaderboard().slice(0, 5);
-  const byLevel = [...state.characters].sort((a, b) => Number(b.level || levelFromXp(b.xp || 0)) - Number(a.level || levelFromXp(a.xp || 0))).slice(0, 5);
-  const byRares = [...state.characters].sort((a, b) => Number(b.totalRares || 0) - Number(a.totalRares || 0)).slice(0, 5);
+  const eligible = rankingCharacters().filter(rankingEligible);
+  const byLevel = [...eligible].sort((a, b) => Number(b.level || levelFromXp(b.xp || 0)) - Number(a.level || levelFromXp(a.xp || 0))).slice(0, 5);
+  const byRares = [...eligible].sort((a, b) => Number(b.totalRares || 0) - Number(a.totalRares || 0)).slice(0, 5);
   const guilds = [...state.guilds].sort((a, b) => guildScore(b) - guildScore(a)).slice(0, 5);
   return `
     <div class="grid">
@@ -6559,7 +6741,8 @@ function renderMissions() {
   }
   const activeIds = new Set(character.activeMissions || []);
   const pending = pendingProgressRequests();
-  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
+  const powerSlots = 1;
+  const techniqueSlots = FOUNDATIONS.techniqueSlotsForLevel(Math.max(1, Number(character.level || levelFromXp(character.xp || 0))));
   const usedPowers = approvedPowerCount(character);
   return `
     <div class="grid">
@@ -6585,7 +6768,7 @@ function renderMissions() {
       <article class="panel span-6">
         <p class="eyebrow">Nerf e aprovação</p>
         <h3>Poderes e técnicas novas</h3>
-        <p class="muted-text">Poderes liberados: ${usedPowers}/${powerSlots}. Técnicas dependem de um poder base aprovado. O player descreve a ideia; custo, limites e contramedidas são definidos pelo Oráculo.</p>
+        <p class="muted-text">Poder central: ${usedPowers}/${powerSlots}. Técnicas: ${(character.techniques || []).length}/${techniqueSlots}, com um novo espaço a cada 5 níveis. Custo, limites e contramedidas são definidos pelo Oráculo.</p>
         <button class="primary-button" type="button" data-nav="creations">Abrir oficina de Criações</button>
       </article>
       <article class="panel span-12">
@@ -6854,7 +7037,7 @@ function renderAdminUsers() {
             <label><span>Essências de roleta</span><input name="affinityAttempts" type="number" value="${Number(draftValue(draft, "affinityAttempts", character.affinityAttempts || 0))}" /></label>
             <label><span>Pity atual</span><input name="pityCounter" type="number" min="0" value="${Number(draftValue(draft, "pityCounter", character.pityCounter || 0))}" /></label>
             <label><span>Prestígio calculado automaticamente</span><input name="prestigeComputed" type="number" readonly value="${prestigeFor(character)}" /><small>Atualiza conforme nível, giros, raridades e PO registrados.</small></label>
-            <label><span>Slots de poder</span><input name="powerSlots" type="number" min="1" value="${Number(draftValue(draft, "powerSlots", character.powerSlots || 1))}" /></label>
+            <label><span>Poder central</span><input value="1 slot fixo" readonly /><input name="powerSlots" type="hidden" value="1" /></label>
             <label><span>Raça</span><select name="raceId">${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select></label>
             <label><span>Classe</span><select name="classId">${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select></label>
             <label><span>Afinidade</span><select name="affinityId">${affinityOptions}</select></label>
@@ -7624,7 +7807,7 @@ function renderAdminSettings() {
   return `
     <div class="grid admin-settings-view">
       <article class="panel span-12 oracle-season-console theme-preview" style="--preview-art:url('${esc(theme.background)}');--preview-primary:${esc(theme.palette.primary)}">
-        <div><p class="eyebrow">Millennium 3.3 · Ecos da Interface</p><h2>${esc(state.settings.seasonName || theme.name)}</h2><p>${esc(theme.description)} O tema agora coordena paleta, fundos, texturas, áudio e movimento sem alterar a estrutura das páginas.</p><div class="theme-swatches" aria-label="Paleta atual">${Object.values(theme.palette).map((color) => `<i style="--swatch:${esc(color)}" title="${esc(color)}"></i>`).join("")}</div></div>
+        <div><p class="eyebrow">Millennium 3.4 · Fundações Vivas</p><h2>${esc(state.settings.seasonName || theme.name)}</h2><p>${esc(theme.description)} O tema agora coordena paleta, fundos, texturas, áudio e movimento sem alterar a estrutura das páginas.</p><div class="theme-swatches" aria-label="Paleta atual">${Object.values(theme.palette).map((color) => `<i style="--swatch:${esc(color)}" title="${esc(color)}"></i>`).join("")}</div></div>
         <div class="stat-grid compact-stat-grid">${renderStat("Afinidades", state.content.affinities.length)}${renderStat("Categorias", state.content.affinityCategories.length)}${renderStat("Pets no pool", state.content.gachaPets.length)}${renderStat("Facções", state.settings.factionsUnlocked ? "Abertas" : "Seladas")}</div>
       </article>
       <article class="panel span-7 settings-control-panel">
@@ -7666,11 +7849,13 @@ function renderAdminSettings() {
               <label><span>Sons das raridades</span><input name="seasonThemeRaritySounds" value="${esc(theme.music.rarity)}" /></label><label><span>Destaque da Home</span><input name="seasonThemeHomeHighlight" value="${esc(theme.homeHighlight)}" /></label>
             </div>
           </details>
-          <div class="split-actions"><button class="ghost-button" type="button" data-action="preview-season-theme">Pré-visualizar celular e computador</button><button class="primary-button" type="submit">Publicar mudanças</button></div>
+          <div class="split-actions"><button class="ghost-button" type="button" data-action="load-season-theme-preset">Carregar pacote selecionado</button><button class="ghost-button" type="button" data-action="preview-season-theme">Pré-visualizar celular e computador</button><button class="primary-button" type="submit">Salvar e publicar mudanças</button></div>
           <label><span>Juramentos de facção</span><select name="factionsUnlocked"><option value="false" ${!state.settings.factionsUnlocked ? "selected" : ""}>Bloqueados até a abertura narrativa</option><option value="true" ${state.settings.factionsUnlocked ? "selected" : ""}>Liberados para players</option></select></label>
           <label><span>Aviso global</span><textarea name="globalNotice" rows="5">${esc(state.settings.globalNotice || "")}</textarea></label>
+          <fieldset class="emergency-update-config"><legend>Atualização emergencial</legend><label><span>Título</span><input name="emergencyTitle" maxlength="120" value="${esc(state.settings.emergencyTitle || "Atualização emergencial")}" /></label><label><span>Mensagem aos jogadores</span><textarea name="emergencyMessage" rows="3" maxlength="600">${esc(state.settings.emergencyMessage || "")}</textarea></label><div class="theme-status-row"><label><span>Ação</span><select name="emergencyAction"><option value="reload" ${state.settings.emergencyAction !== "signout" && state.settings.emergencyAction !== "maintenance" ? "selected" : ""}>Recarregar preservando rascunhos</option><option value="maintenance" ${state.settings.emergencyAction === "maintenance" ? "selected" : ""}>Entrar em manutenção</option><option value="signout" ${state.settings.emergencyAction === "signout" ? "selected" : ""}>Encerrar sessões</option></select></label><label><span>Contagem regressiva</span><input name="emergencyCountdown" type="number" min="0" max="30" value="${Number(state.settings.emergencyCountdown ?? 5)}" /></label></div></fieldset>
         </form>
       </article>
+      <article class="panel span-12 theme-library-panel"><div class="panel-heading"><div><p class="eyebrow">Biblioteca de temas</p><h3>Pacotes preservados separadamente</h3></div><span class="tag">${ECHOES.themes.length} pacotes</span></div><div class="theme-library-grid">${ECHOES.themes.map((item) => { const saved = state.settings.themePackages?.[item.id]; return `<button type="button" class="theme-library-card ${state.settings.seasonTheme === item.id ? "active" : ""}" data-action="choose-season-theme" data-theme-id="${esc(item.id)}"><i style="--theme-card-color:${esc(saved?.palette?.primary || item.palette.primary)}"></i><strong>${esc(saved?.name || item.name)}</strong><small>${state.settings.seasonTheme === item.id ? esc(state.settings.seasonThemeState || "ativo") : saved ? "Personalizado e salvo" : "Preset original"}</small></button>`; }).join("")}</div></article>
       <article class="panel span-5 settings-category-panel">
         <p class="eyebrow">Pesos da roleta</p>
         <h3>Categorias de afinidade · 100%</h3>
@@ -7688,10 +7873,11 @@ function renderAdminSettings() {
         <div>
           <p class="eyebrow">Operação</p>
           <h3>Atualização emergencial</h3>
-          <p>Desconecta todos os players online e força recarregamento de sessão. O Oráculo continua no painel.</p>
+          <p>Executa a ação configurada acima, preserva rascunhos antes do recarregamento e registra o aviso para todos os players.</p>
         </div>
         <div class="action-row">
-          <button class="danger-button" type="button" data-action="panic-refresh">Botão de pânico</button>
+          <button class="ghost-button" type="button" data-action="rebuild-rankings">Reconstruir ranking</button>
+          <button class="danger-button" type="button" data-action="panic-refresh">Disparar atualização</button>
           <button class="ghost-button" type="button" data-action="toggle-maintenance" data-mode="${state.settings.maintenanceMode ? "false" : "true"}">${state.settings.maintenanceMode ? "Abrir interface" : "Fechar interface"}</button>
           <button class="primary-button" type="button" data-action="start-rpg" ${state.settings.gameStarted ? "disabled" : ""}>${state.settings.gameStarted ? "RPG iniciado" : "Começar RPG"}</button>
         </div>
@@ -7708,6 +7894,48 @@ function openSeasonThemePreview(form) {
   $("#modalContent").innerHTML = `<section><div class="panel-heading"><div><p class="eyebrow">Pré-visualização segura</p><h2>${esc(preview.name)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Fechar</button></div><p>Esta prévia não publica nem ativa o tema.</p><div class="grid">${sample("Computador · 1440 px", "span-8")}${sample("Celular · 390 px", "span-4")}</div></section>`;
   $("#modal").hidden = false;
   focusModal();
+}
+
+function loadSeasonThemePreset(form, themeId = form?.elements?.seasonTheme?.value) {
+  if (!form) return;
+  const preset = ECHOES.themeById(themeId);
+  if (!preset) return;
+  const saved = state.settings.themePackages?.[themeId] || {};
+  const palette = { ...preset.palette, ...(saved.palette || {}) };
+  const values = {
+    seasonTheme: themeId,
+    seasonThemeDescription: saved.description || preset.description,
+    seasonThemePrimary: palette.primary,
+    seasonThemeSecondary: palette.secondary,
+    seasonThemeAccent: palette.accent,
+    seasonThemeDanger: palette.danger,
+    seasonThemeSuccess: palette.success,
+    seasonThemeBackground: saved.background || preset.background,
+    seasonThemeLoginArt: saved.loginArt || preset.loginArt,
+    seasonThemeCardTexture: saved.cardTexture || preset.cardTexture,
+    seasonThemeButtonStyle: saved.buttonStyle || preset.buttonStyle,
+    seasonThemeIcons: saved.icons || preset.icons,
+    seasonThemeMainMusic: saved.music?.main || preset.music.main,
+    seasonThemeCodexMusic: saved.music?.codex || preset.music.codex,
+    seasonThemeGachaMusic: saved.music?.gacha || preset.music.gacha,
+    seasonThemeRaritySounds: saved.music?.rarity || preset.music.rarity,
+    seasonThemeAnimation: saved.animation || preset.animation,
+    seasonThemeMenuEffect: saved.menuEffect || preset.menuEffect,
+    seasonThemeHomeHighlight: saved.homeHighlight || preset.homeHighlight,
+  };
+  Object.entries(values).forEach(([name, value]) => {
+    const field = form.elements.namedItem(name);
+    if (field) field.value = value;
+  });
+  form.dataset.dirty = "true";
+  saveLocalFormDraft(form);
+  toast(saved.updatedAt ? "Pacote personalizado carregado." : "Preset original carregado.");
+}
+
+function chooseSeasonTheme(themeId) {
+  const form = document.querySelector('form[data-form="admin-settings"]');
+  loadSeasonThemePreset(form, themeId);
+  form?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderAdminReports() {
@@ -7877,6 +8105,95 @@ async function syncPublicProfileProjection(character = currentCharacter(), lore 
   state.diagnostics.writes += 1;
 }
 
+function rankingProjection(character = currentCharacter()) {
+  const level = Math.max(1, Number(character.level || 1));
+  const vault = character.gachaVault || [];
+  const inventory = character.inventory || [];
+  return {
+    ownerId: character.ownerId || state.user?.uid || "",
+    characterName: character.characterName || "",
+    displayName: character.displayName || character.playerName || "Player",
+    eligible: rankingEligible({ ...character, ownerId: character.ownerId || state.user?.uid }),
+    level,
+    xp: Math.max(0, Number(character.xp || 0)),
+    gold: Math.max(0, Number(character.gold || 0)),
+    coins: Math.max(0, Number(character.millenniumCoins || 0)),
+    affinityId: character.affinityId || "",
+    totalRares: Math.max(0, Number(character.totalRares || 0)),
+    totalRolls: Math.max(0, Number(character.totalRolls || 0)),
+    aimBest: Math.max(0, Number(character.minigameStats?.aim?.bestScore || 0)),
+    huntBest: Math.max(0, Number(character.minigameStats?.hunt?.bestScore || 0)),
+    towerBest: Math.max(0, Number(character.minigameStats?.tower?.bestScore || 0)),
+    petCount: vault.length,
+    itemCount: inventory.length,
+    passXp: Math.max(0, Number(character.seasonPassXp || 0)),
+    collectionCount: vault.length + inventory.length,
+    powerCount: (character.powers || []).filter((item) => item?.name).length,
+    techniqueCount: (character.techniques || []).filter((item) => item?.name).length,
+  };
+}
+
+async function syncRankingProjection(character = currentCharacter()) {
+  const uid = character.ownerId || state.user?.uid;
+  if (!uid) return;
+  const projection = rankingProjection({ ...character, ownerId: uid });
+  const hash = JSON.stringify(projection);
+  if (uid === state.user?.uid && state.rankingProjectionHash === hash) return;
+  if (state.demo) {
+    state.rankingProfiles = state.rankingProfiles.filter((entry) => entry.id !== uid).concat({ id: uid, ...projection, updatedAt: new Date().toISOString() });
+    if (uid === state.user?.uid) state.rankingProjectionHash = hash;
+    return;
+  }
+  await state.db.collection("rankings").doc(uid).set({ ...projection, updatedAt: nowValue() }, { merge: false });
+  if (uid === state.user?.uid) state.rankingProjectionHash = hash;
+  state.diagnostics.writes += 1;
+}
+
+async function rebuildRankingProjections() {
+  if (state.role !== "admin") throw new Error("Apenas o Oráculo pode reconstruir o ranking.");
+  const characters = (state.characters || []).filter((character) => character.ownerId || character.id);
+  if (!characters.length) throw new Error("As fichas ainda estão carregando. Aguarde alguns segundos e tente novamente.");
+
+  if (state.demo) {
+    state.rankingProfiles = characters.map((character) => {
+      const ownerId = character.ownerId || character.id;
+      return { id: ownerId, ...rankingProjection({ ...character, ownerId }), updatedAt: new Date().toISOString() };
+    }).filter((entry) => entry.eligible);
+    scheduleRender({ route: state.view, preserveScroll: true });
+    toast(`${state.rankingProfiles.length} ficha(s) reconstruída(s) no ranking demonstrativo.`);
+    return;
+  }
+
+  const batch = state.db.batch();
+  let projected = 0;
+  let removed = 0;
+  characters.forEach((character) => {
+    const ownerId = character.ownerId || character.id;
+    const projection = rankingProjection({ ...character, ownerId });
+    const reference = state.db.collection("rankings").doc(ownerId);
+    if (projection.eligible) {
+      batch.set(reference, { ...projection, updatedAt: nowValue() }, { merge: false });
+      projected += 1;
+    } else {
+      batch.delete(reference);
+      removed += 1;
+    }
+  });
+  await batch.commit();
+  state.diagnostics.writes += projected + removed;
+  await state.db.collection("auditLogs").add({
+    adminId: state.user.uid,
+    targetId: "all",
+    field: "rankings",
+    previousValue: removed,
+    nextValue: projected,
+    reason: `Reconstrução de ${characters.length} fichas: ${projected} elegíveis e ${removed} removidas.`,
+    createdAt: nowValue(),
+  });
+  state.diagnostics.writes += 1;
+  toast(`Ranking reconstruído: ${projected} ficha(s) elegível(is).`);
+}
+
 function pickCharacterPatch(source, keys) {
   return Object.fromEntries(keys.filter((key) => source[key] !== undefined).map((key) => [key, source[key]]));
 }
@@ -7893,7 +8210,7 @@ function saveCharacterCorePatch(source, options = {}) {
 }
 
 function saveCharacterOriginPatch(source, options = {}) {
-  return saveCharacterPatch(source, ["kingdomId", "regionId", "cultureId", "culture", "professionId", "profession"], options);
+  return saveCharacterPatch(source, ["kingdomId", "regionId", "cultureId", "culture", "professionId", "profession", "customCultureName", "customCultureSummary", "customProfessionName", "customProfessionSummary"], options);
 }
 
 function saveCharacterAttributesPatch(source, options = {}) {
@@ -7983,7 +8300,11 @@ function adjustRegistrationAttribute(attribute, delta, form) {
   const spent = ATTRIBUTES.reduce((sum, entry) => sum + Number(draft[`base_${entry.key}`] || 4), 0);
   if (delta > 0 && (current >= 6 || spent >= 20)) return;
   if (delta < 0 && current <= 2) return;
-  state.characterDraft[`base_${attribute}`] = current + Math.sign(delta);
+  const next = current + Math.sign(delta);
+  state.characterDraft[`base_${attribute}`] = next;
+  const input = form?.elements?.namedItem?.(`base_${attribute}`);
+  if (input) input.value = String(next);
+  saveLocalFormDraft(form);
   scheduleRender({ critical: true, preserveScroll: true });
 }
 
@@ -8023,6 +8344,7 @@ async function saveCharacter(form) {
     technicalCreationComplete: true,
   };
   state.characterSaving = true;
+  state.characterSaveStatus = "saving";
   scheduleRender({ critical: true, preserveScroll: true });
   try {
     const patch = {
@@ -8034,12 +8356,20 @@ async function saveCharacter(form) {
       ...(await saveCharacterStatePatch(normalized, { commit: false })),
     };
     await updateCharacter(state.user.uid, patch);
-    await writeDoc("users", state.user.uid, { displayName: normalized.displayName });
-    await syncPublicProfileProjection({ ...currentCharacter(), ...patch, ownerId: state.user.uid });
+    state.character = { ...currentCharacter(), ...patch, ownerId: state.user.uid };
     state.characterDraft = null;
     state.characterStep = 1;
     clearLocalFormDraft("character");
-    toast("Registro técnico concluído. Sua base agora está protegida.");
+    state.characterSaveStatus = "saved";
+    const secondary = await Promise.allSettled([
+      writeDoc("users", state.user.uid, { displayName: normalized.displayName }),
+      syncPublicProfileProjection({ ...state.character, ownerId: state.user.uid }),
+    ]);
+    const pending = secondary.filter((result) => result.status === "rejected").length;
+    toast(pending ? `Ficha salva. ${pending} sincronização(ões) secundária(s) serão refeitas no próximo acesso.` : "Registro técnico concluído. Sua base agora está protegida.");
+  } catch (error) {
+    state.characterSaveStatus = "error";
+    throw new Error(`A ficha não foi gravada. O rascunho foi preservado. ${firebaseErrorMessage(error)}`);
   } finally {
     state.characterSaving = false;
     scheduleRender({ critical: true });
@@ -8686,24 +9016,26 @@ async function redeemShardShop(shopId) {
 
 function minigameGrade(score, difficulty) {
   const ratio = Number(score || 0) / Math.max(1, Number(difficulty.minScore || 1));
-  if (ratio >= 1.6) return { id: "s", label: "S", multiplier: 1.45, passed: true };
-  if (ratio >= 1.15) return { id: "a", label: "A", multiplier: 1.22, passed: true };
-  if (ratio >= 0.75) return { id: "b", label: "B", multiplier: 1, passed: true };
-  if (ratio >= 0.42) return { id: "c", label: "C", multiplier: 0.72, passed: false };
+  if (ratio >= 1.5) return { id: "s", label: "S", multiplier: 1.45, passed: true };
+  if (ratio >= 1.2) return { id: "a", label: "A", multiplier: 1.22, passed: true };
+  if (ratio >= 1) return { id: "b", label: "B", multiplier: 1, passed: true };
+  if (ratio >= 0.65) return { id: "c", label: "C", multiplier: 0.72, passed: false };
   return { id: "d", label: "D", multiplier: 0.42, passed: false };
 }
 
-function minigameReward(difficultyId, score = 0, mode = "aim") {
+function minigameReward(difficultyId, score = 0, mode = "aim", level = 1) {
   const difficulty = difficultyById(difficultyId);
-  const grade = minigameGrade(score, difficulty);
+  const stage = FOUNDATIONS.minigameLevels[FOUNDATIONS.clampLevel(level) - 1] || FOUNDATIONS.minigameLevels[0];
+  const target = FOUNDATIONS.minigameTarget(difficulty, stage.id);
+  const grade = minigameGrade(score, { ...difficulty, minScore: target });
   const passed = grade.passed;
-  const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier));
+  const baseCoins = Math.max(1, Math.round((4 + score / 280) * difficulty.multiplier * grade.multiplier * Number(stage.rewardFactor || 1)));
   const fragmentName = mode === "hunt" ? "Marcas de Caçada" : mode === "tower" ? "Runas Partidas" : mode === "seals" ? "Ecos de Selo" : mode === "cartography" ? "Fragmentos Cartográficos" : mode === "alchemy" ? "Resíduos Alquímicos" : "Fragmentos de Mira";
-  const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier));
+  const fragments = Math.max(1, Math.round((passed ? 4 : 2) * difficulty.multiplier * grade.multiplier * Number(stage.rewardFactor || 1)));
   const rareDrop = passed && Math.random() < 0.012 * difficulty.multiplier * grade.multiplier;
   const loot = [`${baseCoins} Millennium Coins`, `${fragments} ${fragmentName}`];
   if (rareDrop) loot.push("Fragmento do Herói Quebrado");
-  return { passed, grade: grade.label, coins: baseCoins, fragmentName, fragments, loot, rareDrop };
+  return { passed, grade: grade.label, coins: baseCoins, fragmentName, fragments, loot, rareDrop, level: stage.id, target };
 }
 
 function stopActiveAimGame(reason = "cancelled") {
@@ -8729,9 +9061,11 @@ async function spendGachaEnergy(cost) {
   return { ...refresh, gachaEnergy: energy - cost, gachaEnergyUpdatedAt: new Date().toISOString() };
 }
 
-async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {}, runId = "") {
+async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {}, runId = "", level = state.minigameLevel) {
   const character = currentCharacter();
   const difficulty = difficultyById(difficultyId);
+  const stage = FOUNDATIONS.clampLevel(level);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(character, mode, difficulty.id, stage)) throw new Error(`O nível ${stage} ainda está bloqueado para este jogo.`);
   const completionKey = String(runId || `${mode}:${difficulty.id}:${Date.now()}`);
   const completionKeys = [...new Set(character.minigameCompletionKeys || [])].slice(-79);
   if (completionKeys.includes(completionKey)) {
@@ -8740,7 +9074,11 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
   }
   const energyPatch = await spendGachaEnergy(difficulty.cost);
   if (!energyPatch) return null;
-  const reward = minigameReward(difficultyId, score, mode);
+  const reward = minigameReward(difficultyId, score, mode, stage);
+  const progression = FOUNDATIONS.recordMinigameProgress(character, mode, difficulty, stage, score);
+  reward.passed = progression.passed;
+  reward.target = progression.target;
+  reward.unlockedNext = progression.unlockedNext;
   const fragments = withFragments(character, reward.fragmentName, reward.fragments);
   if (reward.rareDrop) fragments["Fragmentos do Despertar"] = Number(fragments["Fragmentos do Despertar"] || 0) + 1;
   await updateCharacter(state.user.uid, {
@@ -8748,6 +9086,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
     millenniumCoins: Number(character.millenniumCoins || 0) + reward.coins,
     gachaFragments: fragments,
     minigameCompletionKeys: [...completionKeys, completionKey],
+    minigameProgress: progression.progress,
     minigameStats: {
       ...(character.minigameStats || {}),
       [mode]: {
@@ -8763,6 +9102,8 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
         mode,
         difficultyId: difficulty.id,
         difficultyName: difficulty.name,
+        level: stage,
+        target: progression.target,
         score,
         grade: reward.grade,
         coins: reward.coins,
@@ -8776,7 +9117,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
     ...extraPatch,
   });
   if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
-  toast(`${reward.passed ? "Desafio concluído" : "Falha parcial"} · Rank ${reward.grade}: ${reward.loot.join(" · ")}`);
+  toast(`${reward.passed ? "Desafio concluído" : "Falha parcial"} · Nível ${stage} · Rank ${reward.grade}: ${reward.loot.join(" · ")}${reward.unlockedNext ? ` · Nível ${stage + 1} liberado` : ""}`);
   return reward;
 }
 
@@ -8804,7 +9145,7 @@ async function resolveSealRitual(session, success) {
   try {
     const reward = await applyMinigameReward("seals", session.difficulty.id, score, {
       lastSealRun: { id: session.id, score, sequenceLength: session.sequence.length, success, createdAt: new Date().toISOString() },
-    }, session.id);
+    }, session.id, session.level);
     if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
     state.activeSealSession = null;
     showMinigameResult({ mode: "Ritual dos Selos", difficulty: session.difficulty, score, reward, detail: success ? "Sequência reconstruída" : "O selo se rompeu antes do fim" });
@@ -8834,20 +9175,22 @@ function handleSealInput(symbol) {
 
 function startSealRitual(difficultyId) {
   const difficulty = difficultyById(difficultyId);
+  const level = FOUNDATIONS.clampLevel(state.minigameLevel);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "seals", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) {
     toast("Energia insuficiente para o Ritual dos Selos.");
     return;
   }
   stopActiveSealRitual("new-run");
-  const length = ({ noob: 3, facil: 4, medio: 5, hard: 6, pesadelo: 7, "god-slayer": 8 })[difficulty.id] || 4;
+  const length = (({ noob: 3, facil: 4, medio: 5, hard: 6, pesadelo: 7, "god-slayer": 8 })[difficulty.id] || 4) + (level - 1) * 2;
   const id = `seals:${state.user?.uid || "demo"}:${cryptoRandom()}`;
   const sequence = WORLD.sealSequence(id, length);
   const symbols = ["◇", "△", "✦", "◈", "⌁", "✥"];
-  const session = { id, difficulty, sequence, input: [], phase: "showing", timers: [], finished: false, lifecycle: POLISH.createLifecycle("preparing") };
+  const session = { id, difficulty, level, sequence, input: [], phase: "showing", timers: [], finished: false, lifecycle: POLISH.createLifecycle("preparing") };
   state.activeSealSession = session;
   $("#modalContent").innerHTML = `
     <section class="seal-session" aria-labelledby="seal-title">
-      <div class="aim-session-head"><div><p class="eyebrow">Ritual dos Selos · ${esc(difficulty.name)}</p><h2 id="seal-title">Memorize a ordem.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="aim-session-head"><div><p class="eyebrow">Ritual dos Selos · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="seal-title">Memorize a ordem.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
       <p class="seal-status" data-seal-status role="status" aria-live="polite">Observe os sigilos.</p>
       <div class="seal-progress" data-seal-progress>${sequence.map(() => "<i></i>").join("")}</div>
       <div class="seal-board" role="group" aria-label="Sigilos do ritual">${symbols.map((symbol, index) => `<button class="seal-button" type="button" data-action="seal-input" data-seal-symbol="${esc(symbol)}" aria-label="Sigilo ${index + 1}">${esc(symbol)}</button>`).join("")}</div>
@@ -8905,7 +9248,7 @@ async function resolveCartography(session, solved) {
   try {
     const reward = await applyMinigameReward("cartography", session.difficulty.id, score, {
       lastCartographyRun: { id: session.id, mapName: session.mapName, moves: session.moves, solved, score, createdAt: new Date().toISOString() },
-    }, session.id);
+    }, session.id, session.level);
     state.activeCartographySession = null;
     showMinigameResult({ mode: "Cartografia Perdida", difficulty: session.difficulty, score, reward, detail: solved ? `${session.mapName} foi reconstruído em ${session.moves} movimentos` : "O mapa permaneceu incompleto" });
   } catch (error) {
@@ -8928,15 +9271,18 @@ function handleCartographyMove(index) {
 
 function startCartography(difficultyId) {
   const difficulty = difficultyById(difficultyId);
+  const level = FOUNDATIONS.clampLevel(state.minigameLevel);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "cartography", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Cartografia Perdida.");
   stopActiveCartography("new-run");
-  const size = ["hard", "pesadelo", "god-slayer"].includes(difficulty.id) ? 4 : 3;
+  const size = level >= 3 || ["hard", "pesadelo", "god-slayer"].includes(difficulty.id) ? 4 : 3;
   const maps = state.content.towerMaps || [];
   const selected = maps[Math.floor(Math.random() * Math.max(1, maps.length))] || { name: "Cruzamento das Cortinas", imageUrl: SEASON_ART.maps["cruzamento-das-cortinas"] };
   const id = `cartography:${state.user?.uid || "demo"}:${cryptoRandom()}`;
-  const session = { id, difficulty, size, board: ECHOES.cartographyBoard(id, size), mapName: selected.name, imageUrl: towerMapImageFor(selected), moves: 0, remaining: size === 4 ? 180 : 120, timer: 0, finished: false };
+  const baseTime = size === 4 ? 150 : 120;
+  const session = { id, difficulty, level, size, board: ECHOES.cartographyBoard(`${id}:${level}`, size), mapName: selected.name, imageUrl: towerMapImageFor(selected), moves: 0, remaining: Math.max(55, baseTime - (level - 1) * 25), timer: 0, finished: false };
   state.activeCartographySession = session;
-  $("#modalContent").innerHTML = `<section class="cartography-session"><div class="aim-session-head"><div><p class="eyebrow">Cartografia Perdida · ${esc(difficulty.name)}</p><h2>${esc(session.mapName)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><p data-cartography-status role="status"></p><div class="cartography-board" data-cartography-board style="--map-art:url('${esc(session.imageUrl)}')"></div><p class="hint">Toque numa peça ao lado do espaço vazio para movê-la.</p></section>`;
+  $("#modalContent").innerHTML = `<section class="cartography-session"><div class="aim-session-head"><div><p class="eyebrow">Cartografia Perdida · ${esc(difficulty.name)} · Nível ${level}</p><h2>${esc(session.mapName)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><p data-cartography-status role="status"></p><div class="cartography-board" data-cartography-board style="--map-art:url('${esc(session.imageUrl)}')"></div><p class="hint">Toque numa peça ao lado do espaço vazio para movê-la.</p></section>`;
   $("#modal").hidden = false;
   focusModal();
   renderCartographyBoard(session);
@@ -8969,7 +9315,7 @@ async function resolveAlchemy(session) {
   try {
     const reward = await applyMinigameReward("alchemy", session.difficulty.id, score, {
       lastAlchemyRun: { id: session.id, correct: result.correct, total: result.total, passed: result.passed, score, createdAt: new Date().toISOString() },
-    }, session.id);
+    }, session.id, session.level);
     state.activeAlchemySession = null;
     showMinigameResult({ mode: "Alquimia Instável", difficulty: session.difficulty, score, reward, detail: result.passed ? "A mistura permaneceu estável" : `${result.correct}/${result.total} posições corretas` });
   } catch (error) {
@@ -8996,13 +9342,15 @@ function resetAlchemySelection() {
 
 function startAlchemy(difficultyId) {
   const difficulty = difficultyById(difficultyId);
+  const level = FOUNDATIONS.clampLevel(state.minigameLevel);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "alchemy", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Alquimia Instável.");
   stopActiveAlchemy();
   const id = `alchemy:${state.user?.uid || "demo"}:${cryptoRandom()}`;
-  const challenge = ECHOES.alchemyChallenge(id);
-  const session = { id, difficulty, challenge, selection: [], finished: false };
+  const challenge = ECHOES.alchemyChallenge(id, level);
+  const session = { id, difficulty, level, challenge, selection: [], finished: false };
   state.activeAlchemySession = session;
-  $("#modalContent").innerHTML = `<section class="alchemy-session"><div class="aim-session-head"><div><p class="eyebrow">Alquimia Instável · ${esc(difficulty.name)}</p><h2>Leia antes de misturar.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><ol class="alchemy-clues">${challenge.clues.map((clue) => `<li>${esc(clue)}</li>`).join("")}</ol><div class="alchemy-ingredients">${challenge.ingredients.map((ingredient) => `<button class="ghost-button alchemy-ingredient" type="button" data-action="alchemy-ingredient" data-alchemy-id="${ingredient.id}"><strong>${esc(ingredient.name)}</strong><small>Calor ${ingredient.heat} · Essência ${ingredient.essence} · Toxicidade ${ingredient.toxicity} · Estabilidade ${ingredient.stability}</small></button>`).join("")}</div><div class="alchemy-selection" data-alchemy-selection></div><button class="link-button" type="button" data-action="alchemy-reset">Limpar ordem</button></section>`;
+  $("#modalContent").innerHTML = `<section class="alchemy-session"><div class="aim-session-head"><div><p class="eyebrow">Alquimia Instável · ${esc(difficulty.name)} · Nível ${level}</p><h2>Leia antes de misturar.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><ol class="alchemy-clues">${challenge.clues.map((clue) => `<li>${esc(clue)}</li>`).join("")}</ol><div class="alchemy-ingredients">${challenge.ingredients.map((ingredient) => `<button class="ghost-button alchemy-ingredient" type="button" data-action="alchemy-ingredient" data-alchemy-id="${ingredient.id}"><strong>${esc(ingredient.name)}</strong><small>Calor ${ingredient.heat} · Essência ${ingredient.essence} · Toxicidade ${ingredient.toxicity} · Estabilidade ${ingredient.stability}</small></button>`).join("")}</div><div class="alchemy-selection" data-alchemy-selection></div><button class="link-button" type="button" data-action="alchemy-reset">Limpar ordem</button></section>`;
   $("#modal").hidden = false;
   focusModal();
   refreshAlchemySelection(session);
@@ -9010,12 +9358,14 @@ function startAlchemy(difficultyId) {
 
 function startAimGame(difficultyId) {
   const difficulty = difficultyById(difficultyId);
+  const level = FOUNDATIONS.clampLevel(state.minigameLevel);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "aim", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) {
     toast("Energia insuficiente para a Prova da Mira.");
     return;
   }
   stopActiveAimGame("new-run");
-  const seconds = difficulty.id === "god-slayer" ? 42 : 38;
+  const seconds = (difficulty.id === "god-slayer" ? 42 : 38) - (level - 1) * 5;
   let score = 0;
   let remaining = seconds;
   let streak = 0;
@@ -9026,13 +9376,14 @@ function startAimGame(difficultyId) {
     timers: [],
     finished: false,
     difficulty,
+    level,
     lifecycle: POLISH.createLifecycle("preparing"),
   };
   session.lifecycle.transition("running", "arena-ready");
   state.activeAimSession = session;
   $("#modalContent").innerHTML = `
     <section class="aim-session difficulty-${esc(difficulty.id)}" aria-labelledby="aim-title">
-      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)}</p><h2 id="aim-title">O portal atira de volta.</h2><p class="sr-only" id="aim-instructions">Use toque, clique ou Tab e Enter para atingir os alvos. Evite os alvos marcados com X.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="aim-title">O portal atira de volta.</h2><p class="sr-only" id="aim-instructions">Use toque, clique ou Tab e Enter para atingir os alvos. Evite os alvos marcados com X.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
       <div class="aim-hud" role="status" aria-live="polite" aria-atomic="true"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${seconds}s</span></div>
       <div class="aim-arena" data-aim-arena role="group" aria-describedby="aim-instructions" aria-label="Arena de mira"></div>
       <div class="aim-legend" aria-label="Legenda"><span><b>•</b> eco</span><span><b>✦</b> raro</span><span><b>⌁</b> tempo</span>${difficulty.id !== "noob" ? '<span class="danger"><b>×</b> armadilha</span>' : ""}</div>
@@ -9062,7 +9413,7 @@ function startAimGame(difficultyId) {
     try {
       const reward = await applyMinigameReward("aim", difficulty.id, Math.max(0, score), {
         lastAimRun: { id: session.id, score: Math.max(0, score), streak: bestStreak, misses, difficultyId: difficulty.id, createdAt: new Date().toISOString() },
-      }, session.id);
+      }, session.id, level);
       if (session.lifecycle.can("completed")) session.lifecycle.transition("completed", "reward-applied");
       state.activeAimSession = null;
       showMinigameResult({ mode: "Prova da Mira", difficulty, score: Math.max(0, score), reward, detail: `${misses} erro(s) · Melhor combo ${bestStreak}` });
@@ -9085,14 +9436,14 @@ function startAimGame(difficultyId) {
   const addTarget = () => {
     if (!arena || session.finished || session.lifecycle.state !== "running") return;
     const roll = Math.random();
-    const dangerChance = difficulty.id === "noob" ? 0 : Math.min(0.22, 0.035 + difficulty.multiplier * 0.035);
+    const dangerChance = difficulty.id === "noob" && level === 1 ? 0 : Math.min(0.3, 0.035 + difficulty.multiplier * 0.035 + (level - 1) * 0.04);
     const type = roll < dangerChance ? "trap" : roll < dangerChance + 0.07 ? "freeze" : roll < dangerChance + 0.2 ? "rare" : "normal";
     const target = document.createElement("button");
     target.type = "button";
     target.className = `aim-target ${type}`;
     target.style.left = `${Math.random() * 82 + 4}%`;
     target.style.top = `${Math.random() * 74 + 8}%`;
-    const size = Math.max(44, 54 - difficulty.multiplier * 2 - (type === "rare" ? 2 : 0));
+    const size = Math.max(36, 54 - difficulty.multiplier * 2 - (type === "rare" ? 2 : 0) - (level - 1) * 4);
     target.style.setProperty("--aim-size", `${size}px`);
     target.style.setProperty("--aim-drift", `${Math.max(0.6, 2.6 - difficulty.multiplier * 0.22)}s`);
     target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : type === "trap" ? "×" : "•";
@@ -9118,7 +9469,7 @@ function startAimGame(difficultyId) {
       target.remove();
     }, { once: true });
     arena.appendChild(target);
-    const life = Math.max(360, (type === "rare" ? 880 : type === "freeze" ? 780 : type === "trap" ? 1040 : 1320) - difficulty.multiplier * 110);
+    const life = Math.max(300, (type === "rare" ? 880 : type === "freeze" ? 780 : type === "trap" ? 1040 : 1320) - difficulty.multiplier * 110 - (level - 1) * 120);
     const removeTimer = window.setTimeout(() => {
       if (target.isConnected) {
         if (type !== "trap") breakCombo(0);
@@ -9137,17 +9488,18 @@ function startAimGame(difficultyId) {
   // some devices with an apparently empty arena while misses accumulated.
   addTarget();
   const firstWave = window.setTimeout(addTarget, 140);
-  const spawn = window.setInterval(addTarget, Math.max(190, 720 - difficulty.multiplier * 76));
+  const spawn = window.setInterval(addTarget, Math.max(150, 720 - difficulty.multiplier * 76 - (level - 1) * 90));
   session.timers.push(timer, firstWave, spawn);
 }
 
 function showMinigameResult({ mode, difficulty, score, reward, detail = "" }) {
   $("#modalContent").innerHTML = `
     <section class="minigame-result ${reward?.passed ? "victory" : "partial"}">
-      <p class="eyebrow">${esc(mode)} · ${esc(difficulty.name)}</p>
+      <p class="eyebrow">${esc(mode)} · ${esc(difficulty.name)} · Nível ${Number(reward?.level || state.minigameLevel || 1)}</p>
       <span class="minigame-grade">${esc(reward?.grade || "D")}</span>
       <h2>${reward?.passed ? "Você sobreviveu ao desafio." : "O portal cobrou seu preço."}</h2>
       <p>${esc(detail)}</p>
+      <p class="minigame-target-result">Meta para avançar: ${Number(reward?.target || 0).toLocaleString("pt-BR")} pontos${reward?.unlockedNext ? ` · Nível ${Number(reward.level || 1) + 1} liberado` : ""}</p>
       <div class="result-reward-grid">
         ${renderStat("Score", score)}
         ${renderStat("Millennium Coins", reward?.coins || 0)}
@@ -9213,6 +9565,8 @@ async function startPetHunt(form) {
   const values = formValues(form);
   const character = currentCharacter();
   const difficulty = difficultyById(values.difficulty || state.minigameDifficulty);
+  const level = FOUNDATIONS.clampLevel(values.stageLevel || state.minigameLevel);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(character, "hunt", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} da Pet Hunt primeiro.`);
   const pet = (character.gachaVault || []).find((item) => item.instanceId === values.petId && item.kind === "pet");
   if (!pet || petBusy(pet)) {
     toast("Escolha um pet livre para a Hunt.");
@@ -9226,7 +9580,7 @@ async function startPetHunt(form) {
   const routeRisk = route === "deep" ? 1.45 : route === "cautious" ? 0.62 : 1;
   const durationRisk = requestedDuration >= 60 ? 1.35 : requestedDuration >= 30 ? 1.12 : 1;
   const duration = requestedDuration * 60000;
-  const risk = Math.min(0.82, difficulty.risk * routeRisk * durationRisk * Math.max(0.18, 1.15 - rarityScore(pet.rarity) * 0.08 - Number(pet.stars || 1) * 0.035));
+  const risk = Math.min(0.9, difficulty.risk * routeRisk * durationRisk * (1 + (level - 1) * 0.22) * Math.max(0.18, 1.15 - rarityScore(pet.rarity) * 0.08 - Number(pet.stars || 1) * 0.035));
   const activity = {
     id: cryptoRandom(),
     type: "Pet Hunt",
@@ -9237,6 +9591,7 @@ async function startPetHunt(form) {
     petImageUrl: pet.imageUrl || petImageFor(pet),
     difficultyId: difficulty.id,
     difficultyName: difficulty.name,
+    stageLevel: level,
     biome: biome.name || "Campo desconhecido",
     biomeId: biome.id || "",
     route,
@@ -9281,8 +9636,10 @@ async function completeActivity(activityId, cancelled = false) {
     const ready = Date.now() >= (dateFromValue(activity.endsAt)?.getTime() || 0);
     const difficulty = difficultyById(activity.difficultyId);
     const pet = (character.gachaVault || []).find((item) => item.instanceId === activity.petId);
-    const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier);
-    const reward = minigameReward(activity.difficultyId, score, "hunt");
+    const level = FOUNDATIONS.clampLevel(activity.stageLevel || 1);
+    const score = Math.round((instancePower(pet || {}) * (cancelled ? 0.35 : ready ? 1 : 0.55)) * difficulty.multiplier * (1 + (level - 1) * 0.18));
+    const reward = minigameReward(activity.difficultyId, score, "hunt", level);
+    const progression = FOUNDATIONS.recordMinigameProgress(character, "hunt", difficulty, level, score);
     const danger = Number(activity.risk || difficulty.risk);
     const deathRisk = cancelled ? danger * 0.08 : danger * (difficulty.id === "god-slayer" ? 0.34 : difficulty.id === "pesadelo" ? 0.18 : 0.08);
     const injuryRisk = cancelled ? danger * 0.25 : danger;
@@ -9299,13 +9656,23 @@ async function completeActivity(activityId, cancelled = false) {
       gachaVault: vault,
       activeActivities: (character.activeActivities || []).filter((item) => item.id !== activityId),
       huntCompletionKeys: [...completionKeys, activityId],
+      minigameProgress: progression.progress,
+      minigameStats: {
+        ...(character.minigameStats || {}),
+        hunt: {
+          bestScore: Math.max(Number(character.minigameStats?.hunt?.bestScore || 0), score),
+          plays: Number(character.minigameStats?.hunt?.plays || 0) + 1,
+          [`${difficulty.id}Best`]: Math.max(Number(character.minigameStats?.hunt?.[`${difficulty.id}Best`] || 0), score),
+        },
+      },
+      minigameHistory: [{ id: cryptoRandom(), completionKey: activityId, mode: "hunt", difficultyId: difficulty.id, difficultyName: difficulty.name, level, target: progression.target, score, grade: reward.grade, coins: reward.coins, fragments: reward.fragments, fragmentName: reward.fragmentName, createdAt: new Date().toISOString() }, ...(character.minigameHistory || [])].slice(0, 30),
       millenniumCoins: Number(character.millenniumCoins || 0) + (cancelled ? Math.floor(reward.coins * 0.35) : reward.coins),
       gachaFragments: fragments,
       inventory: mergeInventoryLoot(character.inventory || [], huntLoot),
       huntHistory: [{ id: cryptoRandom(), completionKey: activityId, biome: activity.biome, difficultyId: difficulty.id, petName: activity.petName, loot: huntLoot.map((item) => `${item.name} x${item.quantity}`), status, createdAt: new Date().toISOString() }, ...(character.huntHistory || [])].slice(0, 60),
     });
     if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
-    toast(`${activity.petName} voltou${died ? " morto" : fell ? " ferido" : ""}: ${[...reward.loot, ...huntLoot.map((item) => `${item.name} x${item.quantity}`)].join(" · ")}`);
+    toast(`${activity.petName} voltou${died ? " morto" : fell ? " ferido" : ""}: ${[...reward.loot, ...huntLoot.map((item) => `${item.name} x${item.quantity}`)].join(" · ")}${progression.unlockedNext ? ` · Nível ${level + 1} liberado` : ""}`);
   } finally {
     state.resolvingActivityIds.delete(activityId);
   }
@@ -9413,6 +9780,7 @@ function prepareTowerArt(session) {
 async function startTowerDefense(form) {
   const values = formValues(form);
   const character = currentCharacter();
+  const level = FOUNDATIONS.clampLevel(values.stageLevel || state.minigameLevel);
   const deckIds = [values.towerPet1, values.towerPet2, values.towerPet3, values.towerPet4].filter(Boolean);
   const uniqueDeckIds = [...new Set(deckIds)];
   if (deckIds.length !== uniqueDeckIds.length) {
@@ -9426,6 +9794,7 @@ async function startTowerDefense(form) {
   }
   const map = (state.content.towerMaps || []).find((item) => item.id === values.mapId) || {};
   const difficulty = difficultyById(values.difficulty || state.minigameDifficulty);
+  if (!FOUNDATIONS.isMinigameLevelUnlocked(character, "tower", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} do Tower Defense primeiro.`);
   if (currentGachaEnergy(character) < difficulty.cost) {
     toast("Energia insuficiente para iniciar a defesa.");
     return;
@@ -9435,10 +9804,10 @@ async function startTowerDefense(form) {
   const session = {
     id: `tower:${state.user?.uid || "demo"}:${cryptoRandom()}`,
     lifecycle: POLISH.createLifecycle("preparing"),
-    pet: pets[0], pets, map, difficulty, slots,
+    pet: pets[0], pets, map, difficulty, level, slots,
     selectedSlot: 0, selectedTowerIndex: 0,
     towers: pets.map((pet, index) => ({ pet, slotIndex: index, upgrade: 0, lastShotAt: 0, flash: 0 })),
-    wave: 0, targetWaves: Math.min(8, 3 + Math.ceil(difficulty.multiplier)), lives: 3, essence: 3,
+    wave: 0, targetWaves: Math.min(10, 3 + Math.ceil(difficulty.multiplier) + (level - 1)), lives: Math.max(1, 4 - level), essence: 3,
     kills: 0, escaped: 0, enemies: [], spawning: false, running: false, looping: false, paused: false,
     waveTargetCount: 0, waveSpawned: 0, waveStartKills: 0, waveStartEscaped: 0,
     finished: false, lastFrame: performance.now(), animationFrame: null, spawnTimers: [], flash: 0,
@@ -9447,7 +9816,7 @@ async function startTowerDefense(form) {
   state.activeTowerSession = session;
   $("#modalContent").innerHTML = `
     <section class="tower-session" aria-labelledby="tower-title">
-      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)}</p><h2 id="tower-title">${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="tower-title">${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
       <canvas class="tower-canvas" data-tower-canvas width="760" height="420" role="img" aria-label="Mapa jogável do Tower Defense. Use os botões de companheiro e os controles abaixo para jogar."></canvas>
       <div class="tower-hud" data-tower-hud role="status" aria-live="polite"></div>
       <div class="tower-deck" data-tower-deck aria-label="Companheiros da defesa">${pets.map((entry, index) => `<button class="tower-deck-pet ${index === 0 ? "active" : ""}" type="button" data-action="tower-select-pet" data-tower-index="${index}" aria-pressed="${index === 0}">${petImageFor(entry) ? `<img src="${esc(petImageFor(entry))}" alt="" loading="lazy" />` : ""}<span>${esc(entry.name)}</span><small>★${Number(entry.stars || 1)}</small></button>`).join("")}</div>
@@ -9759,12 +10128,12 @@ function startTowerWave() {
     waveButton.disabled = true;
     waveButton.textContent = "Onda em curso";
   }
-  const count = 3 + session.wave + Math.round(session.difficulty.multiplier);
+  const count = 3 + session.wave + Math.round(session.difficulty.multiplier) + (session.level - 1) * 2;
   session.waveTargetCount = count;
   session.waveSpawned = 0;
   session.waveStartKills = session.kills;
   session.waveStartEscaped = session.escaped;
-  const baseHp = 36 * session.difficulty.multiplier * (1 + session.wave * 0.32);
+  const baseHp = 36 * session.difficulty.multiplier * (1 + session.wave * 0.32) * (1 + (session.level - 1) * 0.28);
   for (let index = 0; index < count; index += 1) {
     const timer = window.setTimeout(() => {
       if (session.finished || session.paused) return;
@@ -9781,7 +10150,7 @@ function startTowerWave() {
         routeLength: start.total,
         hp: Math.round(baseHp * (elite ? 2.05 : 1) * (trait === "armored" ? 1.45 : 1)),
         maxHp: Math.round(baseHp * (elite ? 2.05 : 1) * (trait === "armored" ? 1.45 : 1)),
-        speed: (55 + session.difficulty.multiplier * 8 + session.wave * 3) * (elite ? 0.78 : 1) * (trait === "fast" ? 1.35 : 1),
+        speed: (55 + session.difficulty.multiplier * 8 + session.wave * 3 + (session.level - 1) * 7) * (elite ? 0.78 : 1) * (trait === "fast" ? 1.35 : 1),
         elite: elite || (trait === "boss" && index === count - 1),
         trait,
       });
@@ -9900,7 +10269,7 @@ async function finishTowerDefense(session, victory) {
   try {
     const reward = await applyMinigameReward("tower", session.difficulty.id, score, {
       lastTowerRun: { id: session.id, mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, createdAt: new Date().toISOString() },
-    }, session.id);
+    }, session.id, session.level);
     if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
     state.activeTowerSession = null;
     showMinigameResult({ mode: "Tower Defense", difficulty: session.difficulty, score, reward, detail: `${victory ? "Fortaleza preservada" : "A rota foi rompida"} · ${session.kills} abates · ${session.wave}/${session.targetWaves} ondas · ${session.lives} vida(s)` });
@@ -9983,7 +10352,7 @@ async function claimPassReward(tierId, track) {
 async function claimPassMission(missionId) {
   const character = currentCharacter();
   const mission = (state.content.passMissions || []).find((item) => item.id === missionId);
-  if (!mission?.mode) return;
+  if (!mission) return;
   const progress = passMissionProgress(character, mission);
   if (!progress.complete) {
     toast("Complete os objetivos desta missão antes de coletar o XP sazonal.");
@@ -10391,8 +10760,11 @@ async function submitCreationRequest(form) {
   const character = currentCharacter();
   const payload = window.MILLENNIUM_BACKEND_31.sanitizeCreationPayload(values, character);
   const type = payload.type;
-  const powerSlots = Math.max(1, Number(character.powerSlots || 1));
   const powersUsed = approvedPowerCount(character);
+  const level = Math.max(1, Number(character.level || levelFromXp(character.xp || 0)));
+  const techniqueSlots = FOUNDATIONS.techniqueSlotsForLevel(level);
+  const techniquesUsed = (character.techniques || []).filter((technique) => technique?.name && technique.status !== "reprovado").length;
+  const pendingTechniques = state.progressRequests.filter((request) => request.uid === state.user.uid && request.type === "technique" && !["aprovado", "reprovado"].includes(creationRequestStatus(request))).length;
   const pendingDuplicate = state.progressRequests.some((request) => request.uid === state.user.uid
     && request.type === type
     && !["aprovado", "reprovado"].includes(creationRequestStatus(request))
@@ -10401,12 +10773,24 @@ async function submitCreationRequest(form) {
     toast("Já existe uma solicitação ativa com esse nome.");
     return;
   }
-  if (type === "power" && powersUsed >= powerSlots) {
-    toast(`Você já tem ${powersUsed}/${powerSlots} poder(es) liberado(s).`);
+  if (!character.affinityId) {
+    toast("Descubra e registre sua afinidade antes de criar o Poder central.");
+    return;
+  }
+  if (type === "power" && powersUsed >= 1) {
+    toast("Esta ficha já possui seu único Poder central.");
     return;
   }
   if (type === "technique" && powersUsed < 1) {
     toast("Crie e aprove um poder base antes de enviar técnicas.");
+    return;
+  }
+  if (type === "technique" && !payload.basePowerId) {
+    toast("Escolha o Poder central do qual esta técnica nasce.");
+    return;
+  }
+  if (type === "technique" && techniquesUsed + pendingTechniques >= techniqueSlots) {
+    toast(techniqueSlots ? `Todos os ${techniqueSlots} espaço(s) de técnica estão ocupados ou em análise. O próximo abre no nível ${FOUNDATIONS.nextTechniqueLevel(level)}.` : "O primeiro espaço de técnica é liberado no nível 5.");
     return;
   }
   const requestPayload = {
@@ -10654,7 +11038,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.3.0",
+    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.4.0",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -11325,7 +11709,7 @@ async function saveAdminUser(form) {
     },
     affinityAttempts: Number(values.affinityAttempts || 0),
     pityCounter: Number(values.pityCounter || 0),
-    powerSlots: Math.max(1, Number(values.powerSlots || 1)),
+    powerSlots: 1,
     raceId: values.raceId,
     classId: values.classId,
     affinityId: values.affinityId,
@@ -11478,8 +11862,9 @@ async function cleanupCharacterData(uid, { recreateDraft = false, displayName = 
   if (!state.demo) {
     await state.db.collection("characters").doc(uid).delete().catch(() => {});
     await state.db.collection("publicProfiles").doc(uid).delete().catch(() => {});
-    state.diagnostics.writes += 2;
-    removed += 2;
+    await state.db.collection("rankings").doc(uid).delete().catch(() => {});
+    state.diagnostics.writes += 3;
+    removed += 3;
     if (recreateDraft) {
       await state.db.collection("characters").doc(uid).set({
         ...defaultCharacter(uid, displayName),
@@ -11494,6 +11879,7 @@ async function cleanupCharacterData(uid, { recreateDraft = false, displayName = 
   }
   state.characters = state.characters.filter((entry) => (entry.ownerId || entry.id) !== uid);
   state.publicProfiles = state.publicProfiles.filter((entry) => entry.id !== uid && entry.ownerId !== uid);
+  state.rankingProfiles = state.rankingProfiles.filter((entry) => entry.id !== uid && entry.ownerId !== uid);
   if (recreateDraft) {
     const draft = defaultCharacter(uid, displayName);
     state.characters.push(draft);
@@ -11985,6 +12371,7 @@ async function reviewProgressRequestValues(values) {
       patch.activeMissions = (character.activeMissions || []).filter((id) => id !== request.missionId);
     }
     if (request.type === "power") {
+      if (approvedPowerCount(character) >= 1 && !(character.powers || []).some((power) => power.id === request.id)) throw new Error("Esta ficha já possui o único Poder central permitido.");
       const legacyPower = character.power?.name ? [{ id: "base", ...character.power, status: character.power.status || "aprovado" }] : [];
       const powers = (character.powers?.length ? character.powers : legacyPower)
         .filter((power) => power.id !== request.id && power.name !== request.title);
@@ -12001,10 +12388,12 @@ async function reviewProgressRequestValues(values) {
       const nextPowers = [...powers, approvedPower];
       patch.powers = nextPowers;
       patch.power = nextPowers[0];
-      patch.powerSlots = Math.max(Number(character.powerSlots || 1), nextPowers.length);
+      patch.powerSlots = 1;
     }
     if (request.type === "technique") {
       const techniques = (character.techniques || []).filter((technique) => technique.name || technique.description);
+      const techniqueSlots = FOUNDATIONS.techniqueSlotsForLevel(Math.max(1, Number(character.level || levelFromXp(character.xp || 0))));
+      if (techniques.length >= techniqueSlots) throw new Error(`A ficha possui ${techniques.length}/${techniqueSlots} técnicas. O próximo espaço ainda não foi liberado por nível.`);
       patch.techniques = [...techniques, {
         id: request.id,
         name: request.title,
@@ -12012,6 +12401,7 @@ async function reviewProgressRequestValues(values) {
         cost: request.cost,
         limitations: request.limitations,
         countermeasures: request.countermeasures,
+        basePowerId: request.basePowerId || character.powers?.[0]?.id || character.power?.id || "base",
         status: "aprovado",
         adminNote,
       }];
@@ -12362,26 +12752,30 @@ async function markReport(id, status) {
 
 async function panicRefresh() {
   if (state.role !== "admin") return;
+  if (!window.confirm(`Disparar "${state.settings.emergencyTitle || "Atualização emergencial"}" para todos os jogadores?`)) return;
   const version = cryptoRandom();
   await writeDoc("settings", "system", {
     panicVersion: version,
     panicAt: state.demo ? new Date().toISOString() : nowValue(),
     panicBy: state.profile?.displayName || state.user.email,
+    maintenanceMode: state.settings.emergencyAction === "maintenance" ? true : Boolean(state.settings.maintenanceMode),
   });
-  await Promise.all(state.users
-    .filter((user) => user.role !== "admin")
-    .map((user) => writeDoc("users", user.id, {
-      online: false,
-      panicOfflineAt: state.demo ? new Date().toISOString() : nowValue(),
-    }).catch(() => {})));
+  if (state.settings.emergencyAction === "signout") {
+    await Promise.all(state.users
+      .filter((user) => user.role !== "admin")
+      .map((user) => writeDoc("users", user.id, {
+        online: false,
+        panicOfflineAt: state.demo ? new Date().toISOString() : nowValue(),
+      }).catch(() => {})));
+  }
   await addGlobalMessage({
     senderId: "system",
     senderName: "Sistema",
     type: "admin-alert",
-    text: `ALERTA: ${ORACLE_LABEL} acionou atualização emergencial da interface.`,
+    text: `ALERTA: ${state.settings.emergencyTitle || "Atualização emergencial"} · ${state.settings.emergencyMessage || "A Interface será atualizada."}`,
   });
   state.lastPanicVersion = version;
-  toast("Pânico acionado. Players serão desconectados.");
+  toast("Atualização emergencial disparada com rascunhos protegidos.");
 }
 
 async function toggleMaintenance(mode) {
@@ -12637,6 +13031,7 @@ function wireEvents() {
         if (button.dataset.codexTarget) state.codexTab = button.dataset.codexTarget;
         state.view = button.dataset.nav;
         recordJourneyVisit(state.view);
+        trackPassActivity(state.view);
         state.renderReason = "navigation";
         button.blur();
         if (button.closest("#modal")) closeModal();
@@ -12654,6 +13049,8 @@ function wireEvents() {
       if (action === "apply-update") applyAvailableUpdate();
       if (action === "dismiss-update") $("#updateNotice").hidden = true;
       if (action === "toggle-music") await toggleAmbientMusic();
+      if (action === "select-music-track") await selectMusicTrack(button.dataset.trackId);
+      if (action === "next-music-track") await nextMusicTrack();
       if (action === "demo-player") enterDemo("player");
       if (action === "demo-admin") enterDemo("admin");
       if (action === "logout") {
@@ -12673,6 +13070,7 @@ function wireEvents() {
       if (action === "onboarding-visit") {
         state.view = button.dataset.navTarget || "player-home";
         recordJourneyVisit(state.view);
+        trackPassActivity(state.view);
         render();
         openOnboarding(state.onboardingStep);
       }
@@ -12718,6 +13116,10 @@ function wireEvents() {
         state.minigameDifficulty = button.dataset.difficulty;
         render();
       }
+      if (action === "minigame-level") {
+        state.minigameLevel = FOUNDATIONS.clampLevel(button.dataset.level);
+        render();
+      }
       if (action === "leisure-tab") {
         state.minigameTab = button.dataset.tab || "quick";
         render();
@@ -12731,6 +13133,8 @@ function wireEvents() {
       if (action === "alchemy-ingredient") handleAlchemyIngredient(button.dataset.alchemyId || "");
       if (action === "alchemy-reset") resetAlchemySelection();
       if (action === "preview-season-theme") openSeasonThemePreview(button.closest("form"));
+      if (action === "load-season-theme-preset") loadSeasonThemePreset(button.closest("form"));
+      if (action === "choose-season-theme") chooseSeasonTheme(button.dataset.themeId);
       if (action === "gacha-odds") openGachaOdds(button.dataset.kind || state.gachaTab);
       if (action === "gacha-pool") openGachaPool(button.dataset.kind || state.gachaTab);
       if (action === "tower-start-wave") startTowerWave();
@@ -12894,6 +13298,7 @@ function wireEvents() {
       if (action === "reset-missions") await resetWeeklyMissions(false);
       if (action === "recycle-missions") await resetWeeklyMissions(true);
       if (action === "mark-report") await markReport(button.dataset.reportId, button.dataset.status);
+      if (action === "rebuild-rankings") await rebuildRankingProjections();
       if (action === "panic-refresh") await panicRefresh();
       if (action === "toggle-maintenance") await toggleMaintenance(button.dataset.mode);
       if (action === "start-rpg") await startRpg();
@@ -13113,6 +13518,25 @@ function wireEvents() {
       if (type === "admin-ops") await saveAdminOps(form);
       if (type === "admin-settings") {
         const v = formValues(form);
+        const themeId = v.seasonTheme || "eclipse";
+        const themePackages = {
+          ...(state.settings.themePackages || {}),
+          [themeId]: {
+            name: ECHOES.themeById(themeId)?.name || themeId,
+            description: v.seasonThemeDescription || "",
+            palette: { primary: v.seasonThemePrimary || "", secondary: v.seasonThemeSecondary || "", accent: v.seasonThemeAccent || "", danger: v.seasonThemeDanger || "", success: v.seasonThemeSuccess || "" },
+            background: v.seasonThemeBackground || "",
+            loginArt: v.seasonThemeLoginArt || "",
+            cardTexture: v.seasonThemeCardTexture || "stone",
+            buttonStyle: v.seasonThemeButtonStyle || "solid",
+            icons: v.seasonThemeIcons || "runes",
+            music: { main: v.seasonThemeMainMusic || "", codex: v.seasonThemeCodexMusic || "", gacha: v.seasonThemeGachaMusic || "", rarity: v.seasonThemeRaritySounds || "" },
+            animation: v.seasonThemeAnimation || "normal",
+            menuEffect: v.seasonThemeMenuEffect || "mist",
+            homeHighlight: v.seasonThemeHomeHighlight || "season",
+            updatedAt: new Date().toISOString(),
+          },
+        };
         await writeDoc("settings", "system", {
           seasonName: v.seasonName,
           seasonNumber: Number(v.seasonNumber || 1),
@@ -13148,8 +13572,13 @@ function wireEvents() {
           seasonThemeAnimation: v.seasonThemeAnimation || "normal",
           seasonThemeMenuEffect: v.seasonThemeMenuEffect || "mist",
           seasonThemeHomeHighlight: v.seasonThemeHomeHighlight || "season",
+          themePackages,
           factionsUnlocked: v.factionsUnlocked === "true",
           globalNotice: v.globalNotice,
+          emergencyTitle: String(v.emergencyTitle || "Atualização emergencial").slice(0, 120),
+          emergencyMessage: String(v.emergencyMessage || "").slice(0, 600),
+          emergencyAction: ["reload", "maintenance", "signout"].includes(v.emergencyAction) ? v.emergencyAction : "reload",
+          emergencyCountdown: Math.max(0, Math.min(30, Number(v.emergencyCountdown || 0))),
           seedVersion: SEED_VERSION,
         });
         toast("Configurações publicadas.");

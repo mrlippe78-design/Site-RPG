@@ -172,6 +172,61 @@ test("technical creation accepts exactly 20 points and rejects attribute 67", as
   }));
 });
 
+test("registered player can publish only a ranking projection derived from the own sheet", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "characters", "player-a"), {
+      ...initialCharacter("player-a"),
+      characterName: "Ariadne",
+      creationLocked: true,
+    });
+  });
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  const projection = {
+    ownerId: "player-a",
+    characterName: "Ariadne",
+    displayName: "Escolhido",
+    eligible: true,
+    level: 1,
+    xp: 0,
+    gold: 100,
+    coins: 250,
+    affinityId: "",
+    totalRares: 0,
+    totalRolls: 0,
+    aimBest: 0,
+    huntBest: 0,
+    towerBest: 0,
+    petCount: 0,
+    itemCount: 0,
+    passXp: 0,
+    collectionCount: 0,
+    powerCount: 0,
+    techniqueCount: 0,
+    updatedAt: serverTimestamp(),
+  };
+  await assertSucceeds(setDoc(doc(db, "rankings", "player-a"), projection));
+  await assertFails(setDoc(doc(db, "rankings", "player-a"), { ...projection, level: 99 }));
+  await assertFails(setDoc(doc(db, "rankings", "player-b"), { ...projection, ownerId: "player-b" }));
+});
+
+test("pass activity and a single mission claim update live progress without minting arbitrary fields", async () => {
+  const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
+  await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), {
+    passActivity: { codexAt: serverTimestamp() },
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), {
+    seasonPassXp: 100,
+    passMissionClaims: ["codex-1"],
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(doc(db, "characters", "player-a"), {
+    seasonPassXp: 1000,
+    passMissionClaims: ["codex-1", "forged"],
+    updatedAt: serverTimestamp(),
+  }));
+});
+
 test("owner can update public profile fields but not another character", async () => {
   const db = environment.authenticatedContext("player-a", { email: "a@example.invalid" }).firestore();
   await assertSucceeds(updateDoc(doc(db, "characters", "player-a"), { characterDescription: "Uma memória curta." }));

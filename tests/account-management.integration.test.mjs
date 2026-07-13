@@ -9,9 +9,9 @@ const serviceWorker = await readFile(new URL("../service-worker.js", import.meta
 const build = await readFile(new URL("../build-info.js", import.meta.url), "utf8");
 
 test("current build preserves account management in page and cache", () => {
-  assert.match(build, /version:\s*"3\.3\.0"/);
-  assert.match(index, /millennium-account-management\.js\?v=3\.3\.0/);
-  assert.match(index, /account-management\.css\?v=3\.3\.0/);
+  assert.match(build, /version:\s*"3\.4\.0"/);
+  assert.match(index, /millennium-account-management\.js\?v=3\.4\.0/);
+  assert.match(index, /account-management\.css\?v=3\.4\.0/);
   assert.match(serviceWorker, /millennium-account-management\.js/);
   assert.match(serviceWorker, /account-management\.css/);
 });

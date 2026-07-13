@@ -86,8 +86,8 @@ test("build includes world-alive module, ritual and bounded hunt rules", async (
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
   const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(index, /millennium-world-alive\.js\?v=3\.3\.0/);
-  assert.match(index, /world-alive\.css\?v=3\.3\.0/);
+  assert.match(index, /millennium-world-alive\.js\?v=3\.4\.0/);
+  assert.match(index, /world-alive\.css\?v=3\.4\.0/);
   assert.match(app, /function startSealRitual/);
   assert.doesNotMatch(app, /transition\("showing"/);
   assert.doesNotMatch(app, /transition\("input"/);

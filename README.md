@@ -201,3 +201,7 @@ O painel do Oráculo separa reset de ficha, suspensão, banimento e exclusão de
 ## Build 3.3.0 — Ecos da Interface
 
 A versão 3.3.0 corrige o encerramento recursivo do rastreamento de presença e introduz a nova direção visual sazonal, a navegação progressiva e os minigames Cartografia Perdida e Alquimia Instável. Consulte `ECOS_DA_INTERFACE_3_3.md`, `VALIDATION_3_3.md` e `ROLLBACK_3_3.md` antes da publicação.
+
+## Build 3.4.0 — Fundações Vivas
+
+A versão 3.4.0 estabiliza a criação e o salvamento da ficha, conecta Passe e Ranking ao progresso persistido, introduz níveis internos nos minigames, formaliza Afinidade → Poder → Técnicas, expande a Jukebox e conclui a gestão de temas e atualizações emergenciais. Consulte `FUNDACOES_VIVAS_3_4.md`, `VALIDATION_3_4.md` e `ROLLBACK_3_4.md` antes da publicação.

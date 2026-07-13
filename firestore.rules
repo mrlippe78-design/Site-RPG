@@ -124,13 +124,14 @@ service cloud.firestore {
           "id", "ownerId", "displayName", "profilePublic", "playerName", "characterName",
           "characterAge", "characterDescription", "pronouns", "originType", "apparentAge",
           "realAge", "cultureId", "culture", "kingdomId", "regionId", "professionId", "profession", "objective", "fear",
+          "customCultureName", "customCultureSummary", "customProfessionName", "customProfessionSummary",
           "playerLimits", "currentLocation", "physicalState", "essenceState", "creationLocked",
           "creationStatus", "technicalCreationComplete", "narrativeCreationComplete",
           "bannerUrl", "raceId", "classId", "factionId", "factionReputation",
           "factionJoinedAt", "affinityId", "affinityAttempts", "pityCounter", "totalRolls",
           "totalRares", "prestige", "base", "development", "xp", "level", "freePoints",
           "gold", "millenniumCoins", "gachaEnergy", "gachaEnergyUpdatedAt", "gachaFragments",
-          "gachaVault", "gachaHistory", "activeActivities", "minigameStats", "activeTitleId",
+          "gachaVault", "gachaHistory", "activeActivities", "minigameStats", "minigameProgress", "minigameHistory", "minigameCompletionKeys", "huntCompletionKeys", "huntHistory", "passActivity", "activeTitleId",
           "pendingGift", "activeMissions", "premiumPassUnlocked", "seasonPassXp",
           "passMissionClaims", "rollHistory", "titles", "tokens", "pets", "inventory",
           "power", "powers", "powerSlots", "techniques", "story", "personality", "avatarUrl",
@@ -158,6 +159,7 @@ service cloud.firestore {
           "playerName", "displayName", "characterName", "characterAge", "pronouns",
           "originType", "apparentAge", "realAge", "raceId", "classId", "kingdomId",
           "regionId", "cultureId", "culture", "professionId", "profession",
+          "customCultureName", "customCultureSummary", "customProfessionName", "customProfessionSummary",
           "currentLocation", "characterDescription", "avatarUrl", "bannerUrl",
           "avatarPosition", "bannerPosition", "avatarFocusX", "avatarFocusY",
           "avatarZoom", "bannerFocusX", "bannerFocusY", "bannerZoom", "base",
@@ -390,7 +392,7 @@ service cloud.firestore {
       let nextCoins = request.resource.data.get("millenniumCoins", 0);
       return changedOnly([
           "gachaVault", "activeActivities", "huntCompletionKeys", "millenniumCoins",
-          "gachaFragments", "inventory", "huntHistory", "updatedAt"
+          "gachaFragments", "inventory", "huntHistory", "minigameProgress", "minigameStats", "minigameHistory", "updatedAt"
         ])
         && oldActivities is list && nextActivities is list
         && nextActivities.size() == oldActivities.size() - 1 && nextActivities.size() >= 0
@@ -469,6 +471,7 @@ service cloud.firestore {
       return changedOnly([
           "gachaEnergy", "gachaEnergyUpdatedAt", "millenniumCoins", "gachaFragments",
           "minigameCompletionKeys", "minigameStats", "minigameHistory",
+          "minigameProgress",
           "lastAimRun", "lastTowerRun", "lastSealRun", "lastCartographyRun", "lastAlchemyRun", "updatedAt"
         ])
         && oldEnergy is int && nextEnergy is int
@@ -487,6 +490,61 @@ service cloud.firestore {
         && request.resource.data.get("lastSealRun", {}) is map
         && request.resource.data.get("lastCartographyRun", {}) is map
         && request.resource.data.get("lastAlchemyRun", {}) is map;
+    }
+
+    function ownerPassActivityUpdate() {
+      let activity = request.resource.data.get("passActivity", {});
+      return changedOnly(["passActivity", "updatedAt"])
+        && activity is map
+        && activity.keys().hasOnly(["codexAt"])
+        && activity.get("codexAt", request.time) == request.time;
+    }
+
+    function ownerPassMissionClaimUpdate() {
+      let oldClaims = resource.data.get("passMissionClaims", []);
+      let nextClaims = request.resource.data.get("passMissionClaims", []);
+      let oldXp = resource.data.get("seasonPassXp", 0);
+      let nextXp = request.resource.data.get("seasonPassXp", 0);
+      return changedOnly(["seasonPassXp", "passMissionClaims", "updatedAt"])
+        && oldClaims is list && nextClaims is list
+        && nextClaims.size() == oldClaims.size() + 1 && nextClaims.size() <= 120
+        && nextClaims.hasAll(oldClaims)
+        && oldXp is int && nextXp is int
+        && nextXp > oldXp && nextXp <= oldXp + 500;
+    }
+
+    function validRankingProjection(uid) {
+      let data = request.resource.data;
+      let character = get(/databases/$(database)/documents/characters/$(uid)).data;
+      let stats = character.get("minigameStats", {});
+      return own(uid)
+        && data.keys().hasOnly([
+          "ownerId", "characterName", "displayName", "eligible", "level", "xp",
+          "gold", "coins", "affinityId", "totalRares", "totalRolls", "aimBest",
+          "huntBest", "towerBest", "petCount", "itemCount", "passXp",
+          "collectionCount", "powerCount", "techniqueCount", "updatedAt"
+        ])
+        && data.ownerId == uid
+        && data.characterName == character.get("characterName", "")
+        && data.displayName in [character.get("displayName", ""), character.get("playerName", ""), "Player"]
+        && data.eligible == (character.get("creationLocked", false) || character.get("technicalCreationComplete", false))
+        && data.level == character.get("level", 1)
+        && data.xp == character.get("xp", 0)
+        && data.gold == character.get("gold", 0)
+        && data.coins == character.get("millenniumCoins", 0)
+        && data.affinityId == character.get("affinityId", "")
+        && data.totalRares == character.get("totalRares", 0)
+        && data.totalRolls == character.get("totalRolls", 0)
+        && data.aimBest == stats.get("aim", {}).get("bestScore", 0)
+        && data.huntBest == stats.get("hunt", {}).get("bestScore", 0)
+        && data.towerBest == stats.get("tower", {}).get("bestScore", 0)
+        && data.petCount == character.get("gachaVault", []).size()
+        && data.itemCount == character.get("inventory", []).size()
+        && data.passXp == character.get("seasonPassXp", 0)
+        && data.collectionCount == character.get("gachaVault", []).size() + character.get("inventory", []).size()
+        && data.powerCount == character.get("powers", []).size()
+        && data.techniqueCount == character.get("techniques", []).size()
+        && data.updatedAt == request.time;
     }
 
     match /admins/{uid} {
@@ -556,6 +614,8 @@ service cloud.firestore {
           || ownerVaultManagementUpdate()
           || ownerGachaRerollUpdate()
           || ownerMinigameResultUpdate()
+          || ownerPassActivityUpdate()
+          || ownerPassMissionClaimUpdate()
         );
       allow update: if auditedAdminMutation(uid);
       allow delete: if isAdmin() && request.auth.uid != uid;
@@ -658,6 +718,12 @@ service cloud.firestore {
         && request.resource.data.privacy in ["public", "private"]
         && request.resource.data.updatedAt == request.time;
       allow write: if isAdmin();
+    }
+
+    match /rankings/{uid} {
+      allow read: if accountIsActive() || isAdmin();
+      allow create, update: if validRankingProjection(uid) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /auditLogs/{auditId} {

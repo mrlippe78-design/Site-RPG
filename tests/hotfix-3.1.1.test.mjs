@@ -8,8 +8,8 @@ const rules = await readFile(new URL("../firestore.rules", import.meta.url), "ut
 const build = await readFile(new URL("../build-info.js", import.meta.url), "utf8");
 
 test("hotfix bumps the public build and cache", () => {
-  assert.match(build, /version:\s*"3\.3\.0"/);
-  assert.match(build, /millennium-shell-v3\.3\.0/);
+  assert.match(build, /version:\s*"3\.4\.0"/);
+  assert.match(build, /millennium-shell-v3\.4\.0/);
 });
 
 test("aim game creates targets immediately and forces mobile visibility", () => {

@@ -40,12 +40,12 @@ test("alchemy evaluates exact order and partial attempts", () => {
   assert.equal(echoes.evaluateAlchemy(reversed, challenge.recipe).passed, false);
 });
 
-test("3.3 integrates leisure navigation, both games and the presence recursion fix", async () => {
+test("current build preserves 3.3 leisure navigation and the presence fix", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
-  assert.match(index, /millennium-echoes\.js\?v=3\.3\.0/);
-  assert.match(index, /echoes\.css\?v=3\.3\.0/);
+  assert.match(index, /millennium-echoes\.js\?v=3\.4\.0/);
+  assert.match(index, /echoes\.css\?v=3\.4\.0/);
   assert.match(app, /label: "Obrigatório"/);
   assert.match(app, /label: "Recomendado"/);
   assert.match(app, /label: "Opcional"/);
