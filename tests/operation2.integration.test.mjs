@@ -8,10 +8,10 @@ const sw = await readFile(new URL("../service-worker.js", import.meta.url), "utf
 const catalogs = await readFile(new URL("../catalogs-3.1.js", import.meta.url), "utf8");
 
 test("Operation 2 modules load before the application and are precached", () => {
-  assert.match(index, /millennium-journey\.js\?v=3\.2\.1/);
+  assert.match(index, /millennium-journey\.js\?v=3\.3\.0/);
   assert.ok(index.indexOf("millennium-journey.js") < index.indexOf("app.js"));
   assert.match(sw, /millennium-journey\.js\?v=\$\{MILLENNIUM_BUILD\}/);
-  assert.match(index, /journey\.css\?v=3\.2\.1/);
+  assert.match(index, /journey\.css\?v=3\.3\.0/);
 });
 
 test("all new journey routes have explicit renderers", () => {

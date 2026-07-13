@@ -198,3 +198,6 @@ A versão 3.2 adiciona o módulo `millennium-world-alive.js`, a camada visual `w
 
 O painel do Oráculo separa reset de ficha, suspensão, banimento e exclusão definitiva. A exclusão da credencial do Firebase Authentication permanece manual para liberar o e-mail com segurança. Consulte `ACCOUNT_MANAGEMENT_3_2_1.md`.
 
+## Build 3.3.0 — Ecos da Interface
+
+A versão 3.3.0 corrige o encerramento recursivo do rastreamento de presença e introduz a nova direção visual sazonal, a navegação progressiva e os minigames Cartografia Perdida e Alquimia Instável. Consulte `ECOS_DA_INTERFACE_3_3.md`, `VALIDATION_3_3.md` e `ROLLBACK_3_3.md` antes da publicação.

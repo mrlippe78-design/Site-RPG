@@ -131,3 +131,13 @@
 - Auditoria, idempotência e lock transacional por conta.
 - Regras e testes atualizados.
 
+## 3.3.0 — Ecos da Interface
+
+- Corrigiu a recursão infinita de `stopPresenceTracking()`.
+- Transformou temas sazonais em dez pacotes visuais configuráveis e agendáveis.
+- Restringiu o dourado ao tema Despertar e a elementos especiais.
+- Reorganizou a navegação em Obrigatório, Recomendado, Opcional e Lazer.
+- Separou Jogos rápidos, Desafios e Recreação.
+- Preservou Ritual dos Selos e adicionou Cartografia Perdida e Alquimia Instável.
+- Adicionou preferências de aparência, animação, contraste e economia de dados.
+- Atualizou build, cache, testes, documentação e regras para 3.3.0.
