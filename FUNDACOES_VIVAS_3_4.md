@@ -59,4 +59,4 @@ O Oráculo configura título, mensagem, ação e contagem regressiva. Ao dispara
 
 ## Firestore
 
-O novo `firestore.rules` adiciona projeções de ranking e atualizações limitadas de Passe e progressão dos minigames. Não há novos índices. Publique as regras somente depois de `npm run test:rules` passar no Firebase Emulator do computador de publicação.
+O novo `firestore.rules` adiciona projeções de ranking e atualizações limitadas de Passe e progressão dos minigames. Não há novos índices. Os 18 testes de regras passaram no Firestore Emulator. O pacote fixa `firebase-tools` em 14.27.0 para executar com Java 17; a linha 15 exige Java 21. Repita `npm run test:rules` no computador de publicação antes do deploy.

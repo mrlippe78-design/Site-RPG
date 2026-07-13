@@ -205,3 +205,5 @@ A versão 3.3.0 corrige o encerramento recursivo do rastreamento de presença e 
 ## Build 3.4.0 — Fundações Vivas
 
 A versão 3.4.0 estabiliza a criação e o salvamento da ficha, conecta Passe e Ranking ao progresso persistido, introduz níveis internos nos minigames, formaliza Afinidade → Poder → Técnicas, expande a Jukebox e conclui a gestão de temas e atualizações emergenciais. Consulte `FUNDACOES_VIVAS_3_4.md`, `VALIDATION_3_4.md` e `ROLLBACK_3_4.md` antes da publicação.
+
+O ambiente Firebase da versão está fixado em `firebase-tools 14.27.0`, compatível com Java 17. A validação atual possui 18 testes de regras aprovados no Firestore Emulator.
