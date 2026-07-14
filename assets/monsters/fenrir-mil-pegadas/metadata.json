@@ -36,5 +36,12 @@
     ]
   ],
   "loading": "on-demand",
-  "firebaseReads": 0
+  "firebaseReads": 0,
+  "logicalCanvas": [
+    32,
+    32
+  ],
+  "paletteLimit": 14,
+  "artDirection": "original-mobile-pixel-2026-07-14",
+  "sourceCell": 18
 }

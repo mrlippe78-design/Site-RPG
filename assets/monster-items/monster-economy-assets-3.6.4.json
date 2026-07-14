@@ -1,10 +1,21 @@
 {
   "version": "3.6.4",
-  "phase": "13.5-C",
+  "phase": "pixel-art-refresh-complete",
+  "count": 42,
   "icons": [
     {
-      "id": "claw-storm",
-      "file": "assets/monster-items/claw-storm.webp",
+      "id": "amulet-mist",
+      "file": "assets/monster-items/amulet-mist.webp",
+      "category": "accessory"
+    },
+    {
+      "id": "bell-echo",
+      "file": "assets/monster-items/bell-echo.webp",
+      "category": "accessory"
+    },
+    {
+      "id": "blade-ember",
+      "file": "assets/monster-items/blade-ember.webp",
       "category": "weapon"
     },
     {
@@ -13,24 +24,74 @@
       "category": "armor"
     },
     {
+      "id": "claw-storm",
+      "file": "assets/monster-items/claw-storm.webp",
+      "category": "weapon"
+    },
+    {
+      "id": "core-comum",
+      "file": "assets/monster-items/core-comum.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-incomum",
+      "file": "assets/monster-items/core-incomum.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-cosmico",
+      "file": "assets/monster-items/core-cosmico.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-epico",
+      "file": "assets/monster-items/core-epico.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-lendario",
+      "file": "assets/monster-items/core-lendario.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-mitico",
+      "file": "assets/monster-items/core-mitico.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-celestial",
+      "file": "assets/monster-items/core-celestial.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-secret",
+      "file": "assets/monster-items/core-secret.webp",
+      "category": "core"
+    },
+    {
+      "id": "core-quebrado",
+      "file": "assets/monster-items/core-quebrado.webp",
+      "category": "core"
+    },
+    {
+      "id": "currency-mc",
+      "file": "assets/monster-items/currency-mc.webp",
+      "category": "currency"
+    },
+    {
+      "id": "currency-po",
+      "file": "assets/monster-items/currency-po.webp",
+      "category": "currency"
+    },
+    {
       "id": "eye-prism",
       "file": "assets/monster-items/eye-prism.webp",
       "category": "accessory"
     },
     {
-      "id": "rune-bastion",
-      "file": "assets/monster-items/rune-bastion.webp",
-      "category": "rune"
-    },
-    {
-      "id": "spear-starlight",
-      "file": "assets/monster-items/spear-starlight.webp",
+      "id": "fang-eclipse",
+      "file": "assets/monster-items/fang-eclipse.webp",
       "category": "weapon"
-    },
-    {
-      "id": "mantle-night",
-      "file": "assets/monster-items/mantle-night.webp",
-      "category": "armor"
     },
     {
       "id": "hourglass-echo",
@@ -38,18 +99,13 @@
       "category": "accessory"
     },
     {
-      "id": "seal-worldbreaker",
-      "file": "assets/monster-items/seal-worldbreaker.webp",
-      "category": "rune"
+      "id": "mantle-night",
+      "file": "assets/monster-items/mantle-night.webp",
+      "category": "armor"
     },
     {
-      "id": "ration-moon",
-      "file": "assets/monster-items/ration-moon.webp",
-      "category": "food"
-    },
-    {
-      "id": "material-awakening",
-      "file": "assets/monster-items/material-awakening.webp",
+      "id": "material-alchemy",
+      "file": "assets/monster-items/material-alchemy.webp",
       "category": "material"
     },
     {
@@ -58,28 +114,8 @@
       "category": "material"
     },
     {
-      "id": "material-defense",
-      "file": "assets/monster-items/material-defense.webp",
-      "category": "material"
-    },
-    {
-      "id": "material-seal",
-      "file": "assets/monster-items/material-seal.webp",
-      "category": "material"
-    },
-    {
-      "id": "material-map",
-      "file": "assets/monster-items/material-map.webp",
-      "category": "material"
-    },
-    {
-      "id": "material-alchemy",
-      "file": "assets/monster-items/material-alchemy.webp",
-      "category": "material"
-    },
-    {
-      "id": "material-precision",
-      "file": "assets/monster-items/material-precision.webp",
+      "id": "material-awakening",
+      "file": "assets/monster-items/material-awakening.webp",
       "category": "material"
     },
     {
@@ -88,14 +124,94 @@
       "category": "material"
     },
     {
-      "id": "currency-po",
-      "file": "assets/monster-items/currency-po.webp",
-      "category": "currency"
+      "id": "material-defense",
+      "file": "assets/monster-items/material-defense.webp",
+      "category": "material"
     },
     {
-      "id": "currency-mc",
-      "file": "assets/monster-items/currency-mc.webp",
-      "category": "currency"
+      "id": "material-map",
+      "file": "assets/monster-items/material-map.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-precision",
+      "file": "assets/monster-items/material-precision.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-seal",
+      "file": "assets/monster-items/material-seal.webp",
+      "category": "material"
+    },
+    {
+      "id": "ration-essence",
+      "file": "assets/monster-items/ration-essence.webp",
+      "category": "food"
+    },
+    {
+      "id": "ration-moon",
+      "file": "assets/monster-items/ration-moon.webp",
+      "category": "food"
+    },
+    {
+      "id": "rune-bastion",
+      "file": "assets/monster-items/rune-bastion.webp",
+      "category": "rune"
+    },
+    {
+      "id": "rune-focus",
+      "file": "assets/monster-items/rune-focus.webp",
+      "category": "rune"
+    },
+    {
+      "id": "seal-quickening",
+      "file": "assets/monster-items/seal-quickening.webp",
+      "category": "rune"
+    },
+    {
+      "id": "seal-worldbreaker",
+      "file": "assets/monster-items/seal-worldbreaker.webp",
+      "category": "rune"
+    },
+    {
+      "id": "shell-iron",
+      "file": "assets/monster-items/shell-iron.webp",
+      "category": "armor"
+    },
+    {
+      "id": "spear-starlight",
+      "file": "assets/monster-items/spear-starlight.webp",
+      "category": "weapon"
+    },
+    {
+      "id": "ward-verdant",
+      "file": "assets/monster-items/ward-verdant.webp",
+      "category": "armor"
+    },
+    {
+      "id": "xp-book-minor",
+      "file": "assets/monster-items/xp-book-minor.webp",
+      "category": "book"
+    },
+    {
+      "id": "xp-book-common",
+      "file": "assets/monster-items/xp-book-common.webp",
+      "category": "book"
+    },
+    {
+      "id": "xp-book-advanced",
+      "file": "assets/monster-items/xp-book-advanced.webp",
+      "category": "book"
+    },
+    {
+      "id": "xp-book-superior",
+      "file": "assets/monster-items/xp-book-superior.webp",
+      "category": "book"
+    },
+    {
+      "id": "xp-book-ancestral",
+      "file": "assets/monster-items/xp-book-ancestral.webp",
+      "category": "book"
     }
   ]
 }

@@ -1,0 +1,70 @@
+{
+  "version": "3.6.4",
+  "count": 16,
+  "sprites": [
+    {
+      "id": "crossroad-crawler",
+      "file": "assets/tower-defense/enemies/crossroad-crawler.webp"
+    },
+    {
+      "id": "golden-leaf-wisp",
+      "file": "assets/tower-defense/enemies/golden-leaf-wisp.webp"
+    },
+    {
+      "id": "arena-shellback",
+      "file": "assets/tower-defense/enemies/arena-shellback.webp"
+    },
+    {
+      "id": "blade-guild-runner",
+      "file": "assets/tower-defense/enemies/blade-guild-runner.webp"
+    },
+    {
+      "id": "crimson-citadel-imp",
+      "file": "assets/tower-defense/enemies/crimson-citadel-imp.webp"
+    },
+    {
+      "id": "marsh-bell-slug",
+      "file": "assets/tower-defense/enemies/marsh-bell-slug.webp"
+    },
+    {
+      "id": "rust-rail-drone",
+      "file": "assets/tower-defense/enemies/rust-rail-drone.webp"
+    },
+    {
+      "id": "mirror-shade",
+      "file": "assets/tower-defense/enemies/mirror-shade.webp"
+    },
+    {
+      "id": "crossroad-brute-elite",
+      "file": "assets/tower-defense/enemies/crossroad-brute-elite.webp"
+    },
+    {
+      "id": "autumn-sentinel-elite",
+      "file": "assets/tower-defense/enemies/autumn-sentinel-elite.webp"
+    },
+    {
+      "id": "seven-orb-colossus-elite",
+      "file": "assets/tower-defense/enemies/seven-orb-colossus-elite.webp"
+    },
+    {
+      "id": "blade-portal-assassin-elite",
+      "file": "assets/tower-defense/enemies/blade-portal-assassin-elite.webp"
+    },
+    {
+      "id": "broken-throne-tyrant",
+      "file": "assets/tower-defense/enemies/broken-throne-tyrant.webp"
+    },
+    {
+      "id": "drowned-bell-monarch",
+      "file": "assets/tower-defense/enemies/drowned-bell-monarch.webp"
+    },
+    {
+      "id": "rust-locomotive-beast",
+      "file": "assets/tower-defense/enemies/rust-locomotive-beast.webp"
+    },
+    {
+      "id": "black-mirror-sovereign",
+      "file": "assets/tower-defense/enemies/black-mirror-sovereign.webp"
+    }
+  ]
+}
