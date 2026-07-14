@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.2", commit: "dev", cacheName: "millennium-shell-v3.6.2" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.3.1", commit: "dev", cacheName: "millennium-shell-v3.6.3.1" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -832,6 +832,7 @@ const state = {
   routeUnsubs: [],
   routeSubscriptionKey: "",
   routeSubscriptionNames: [],
+  syncErrorNotices: new Set(),
   privateUnsub: null,
   characterUnsub: null,
   renderContext: null,
@@ -915,15 +916,28 @@ function updateBuildBadge() {
 function serializableFormDraft(form) {
   const values = {};
   [...form.elements].forEach((field) => {
-    if (!field.name || field.disabled || ["file", "password", "submit", "button"].includes(field.type)) return;
+    if (!field.name || field.disabled || field.dataset?.draftIgnore === "true") return;
+    // Identificadores ocultos pertencem ao registro exibido e nunca ao rascunho.
+    // Restaurá-los em outra ficha pode enviar uma decisão ao documento errado.
+    if (["file", "password", "submit", "button", "hidden"].includes(field.type)) return;
     if (["checkbox", "radio"].includes(field.type) && !field.checked) return;
     values[field.name] = field.value;
   });
   return values;
 }
 
-function localDraftKey(formType) {
-  return `${LOCAL_DRAFT_PREFIX}:${state.user?.uid || "anonymous"}:${formType}`;
+function formDraftIdentity(formOrType, explicitScope = "") {
+  if (typeof formOrType === "string") return { type: formOrType, scope: String(explicitScope || "") };
+  const form = formOrType;
+  const type = String(form?.dataset?.form || "");
+  const scope = String(form?.dataset?.draftKey || explicitScope || "");
+  return { type, scope };
+}
+
+function localDraftKey(formOrType, explicitScope = "") {
+  const { type, scope } = formDraftIdentity(formOrType, explicitScope);
+  const suffix = scope ? `:scope:${encodeURIComponent(scope)}` : "";
+  return `${LOCAL_DRAFT_PREFIX}:${state.user?.uid || "anonymous"}:${type}${suffix}`;
 }
 
 function setDraftStatus(message = "") {
@@ -933,11 +947,15 @@ function setDraftStatus(message = "") {
 
 function saveLocalFormDraft(form) {
   if (!form?.dataset.form || form.dataset.form === "login") return;
+  const key = localDraftKey(form);
   let previous = null;
-  try { previous = JSON.parse(localStorage.getItem(localDraftKey(form.dataset.form)) || "null"); } catch { /* no-op */ }
+  try { previous = JSON.parse(localStorage.getItem(key) || "null"); } catch { /* no-op */ }
+  const identity = formDraftIdentity(form);
   const payload = {
     build: MILLENNIUM_BUILD.version,
     view: state.view,
+    type: identity.type,
+    scope: identity.scope,
     values: {
       ...(previous?.values || {}),
       ...serializableFormDraft(form),
@@ -945,7 +963,7 @@ function saveLocalFormDraft(form) {
     savedAt: new Date().toISOString(),
   };
   try {
-    localStorage.setItem(localDraftKey(form.dataset.form), JSON.stringify(payload));
+    localStorage.setItem(key, JSON.stringify(payload));
     form.dataset.dirty = "true";
     setDraftStatus("Rascunho salvo neste dispositivo");
   } catch {
@@ -960,14 +978,21 @@ function queueLocalFormDraft(form) {
 }
 
 function restoreLocalFormDrafts() {
+  const scopedTypes = new Set(["review-request", "review-report"]);
   document.querySelectorAll("#viewHost form[data-form], #modalContent form[data-form]").forEach((form) => {
     if (form.dataset.form === "login" || form.dataset.restoredLocalDraft === "true") return;
+    const identity = formDraftIdentity(form);
+    // Remove o rascunho compartilhado das versões anteriores. Ele podia conter
+    // requestId/reportId de outro cartão e misturar análises diferentes.
+    if (identity.scope && scopedTypes.has(identity.type)) {
+      try { localStorage.removeItem(localDraftKey(identity.type)); } catch { /* no-op */ }
+    }
     let payload = null;
-    try { payload = JSON.parse(localStorage.getItem(localDraftKey(form.dataset.form)) || "null"); } catch { /* no-op */ }
+    try { payload = JSON.parse(localStorage.getItem(localDraftKey(form)) || "null"); } catch { /* no-op */ }
     if (!payload?.values) return;
     Object.entries(payload.values).forEach(([name, value]) => {
       const field = form.elements.namedItem(name);
-      if (!field || field.type === "file") return;
+      if (!field || field.type === "file" || field.type === "hidden" || field.dataset?.draftIgnore === "true") return;
       if (["checkbox", "radio"].includes(field.type)) field.checked = field.value === value;
       else field.value = value;
     });
@@ -977,8 +1002,8 @@ function restoreLocalFormDrafts() {
   });
 }
 
-function clearLocalFormDraft(formType) {
-  try { localStorage.removeItem(localDraftKey(formType)); } catch { /* no-op */ }
+function clearLocalFormDraft(formOrType, explicitScope = "") {
+  try { localStorage.removeItem(localDraftKey(formOrType, explicitScope)); } catch { /* no-op */ }
   setDraftStatus("");
 }
 
@@ -993,7 +1018,10 @@ function persistDirtyForms() {
 function saveUpdateDrafts() {
   const forms = [...document.querySelectorAll("#viewHost form[data-form], #modalContent form[data-form]")]
     .filter((form) => form.dataset.form !== "login")
-    .map((form) => ({ type: form.dataset.form, values: serializableFormDraft(form) }));
+    .map((form) => {
+      const identity = formDraftIdentity(form);
+      return { type: identity.type, scope: identity.scope, values: serializableFormDraft(form) };
+    });
   const payload = { build: MILLENNIUM_BUILD.version, uid: state.user?.uid || "", view: state.view, forms, savedAt: new Date().toISOString() };
   try {
     localStorage.setItem(UPDATE_DRAFT_KEY, JSON.stringify(payload));
@@ -1021,12 +1049,24 @@ function restoreUpdateDrafts() {
     return;
   }
   let restored = false;
-  payload.forms.forEach(({ type, values }) => {
-    const form = document.querySelector(`[data-form="${CSS.escape(type)}"]`);
+  const scopeRequired = new Set(["review-request", "review-report"]);
+  const safeForms = payload.forms.filter((entry) => !scopeRequired.has(entry.type) || Boolean(entry.scope));
+  if (safeForms.length !== payload.forms.length) {
+    payload.forms = safeForms;
+    try {
+      if (safeForms.length) localStorage.setItem(UPDATE_DRAFT_KEY, JSON.stringify(payload));
+      else localStorage.removeItem(UPDATE_DRAFT_KEY);
+    } catch { /* no-op */ }
+  }
+  safeForms.forEach(({ type, scope = "", values }) => {
+    const selector = scope
+      ? `[data-form="${CSS.escape(type)}"][data-draft-key="${CSS.escape(scope)}"]`
+      : `[data-form="${CSS.escape(type)}"]`;
+    const form = document.querySelector(selector);
     if (!form) return;
     Object.entries(values || {}).forEach(([name, value]) => {
       const field = form.elements.namedItem(name);
-      if (!field || field.type === "file") return;
+      if (!field || field.type === "file" || field.type === "hidden" || field.dataset?.draftIgnore === "true") return;
       if (["checkbox", "radio"].includes(field.type)) field.checked = field.value === value;
       else field.value = value;
     });
@@ -1040,14 +1080,18 @@ function restoreUpdateDrafts() {
   }
 }
 
-function clearUpdateDraft(type = "") {
+function clearUpdateDraft(formOrType = "", explicitScope = "") {
   const payload = pendingUpdateDraft();
   if (!payload) return;
-  if (!type || !payload.forms?.some((entry) => entry.type === type)) {
+  const identity = formDraftIdentity(formOrType, explicitScope);
+  if (!identity.type) {
     try { localStorage.removeItem(UPDATE_DRAFT_KEY); } catch { /* no-op */ }
     return;
   }
-  payload.forms = payload.forms.filter((entry) => entry.type !== type);
+  const matches = (entry) => entry.type === identity.type
+    && (!identity.scope || String(entry.scope || "") === identity.scope);
+  if (!payload.forms?.some(matches)) return;
+  payload.forms = payload.forms.filter((entry) => !matches(entry));
   try {
     if (payload.forms.length) localStorage.setItem(UPDATE_DRAFT_KEY, JSON.stringify(payload));
     else localStorage.removeItem(UPDATE_DRAFT_KEY);
@@ -2643,7 +2687,10 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.2 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.3.1 Spark.",
+    "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
+    "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
+    "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2862,13 +2909,21 @@ function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsub
   const unsub = query.onSnapshot(
     (snap) => {
       state.diagnostics.documentsRead += snap.size;
+      state.syncErrorNotices.delete(path);
       cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     },
     (error) => {
       console.error(error);
+      state.diagnostics.lastSyncError = `${path}: ${String(error?.code || error?.message || "erro")}`.slice(0, 300);
       if (path === "directMessages") {
         state.privateChatError = "O Firestore bloqueou o chat direto. Publique as regras novas e recarregue o site.";
         render();
+      }
+      if (["progressRequests", "reports"].includes(path) && !state.syncErrorNotices.has(path)) {
+        state.syncErrorNotices.add(path);
+        toast(path === "progressRequests"
+          ? "Não foi possível sincronizar as validações. Confira regras, índices e conexão antes de analisar a fila."
+          : "Não foi possível sincronizar os reports. Confira regras, índices e conexão antes de salvar uma análise.");
       }
     },
   );
@@ -3093,6 +3148,7 @@ function captureRenderContext(options = {}) {
     scrollX: window.scrollX,
     scrollY: window.scrollY,
     formType: form?.dataset.form || "",
+    formScope: form?.dataset.draftKey || "",
     fieldName: active?.name || "",
     fieldId: active?.id || "",
     fieldAction: active?.dataset?.action || "",
@@ -3107,7 +3163,9 @@ function restoreRenderContext(context) {
   if (!context) return;
   if (context.preserveScroll) window.scrollTo({ left: context.scrollX, top: context.scrollY, behavior: "auto" });
   if (!context.preserveFocus) return;
-  const formSelector = context.formType ? `form[data-form="${CSS.escape(context.formType)}"]` : "";
+  const formSelector = context.formType
+    ? `form[data-form="${CSS.escape(context.formType)}"]${context.formScope ? `[data-draft-key="${CSS.escape(context.formScope)}"]` : ""}`
+    : "";
   const root = formSelector ? document.querySelector(formSelector) : document;
   const selectors = [
     context.fieldId ? `#${CSS.escape(context.fieldId)}` : "",
@@ -7126,10 +7184,12 @@ function renderProgressRequests(requests, adminMode = false) {
       : `<option value="approved">Aprovar</option><option value="rejected">Reprovar</option>`;
 
     return `
-      <div class="request-card ${status === "pendente" ? "pending" : ""}">
+      <div class="request-card ${status === "pendente" ? "pending" : ""}" data-request-id="${esc(request.id)}">
         <span>${esc(progressTypeLabel(request.type))} · ${esc(status)}</span>
+        <small>Player: ${esc(request.characterName || request.playerName || getUserName(request.uid))} · Protocolo: ${esc(request.id || "sem protocolo")}</small>
         <h3>${esc(request.title || "Solicitação")}</h3>
         <p>${esc(request.description || "")}</p>
+        ${creation ? `<div class="creation-field-list">${creationRequestDetails(request)}</div>` : ""}
         ${attributeAllocation ? `<p><strong>Distribuição:</strong> ${esc(attributeAllocationSummary(request.allocation))}</p>` : ""}
         ${attributeRedistribution ? `<div class="review-warning"><strong>Comparação da base</strong><span>Antes: ${esc(baseAllocationSummary(request.currentBase))}<br />Depois: ${esc(baseAllocationSummary(request.proposedBase))}<br />Desenvolvimento e demais dados: preservados</span></div>${request.detectedIssue ? `<p><strong>Elegibilidade:</strong> ${esc(request.detectedIssue)}</p>` : ""}` : ""}
         <p>${esc(requestRewardHint(request))}</p>
@@ -7138,8 +7198,8 @@ function renderProgressRequests(requests, adminMode = false) {
         ${contested ? `<div class="review-warning"><strong>O player apontou uma contradição.</strong><span>Revise a proposta antes de reenviar.</span></div>` : ""}
         ${canAdminAct ? `
           ${!creation && !attributeRequest && status === "pendente" ? `<div class="action-row"><button class="ghost-button" type="button" data-action="quick-approve" data-request-id="${esc(request.id)}">Aprovar rápido</button></div>` : ""}
-          <form class="form-grid compact-form" data-form="review-request">
-            <input type="hidden" name="requestId" value="${esc(request.id)}" />
+          <form class="form-grid compact-form" data-form="review-request" data-draft-key="progress:${esc(request.id)}">
+            <input type="hidden" name="requestId" value="${esc(request.id)}" data-draft-ignore="true" />
             ${proposalFields}
             ${creation || attributeRequest ? "" : `<label><span>XP aprovado</span><input name="xp" type="number" min="0" max="5000" value="${Number(request.xp || defaultXpForRequest(request.type, request.rarity))}" /></label><label><span>PO</span><input name="gold" type="number" min="0" value="0" /></label><label><span>Essências</span><input name="essences" type="number" min="0" value="0" /></label>`}
             <label><span>Decisão do Oráculo</span><select name="decision">${decisionOptions}</select></label>
@@ -7166,7 +7226,7 @@ function renderReports() {
       ${tab === "bug" ? `<article class="panel span-12"><p class="eyebrow">Reportar bug</p><h3>Descreva como reproduzir o problema</h3><form class="support-form-grid" data-form="bug-report"><label><span>Título</span><input name="title" maxlength="160" required /></label><label><span>Categoria</span><select name="category"><option>Interface</option><option>Conta</option><option>Personagem</option><option>Chat</option><option>Codex</option><option>Minigame</option><option>Outro</option></select></label><label class="wide"><span>Descrição</span><textarea name="description" rows="4" maxlength="5000" required></textarea></label><label class="wide"><span>Passos para reproduzir</span><textarea name="steps" rows="4" maxlength="3000"></textarea></label><label><span>Resultado esperado</span><textarea name="expected" rows="3" maxlength="2000"></textarea></label><label><span>Resultado atual</span><textarea name="actual" rows="3" maxlength="2000"></textarea></label><label><span>Dispositivo</span><input name="device" maxlength="160" placeholder="Ex.: Android, PC, iPhone" /></label><label><span>Navegador</span><input name="browser" maxlength="160" placeholder="Ex.: Chrome, Safari" /></label><button class="primary-button wide" type="submit">Enviar bug</button></form></article>` : ""}
       ${tab === "player" ? `<article class="panel span-12"><p class="eyebrow">Denunciar player</p><h3>Envio restrito ao Oráculo</h3><form class="support-form-grid" data-form="player-report"><label><span>Player denunciado</span><select name="targetId" required><option value="">Escolha</option>${state.users.filter((user) => user.id !== state.user.uid).map((user) => `<option value="${esc(user.id)}">${esc(user.displayName || user.email)}</option>`).join("")}</select></label><label><span>Categoria</span><select name="category"><option>Assédio</option><option>Trapaça</option><option>Conteúdo inadequado</option><option>Conflito narrativo</option><option>Outro</option></select></label><label class="wide"><span>Contexto e descrição</span><textarea name="description" rows="6" maxlength="5000" required></textarea></label><label class="wide"><span>Link de anexo opcional</span><input name="attachmentUrl" maxlength="1000" /></label><button class="danger-button wide" type="submit">Enviar denúncia</button></form></article>` : ""}
       ${tab === "message" ? `<article class="panel span-12"><div class="empty-state"><strong>Denuncie pela própria mensagem.</strong><p>Abra o chat, localize a mensagem e use “Denunciar mensagem”. O sistema inclui um pequeno contexto sem carregar toda a conversa.</p><button class="primary-button" type="button" data-nav="chat">Abrir Chat</button></div></article>` : ""}
-      ${tab === "mine" ? `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Acompanhamento</p><h3>Meus reports</h3></div><span class="tag">${mine.length} registro(s)</span></div><div class="scroll-list">${mine.map((report) => `<article class="report-row"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Report")}</strong><p>${esc(report.description || "")}</p>${report.adminNote ? `<p><strong>Resposta do Oráculo:</strong> ${esc(report.adminNote)}</p>` : ""}</article>`).join("") || `<div class="empty-state">Nenhum report enviado.</div>`}</div></article>` : ""}
+      ${tab === "mine" ? `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Acompanhamento</p><h3>Meus reports</h3></div><span class="tag">${mine.length} registro(s)</span></div><div class="scroll-list">${mine.map((report) => `<article class="report-row" data-report-id="${esc(report.id)}"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Report")}</strong><p>${esc(report.description || "")}</p>${report.adminNote ? `<p><strong>Resposta do Oráculo:</strong> ${esc(report.adminNote)}</p>` : ""}</article>`).join("") || `<div class="empty-state">Nenhum report enviado.</div>`}</div></article>` : ""}
       ${tab === "faq" ? `<article class="panel span-12"><p class="eyebrow">Perguntas frequentes</p><div class="list">${(state.content.faqEntries || []).slice(0,20).map((entry) => `<details><summary>${esc(entry.name || entry.question || entry.id)}</summary><p>${esc(entry.answer || entry.description || "")}</p></details>`).join("") || `<div class="empty-state">FAQ ainda não carregado.</div>`}</div></article>` : ""}
     </div>`;
 }
@@ -8255,7 +8315,7 @@ function renderAdminReports() {
   const filters = ["all", ...window.MILLENNIUM_BACKEND_31.REPORT_STATUSES];
   return `
     <div class="grid">
-      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Moderação</p><h2>Bugs e denúncias</h2></div><div class="support-tabs">${filters.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="report-filter" data-filter="${esc(status)}">${status === "all" ? "Todos" : esc(status)}</button>`).join("")}</div></div><div class="scroll-list">${reports.map((report) => `<article class="report-row"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Denúncia")}</strong><p>${esc(report.description || "")}</p><p>Autor: ${esc(getUserName(report.reporterId))}${report.targetId ? ` · Alvo: ${esc(getUserName(report.targetId))}` : ""}</p>${report.steps ? `<details><summary>Dados técnicos</summary><p><strong>Passos:</strong> ${esc(report.steps)}</p><p><strong>Esperado:</strong> ${esc(report.expected || "")}</p><p><strong>Atual:</strong> ${esc(report.actual || "")}</p><p>${esc(report.build || "")} · ${esc(report.route || "")} · ${esc(report.viewport || "")}</p></details>` : ""}<form class="form-grid compact-form" data-form="review-report"><input type="hidden" name="reportId" value="${esc(report.id)}" /><label><span>Status</span><select name="status">${window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.map((status) => `<option value="${esc(status)}" ${reportStatusLabel(report.status) === status ? "selected" : ""}>${esc(status)}</option>`).join("")}</select></label><label class="wide"><span>Resposta / nota</span><textarea name="adminNote" rows="3" maxlength="2000">${esc(report.adminNote || "")}</textarea></label><button class="primary-button wide" type="submit">Salvar análise</button></form></article>`).join("") || `<div class="empty-state">Nenhum report neste filtro.</div>`}</div></article>
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Moderação</p><h2>Bugs e denúncias</h2></div><div class="support-tabs">${filters.map((status) => `<button class="ghost-button ${filter === status ? "active" : ""}" type="button" data-action="report-filter" data-filter="${esc(status)}">${status === "all" ? "Todos" : esc(status)}</button>`).join("")}</div></div><div class="scroll-list">${reports.map((report) => `<article class="report-row" data-report-id="${esc(report.id)}"><div class="report-status-line"><span class="report-friendly-id">${esc(report.friendlyId || report.id)}</span><span class="tag">${esc(reportStatusLabel(report.status))}</span><small>${esc(tsText(report.createdAt))}</small></div><strong>${esc(report.title || "Denúncia")}</strong><p>${esc(report.description || "")}</p><p>Autor: ${esc(getUserName(report.reporterId))}${report.targetId ? ` · Alvo: ${esc(getUserName(report.targetId))}` : ""}</p>${report.steps ? `<details><summary>Dados técnicos</summary><p><strong>Passos:</strong> ${esc(report.steps)}</p><p><strong>Esperado:</strong> ${esc(report.expected || "")}</p><p><strong>Atual:</strong> ${esc(report.actual || "")}</p><p>${esc(report.build || "")} · ${esc(report.route || "")} · ${esc(report.viewport || "")}</p></details>` : ""}<form class="form-grid compact-form" data-form="review-report" data-draft-key="report:${esc(report.id)}"><input type="hidden" name="reportId" value="${esc(report.id)}" data-draft-ignore="true" /><label><span>Status</span><select name="status">${window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.map((status) => `<option value="${esc(status)}" ${reportStatusLabel(report.status) === status ? "selected" : ""}>${esc(status)}</option>`).join("")}</select></label><label class="wide"><span>Resposta / nota</span><textarea name="adminNote" rows="3" maxlength="2000">${esc(report.adminNote || "")}</textarea></label><button class="primary-button wide" type="submit">Salvar análise</button></form></article>`).join("") || `<div class="empty-state">Nenhum report neste filtro.</div>`}</div></article>
     </div>`;
 }
 
@@ -9107,7 +9167,7 @@ async function invokeGacha(type = "pets", qty = 1) {
       gachaVault: [...(character.gachaVault || []), ...pets],
       inventory: [...(character.inventory || []), ...invokedItems],
       gachaHistory: history,
-    });
+    }, { securityAction: `gacha-${kind}-${amount}x` });
 
     state.lastGachaResults = results;
     const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
@@ -9118,10 +9178,13 @@ async function invokeGacha(type = "pets", qty = 1) {
     openGachaReveal(results, kind);
   } catch (error) {
     state.lastGachaResults = [];
+    state.diagnostics.lastGachaError = String(error?.code || error?.message || "erro desconhecido").slice(0, 300);
+    console.error("Falha na invocação dimensional:", error);
     playSound("fail");
-    toast(error?.message?.includes("permission")
-      ? "O Firestore recusou a invocação. Nenhuma moeda foi consumida e nenhum prêmio foi entregue."
-      : "A invocação não foi concluída. Seu saldo permanece preservado.");
+    if (error?.code === "millennium/security-quarantine") toast(error.message);
+    else if (error?.code === "permission-denied" || String(error?.message || "").toLowerCase().includes("permission")) {
+      toast("O Firestore recusou a invocação. Nenhuma moeda foi consumida e nenhum prêmio foi entregue. Publique as regras da Sentinela e tente novamente.");
+    } else toast(`A invocação não foi concluída. Seu saldo permanece preservado. ${firebaseErrorMessage(error)}`);
   } finally {
     state.rolling = false;
     if (document.querySelector("#modal")?.hidden !== false) render();
@@ -11547,7 +11610,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.build || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.2",
+    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.3.1",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -11601,6 +11664,11 @@ async function reportMessage(messageId, source) {
 
 async function reviewReport(form) {
   const values = formValues(form);
+  const visibleReportId = form.closest("[data-report-id]")?.dataset.reportId || "";
+  if (!visibleReportId || values.reportId !== visibleReportId) {
+    throw new Error("O report aberto não corresponde ao protocolo exibido. Recarregue a lista antes de salvar.");
+  }
+  if (!state.reports.some((report) => report.id === values.reportId)) throw new Error("Este report não está mais disponível para revisão.");
   if (!window.MILLENNIUM_BACKEND_31.REPORT_STATUSES.includes(values.status)) throw new Error("Status de report inválido.");
   await writeDoc("reports", values.reportId, {
     status: values.status,
@@ -12920,7 +12988,12 @@ async function writeApprovedCreationRecord(request, adminNote = "") {
 }
 
 async function reviewProgressRequest(form) {
-  await reviewProgressRequestValues(formValues(form));
+  const values = formValues(form);
+  const visibleRequestId = form.closest("[data-request-id]")?.dataset.requestId || "";
+  if (!visibleRequestId || values.requestId !== visibleRequestId) {
+    throw new Error("A análise aberta não corresponde ao protocolo exibido. Recarregue a fila antes de continuar.");
+  }
+  await reviewProgressRequestValues(values);
 }
 
 function effectiveCreationRequest(request = {}) {
@@ -13132,7 +13205,7 @@ async function applyApprovedAttributeRedistribution(request, adminNote) {
 
 async function reviewProgressRequestValues(values) {
   const storedRequest = state.progressRequests.find((item) => item.id === values.requestId);
-  if (!storedRequest) return;
+  if (!storedRequest) throw new Error("A solicitação não foi encontrada ou já saiu da fila. Recarregue a página.");
 
   const creation = ["power", "technique"].includes(storedRequest.type);
   const attributeAllocation = storedRequest.type === "attributeAllocation";
@@ -14512,8 +14585,8 @@ function wireEvents() {
         toast("Preferências da Interface salvas.");
       }
       form.dataset.dirty = "false";
-      clearUpdateDraft(type);
-      clearLocalFormDraft(type);
+      clearUpdateDraft(form);
+      clearLocalFormDraft(form);
       if (!flushDeferredRender({ reason: "form-submitted" })) {
         scheduleRender({ preserveFocus: true, preserveScroll: true, reason: "form-submitted" });
       }

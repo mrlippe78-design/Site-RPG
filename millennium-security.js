@@ -1,6 +1,6 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.3";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.3.1";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -328,7 +328,7 @@
           return { blocked: true, quarantined: true, until: quarantineUntil, incidentId: userData.lastSecurityIncidentId || "" };
         }
 
-        const afterCharacter = { ...beforeCharacter, ...cloneForFirestore(data), ownerId: id };
+        const afterCharacter = { ...beforeCharacter, ...cloneForFirestore(data), ownerId: beforeCharacter.ownerId || id };
         const analysis = analyzeMutation(beforeCharacter, afterCharacter, data, action);
         if (analysis.blocked) {
           const strike = Math.max(0, Number(userData.securityStrikeCount || 0)) + 1;
@@ -354,7 +354,6 @@
         const state = snapshotState(afterCharacter);
         const securityPatch = {
           ...cloneForFirestore(data),
-          ownerId: id,
           economyRevision: afterRevision,
           lastEconomyReceiptId: receiptId,
           lastEconomyAction: String(action).slice(0, 80),
