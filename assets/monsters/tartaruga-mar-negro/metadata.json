@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "tartaruga-mar-negro",
+  "name": "Tartaruga do Mar Negro",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      38,
+      93,
+      145
+    ],
+    [
+      107,
+      207,
+      231
+    ]
+  ],
+  "shinyPalette": [
+    [
+      107,
+      207,
+      231
+    ],
+    [
+      108,
+      138,
+      235
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

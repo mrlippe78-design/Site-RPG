@@ -1,0 +1,205 @@
+/* Millennium 3.6.4 — Fase 11: performance de interface sem alterar dados. */
+@layer millennium.performance {
+  html {
+    scrollbar-gutter: stable;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(button, a, input, select, textarea, summary, [role="button"], [role="tab"]) {
+    touch-action: manipulation;
+  }
+
+  :where(img, canvas, svg) {
+    contain: paint;
+  }
+
+  :where(.home-hero-panel, .profile-protagonist, .oracle-frame, .secondary-module-hero, .ranking-hero-shell) {
+    isolation: isolate;
+  }
+
+  :where(.panel, .card, .surface, .secondary-module-content, .profile-data-panel) {
+    overflow-wrap: anywhere;
+  }
+
+  form[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  form[aria-busy="true"] :where(button, input, select, textarea) {
+    pointer-events: none;
+  }
+
+  html[data-document-visibility="hidden"] *,
+  html[data-document-visibility="hidden"] *::before,
+  html[data-document-visibility="hidden"] *::after {
+    animation-play-state: paused !important;
+  }
+
+  /* Abaixo da dobra: o navegador pode adiar estilo/layout sem remover o conteúdo do DOM. */
+  @supports (content-visibility: auto) {
+    :where(
+      .secondary-module-content > article:nth-child(n + 3),
+      .profile-data-panel:nth-child(n + 3),
+      .oracle-command-grid > article:nth-child(n + 5),
+      .ranking-list > :nth-child(n + 9),
+      .codex-grid > :nth-child(n + 7),
+      .content-grid > :nth-child(n + 9)
+    ) {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 18rem;
+    }
+  }
+
+  body[data-data-economy="on"] :where(
+    .auth-aurora,
+    .auth-runes,
+    .home-hero-backdrop,
+    .oracle-orbit,
+    .affinity-reveal::before,
+    .gate-sigil::before,
+    .gate-sigil::after
+  ) {
+    display: none !important;
+  }
+
+  body[data-data-economy="on"] :where(
+    .topbar,
+    .modal-card,
+    .mobile-bottom-nav,
+    .ranking-self-card,
+    .security-admin-actions
+  ) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  @media (max-width: 47.5rem) {
+    :where(
+      .auth-runes,
+      .home-season-orbit,
+      .oracle-orbit,
+      .affinity-reveal::before,
+      .gate-sigil::before,
+      .gate-sigil::after,
+      .hunt-pet-runner
+    ) {
+      animation: none !important;
+    }
+
+    :where(.topbar, .mobile-bottom-nav, .modal-card, .ranking-self-card, .security-admin-actions) {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    :where(.topbar, .modal-card, .mobile-bottom-nav, .ranking-self-card, .security-admin-actions, .auth-card) {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      background-color: var(--color-bg-elevated) !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :where(.auth-aurora, .auth-runes, .home-season-orbit, .oracle-orbit, .affinity-reveal::before, .gate-sigil i, .hunt-pet-runner) {
+      animation: none !important;
+    }
+  }
+}
+
+/* Fase 11 — alvos táteis precisam vencer dimensões legadas carregadas depois de accessibility.css. */
+@media (pointer: coarse) {
+  :where(button, [role="button"], input:not([type="hidden"]):not([type="range"]), select, textarea) {
+    min-block-size: var(--touch-target-min) !important;
+  }
+
+  :where(.icon-button, .topbar-action, .music-toggle) {
+    min-inline-size: var(--touch-target-min) !important;
+  }
+}
+
+/* Fase 13.5 · Bloco F — orçamento de renderização dos Monstros e minigames. */
+@layer millennium.performance {
+  :where(
+    .monster-roster-list,
+    .monster-bestiary-grid,
+    .monster-item-list,
+    .arena-shop-grid,
+    .dungeon-phase-list,
+    .gacha-reveal-results
+  ) {
+    contain: layout style;
+  }
+
+  @supports (content-visibility: auto) {
+    :where(
+      .monster-roster-card:nth-child(n + 9),
+      .monster-bestiary-entry:nth-child(n + 9),
+      .monster-item-card:nth-child(n + 9),
+      .arena-shop-card:nth-child(n + 7),
+      .dungeon-phase:nth-child(n + 5)
+    ) {
+      content-visibility: auto;
+      contain-intrinsic-size: 10rem 7rem;
+    }
+  }
+
+  :where(
+    .monster-roster-card img,
+    .monster-bestiary-entry img,
+    .monster-item-card img,
+    .battle-unit img,
+    .tower-deck-pet img,
+    .dungeon-phase img
+  ) {
+    image-rendering: pixelated;
+  }
+
+  html[data-runtime-tier="economy"] :where(
+    .monster-hero-visual,
+    .monster-battle-stage,
+    .gacha-reveal-sky,
+    .seal-altar,
+    .alchemy-cauldron
+  ) {
+    filter: none !important;
+    box-shadow: none !important;
+  }
+
+  html[data-runtime-tier="economy"] :where(
+    .battle-unit,
+    .monster-hero-sprite,
+    .gacha-reveal-card,
+    .seal-board button,
+    .aim-hit-flash
+  ) {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  html[data-document-visibility="hidden"] :where(canvas, video, audio) {
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :where(
+      .battle-unit,
+      .monster-hero-sprite,
+      .gacha-reveal-card,
+      .seal-board button,
+      .aim-hit-flash,
+      .alchemy-cauldron,
+      .cartography-cell.player
+    ) {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

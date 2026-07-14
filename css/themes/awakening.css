@@ -1,0 +1,16 @@
+/* Tema sazonal: Aurora dos Despertos. Só é ativado por classe explícita. */
+body.season-theme-awakening,
+body.theme-awakening {
+  --color-bg-canvas: #090b10;
+  --color-bg-surface: #111b2e;
+  --color-bg-elevated: #18243a;
+  --color-border-subtle: rgb(158 168 184 / 18%);
+  --color-border-strong: rgb(230 184 77 / 48%);
+  --color-accent-hero: #e6b84d;
+  --color-accent-interface: #59c7ff;
+  --season-primary: #e6b84d;
+  --season-secondary: #111b2e;
+  --season-accent: #59c7ff;
+  --season-danger: #d85c60;
+  --season-success: #54b987;
+}

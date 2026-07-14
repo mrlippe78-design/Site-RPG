@@ -1,5 +1,5 @@
 (function registerMillenniumEdition3() {
-  const MILLENNIUM_BUILD = "3.6.3.3";
+  const MILLENNIUM_BUILD = "3.6.4";
   const affinity = (id, name, categoryId, bonus, domain, limit, expansion = false) => ({
     id,
     name,
@@ -403,6 +403,8 @@
       ],
       items: baseItems,
       gachaPets: petSpecs,
+      monsterSpecies: window.MILLENNIUM_MONSTERS_364?.species || [],
+      monsterSchemaVersion: window.MILLENNIUM_MONSTERS_364?.schemaVersion || 0,
       gachaItems: cosmetics,
       gachaShardShops: shardOffers,
       towerMaps: [

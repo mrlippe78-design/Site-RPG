@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Sigilo do Primeiro Despertar</title><desc id="desc">Símbolo circular original em ouro e azul, com uma janela vertical no centro.</desc>
+<defs><radialGradient id="g" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#59C7FF" stop-opacity=".32"/><stop offset=".62" stop-color="#111B2E" stop-opacity=".08"/><stop offset="1" stop-color="#090B10" stop-opacity="0"/></radialGradient><filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<circle cx="256" cy="256" r="232" fill="url(#g)" stroke="#E6B84D" stroke-width="4"/>
+<circle cx="256" cy="256" r="188" fill="none" stroke="#59C7FF" stroke-width="3" stroke-dasharray="3 15"/>
+<path d="M256 54 278 117 343 104 314 166 371 202 306 218 321 284 267 247 224 299 222 231 154 235 205 190 165 135 230 155Z" fill="none" stroke="#E6B84D" stroke-width="5" stroke-linejoin="round" opacity=".78"/>
+<path d="M256 126c-53 0-96 58-96 130s43 130 96 130 96-58 96-130-43-130-96-130Zm0 30c34 0 62 45 62 100s-28 100-62 100-62-45-62-100 28-100 62-100Z" fill="#59C7FF" opacity=".18" stroke="#59C7FF" stroke-width="4" filter="url(#glow)"/>
+<path d="M256 156v200M224 256h64" stroke="#F3F0E8" stroke-width="4" stroke-linecap="round" opacity=".86"/>
+<circle cx="256" cy="256" r="14" fill="#E6B84D" filter="url(#glow)"/>
+<g fill="#E6B84D"><circle cx="256" cy="30" r="5"/><circle cx="482" cy="256" r="5"/><circle cx="256" cy="482" r="5"/><circle cx="30" cy="256" r="5"/></g>
+</svg>

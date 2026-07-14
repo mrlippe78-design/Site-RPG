@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "quimera-tres-fomes",
+  "name": "Quimera das Três Fomes",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      116,
+      49,
+      101
+    ],
+    [
+      238,
+      119,
+      169
+    ]
+  ],
+  "shinyPalette": [
+    [
+      238,
+      119,
+      169
+    ],
+    [
+      186,
+      94,
+      191
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

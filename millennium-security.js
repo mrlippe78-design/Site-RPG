@@ -1,6 +1,6 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.3.3";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -900,32 +900,68 @@
     </article>`;
   }
 
+  function securityDisplayValue(value) {
+    if (value === undefined) return "—";
+    if (value === null) return "nulo";
+    if (typeof value === "boolean") return value ? "sim" : "não";
+    if (typeof value === "number") return Number.isInteger(value) ? value.toLocaleString("pt-BR") : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+    if (Array.isArray(value)) return `${value.length} registro(s)`;
+    if (typeof value === "object") return `${Object.keys(value).length} campo(s)`;
+    return String(value).slice(0, 100);
+  }
+
+  function securityResourceLabel(incident) {
+    const fields = Array.isArray(incident.changedFields) ? incident.changedFields : [];
+    if (fields.length) return fields.slice(0, 4).join(", ");
+    return incident.category || incident.type || "registro econômico";
+  }
+
+  function securityComparisonRows(incident) {
+    const legitimate = incident.before || {};
+    const received = incident.attempted || {};
+    const differences = incident.delta || {};
+    const preferred = Array.isArray(incident.changedFields) ? incident.changedFields : [];
+    const fields = [...new Set([...preferred, ...Object.keys(differences), ...Object.keys(legitimate), ...Object.keys(received)])]
+      .filter((field) => Object.prototype.hasOwnProperty.call(legitimate, field) || Object.prototype.hasOwnProperty.call(received, field))
+      .slice(0, 10);
+    if (!fields.length) return `<tr><td colspan="4">Comparação numérica indisponível; os motivos técnicos continuam preservados.</td></tr>`;
+    return fields.map((field) => `<tr><th scope="row">${escapeHtml(field)}</th><td>${escapeHtml(securityDisplayValue(legitimate[field]))}</td><td>${escapeHtml(securityDisplayValue(received[field]))}</td><td>${escapeHtml(securityDisplayValue(differences[field]))}</td></tr>`).join("");
+  }
+
   async function renderAdminSecurityCenter(host) {
     const database = db();
     const snapshot = await database.collection("securityIncidents").orderBy("createdAt", "desc").limit(60).get();
     const incidents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     const pending = incidents.filter((item) => item.status === "pending_review").length;
-    host.innerHTML = `<section class="security-center admin-security-center">
-      <p class="eyebrow">Oráculo · Segurança</p>
-      <h2 id="securityModalTitle">Incidentes e quarentenas</h2>
+    const critical = incidents.filter((item) => item.severity === "critical").length;
+    host.innerHTML = `<section class="security-center admin-security-center oracle-security-console">
+      <div class="oracle-security-masthead"><div><p class="eyebrow">Oráculo · Integridade</p><h2 id="securityModalTitle">Incidentes, recursos e snapshots</h2><p>Compare o estado legítimo com o valor recebido antes de liberar, restaurar ou confirmar uma infração.</p></div><span class="oracle-security-eye" aria-hidden="true">◉</span></div>
       <div class="security-status-grid">
         <article><span>Pendentes</span><strong class="${pending ? "danger" : "ok"}">${pending}</strong><small>Aguardando decisão administrativa.</small></article>
-        <article><span>Carregados</span><strong>${incidents.length}</strong><small>Últimos registros de integridade.</small></article>
+        <article><span>Críticos carregados</span><strong class="${critical ? "danger" : "ok"}">${critical}</strong><small>Dentro dos últimos ${incidents.length} registros.</small></article>
         <article><span>App Check</span><strong class="${window.MILLENNIUM_APP_CHECK_STATE?.enabled ? "ok" : "pending"}">${window.MILLENNIUM_APP_CHECK_STATE?.enabled ? "Ativo" : "Pendente"}</strong><small>Consulte SECURITY_SETUP.md antes de exigir tokens.</small></article>
       </div>
-      <div class="security-admin-list">${incidents.length ? incidents.map(renderAdminIncidentCard).join("") : `<div class="security-empty"><strong>Nenhum incidente.</strong></div>`}</div>
+      <div class="security-admin-list">${incidents.length ? incidents.map(renderAdminIncidentCard).join("") : `<div class="security-empty"><strong>Nenhum incidente.</strong><p>A fila de integridade está limpa.</p></div>`}</div>
     </section>`;
   }
 
   function renderAdminIncidentCard(incident) {
+    const status = incident.status || "pending_review";
     return `<article class="security-admin-incident severity-${escapeHtml(incident.severity || "warning")}" data-incident-id="${escapeHtml(incident.id)}">
-      <header><div><span>${escapeHtml(incident.incidentId || incident.id)}</span><h3>${escapeHtml(incident.title || incident.type)}</h3><small>${escapeHtml(incident.characterName || incident.uid)} · ${escapeHtml(formatDate(incident.createdAt))}</small></div><strong>${escapeHtml(incident.status || "pending_review")}</strong></header>
-      <div class="security-admin-details"><p><b>Ação:</b> ${escapeHtml(incident.action || "—")}</p><p><b>Resposta automática:</b> ${escapeHtml(incident.autoAction || "log_only")}</p><p><b>Motivos:</b> ${escapeHtml((incident.reasons || []).map((entry) => entry.detail || entry.code).join(" · ") || "—")}</p></div>
-      <div class="security-admin-actions">
+      <header><div><span>${escapeHtml(incident.incidentId || incident.id)}</span><h3>${escapeHtml(incident.title || incident.type)}</h3><small>${escapeHtml(incident.characterName || incident.uid)} · ${escapeHtml(formatDate(incident.createdAt))}</small></div><strong>${escapeHtml(status)}</strong></header>
+      <dl class="security-decision-ledger">
+        <div><dt>Ação</dt><dd>${escapeHtml(incident.action || "—")}</dd></div>
+        <div><dt>Severidade</dt><dd>${escapeHtml(incident.severity || "warning")}</dd></div>
+        <div><dt>Decisão</dt><dd>${escapeHtml(status)}</dd></div>
+        <div><dt>Recurso afetado</dt><dd>${escapeHtml(securityResourceLabel(incident))}</dd></div>
+      </dl>
+      <div class="security-comparison-scroll"><table class="security-comparison-table"><caption>Comparação entre snapshot legítimo, valor recebido e diferença</caption><thead><tr><th>Campo</th><th>Valor legítimo</th><th>Valor recebido</th><th>Diferença</th></tr></thead><tbody>${securityComparisonRows(incident)}</tbody></table></div>
+      <div class="security-admin-details"><p><b>Resposta automática:</b> ${escapeHtml(incident.autoAction || "log_only")}</p><p><b>Motivos:</b> ${escapeHtml((incident.reasons || []).map((entry) => entry.detail || entry.code).join(" · ") || "—")}</p></div>
+      <div class="security-admin-actions" aria-label="Decisões do incidente">
         <button class="ghost-button" type="button" data-security-action="release" data-incident="${escapeHtml(incident.id)}">Liberar</button>
-        <button class="ghost-button" type="button" data-security-action="restore" data-incident="${escapeHtml(incident.id)}">Restaurar snapshot</button>
-        <button class="ghost-button" type="button" data-security-action="confirm" data-incident="${escapeHtml(incident.id)}">Confirmar infração</button>
-        <button class="ghost-button" type="button" data-security-action="extend" data-incident="${escapeHtml(incident.id)}">Suspender 6h</button>
+        <button class="primary-button" type="button" data-security-action="restore" data-incident="${escapeHtml(incident.id)}">Restaurar snapshot</button>
+        <button class="danger-button" type="button" data-security-action="confirm" data-incident="${escapeHtml(incident.id)}">Confirmar infração</button>
+        <button class="danger-button" type="button" data-security-action="extend" data-incident="${escapeHtml(incident.id)}">Suspender 6h</button>
         <button class="text-button" type="button" data-security-action="bug" data-incident="${escapeHtml(incident.id)}">Marcar como bug</button>
         <button class="text-button" type="button" data-security-action="appeal" data-incident="${escapeHtml(incident.id)}">Ver recurso</button>
       </div>
@@ -970,6 +1006,14 @@
     if (runtime.role !== "admin") return;
     const incidentId = button.dataset.incident;
     if (!incidentId) return;
+    const confirmations = {
+      restore: "Restaurar o último snapshot legítimo e liberar as restrições desta conta?",
+      confirm: "Confirmar este incidente como infração?",
+      extend: "Aplicar suspensão administrativa de 6 horas?",
+      release: "Liberar a conta e encerrar a quarentena após esta revisão?",
+      bug: "Marcar este incidente como bug ou falso positivo e liberar a conta?",
+    };
+    if (confirmations[action] && !window.confirm(confirmations[action])) return;
     button.disabled = true;
     try {
       await adminIncidentAction(action, incidentId);

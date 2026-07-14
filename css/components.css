@@ -1,0 +1,88 @@
+@layer millennium.components {
+  .surface {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .surface--elevated { background: var(--color-bg-elevated); box-shadow: var(--shadow-md); }
+  .surface--hero { border-color: var(--color-border-strong); box-shadow: var(--shadow-hero); }
+  .surface__header { display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); padding: var(--space-5); }
+  .surface__body { padding: var(--space-5); }
+
+  .button {
+    min-block-size: var(--control-height-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding-inline: var(--space-4);
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard);
+  }
+  .button--hero { border-color: var(--color-accent-hero); background: var(--color-accent-hero); color: var(--color-text-inverse); }
+  .button--interface { border-color: var(--color-accent-interface); background: var(--color-accent-interface-soft); color: var(--color-text-primary); }
+  .button--quiet { border-color: var(--color-border-default); background: transparent; color: var(--color-text-primary); }
+  .button--danger { border-color: var(--color-danger); background: var(--color-danger-soft); color: var(--color-text-primary); }
+  .button:hover:not(:disabled) { transform: translateY(-1px); }
+  .button:active:not(:disabled) { transform: translateY(0); }
+  .button:disabled, .button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.52; }
+
+  .field { display: grid; gap: var(--space-2); }
+  .field__control {
+    min-block-size: var(--control-height-md);
+    inline-size: 100%;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-sunken);
+    color: var(--color-text-primary);
+  }
+  .field__control::placeholder { color: var(--color-text-disabled); }
+  .field__hint { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+  .field[data-state="error"] .field__control { border-color: var(--color-danger); }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--control-height-sm);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-pill);
+    padding-inline: var(--space-3);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+  }
+  .status-chip[data-tone="hero"] { border-color: var(--color-accent-hero); color: var(--color-accent-hero); }
+  .status-chip[data-tone="interface"] { border-color: var(--color-accent-interface); color: var(--color-accent-interface); }
+  .status-chip[data-tone="success"] { border-color: var(--color-success); color: var(--color-success); }
+  .status-chip[data-tone="danger"] { border-color: var(--color-danger); color: var(--color-danger); }
+  .status-chip[data-tone="corruption"] { border-color: var(--color-corruption); color: var(--color-corruption); }
+
+  .empty-state { display: grid; place-items: center; gap: var(--space-3); min-block-size: 12rem; padding: var(--space-8); text-align: center; }
+  .empty-state__icon { inline-size: 3rem; block-size: 3rem; color: var(--color-accent-interface); }
+  .empty-state p { color: var(--color-text-secondary); }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    min-block-size: 1rem;
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-elevated);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    translate: -100% 0;
+    background: linear-gradient(90deg, transparent, rgb(243 240 232 / 8%), transparent);
+    animation: millennium-skeleton 1.4s var(--ease-standard) infinite;
+  }
+
+  @keyframes millennium-skeleton { to { translate: 100% 0; } }
+}

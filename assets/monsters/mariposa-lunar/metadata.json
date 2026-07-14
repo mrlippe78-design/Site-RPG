@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "mariposa-lunar",
+  "name": "Mariposa Lunar",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      91,
+      95,
+      154
+    ],
+    [
+      226,
+      229,
+      255
+    ]
+  ],
+  "shinyPalette": [
+    [
+      226,
+      229,
+      255
+    ],
+    [
+      161,
+      140,
+      244
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

@@ -1,6 +1,6 @@
-# Millennium 3.6.3.3 — Sentinela do Oráculo
+# Millennium 3.6.4 — Sentinela do Oráculo
 
-Esta atualização adiciona uma camada intermediária de integridade para uma comunidade pequena, preservando a edição Firebase Spark e sem excluir ficha, inventário, pets ou histórico.
+A versão 3.6.4 preserva integralmente a camada de integridade da Sentinela 3.6.3 para uma comunidade pequena, preservando a edição Firebase Spark e sem excluir ficha, inventário, pets ou histórico.
 
 ## O que foi implementado
 

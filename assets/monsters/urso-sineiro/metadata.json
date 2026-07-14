@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "urso-sineiro",
+  "name": "Urso Sineiro",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      93,
+      98,
+      190
+    ],
+    [
+      198,
+      173,
+      255
+    ]
+  ],
+  "shinyPalette": [
+    [
+      198,
+      173,
+      255
+    ],
+    [
+      163,
+      143,
+      255
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

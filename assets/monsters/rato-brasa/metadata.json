@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "rato-brasa",
+  "name": "Rato de Brasa",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      220,
+      77,
+      45
+    ],
+    [
+      255,
+      180,
+      67
+    ]
+  ],
+  "shinyPalette": [
+    [
+      255,
+      180,
+      67
+    ],
+    [
+      255,
+      122,
+      135
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

@@ -1,0 +1,15 @@
+/* Tema de autoridade administrativa. Não altera permissões nem comportamento. */
+body.theme-oracle,
+body[data-interface-scope="oracle"],
+.oracle-theme {
+  --color-bg-canvas: #070d17;
+  --color-bg-surface: #0d1a2b;
+  --color-bg-elevated: #14263b;
+  --color-border-subtle: rgb(116 188 232 / 22%);
+  --color-border-strong: rgb(230 184 77 / 54%);
+  --color-accent-hero: #e6b84d;
+  --color-accent-interface: #74c9f4;
+  --color-text-primary: #f5f1e8;
+  --color-text-secondary: #aab8c9;
+  --shadow-interface: 0 0 44px rgb(89 199 255 / 18%);
+}
