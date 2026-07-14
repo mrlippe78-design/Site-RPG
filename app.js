@@ -127,43 +127,63 @@ const CLOUDINARY_CONFIG = {
 
 const SEASON_ART = {
   login: "assets/first-awakening-portal.webp",
-  pets: {
-    "vigia-de-telhado": "assets/pets/vigia-de-telhado.webp",
-    "novica-da-lanterna": "assets/pets/novica-da-lanterna.webp",
-    "cronista-do-trovao": "assets/pets/cronista-do-trovao.webp",
-    "vigia-de-ferro": "assets/pets/vigia-de-ferro.webp",
-    "cronista-de-vidro": "assets/pets/cronista-de-vidro.webp",
-    "filha-da-cinza": "assets/pets/filha-da-cinza.webp",
-    "porteiro-sem-rosto": "assets/pets/porteiro-sem-rosto.webp",
-    "dama-da-vitrine": "assets/pets/dama-da-vitrine.webp",
-    "santo-da-promessa": "assets/pets/santo-da-promessa.webp",
-  },
-  petThumbs: {
-    "vigia-de-telhado": "assets/pets/vigia-de-telhado-thumb.webp",
-    "novica-da-lanterna": "assets/pets/novica-da-lanterna-thumb.webp",
-    "cronista-do-trovao": "assets/pets/cronista-do-trovao-thumb.webp",
-    "vigia-de-ferro": "assets/pets/vigia-de-ferro-thumb.webp",
-    "cronista-de-vidro": "assets/pets/cronista-de-vidro-thumb.webp",
-    "filha-da-cinza": "assets/pets/filha-da-cinza-thumb.webp",
-    "porteiro-sem-rosto": "assets/pets/porteiro-sem-rosto-thumb.webp",
-    "dama-da-vitrine": "assets/pets/dama-da-vitrine-thumb.webp",
-    "santo-da-promessa": "assets/pets/santo-da-promessa-thumb.webp",
-  },
+  pets: {},
+  petThumbs: {},
   maps: {
+    "abismo-frio": "assets/maps/abismo-frio.webp",
     "cruzamento-das-cortinas": "assets/maps/cruzamento-das-cortinas.webp",
     "aldeia-das-folhas-douradas": "assets/maps/aldeia-das-folhas-douradas.webp",
     "arena-das-sete-esferas": "assets/maps/arena-das-sete-esferas.webp",
+    "aurevia": "assets/maps/aurevia.webp",
+    "campos-dos-ossos": "assets/maps/campos-dos-ossos.webp",
+    "cordilheira-dente-branco": "assets/maps/cordilheira-dente-branco.webp",
+    "deserto-de-vidro": "assets/maps/deserto-de-vidro.webp",
+    "ermos-da-ferrugem": "assets/maps/ermos-da-ferrugem.webp",
+    "floresta-viva": "assets/maps/floresta-viva.webp",
+    "jardins-de-carne": "assets/maps/jardins-de-carne.webp",
+    "mar-de-vidro-negro": "assets/maps/mar-de-vidro-negro.webp",
+    "noctheryn": "assets/maps/noctheryn.webp",
+    "pantano-dos-sinos": "assets/maps/pantano-dos-sinos.webp",
+    "pantano-sinos-afogados": "assets/maps/pantano-sinos-afogados.webp",
+    "porto-millennium": "assets/maps/porto-millennium.webp",
     "sociedade-das-laminas": "assets/maps/sociedade-das-laminas.webp",
     "reino-do-pecado-partido": "assets/maps/reino-do-pecado-partido.webp",
+    "ruinas-de-kael": "assets/maps/ruinas-de-kael.webp",
   },
   mapThumbs: {
+    "abismo-frio": "assets/maps/abismo-frio-thumb.webp",
     "cruzamento-das-cortinas": "assets/maps/cruzamento-das-cortinas-thumb.webp",
     "aldeia-das-folhas-douradas": "assets/maps/aldeia-das-folhas-douradas-thumb.webp",
     "arena-das-sete-esferas": "assets/maps/arena-das-sete-esferas-thumb.webp",
+    "aurevia": "assets/maps/aurevia-thumb.webp",
+    "campos-dos-ossos": "assets/maps/campos-dos-ossos-thumb.webp",
+    "cordilheira-dente-branco": "assets/maps/cordilheira-dente-branco-thumb.webp",
+    "deserto-de-vidro": "assets/maps/deserto-de-vidro-thumb.webp",
+    "ermos-da-ferrugem": "assets/maps/ermos-da-ferrugem-thumb.webp",
+    "floresta-viva": "assets/maps/floresta-viva-thumb.webp",
+    "jardins-de-carne": "assets/maps/jardins-de-carne-thumb.webp",
+    "mar-de-vidro-negro": "assets/maps/mar-de-vidro-negro-thumb.webp",
+    "noctheryn": "assets/maps/noctheryn-thumb.webp",
+    "pantano-dos-sinos": "assets/maps/pantano-dos-sinos-thumb.webp",
+    "pantano-sinos-afogados": "assets/maps/pantano-sinos-afogados-thumb.webp",
+    "porto-millennium": "assets/maps/porto-millennium-thumb.webp",
     "sociedade-das-laminas": "assets/maps/sociedade-das-laminas-thumb.webp",
     "reino-do-pecado-partido": "assets/maps/reino-do-pecado-partido-thumb.webp",
+    "ruinas-de-kael": "assets/maps/ruinas-de-kael-thumb.webp",
   },
 };
+
+const TOWER_ENEMY_ART = Object.freeze({
+  crossroads: Object.freeze({ normal: "assets/tower-defense/enemies/crossroad-crawler.webp", elite: "assets/tower-defense/enemies/crossroad-brute-elite.webp" }),
+  split: Object.freeze({ normal: "assets/tower-defense/enemies/crossroad-crawler.webp", elite: "assets/tower-defense/enemies/crossroad-brute-elite.webp" }),
+  bridges: Object.freeze({ normal: "assets/tower-defense/enemies/golden-leaf-wisp.webp", elite: "assets/tower-defense/enemies/autumn-sentinel-elite.webp" }),
+  ring: Object.freeze({ normal: "assets/tower-defense/enemies/arena-shellback.webp", elite: "assets/tower-defense/enemies/seven-orb-colossus-elite.webp" }),
+  portals: Object.freeze({ normal: "assets/tower-defense/enemies/blade-guild-runner.webp", elite: "assets/tower-defense/enemies/blade-portal-assassin-elite.webp" }),
+  citadel: Object.freeze({ normal: "assets/tower-defense/enemies/crimson-citadel-imp.webp", elite: "assets/tower-defense/enemies/broken-throne-tyrant.webp" }),
+  marsh: Object.freeze({ normal: "assets/tower-defense/enemies/marsh-bell-slug.webp", elite: "assets/tower-defense/enemies/drowned-bell-monarch.webp" }),
+  rails: Object.freeze({ normal: "assets/tower-defense/enemies/rust-rail-drone.webp", elite: "assets/tower-defense/enemies/rust-locomotive-beast.webp" }),
+  mirror: Object.freeze({ normal: "assets/tower-defense/enemies/mirror-shade.webp", elite: "assets/tower-defense/enemies/black-mirror-sovereign.webp" }),
+});
 
 const FIREBASE_SCRIPTS = [
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
@@ -859,6 +879,7 @@ const state = {
   sessionAnnounced: false,
   catalogLoaded: new Set(),
   catalogPromises: new Map(),
+  routeOnceCache: new Map(),
   lastPanicVersion: "",
   emergencyTimer: 0,
   characterDraft: null,
@@ -2437,6 +2458,8 @@ function gachaPool(type = "pets") {
 }
 
 function petImageFor(item = {}, options = {}) {
+  const monsterArt = migratedMonsterArtFor(item, options);
+  if (monsterArt) return monsterArt;
   const asset = WORLD.petAssetFor(item);
   if (options.thumbnail && (item.imageThumbnail || asset?.thumbnail)) return item.imageThumbnail || asset.thumbnail;
   if (item.imageHero || item.imageUrl) return item.imageHero || item.imageUrl;
@@ -2444,6 +2467,16 @@ function petImageFor(item = {}, options = {}) {
   if (SEASON_ART.pets[item.id]) return SEASON_ART.pets[item.id];
   if (item.sourceId && SEASON_ART.pets[item.sourceId]) return SEASON_ART.pets[item.sourceId];
   return generatedPetPortrait(item);
+}
+
+function migratedMonsterArtFor(item = {}, options = {}) {
+  const api = window.MILLENNIUM_MONSTERS_364;
+  if (!api?.assetBundleForSpecies) return "";
+  const legacyId = String(item.sourceId || item.id || "");
+  const speciesId = String(item.speciesId || api.migrationForLegacy?.(legacyId)?.targetSpeciesId || "");
+  if (!speciesId) return "";
+  const assets = api.assetBundleForSpecies(speciesId);
+  return options.thumbnail ? assets.thumbnail : assets.portrait;
 }
 
 function generatedPetPortrait(item = {}) {
@@ -2479,9 +2512,11 @@ function generatedPetPortrait(item = {}) {
 }
 
 function towerMapImageFor(map = {}, options = {}) {
+  const local = options.thumbnail ? SEASON_ART.mapThumbs[map.id] : SEASON_ART.maps[map.id];
+  if (local) return local;
   const asset = WORLD.locationAssetFor(map);
-  if (options.thumbnail) return map.imageThumbnail || asset?.thumbnail || map.imageUrl || SEASON_ART.maps[map.id] || "";
-  return map.imageHero || map.imageUrl || asset?.hero || SEASON_ART.maps[map.id] || "";
+  if (options.thumbnail) return map.imageThumbnail || asset?.thumbnail || map.imageUrl || "";
+  return map.imageHero || map.imageUrl || asset?.hero || "";
 }
 
 function stableNumber(seed) {
@@ -3241,6 +3276,7 @@ function cleanupListeners() {
   });
   state.unsubs = [];
   clearRouteSubscriptions();
+  state.routeOnceCache.clear();
   if (state.privateUnsub) state.privateUnsub();
   state.privateUnsub = null;
   state.characterUnsub = null;
@@ -3352,7 +3388,7 @@ async function initFirebase() {
     state.db.settings({
       experimentalAutoDetectLongPolling: true,
       ignoreUndefinedProperties: true,
-    });
+    }, { merge: true });
   } catch (error) {
     console.warn("Configuração de transporte do Firestore preservada:", error);
   }
@@ -3521,12 +3557,55 @@ function clearRouteSubscriptions() {
 }
 
 function routeCollection(path, cb, queryBuilder = null, name = path) {
+  const useEconomySnapshot = state.role !== "admin"
+    && Boolean(state.profile?.dataEconomy)
+    && !["globalMessages", "conversations", "directMessages", "guildMessages"].includes(path);
+  if (useEconomySnapshot) {
+    const routeKey = state.routeSubscriptionKey;
+    const cacheKey = `${state.user?.uid || "anonymous"}:${name}`;
+    state.routeSubscriptionNames.push(`${name}:once`);
+    if (state.routeOnceCache.has(cacheKey)) {
+      cb(state.routeOnceCache.get(cacheKey));
+      return;
+    }
+    const base = state.db.collection(path);
+    const query = queryBuilder ? queryBuilder(base) : base;
+    query.get().then((snapshot) => {
+      state.diagnostics.documentsRead += snapshot.size;
+      const entries = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      state.routeOnceCache.set(cacheKey, entries);
+      if (state.routeSubscriptionKey === routeKey) cb(entries);
+    }).catch((error) => {
+      handleFirebaseOperationError(error, `economy-snapshot:${path}`);
+      console.error(`Snapshot econÃ´mico ${path}:`, error);
+    });
+    return;
+  }
   subscribeCollection(path, cb, queryBuilder, state.routeUnsubs);
   state.routeSubscriptionNames.push(name);
 }
 
 function routeDocument(path, id, cb, name = `${path}/${id}`) {
   if (state.firestorePaused) return;
+  if (state.role !== "admin" && state.profile?.dataEconomy) {
+    const routeKey = state.routeSubscriptionKey;
+    const cacheKey = `${state.user?.uid || "anonymous"}:${name}`;
+    state.routeSubscriptionNames.push(`${name}:once`);
+    if (state.routeOnceCache.has(cacheKey)) {
+      cb(state.routeOnceCache.get(cacheKey));
+      return;
+    }
+    state.db.collection(path).doc(id).get().then((snapshot) => {
+      state.diagnostics.documentsRead += snapshot.exists ? 1 : 0;
+      const entry = snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
+      state.routeOnceCache.set(cacheKey, entry);
+      if (state.routeSubscriptionKey === routeKey) cb(entry);
+    }).catch((error) => {
+      handleFirebaseOperationError(error, `economy-snapshot:${path}/${id}`);
+      console.error(`Snapshot econÃ´mico ${path}/${id}:`, error);
+    });
+    return;
+  }
   state.diagnostics.listenerStarts += 1;
   const unsub = state.db.collection(path).doc(id).onSnapshot((snapshot) => {
     state.diagnostics.documentsRead += snapshot.exists ? 1 : 0;
@@ -3637,7 +3716,7 @@ function adminContentCollections(tab = state.contentTab) {
 
 function activateRouteSubscriptions(view = state.view) {
   if (state.demo || !state.db || !state.user || state.firestorePaused) return;
-  const key = `${state.role}:${state.user.uid}:${view}`;
+  const key = `${state.role}:${state.user.uid}:${view}:${state.profile?.dataEconomy ? "economy" : "live"}`;
   if (state.routeSubscriptionKey === key) return;
   clearRouteSubscriptions();
   state.routeSubscriptionKey = key;
@@ -4181,10 +4260,12 @@ async function writeDoc(collection, id, data, options = {}) {
     batch.set(targetRef, { ...data, lastAuditId: auditId, updatedAt: nowValue() }, { merge: true });
     await batch.commit();
     state.diagnostics.writes += 2;
+    state.routeOnceCache.clear();
     return;
   }
   await state.db.collection(collection).doc(id).set({ ...data, updatedAt: nowValue() }, { merge: true });
   state.diagnostics.writes += 1;
+  state.routeOnceCache.clear();
 }
 
 async function addDoc(collection, data) {
@@ -4198,6 +4279,7 @@ async function addDoc(collection, data) {
   }
   const ref = await state.db.collection(collection).add({ ...data, createdAt: nowValue() });
   state.diagnostics.writes += 1;
+  state.routeOnceCache.clear();
   return ref.id;
 }
 
@@ -4215,6 +4297,7 @@ async function deleteDoc(collection, id) {
   }
   await state.db.collection(collection).doc(id).delete();
   state.diagnostics.writes += 1;
+  state.routeOnceCache.clear();
 }
 
 function writeDemo(collection, id, data) {
@@ -6568,7 +6651,7 @@ function renderActivities(character = currentCharacter()) {
     const eventText = (activity.events || ["Rastros apagados", "Vento estranho", "Sinais no caminho"])[Math.max(0, stage - 1)] || "O caminho muda a cada passo.";
     return `
       <div class="activity-card ${ready ? "ready" : ""}">
-        <div class="activity-scene"><img src="${esc(huntSceneFor(activity))}" alt="" ${mediaAttrs("map")} /><span><img src="${esc(activity.petImageUrl || petImageFor({ id: activity.petSourceId || activity.petId, sourceId: activity.petSourceId, name: activity.petName, rarity: activity.petRarity || "Comum" }))}" alt="" ${mediaAttrs("pet-thumbnail")} /></span></div>
+        <div class="activity-scene"><img src="${esc(huntSceneFor(activity))}" alt="" ${mediaAttrs("map")} /><span><img src="${esc(petImageFor({ id: activity.petSourceId || activity.petId, sourceId: activity.petSourceId, imageUrl: activity.petImageUrl, name: activity.petName, rarity: activity.petRarity || "Comum" }, { thumbnail: true }))}" alt="" ${mediaAttrs("pet-thumbnail")} /></span></div>
         <div class="activity-copy">
           <span>${esc(activity.type)} · ${esc(activity.difficultyName)}</span>
           <strong>${esc(activity.petName)}</strong>
@@ -6637,7 +6720,7 @@ function renderDungeonMode(character) {
   const api = monsterModesApi();
   const unlocked = Math.max(1, Number(character.monsterDungeon?.unlockedPhase || 1));
   const best = Number(character.monsterDungeon?.bestPhase || 0);
-  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">Boss Rush em pixel art</p><h3>Masmorra dos Vinculados</h3><p>Cada fase possui somente um chefe. O cálculo e a animação acontecem localmente; apenas o resultado final é gravado.</p></div><span class="tag">Melhor fase ${best}</span></div>${renderMonsterModeTeam(character, "dungeon")}<div class="action-row"><button class="ghost-button" type="button" data-nav="monsters">Editar equipe da Masmorra</button></div></article><article class="panel monster-mode-card wide"><div class="dungeon-phase-list">${api.dungeonPhases.map((phase) => { const locked = phase.phase > unlocked; const species = api.speciesForId(phase.speciesId); return `<article class="dungeon-phase ${locked ? "locked" : ""}"><img src="${esc(api.assetBundleForSpecies(phase.speciesId).thumbnail)}" alt="" loading="lazy" /><div><small>Fase ${phase.phase} · ${esc(phase.element)} · poder ×${phase.power.toFixed(2)}</small><h4>${esc(phase.name)}</h4><p>${locked ? `Derrote a fase ${phase.phase - 1} para liberar.` : `Drop principal: ${esc(api.resourceById(phase.materialId)?.name || phase.materialId)}.`}</p></div><div class="action-row"><button class="primary-button ${phase.phase === unlocked ? "intense" : ""}" type="button" data-action="monster-dungeon-start" data-phase="${phase.phase}" ${locked ? "disabled" : ""}>${phase.phase <= best ? "Reenfrentar" : "Enfrentar"}</button></div></article>`; }).join("")}</div></article></div>`;
+  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">Boss Rush em pixel art</p><h3>Masmorra dos Vinculados</h3><p>Cada fase possui somente um chefe. O cálculo e a animação acontecem localmente; apenas o resultado final é gravado.</p></div><span class="tag">Melhor fase ${best}</span></div>${renderMonsterModeTeam(character, "dungeon")}<div class="action-row"><button class="ghost-button" type="button" data-nav="monsters">Editar equipe da Masmorra</button></div></article><article class="panel monster-mode-card wide"><div class="dungeon-phase-list">${api.dungeonPhases.map((phase) => { const locked = phase.phase > unlocked; return `<article class="dungeon-phase ${locked ? "locked" : ""}"><img src="${esc(phase.image || api.assetBundleForSpecies(phase.speciesId).thumbnail)}" alt="" loading="lazy" /><div><small>Fase ${phase.phase} · ${esc(phase.element)} · poder ×${phase.power.toFixed(2)}</small><h4>${esc(phase.name)}</h4><p>${locked ? `Derrote a fase ${phase.phase - 1} para liberar.` : `Drop principal: ${esc(api.resourceById(phase.materialId)?.name || phase.materialId)}.`}</p></div><div class="action-row"><button class="primary-button ${phase.phase === unlocked ? "intense" : ""}" type="button" data-action="monster-dungeon-start" data-phase="${phase.phase}" ${locked ? "disabled" : ""}>${phase.phase <= best ? "Reenfrentar" : "Enfrentar"}</button></div></article>`; }).join("")}</div></article></div>`;
 }
 
 function renderArenaMode(character) {
@@ -7075,7 +7158,7 @@ function renderPets(pets) {
   if (!pets.length) return `<div class="empty-state">Nenhum pet exibido.</div>`;
   return pets.map((pet) => `
     <div class="pet-card ${rarityClass(pet.rarity)}">
-      ${(pet.imageUrl || petImageFor(pet)) ? `<img class="pet-image" src="${esc(pet.imageUrl || petImageFor(pet))}" alt="${esc(pet.name)}" ${mediaAttrs("pet-card")} />` : `<div class="pet-image placeholder">PET</div>`}
+      ${petImageFor(pet) ? `<img class="pet-image" src="${esc(petImageFor(pet))}" alt="${esc(pet.name)}" ${mediaAttrs("pet-card")} />` : `<div class="pet-image placeholder">PET</div>`}
       <strong>${esc(pet.name)}</strong>
       <p>${esc(pet.rarity || "Pet")} ${pet.stars ? `· ${"★".repeat(Math.min(MAX_GACHA_STARS, Number(pet.stars || 1)))}` : ""}</p>
     </div>
@@ -7087,9 +7170,10 @@ function renderGachaVault(items, options = {}) {
   return items.map((item) => {
     const busy = petBusy(item);
     const recoveryCost = petRecoveryCost(item);
+    const itemArt = item.kind === "pet" ? petImageFor(item) : (item.imageUrl || "");
     return `
       <article class="vault-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}">
-        <div class="vault-art">${(item.imageUrl || (item.kind === "pet" ? petImageFor(item) : "")) ? `<img src="${esc(item.imageUrl || petImageFor(item))}" alt="${esc(item.name)}" ${mediaAttrs("pet-card")} />` : `<span>${esc(item.kind === "pet" ? "PET" : "ITEM")}</span>`}</div>
+        <div class="vault-art">${itemArt ? `<img src="${esc(itemArt)}" alt="${esc(item.name)}" ${mediaAttrs("pet-card")} />` : `<span>${esc(item.kind === "pet" ? "PET" : "ITEM")}</span>`}</div>
         <div class="vault-body">
           <span>${esc(item.rarity || "Comum")} ${item.shiny ? "· Radiante" : ""}</span>
           <h3>${esc(item.name)}</h3>
@@ -12437,7 +12521,7 @@ async function startPetHunt(form) {
     petSourceId: pet.sourceId || pet.id,
     petName: pet.name,
     petRarity: pet.rarity || "Comum",
-    petImageUrl: pet.imageUrl || petImageFor(pet),
+    petImageUrl: petImageFor(pet),
     difficultyId: difficulty.id,
     difficultyName: difficulty.name,
     stageLevel: level,
@@ -12629,12 +12713,21 @@ function prepareTowerArt(session) {
   }
   session.towerArt = new Map();
   session.pets.forEach((pet) => {
-    const source = pet.imageUrl || petImageFor(pet);
+    const source = petImageFor(pet);
     if (!source) return;
     const image = new Image();
     image.onload = () => drawTowerDefense(session);
     image.src = source;
     session.towerArt.set(pet.instanceId, image);
+  });
+  session.enemyArt = new Map();
+  const routeType = session.map?.routeType || "crossroads";
+  const enemySources = TOWER_ENEMY_ART[routeType] || TOWER_ENEMY_ART.crossroads;
+  Object.entries(enemySources).forEach(([kind, source]) => {
+    const image = new Image();
+    image.onload = () => drawTowerDefense(session);
+    image.src = source;
+    session.enemyArt.set(kind, image);
   });
 }
 
@@ -12842,9 +12935,26 @@ function drawTowerRoutes(ctx, map = {}) {
   });
 }
 
-function drawTowerEnemy(ctx, enemy, map = {}) {
+function drawTowerEnemy(ctx, enemy, session = {}) {
+  const map = session.map || {};
   const radius = enemy.elite ? 17 : 12;
   const type = map.routeType || "crossroads";
+  const sprite = session.enemyArt?.get(enemy.elite ? "elite" : "normal");
+  if (sprite?.complete && sprite.naturalWidth) {
+    const size = enemy.elite ? 58 : 42;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = enemy.phased ? 0.58 : 1;
+    ctx.shadowBlur = enemy.elite ? 14 : 7;
+    ctx.shadowColor = enemy.elite ? "rgba(217,84,102,.72)" : "rgba(118,145,168,.42)";
+    ctx.drawImage(sprite, enemy.x - size / 2, enemy.y - size * 0.68, size, size);
+    ctx.restore();
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillRect(enemy.x - 18, enemy.y - radius - 18, 36, 5);
+    ctx.fillStyle = enemy.elite ? "#ffbd67" : "#b8d8dc";
+    ctx.fillRect(enemy.x - 18, enemy.y - radius - 18, 36 * Math.max(0, enemy.hp / enemy.maxHp), 5);
+    return;
+  }
   ctx.save();
   ctx.translate(enemy.x, enemy.y);
   ctx.shadowBlur = enemy.elite ? 16 : 8;
@@ -12897,6 +13007,7 @@ function drawTowerDefense(session) {
   ctx.fillRect(0, 0, width, height);
   if (session.mapArt?.complete) {
     ctx.globalAlpha = 0.64;
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(session.mapArt, 0, 0, width, height);
     ctx.globalAlpha = 1;
   }
@@ -12947,7 +13058,7 @@ function drawTowerDefense(session) {
     }
     ctx.restore();
   });
-  session.enemies.forEach((enemy) => drawTowerEnemy(ctx, enemy, session.map));
+  session.enemies.forEach((enemy) => drawTowerEnemy(ctx, enemy, session));
   if (session.flash > 0) {
     ctx.strokeStyle = "rgba(255,246,181,0.88)";
     ctx.lineWidth = 2;
@@ -17106,4 +17217,6 @@ window.addEventListener("beforeunload", () => {
   stopActiveSealRitual("page-unload");
   releasePresenceLease();
 });
+// O acesso local de demonstração não deve depender do tempo de resposta do Firebase.
+showAuth();
 initFirebase();

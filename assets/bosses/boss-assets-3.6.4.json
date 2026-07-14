@@ -1,0 +1,42 @@
+{
+  "version": "3.6.4",
+  "count": 9,
+  "bosses": [
+    {
+      "id": "dungeon-01-rato-rei",
+      "file": "assets/bosses/dungeon-01-rato-rei.webp"
+    },
+    {
+      "id": "dungeon-02-corvo-ponte",
+      "file": "assets/bosses/dungeon-02-corvo-ponte.webp"
+    },
+    {
+      "id": "dungeon-03-sino-faminto",
+      "file": "assets/bosses/dungeon-03-sino-faminto.webp"
+    },
+    {
+      "id": "dungeon-04-hidra-aguas-mortas",
+      "file": "assets/bosses/dungeon-04-hidra-aguas-mortas.webp"
+    },
+    {
+      "id": "dungeon-05-dragao-forja",
+      "file": "assets/bosses/dungeon-05-dragao-forja.webp"
+    },
+    {
+      "id": "dungeon-06-fenrir-portao",
+      "file": "assets/bosses/dungeon-06-fenrir-portao.webp"
+    },
+    {
+      "id": "dungeon-07-leviata-vidro-negro",
+      "file": "assets/bosses/dungeon-07-leviata-vidro-negro.webp"
+    },
+    {
+      "id": "dungeon-08-devorador-eclipse",
+      "file": "assets/bosses/dungeon-08-devorador-eclipse.webp"
+    },
+    {
+      "id": "world-aurora-devourer",
+      "file": "assets/bosses/world-aurora-devourer.webp"
+    }
+  ]
+}

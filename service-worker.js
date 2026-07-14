@@ -1,7 +1,11 @@
 const MILLENNIUM_BUILD = "3.6.4";
+const PIXEL_ART_REVISION = "pixel-art-2";
 const CACHE_PREFIX = "millennium-";
 const SHELL_CACHE = `millennium-shell-v${MILLENNIUM_BUILD}`;
-const ASSET_CACHE = `millennium-assets-v${MILLENNIUM_BUILD}`;
+// A revisão separada força a troca do cache de imagens sem alterar a versão
+// funcional do site. Isso evita que instalações antigas conservem artes
+// anteriores em URLs que precisaram permanecer estáveis.
+const ASSET_CACHE = `millennium-assets-v${MILLENNIUM_BUILD}-${PIXEL_ART_REVISION}`;
 const DATA_CACHE = `millennium-data-v${MILLENNIUM_BUILD}`;
 // Alias preservado para validadores e clientes legados; o runtime usa caches separados.
 const CACHE_NAME = SHELL_CACHE;
@@ -201,7 +205,11 @@ async function cacheFirstBounded(request, cacheName, maximum) {
 }
 
 function isMonsterAsset(url) {
-  return url.pathname.includes("/assets/monsters/") || url.pathname.includes("/assets/monster-items/");
+  return url.pathname.includes("/assets/monsters/")
+    || url.pathname.includes("/assets/monster-items/")
+    || url.pathname.includes("/assets/tower-defense/")
+    || url.pathname.includes("/assets/bosses/")
+    || url.pathname.includes("/assets/maps/");
 }
 
 function isVersionedCatalog(url) {

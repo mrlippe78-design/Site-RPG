@@ -55,33 +55,8 @@
     { id: "espada-curta", name: "Espada Curta", categoryId: "arma", price: 45, rarity: "Comum", bonus: { for: 1, hab: 1 }, aliases: ["espada curta", "short sword"], description: "Lâmina leve preservada para compatibilidade com inventários antigos." },
   ]);
 
-  const PET_ASSETS = Object.freeze({
-    "porteiro-sem-rosto": { hero: "assets/pets/porteiro-sem-rosto.webp", thumbnail: "assets/pets/porteiro-sem-rosto-thumb.webp" },
-    "dama-da-vitrine": { hero: "assets/pets/dama-da-vitrine.webp", thumbnail: "assets/pets/dama-da-vitrine-thumb.webp" },
-    "vigia-de-telhado": { hero: "assets/pets/vigia-de-telhado.webp", thumbnail: "assets/pets/vigia-de-telhado-thumb.webp" },
-    "novica-da-lanterna": { hero: "assets/pets/novica-da-lanterna.webp", thumbnail: "assets/pets/novica-da-lanterna-thumb.webp" },
-    "cronista-do-trovao": { hero: "assets/pets/cronista-do-trovao.webp", thumbnail: "assets/pets/cronista-do-trovao-thumb.webp" },
-    "vigia-de-ferro": { hero: "assets/pets/vigia-de-ferro.webp", thumbnail: "assets/pets/vigia-de-ferro-thumb.webp" },
-    "cronista-de-vidro": { hero: "assets/pets/cronista-de-vidro.webp", thumbnail: "assets/pets/cronista-de-vidro-thumb.webp" },
-    "filha-da-cinza": { hero: "assets/pets/filha-da-cinza.webp", thumbnail: "assets/pets/filha-da-cinza-thumb.webp" },
-    "santo-da-promessa": { hero: "assets/pets/santo-da-promessa.webp", thumbnail: "assets/pets/santo-da-promessa-thumb.webp" },
-    "oraculo-partido": { hero: "assets/pets/oraculo-partido.webp", thumbnail: "assets/pets/oraculo-partido-thumb.webp" },
-    "herdeiro-dos-seis-veus": { hero: "assets/pets/herdeiro-dos-seis-veus.webp", thumbnail: "assets/pets/herdeiro-dos-seis-veus-thumb.webp" },
-    "general-da-cicatriz": { hero: "assets/pets/general-da-cicatriz.webp", thumbnail: "assets/pets/general-da-cicatriz-thumb.webp" },
-    "vazio-que-ri": { hero: "assets/pets/vazio-que-ri.webp", thumbnail: "assets/pets/vazio-que-ri-thumb.webp" },
-    "menina-do-fio-vermelho": { hero: "assets/pets/menina-do-fio-vermelho.webp", thumbnail: "assets/pets/menina-do-fio-vermelho-thumb.webp" },
-    "mecanico-da-ponte": { hero: "assets/pets/mecanico-da-ponte.webp", thumbnail: "assets/pets/mecanico-da-ponte-thumb.webp" },
-    "coveiro-de-luas": { hero: "assets/pets/coveiro-de-luas.webp", thumbnail: "assets/pets/coveiro-de-luas-thumb.webp" },
-    "violinista-da-chuva": { hero: "assets/pets/violinista-da-chuva.webp", thumbnail: "assets/pets/violinista-da-chuva-thumb.webp" },
-    "marinheiro-da-ultima-vela": { hero: "assets/pets/marinheiro-da-ultima-vela.webp", thumbnail: "assets/pets/marinheiro-da-ultima-vela-thumb.webp" },
-    "vigia-do-aqueduto": { hero: "assets/pets/vigia-do-aqueduto.webp", thumbnail: "assets/pets/vigia-do-aqueduto-thumb.webp" },
-    "capelao-das-cinzas": { hero: "assets/pets/capelao-das-cinzas.webp", thumbnail: "assets/pets/capelao-das-cinzas-thumb.webp" },
-    "duelista-da-pedra-negra": { hero: "assets/pets/duelista-da-pedra-negra.webp", thumbnail: "assets/pets/duelista-da-pedra-negra-thumb.webp" },
-    "rainha-do-campo-cinzento": { hero: "assets/pets/rainha-do-campo-cinzento.webp", thumbnail: "assets/pets/rainha-do-campo-cinzento-thumb.webp" },
-    "arqueira-de-vidro": { hero: "assets/pets/arqueira-de-vidro.webp", thumbnail: "assets/pets/arqueira-de-vidro-thumb.webp" },
-    "tecelã-de-brumas": { hero: "assets/pets/tecela-de-brumas.webp", thumbnail: "assets/pets/tecela-de-brumas-thumb.webp" },
-    "dama-do-ultimo-sino": { hero: "assets/pets/dama-do-ultimo-sino.webp", thumbnail: "assets/pets/dama-do-ultimo-sino-thumb.webp" },
-  });
+  // A exibição atual resolve cada pet legado para sua espécie de monstro.
+  const PET_ASSETS = Object.freeze({});
 
   const LOCATION_ASSETS = Object.freeze({
     aurevia: { hero: "assets/maps/aurevia.webp", thumbnail: "assets/maps/aurevia-thumb.webp" },
