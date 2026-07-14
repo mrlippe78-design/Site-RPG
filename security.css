@@ -1,0 +1,55 @@
+.security-center-button { position: relative; }
+.security-alert-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #dc6868; box-shadow: 0 0 0 3px rgba(220,104,104,.18); }
+.security-quarantine-banner { margin: 0 0 18px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 1px solid rgba(220,104,104,.38); background: linear-gradient(100deg,rgba(91,24,32,.48),rgba(23,19,19,.94)); box-shadow: 0 16px 42px rgba(0,0,0,.24); }
+.security-quarantine-banner div { display: grid; gap: 3px; }
+.security-quarantine-banner strong { color: #ffd4d4; font-family: Cinzel,serif; }
+.security-quarantine-banner span { color: #c9b4b4; font-size: 13px; }
+.security-modal { position: fixed; inset: 0; z-index: 1600; display: grid; place-items: center; padding: 24px; background: rgba(3,3,4,.82); backdrop-filter: blur(10px); }
+.security-modal[hidden] { display: none; }
+.security-modal-card { position: relative; width: min(1080px,100%); max-height: min(900px,92vh); overflow: auto; padding: clamp(22px,4vw,42px); border: 1px solid rgba(225,188,96,.3); background: radial-gradient(circle at 12% 0%,rgba(137,101,40,.16),transparent 36%),#11100f; box-shadow: 0 28px 100px rgba(0,0,0,.65); }
+.security-modal-close { position: sticky; float: right; top: 0; z-index: 2; }
+.security-modal-open { overflow: hidden; }
+.security-center { display: grid; gap: 22px; }
+.security-center > h2 { margin: -10px 0 0; font: 700 clamp(26px,4vw,42px)/1.08 Cinzel,serif; color: #f2dfb5; }
+.security-status-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.security-status-grid article { display: grid; gap: 5px; min-height: 126px; padding: 16px; border: 1px solid rgba(225,188,96,.16); background: rgba(255,255,255,.025); }
+.security-status-grid span,.security-status-grid small { color: #9e927b; }
+.security-status-grid strong { font: 700 22px/1.1 Cinzel,serif; color: #e8c971; }
+.security-status-grid strong.ok { color: #91c99f; }
+.security-status-grid strong.pending { color: #d5b66b; }
+.security-status-grid strong.danger { color: #ef8c8c; }
+.security-section-heading { display: flex; justify-content: space-between; align-items: end; border-bottom: 1px solid rgba(225,188,96,.14); padding-bottom: 10px; }
+.security-section-heading h3,.security-appeal-form h3 { margin: 0; color: #f1e4c7; }
+.security-incident-list,.security-admin-list { display: grid; gap: 12px; }
+.security-incident,.security-admin-incident { position: relative; display: grid; gap: 12px; padding: 16px; border: 1px solid rgba(225,188,96,.16); background: rgba(255,255,255,.02); overflow: hidden; }
+.security-incident::before,.security-admin-incident::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: #9f8951; }
+.security-incident.severity-high::before,.security-admin-incident.severity-high::before { background: #d08d57; }
+.security-incident.severity-critical::before,.security-admin-incident.severity-critical::before { background: #d65d68; }
+.security-incident header,.security-admin-incident header { display: flex; justify-content: space-between; gap: 18px; align-items: start; }
+.security-incident header div,.security-admin-incident header div { display: grid; gap: 4px; }
+.security-incident header span,.security-admin-incident header span { color: #b59b61; font: 700 11px/1.2 monospace; letter-spacing: .08em; }
+.security-incident h4,.security-admin-incident h3 { margin: 0; color: #eee0c3; }
+.security-incident header > strong,.security-admin-incident header > strong { padding: 5px 8px; border: 1px solid rgba(225,188,96,.17); color: #c9b98f; font-size: 11px; text-transform: uppercase; }
+.security-incident p,.security-admin-details p { margin: 0; color: #bcb2a0; }
+.security-incident footer { display: flex; flex-wrap: wrap; gap: 8px; }
+.security-incident footer span { padding: 4px 7px; background: rgba(255,255,255,.035); color: #988d78; font-size: 11px; }
+.security-appeal-form { display: grid; gap: 14px; padding: 20px; border: 1px solid rgba(225,188,96,.2); background: rgba(216,180,93,.035); }
+.security-appeal-form label { display: grid; gap: 7px; }
+.security-appeal-form label > span { color: #c9b98f; font-size: 13px; }
+.security-appeal-form textarea { min-height: 130px; resize: vertical; }
+.security-admin-details { display: grid; gap: 6px; padding: 12px; background: rgba(0,0,0,.2); }
+.security-admin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.security-appeal-preview { display: grid; gap: 6px; padding-top: 4px; color: #c4b8a2; }
+.security-appeal-preview:empty { display: none; }
+.security-empty,.security-loading { display: grid; place-items: center; gap: 10px; min-height: 150px; padding: 24px; text-align: center; border: 1px dashed rgba(225,188,96,.18); color: #a69a84; }
+.security-orbit { font-size: 40px; color: #e4c66e; animation: security-spin 1.8s linear infinite; }
+@keyframes security-spin { to { transform: rotate(360deg); } }
+#securityRestrictionAppeal { margin-right: 8px; }
+@media (max-width: 760px) {
+  .security-modal { padding: 0; align-items: end; }
+  .security-modal-card { width: 100%; max-height: 94vh; padding: 22px 16px 30px; border-left: 0; border-right: 0; border-bottom: 0; }
+  .security-status-grid { grid-template-columns: 1fr; }
+  .security-quarantine-banner { align-items: stretch; flex-direction: column; }
+  .security-incident header,.security-admin-incident header { flex-direction: column; }
+  .security-admin-actions > button { flex: 1 1 calc(50% - 8px); }
+}

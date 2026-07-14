@@ -1,4 +1,4 @@
-const MILLENNIUM_BUILD = "3.6.2";
+const MILLENNIUM_BUILD = "3.6.3";
 const CACHE_PREFIX = "millennium-shell-v";
 const CACHE_NAME = `${CACHE_PREFIX}${MILLENNIUM_BUILD}`;
 const NETWORK_TIMEOUT_MS = 8000;
@@ -6,6 +6,8 @@ const NETWORK_TIMEOUT_MS = 8000;
 const REQUIRED_SHELL = [
   "./",
   "./index.html",
+  `./millennium-security-config.js?v=${MILLENNIUM_BUILD}`,
+  `./millennium-security-bootstrap.js?v=${MILLENNIUM_BUILD}`,
   `./build-info.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-stability.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-world-alive.js?v=${MILLENNIUM_BUILD}`,
@@ -25,8 +27,10 @@ const REQUIRED_SHELL = [
   `./world-alive.css?v=${MILLENNIUM_BUILD}`,
   `./account-management.css?v=${MILLENNIUM_BUILD}`,
   `./echoes.css?v=${MILLENNIUM_BUILD}`,
+  `./security.css?v=${MILLENNIUM_BUILD}`,
   `./content-v3.js?v=${MILLENNIUM_BUILD}`,
   `./app.js?v=${MILLENNIUM_BUILD}`,
+  `./millennium-security.js?v=${MILLENNIUM_BUILD}`,
   "./manifest.webmanifest",
   "./favicon.svg",
 ];
