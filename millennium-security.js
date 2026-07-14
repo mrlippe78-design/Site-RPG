@@ -1,6 +1,6 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.3.1";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.3.3";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -29,6 +29,14 @@
     profile: null,
     role: "player",
     profileUnsub: null,
+    character: null,
+    bridgeInstalled: false,
+    alertUnsub: null,
+    pendingAlert: false,
+    snapshotVerifyPromise: null,
+    snapshotVerifiedUid: "",
+    snapshotVerifyTimer: 0,
+    shellTimer: 0,
     lastIntent: { action: "", form: "", at: 0 },
     sessionId: sessionStorage.getItem("millennium:security-session") || randomId("session"),
     deniedSignals: new Map(),
@@ -36,6 +44,8 @@
     observer: null,
   };
   sessionStorage.setItem("millennium:security-session", runtime.sessionId);
+  window.MILLENNIUM_SECURITY_ACTIVE_LISTENERS = 0;
+  window.MILLENNIUM_SECURITY_VERIFICATIONS = 0;
 
   function randomId(prefix = "sec") {
     const bytes = new Uint8Array(12);
@@ -304,9 +314,6 @@
     if (!sensitive.length) return runtime.originalWriteDoc(collection, id, data, options);
 
     const characterRef = database.collection("characters").doc(id);
-    const exists = await characterRef.get();
-    if (!exists.exists) return runtime.originalWriteDoc(collection, id, data, options);
-
     const receiptId = randomId("receipt");
     const incidentId = randomId("SEC");
     const action = resolveAction(data, options);
@@ -430,51 +437,71 @@
     }, { merge: true });
   }
 
-  async function bootstrapOrVerifySnapshot(uid) {
+  async function bootstrapOrVerifySnapshot(uid, providedCharacter = null, providedProfile = null) {
     const database = db();
     if (!database || !uid || runtime.role === "admin") return;
-    const [characterSnap, snapshotSnap, userSnap] = await Promise.all([
-      database.collection("characters").doc(uid).get(),
-      database.collection("securitySnapshots").doc(uid).get(),
-      database.collection("users").doc(uid).get(),
-    ]);
-    if (!characterSnap.exists || !userSnap.exists) return;
-    const profile = userSnap.data() || {};
-    if (["suspended", "banned", "deletion_pending"].includes(String(profile.accountStatus || profile.status || "active").toLowerCase())) return;
-    const character = characterSnap.data() || {};
-    const currentState = snapshotState(character);
-    const currentFingerprint = fingerprint(currentState);
-    if (!snapshotSnap.exists) {
-      await database.collection("securitySnapshots").doc(uid).set({
-        ownerId: uid,
-        revision: Math.max(0, Number(character.economyRevision || 0)),
-        receiptId: character.lastEconomyReceiptId || "bootstrap",
-        action: "bootstrap",
-        fingerprint: currentFingerprint,
-        state: currentState,
-        lastAuditId: character.lastAuditId || "",
-        bootstrap: true,
-        updatedAt: serverTimestamp(),
-      });
-      return;
-    }
-    const saved = snapshotSnap.data() || {};
-    if (saved.fingerprint === currentFingerprint && Number(saved.revision || 0) === Number(character.economyRevision || 0)) return;
-    if (character.lastAuditId && character.lastAuditId !== saved.lastAuditId) {
-      await database.collection("securitySnapshots").doc(uid).set({
-        ownerId: uid,
-        revision: Math.max(0, Number(character.economyRevision || 0)),
-        receiptId: character.lastEconomyReceiptId || "admin-audit",
-        action: "trusted-admin-sync",
-        fingerprint: currentFingerprint,
-        state: currentState,
-        lastAuditId: character.lastAuditId,
-        bootstrap: false,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-      return;
-    }
-    await restoreMismatch(uid, character, saved, profile);
+    if (runtime.snapshotVerifiedUid === uid) return;
+    if (runtime.snapshotVerifyPromise) return runtime.snapshotVerifyPromise;
+    const character = providedCharacter || runtime.character;
+    const profile = providedProfile || runtime.profile;
+    if (!character || !profile) return;
+
+    runtime.snapshotVerifyPromise = (async () => {
+      window.MILLENNIUM_SECURITY_VERIFICATIONS = Math.max(0, Number(window.MILLENNIUM_SECURITY_VERIFICATIONS || 0)) + 1;
+      const status = String(profile.accountStatus || profile.status || "active").toLowerCase();
+      if (["suspended", "banned", "deletion_pending"].includes(status)) return;
+      const snapshotSnap = await database.collection("securitySnapshots").doc(uid).get();
+      const currentState = snapshotState(character);
+      const currentFingerprint = fingerprint(currentState);
+      if (!snapshotSnap.exists) {
+        await database.collection("securitySnapshots").doc(uid).set({
+          ownerId: uid,
+          revision: Math.max(0, Number(character.economyRevision || 0)),
+          receiptId: character.lastEconomyReceiptId || "bootstrap",
+          action: "bootstrap",
+          fingerprint: currentFingerprint,
+          state: currentState,
+          lastAuditId: character.lastAuditId || "",
+          bootstrap: true,
+          updatedAt: serverTimestamp(),
+        });
+        runtime.snapshotVerifiedUid = uid;
+        return;
+      }
+      const saved = snapshotSnap.data() || {};
+      if (saved.fingerprint === currentFingerprint && Number(saved.revision || 0) === Number(character.economyRevision || 0)) {
+        runtime.snapshotVerifiedUid = uid;
+        return;
+      }
+      if (character.lastAuditId && character.lastAuditId !== saved.lastAuditId) {
+        await database.collection("securitySnapshots").doc(uid).set({
+          ownerId: uid,
+          revision: Math.max(0, Number(character.economyRevision || 0)),
+          receiptId: character.lastEconomyReceiptId || "admin-audit",
+          action: "trusted-admin-sync",
+          fingerprint: currentFingerprint,
+          state: currentState,
+          lastAuditId: character.lastAuditId,
+          bootstrap: false,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+        runtime.snapshotVerifiedUid = uid;
+        return;
+      }
+      await restoreMismatch(uid, character, saved, profile);
+      runtime.snapshotVerifiedUid = uid;
+    })().finally(() => { runtime.snapshotVerifyPromise = null; });
+    return runtime.snapshotVerifyPromise;
+  }
+
+  function scheduleSnapshotVerification() {
+    if (!runtime.user || runtime.role === "admin" || !runtime.profile || !runtime.character) return;
+    if (runtime.snapshotVerifiedUid === runtime.user.uid || runtime.snapshotVerifyPromise) return;
+    if (runtime.snapshotVerifyTimer) window.clearTimeout(runtime.snapshotVerifyTimer);
+    runtime.snapshotVerifyTimer = window.setTimeout(() => {
+      runtime.snapshotVerifyTimer = 0;
+      bootstrapOrVerifySnapshot(runtime.user.uid, runtime.character, runtime.profile).catch((error) => console.warn("Security snapshot:", error));
+    }, 800);
   }
 
   async function restoreMismatch(uid, character, savedSnapshot, profile) {
@@ -628,26 +655,82 @@
     return profile.role === "admin" ? "admin" : "player";
   }
 
+  function stopAlertListener() {
+    if (runtime.alertUnsub) {
+      try { runtime.alertUnsub(); } catch { /* no-op */ }
+    }
+    runtime.alertUnsub = null;
+    runtime.pendingAlert = false;
+    window.MILLENNIUM_SECURITY_ACTIVE_LISTENERS = 0;
+  }
+
+  function updateAlertDot() {
+    const dot = document.querySelector("#securityCenterButton .security-alert-dot");
+    if (dot) dot.hidden = !runtime.pendingAlert;
+  }
+
+  function startAlertListener() {
+    const database = db();
+    if (!database || !runtime.user || runtime.alertUnsub) {
+      updateAlertDot();
+      return;
+    }
+    const query = runtime.role === "admin"
+      ? database.collection("securityIncidents").where("status", "==", "pending_review").limit(1)
+      : database.collection("securityIncidents").where("uid", "==", runtime.user.uid).where("status", "==", "pending_review").limit(1);
+    runtime.alertUnsub = query.onSnapshot((snapshot) => {
+      runtime.pendingAlert = !snapshot.empty;
+      updateAlertDot();
+    }, () => {
+      runtime.pendingAlert = false;
+      updateAlertDot();
+    });
+    window.MILLENNIUM_SECURITY_ACTIVE_LISTENERS = 1;
+  }
+
+  function installStateBridge() {
+    if (runtime.bridgeInstalled) return;
+    runtime.bridgeInstalled = true;
+    window.addEventListener("millennium:profile", (event) => {
+      const detail = event.detail || {};
+      if (!runtime.user || detail.uid !== runtime.user.uid) return;
+      const previousRole = runtime.role;
+      runtime.profile = detail.profile || null;
+      runtime.role = detail.role === "admin" ? "admin" : roleFromProfile(runtime.profile || {});
+      injectSecurityShell();
+      if (previousRole !== runtime.role) {
+        stopAlertListener();
+        startAlertListener();
+      }
+      scheduleSnapshotVerification();
+    });
+    window.addEventListener("millennium:character", (event) => {
+      const detail = event.detail || {};
+      if (!runtime.user || detail.uid !== runtime.user.uid) return;
+      runtime.character = detail.character || null;
+      scheduleSnapshotVerification();
+    });
+  }
+
   function watchAuthentication() {
     if (!window.firebase?.auth) return;
+    installStateBridge();
     firebase.auth().onAuthStateChanged((user) => {
+      stopAlertListener();
+      if (runtime.snapshotVerifyTimer) window.clearTimeout(runtime.snapshotVerifyTimer);
+      runtime.snapshotVerifyTimer = 0;
+      runtime.snapshotVerifyPromise = null;
+      runtime.snapshotVerifiedUid = "";
       runtime.user = user;
-      if (runtime.profileUnsub) runtime.profileUnsub();
-      runtime.profileUnsub = null;
       runtime.profile = null;
+      runtime.character = null;
       runtime.role = "player";
       if (!user) {
         removeSecurityShell();
         return;
       }
-      const database = db();
-      if (!database) return;
-      runtime.profileUnsub = database.collection("users").doc(user.uid).onSnapshot((snapshot) => {
-        runtime.profile = snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
-        runtime.role = roleFromProfile(runtime.profile || {});
-        injectSecurityShell();
-        window.setTimeout(() => bootstrapOrVerifySnapshot(user.uid).catch((error) => console.warn("Security snapshot:", error)), 1200);
-      });
+      injectSecurityShell();
+      startAlertListener();
     });
   }
 
@@ -691,7 +774,7 @@
     if (button) button.title = runtime.role === "admin" ? "Incidentes de segurança" : "Central de integridade";
     renderQuarantineBanner();
     injectRestrictionAppeal();
-    refreshAlertDot();
+    updateAlertDot();
   }
 
   function removeSecurityShell() {
@@ -734,18 +817,8 @@
   }
 
   async function refreshAlertDot() {
-    const dot = document.querySelector("#securityCenterButton .security-alert-dot");
-    const database = db();
-    if (!dot || !database || !runtime.user) return;
-    try {
-      const query = runtime.role === "admin"
-        ? database.collection("securityIncidents").where("status", "==", "pending_review").limit(1)
-        : database.collection("securityIncidents").where("uid", "==", runtime.user.uid).where("status", "==", "pending_review").limit(1);
-      const snapshot = await query.get();
-      dot.hidden = snapshot.empty;
-    } catch {
-      dot.hidden = true;
-    }
+    startAlertListener();
+    updateAlertDot();
   }
 
   function ensureSecurityModal() {
@@ -979,8 +1052,12 @@
     document.addEventListener("click", rememberIntent, true);
     document.addEventListener("submit", rememberForm, true);
     runtime.observer = new MutationObserver(() => {
-      if (runtime.user) injectSecurityShell();
       if (!runtime.installed) installWriteGuard();
+      if (!runtime.user || runtime.shellTimer) return;
+      runtime.shellTimer = window.setTimeout(() => {
+        runtime.shellTimer = 0;
+        injectSecurityShell();
+      }, 120);
     });
     runtime.observer.observe(document.documentElement, { childList: true, subtree: true });
   }

@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.3.1", commit: "dev", cacheName: "millennium-shell-v3.6.3.1" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.3.3", commit: "dev", cacheName: "millennium-shell-v3.6.3.3" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -168,8 +168,11 @@ const GACHA_RARITIES = [
   { id: "secret", name: "Secret", weight: 1, fragment: 700, score: 9, color: "#ffffff" },
 ];
 const IDLE_LIMIT_MS = 10 * 60 * 1000;
-const JOIN_ANNOUNCE_COOLDOWN_MS = 10 * 60 * 1000;
-const PRESENCE_HEARTBEAT_MS = 4 * 60 * 1000;
+const JOIN_ANNOUNCE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const PRESENCE_HEARTBEAT_MS = 15 * 60 * 1000;
+const PRESENCE_CHECK_MS = 60 * 1000;
+const PRESENCE_LEASE_TTL_MS = 2 * 60 * 1000;
+const PRESENCE_ONLINE_WINDOW_MS = 20 * 60 * 1000;
 const ORACLE_LABEL = "Oráculo";
 const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
@@ -793,9 +796,15 @@ const state = {
   profileViews: [],
   marketTrades: [],
   presenceTimer: null,
+  presenceVisibilityHandler: null,
+  presenceTabId: sessionStorage.getItem("millennium:presence-tab") || "",
+  lastPresenceWriteAt: 0,
+  lastPresenceOnline: null,
   idleTimer: null,
   lastActivityAt: Date.now(),
   sessionAnnounced: false,
+  catalogLoaded: new Set(),
+  catalogPromises: new Map(),
   lastPanicVersion: "",
   emergencyTimer: 0,
   characterDraft: null,
@@ -833,6 +842,10 @@ const state = {
   routeSubscriptionKey: "",
   routeSubscriptionNames: [],
   syncErrorNotices: new Set(),
+  firestorePaused: false,
+  firestorePausedAt: 0,
+  firestorePauseReason: "",
+  firestoreQuotaNoticeShown: false,
   privateUnsub: null,
   characterUnsub: null,
   renderContext: null,
@@ -842,6 +855,11 @@ const state = {
     lastRoute: "",
     listenerCount: 0,
     documentsRead: 0,
+    listenerStarts: 0,
+    listenerReconnects: 0,
+    catalogReads: 0,
+    securityVerifications: 0,
+    persistence: "not-attempted",
     writes: 0,
     lastFocusedElement: "",
     lastReason: "",
@@ -1132,7 +1150,7 @@ function handleEmergencyUpdate(settings = state.settings) {
   }
   state.emergencyTimer = window.setTimeout(() => {
     if (action === "signout") {
-      setPresence(false);
+      setPresence(false, { force: true });
       cleanupListeners();
       state.auth?.signOut?.();
       state.user = null;
@@ -1599,11 +1617,51 @@ function accountIsRestricted(profile = state.profile, now = Date.now()) {
   return ACCOUNT_MGMT.isRestricted(profile || {}, now);
 }
 
+function presenceTabId() {
+  if (state.presenceTabId) return state.presenceTabId;
+  state.presenceTabId = `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  try { sessionStorage.setItem("millennium:presence-tab", state.presenceTabId); } catch { /* storage unavailable */ }
+  return state.presenceTabId;
+}
+
+function presenceStorageKey(kind) {
+  return `millennium:presence:${state.user?.uid || "anonymous"}:${kind}`;
+}
+
+function readPresenceLease() {
+  try { return JSON.parse(localStorage.getItem(presenceStorageKey("lease")) || "null"); } catch { return null; }
+}
+
+function claimPresenceLease() {
+  if (!state.user) return false;
+  const now = Date.now();
+  const current = readPresenceLease();
+  const tabId = presenceTabId();
+  if (current?.tabId && current.tabId !== tabId && Number(current.expiresAt || 0) > now) return false;
+  try {
+    localStorage.setItem(presenceStorageKey("lease"), JSON.stringify({ tabId, expiresAt: now + PRESENCE_LEASE_TTL_MS }));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+function releasePresenceLease() {
+  if (!state.user) return;
+  try {
+    const current = readPresenceLease();
+    if (current?.tabId === presenceTabId()) localStorage.removeItem(presenceStorageKey("lease"));
+  } catch { /* no-op */ }
+}
+
 function stopPresenceTracking() {
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
   state.presenceTimer = null;
+  if (state.presenceVisibilityHandler) document.removeEventListener("visibilitychange", state.presenceVisibilityHandler);
+  state.presenceVisibilityHandler = null;
   if (state.idleTimer) window.clearInterval(state.idleTimer);
   state.idleTimer = null;
+  releasePresenceLease();
   clearRestrictionTimer();
 }
 
@@ -1756,7 +1814,7 @@ function isUserOnline(user) {
   if (!user?.online) return false;
   const lastSeen = dateFromValue(user.lastSeen);
   if (!lastSeen) return true;
-  return Date.now() - lastSeen.getTime() < 1000 * 60 * 3;
+  return Date.now() - lastSeen.getTime() < PRESENCE_ONLINE_WINDOW_MS;
 }
 
 function socialRequestsFor(uid = state.user?.uid) {
@@ -2674,6 +2732,49 @@ function showAuth() {
   updateBuildBadge();
 }
 
+
+function firebaseErrorCode(error = {}) {
+  return String(error?.code || error?.name || "").replace(/^firestore\//, "").toLowerCase();
+}
+
+function isFirestoreQuotaError(error = {}) {
+  const code = firebaseErrorCode(error);
+  const message = String(error?.message || "").toLowerCase();
+  return code === "resource-exhausted"
+    || message.includes("quota exceeded")
+    || message.includes("resource exhausted");
+}
+
+function pauseFirestoreForSession(error, source = "firebase") {
+  if (!isFirestoreQuotaError(error)) return false;
+  state.firestorePaused = true;
+  state.firestorePausedAt = Date.now();
+  state.firestorePauseReason = `${source}: ${String(error?.code || error?.message || "resource-exhausted")}`.slice(0, 300);
+  state.diagnostics.lastSyncError = state.firestorePauseReason;
+
+  if (!state.firestoreQuotaNoticeShown) {
+    state.firestoreQuotaNoticeShown = true;
+    toast("A cota diária gratuita do Firestore foi esgotada. O site pausou novas sincronizações nesta sessão para não repetir chamadas. Aguarde a renovação da cota e recarregue a página.");
+  }
+
+  window.setTimeout(() => {
+    if (state.firestorePaused) cleanupListeners();
+  }, 0);
+  return true;
+}
+
+function assertFirestoreAvailable() {
+  if (!state.firestorePaused) return;
+  const error = new Error("A sincronização do Firestore está pausada nesta sessão porque a cota diária foi esgotada. Recarregue somente depois da renovação da cota.");
+  error.code = "resource-exhausted";
+  throw error;
+}
+
+function handleFirebaseOperationError(error, source = "firebase") {
+  pauseFirestoreForSession(error, source);
+  return error;
+}
+
 function firebaseErrorMessage(error) {
   const code = error?.code || "";
   const messages = {
@@ -2687,10 +2788,11 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.3.1 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.3.3 Spark.",
     "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
     "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
     "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
+    "resource-exhausted": "A cota diária gratuita do Firestore foi esgotada. O site pausou novas chamadas nesta sessão; aguarde a renovação da cota e recarregue.",
   };
   return messages[code] || error?.message || "Não foi possível concluir a ação.";
 }
@@ -2760,25 +2862,64 @@ function cleanupListeners() {
   state.renderReason = "";
 }
 
-async function setPresence(online) {
-  if (!state.user) return;
+async function setPresence(online, options = {}) {
+  if (!state.user) return false;
+  const force = options.force === true;
+  const now = Date.now();
+  if (online) {
+    if (!force && (document.hidden || now - state.lastActivityAt >= IDLE_LIMIT_MS)) return false;
+    if (!claimPresenceLease()) return false;
+    let lastSharedWrite = 0;
+    try { lastSharedWrite = Number(localStorage.getItem(presenceStorageKey("last-write")) || 0); } catch { /* no-op */ }
+    if (!force && state.lastPresenceOnline === true && now - Math.max(state.lastPresenceWriteAt, lastSharedWrite) < PRESENCE_HEARTBEAT_MS) return false;
+  } else if (!force) {
+    const lease = readPresenceLease();
+    if (lease?.tabId && lease.tabId !== presenceTabId()) return false;
+  }
+
   const payload = {
     online,
     lastSeen: state.demo ? new Date().toISOString() : nowValue(),
   };
   if (state.demo) {
     writeDemo("users", state.user.uid, payload);
-    return;
+    state.lastPresenceWriteAt = now;
+    state.lastPresenceOnline = online;
+    return true;
   }
-  if (!state.db) return;
-  await state.db.collection("users").doc(state.user.uid).set(payload, { merge: true }).catch(() => {});
+  if (!state.db || state.firestorePaused) return false;
+  try {
+    await state.db.collection("users").doc(state.user.uid).set(payload, { merge: true });
+    state.diagnostics.writes += 1;
+    state.lastPresenceWriteAt = now;
+    state.lastPresenceOnline = online;
+    try { localStorage.setItem(presenceStorageKey("last-write"), String(now)); } catch { /* no-op */ }
+    if (!online) releasePresenceLease();
+    return true;
+  } catch (error) {
+    handleFirebaseOperationError(error, "presenca");
+    return false;
+  }
+}
+
+function runPresenceHeartbeat(force = false) {
+  if (!state.user || accountIsRestricted(state.profile)) return;
+  setPresence(true, { force }).catch(() => {});
 }
 
 function startPresence() {
   touchActivity();
-  setPresence(true);
+  runPresenceHeartbeat(true);
   if (state.presenceTimer) window.clearInterval(state.presenceTimer);
-  state.presenceTimer = window.setInterval(() => setPresence(true), PRESENCE_HEARTBEAT_MS);
+  state.presenceTimer = window.setInterval(() => runPresenceHeartbeat(false), PRESENCE_CHECK_MS);
+  if (state.presenceVisibilityHandler) document.removeEventListener("visibilitychange", state.presenceVisibilityHandler);
+  state.presenceVisibilityHandler = () => {
+    if (!document.hidden) {
+      touchActivity();
+      runPresenceHeartbeat(false);
+    }
+  };
+  document.addEventListener("visibilitychange", state.presenceVisibilityHandler);
   if (state.idleTimer) window.clearInterval(state.idleTimer);
   state.idleTimer = window.setInterval(checkIdleTimeout, 30000);
 }
@@ -2791,7 +2932,7 @@ async function checkIdleTimeout() {
   if (!state.user || state.role === "admin") return;
   if (Date.now() - state.lastActivityAt < IDLE_LIMIT_MS) return;
   toast("Sessão encerrada por inatividade.");
-  await setPresence(false);
+  await setPresence(false, { force: true });
   cleanupListeners();
   if (state.firebaseReady && state.auth?.currentUser) await state.auth.signOut().catch(() => {});
   state.user = null;
@@ -2809,6 +2950,24 @@ async function initFirebase() {
   state.app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
   state.auth = firebase.auth();
   state.db = firebase.firestore();
+  try {
+    state.db.settings({
+      experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true,
+    });
+  } catch (error) {
+    console.warn("Configuração de transporte do Firestore preservada:", error);
+  }
+  try {
+    await state.db.enablePersistence({ synchronizeTabs: true });
+    state.diagnostics.persistence = "multi-tab";
+  } catch (error) {
+    const code = String(error?.code || "");
+    state.diagnostics.persistence = code || "unavailable";
+    if (!code.includes("failed-precondition") && !code.includes("unimplemented")) {
+      console.warn("Persistência local do Firestore não pôde ser ativada:", error);
+    }
+  }
   state.functions = null;
   await state.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
@@ -2822,8 +2981,21 @@ async function initFirebase() {
     }
 
     state.user = user;
-    await ensureUserProfile(user);
-    subscribeCore();
+    try {
+      await ensureUserProfile(user);
+      subscribeCore();
+    } catch (error) {
+      handleFirebaseOperationError(error, "carregamento-do-perfil");
+      console.error(error);
+      toast(firebaseErrorMessage(error));
+      if (state.firestorePaused) {
+        $("#authScreen").hidden = true;
+        $("#appShell").hidden = false;
+        render();
+      } else {
+        showAuth();
+      }
+    }
   });
 }
 
@@ -2894,10 +3066,15 @@ async function seedDefaultsIfNeeded() {
 }
 
 function subscribeDoc(path, id, cb) {
+  if (state.firestorePaused) return () => {};
+  state.diagnostics.listenerStarts += 1;
   const unsub = state.db.collection(path).doc(id).onSnapshot((snap) => {
-    state.diagnostics.documentsRead += 1;
+    state.diagnostics.documentsRead += snap.exists ? 1 : 0;
     cb(snap.exists ? { id: snap.id, ...snap.data() } : null);
-  }, (error) => console.error(`Listener ${path}/${id}:`, error));
+  }, (error) => {
+    handleFirebaseOperationError(error, `listener:${path}/${id}`);
+    console.error(`Listener ${path}/${id}:`, error);
+  });
   state.unsubs.push(unsub);
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + (state.privateUnsub ? 1 : 0);
   return unsub;
@@ -2906,13 +3083,17 @@ function subscribeDoc(path, id, cb) {
 function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsubs) {
   const base = state.db.collection(path);
   const query = queryBuilder ? queryBuilder(base) : base;
+  let initialized = false;
+  state.diagnostics.listenerStarts += 1;
   const unsub = query.onSnapshot(
     (snap) => {
-      state.diagnostics.documentsRead += snap.size;
+      state.diagnostics.documentsRead += initialized ? snap.docChanges().length : snap.size;
+      initialized = true;
       state.syncErrorNotices.delete(path);
       cb(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     },
     (error) => {
+      handleFirebaseOperationError(error, `listener:${path}`);
       console.error(error);
       state.diagnostics.lastSyncError = `${path}: ${String(error?.code || error?.message || "erro")}`.slice(0, 300);
       if (path === "directMessages") {
@@ -2947,10 +3128,15 @@ function routeCollection(path, cb, queryBuilder = null, name = path) {
 }
 
 function routeDocument(path, id, cb, name = `${path}/${id}`) {
+  if (state.firestorePaused) return;
+  state.diagnostics.listenerStarts += 1;
   const unsub = state.db.collection(path).doc(id).onSnapshot((snapshot) => {
     state.diagnostics.documentsRead += snapshot.exists ? 1 : 0;
     cb(snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null);
-  }, (error) => console.error(`Listener ${path}/${id}:`, error));
+  }, (error) => {
+    handleFirebaseOperationError(error, `listener:${path}/${id}`);
+    console.error(`Listener ${path}/${id}:`, error);
+  });
   state.routeUnsubs.push(unsub);
   state.routeSubscriptionNames.push(name);
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
@@ -2983,8 +3169,76 @@ function subscribeOwnRequests() {
     : query.where("uid", "==", state.user.uid).orderBy("createdAt", "desc").limit(20));
 }
 
+function decorateCatalog(collection, items) {
+  const decorated = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
+  state.content[collection] = decorated;
+  if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
+  return decorated;
+}
+
+async function loadCatalogOnce(collection, options = {}) {
+  if (state.demo || !state.db || state.firestorePaused) return state.content[collection] || [];
+  if (!options.force && state.catalogLoaded.has(collection)) return state.content[collection] || [];
+  if (!options.force && state.catalogPromises.has(collection)) return state.catalogPromises.get(collection);
+  const promise = state.db.collection(collection).limit(Number(options.limit || 120)).get()
+    .then((snapshot) => {
+      state.diagnostics.documentsRead += snapshot.size;
+      state.diagnostics.catalogReads += snapshot.size;
+      const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      state.catalogLoaded.add(collection);
+      return decorateCatalog(collection, items);
+    })
+    .catch((error) => {
+      handleFirebaseOperationError(error, `catalog:${collection}`);
+      console.error(`Catálogo ${collection}:`, error);
+      return state.content[collection] || [];
+    })
+    .finally(() => state.catalogPromises.delete(collection));
+  state.catalogPromises.set(collection, promise);
+  return promise;
+}
+
+function requestRouteCatalog(collection, view) {
+  loadCatalogOnce(collection).then(() => {
+    if (state.view === view && !state.firestorePaused) scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: `catalog-cache-${collection}` });
+  });
+}
+
+function selectedAdminContentCollection(tab = state.contentTab) {
+  const groups = {
+    world: ["worldLore", "reputationFactions", "worldEvents", "bestiary", "campaignPosts"],
+    gacha: ["gachaPets", "gachaItems", "gachaShardShops", "towerMaps", "gachaBanners", "marketListings", "auctionListings", "craftingRecipes"],
+    epic: ["wantedBoard", "bestiary", "marketListings", "auctionListings", "craftingRecipes", "techniqueLibrary", "achievements", "seasonPass", "passMissions", "gachaPets", "gachaItems", "gachaShardShops", "towerMaps", "reputationFactions", "worldEvents", "campaignPosts"],
+  };
+  const fallback = tab === "world" ? "worldLore" : tab === "gacha" ? "gachaPets" : "wantedBoard";
+  const allowed = groups[tab] || [];
+  return allowed.includes(state.epicCollection) ? state.epicCollection : fallback;
+}
+
+function adminContentCollections(tab = state.contentTab) {
+  const map = {
+    race: ["races"],
+    class: ["classes"],
+    category: ["affinityCategories", "affinities"],
+    affinity: ["affinityCategories", "affinities"],
+    itemCategory: ["itemCategories", "items"],
+    item: ["itemCategories", "items"],
+    biome: ["biomes"],
+    kingdom: ["kingdoms"],
+    region: ["kingdoms", "regions"],
+    npc: ["npcs"],
+    rules: ["rulesChapters"],
+    faq: ["faqEntries"],
+    tutorial: ["tutorialSteps"],
+  };
+  if (map[tab]) return map[tab];
+  const selected = selectedAdminContentCollection(tab);
+  if (selected === "gachaBanners") return ["gachaPets", "gachaItems", selected];
+  return [selected];
+}
+
 function activateRouteSubscriptions(view = state.view) {
-  if (state.demo || !state.db || !state.user) return;
+  if (state.demo || !state.db || !state.user || state.firestorePaused) return;
   const key = `${state.role}:${state.user.uid}:${view}`;
   if (state.routeSubscriptionKey === key) return;
   clearRouteSubscriptions();
@@ -3105,11 +3359,11 @@ function activateRouteSubscriptions(view = state.view) {
   }
 
   if (view === "admin-content" && state.role === "admin") {
-    CONTENT_COLLECTIONS.forEach((collection) => routeCollection(collection, (items) => {
-      state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
-      if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
-      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query.limit(100)));
+    adminContentCollections().forEach((collection) => routeCollection(collection, (items) => {
+      state.catalogLoaded.add(collection);
+      decorateCatalog(collection, items);
+      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: `admin-content-${collection}` });
+    }, (query) => query.limit(100), `admin-content-${collection}`));
   } else {
     const routeCatalogs = new Set();
     if (["character", "profile", "player-home", "ranking", "admin-users"].includes(view)) ["classes", "races", "affinities", "items"].forEach((entry) => routeCatalogs.add(entry));
@@ -3120,11 +3374,7 @@ function activateRouteSubscriptions(view = state.view) {
     if (view === "help") ["rulesChapters", "faqEntries", "tutorialSteps"].forEach((entry) => routeCatalogs.add(entry));
     if (view === "creations") ["techniqueLibrary", "affinities"].forEach((entry) => routeCatalogs.add(entry));
     if (view === "codex") ["affinityCategories", "affinities", "npcs", "worldLore", "worldEvents", "bestiary", "wantedBoard", "reputationFactions"].forEach((entry) => routeCatalogs.add(entry));
-    routeCatalogs.forEach((collection) => routeCollection(collection, (items) => {
-      state.content[collection] = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
-      if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
-      scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: `catalog-${collection}` });
-    }, (query) => query.limit(120), `catalog-${collection}`));
+    routeCatalogs.forEach((collection) => requestRouteCatalog(collection, view));
   }
 
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
@@ -3330,8 +3580,13 @@ function startCharacterSubscription() {
       return;
     }
     state.character = character;
+    window.dispatchEvent(new CustomEvent("millennium:character", { detail: { uid: state.user.uid, character } }));
     if (state.role !== "admin") state.characters = [character];
-    if (state.role !== "admin" && character.characterName) syncRankingProjection(character).catch((error) => console.warn("Ranking projection deferred:", error));
+    if (state.role !== "admin" && character.characterName) {
+      const projectionHash = stableSerialize(rankingProjection({ ...character, ownerId: character.ownerId || state.user.uid }));
+      if (!state.rankingProjectionHash) state.rankingProjectionHash = projectionHash;
+      else if (state.rankingProjectionHash !== projectionHash) syncRankingProjection(character).catch((error) => console.warn("Ranking projection deferred:", error));
+    }
     scheduleRender({ preserveFocus: true, preserveScroll: true });
   });
 }
@@ -3368,6 +3623,7 @@ function subscribeCore() {
       };
     }
     state.role = state.profile?.role === "admin" ? "admin" : "player";
+    window.dispatchEvent(new CustomEvent("millennium:profile", { detail: { uid: state.user.uid, profile: state.profile, role: state.role } }));
     const blocked = accountIsRestricted(state.profile);
     if (!NAVS[state.role].some((item) => item.id === state.view)) state.view = NAVS[state.role][0].id;
     if (previousRole !== state.role) {
@@ -3378,7 +3634,7 @@ function subscribeCore() {
       clearRouteSubscriptions();
       stopCharacterSubscription();
       stopPresenceTracking();
-      setPresence(false).catch(() => {});
+      setPresence(false, { force: true }).catch(() => {});
     } else if (previousBlocked && !blocked) {
       startCharacterSubscription();
       activateRouteSubscriptions(state.view);
@@ -3496,6 +3752,7 @@ function adminAuditReason(collection, data = {}, customReason = "") {
 }
 
 async function writeDoc(collection, id, data, options = {}) {
+  if (!state.demo) assertFirestoreAvailable();
   if (state.demo) {
     writeDemo(collection, id, data);
     state.diagnostics.writes += 1;
@@ -3528,6 +3785,7 @@ async function writeDoc(collection, id, data, options = {}) {
 }
 
 async function addDoc(collection, data) {
+  if (!state.demo) assertFirestoreAvailable();
   if (state.demo) {
     const id = cryptoRandom();
     writeDemo(collection, id, { id, ...data });
@@ -3541,6 +3799,7 @@ async function addDoc(collection, data) {
 }
 
 async function deleteDoc(collection, id) {
+  if (!state.demo) assertFirestoreAvailable();
   if (!id) return;
   if (state.demo) {
     if (collection === "globalMessages") state.globalMessages = state.globalMessages.filter((item) => item.id !== id);
@@ -3639,7 +3898,9 @@ async function addGlobalMessage(data) {
 async function announceSessionEntry() {
   if (state.sessionAnnounced || !state.user || state.demo) return;
   state.sessionAnnounced = true;
-  const lastAnnouncedAt = timeValue(state.profile?.lastAnnouncedAt);
+  let localLastAnnouncedAt = 0;
+  try { localLastAnnouncedAt = Number(localStorage.getItem(`millennium:join-announced:${state.user.uid}`) || 0); } catch { /* no-op */ }
+  const lastAnnouncedAt = Math.max(timeValue(state.profile?.lastAnnouncedAt), localLastAnnouncedAt);
   if (lastAnnouncedAt && Date.now() - lastAnnouncedAt < JOIN_ANNOUNCE_COOLDOWN_MS) return;
   const character = currentCharacter();
   const title = activeTitle(character);
@@ -3652,7 +3913,7 @@ async function announceSessionEntry() {
       ? `ALERTA: ${ORACLE_LABEL} ${name} entrou na interface.`
       : `${name}${title ? ` (${title.name})` : ""} entrou no servidor.`,
   }).catch(() => {});
-  await writeDoc("users", state.user.uid, { lastAnnouncedAt: state.demo ? new Date().toISOString() : nowValue() }).catch(() => {});
+  try { localStorage.setItem(`millennium:join-announced:${state.user.uid}`, String(Date.now())); } catch { /* no-op */ }
 }
 
 async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
@@ -6731,13 +6992,14 @@ function renderAdminOps() {
         <div class="form-grid"><label><span>Ficha</span><select id="migrationCharacterSelect">${state.characters.map((character) => `<option value="${esc(character.ownerId || character.id)}">${esc(character.characterName || getUserName(character.ownerId || character.id))}</option>`).join("")}</select></label><div class="action-row wide"><button class="primary-button" type="button" data-action="preview-migration">Gerar plano</button>${state.migrationPreview ? `<button class="ghost-button" type="button" data-action="download-migration-preview">Baixar JSON</button>` : ""}</div></div>
         ${state.migrationPreview ? `<div class="diagnostic-chip-row"><span class="tag">${state.migrationPreview.operations.length} operação(ões)</span><span class="tag">origem v${state.migrationPreview.fromVersion}</span><span class="tag">destino v${state.migrationPreview.targetVersion}</span><span class="tag">arrays preservados</span></div><pre class="migration-plan">${esc(JSON.stringify({ plan: state.migrationPreview, rollback: window.MILLENNIUM_BACKEND_31.migrationRollbackPlan(state.migrationPreview) }, null, 2))}</pre>` : ""}
       </article>
-      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Listeners por rota</p><h3>Assinaturas ativas</h3></div><span class="tag">${state.diagnostics.listenerCount} total</span></div><div class="diagnostic-chip-row">${(state.routeSubscriptionNames || []).map((name) => `<span class="tag">${esc(name)}</span>`).join("") || `<span class="muted-text">Nenhuma assinatura de rota ativa.</span>`}${state.privateUnsub ? `<span class="tag">conversa-aberta</span>` : ""}</div></article>
+      <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Listeners por rota</p><h3>Assinaturas ativas</h3></div><span class="tag">${totalActiveListeners()} total</span></div><div class="diagnostic-chip-row">${(state.routeSubscriptionNames || []).map((name) => `<span class="tag">${esc(name)}</span>`).join("") || `<span class="muted-text">Nenhuma assinatura de rota ativa.</span>`}${state.privateUnsub ? `<span class="tag">conversa-aberta</span>` : ""}</div></article>
       <article class="panel span-12 diagnostic-console" aria-labelledby="diagnostic-console-title">
         <div class="panel-heading"><div><p class="eyebrow">Diagnóstico local</p><h3 id="diagnostic-console-title">Estado da Interface</h3></div><div class="action-row"><span class="tag ${diagnostics.online ? "success" : "danger"}">${diagnostics.online ? "Online" : "Offline"}</span><button class="ghost-button" type="button" data-action="download-diagnostics">Baixar diagnóstico</button></div></div>
         <div class="diagnostic-metrics">
           ${renderStat("Build", diagnostics.build)}${renderStat("Commit", diagnostics.commit)}${renderStat("Rota", diagnostics.route)}${renderStat("Service Worker", diagnostics.serviceWorker)}
           ${renderStat("Renders", diagnostics.renders)}${renderStat("Último render", `${diagnostics.lastRenderMs} ms`)}${renderStat("Listeners", diagnostics.listeners)}${renderStat("Foco", diagnostics.focused || "nenhum")}
-          ${renderStat("Leituras observadas", diagnostics.reads)}${renderStat("Escritas observadas", diagnostics.writes)}${renderStat("Imagens carregadas", `${diagnostics.images.loaded}/${diagnostics.images.total}`)}${renderStat("Falhas de imagem", diagnostics.images.failed)}
+          ${renderStat("Leituras observadas", diagnostics.reads)}${renderStat("Escritas observadas", diagnostics.writes)}${renderStat("Listeners iniciados", diagnostics.listenerStarts)}${renderStat("Catálogos em cache", diagnostics.catalogsCached)}
+          ${renderStat("Leituras de catálogo", diagnostics.catalogReads)}${renderStat("Persistência", diagnostics.persistence)}${renderStat("Verificações de segurança", diagnostics.securityVerifications)}${renderStat("Falhas de imagem", diagnostics.images.failed)}
         </div>
         <div class="diagnostic-chip-row">${diagnostics.minigames.map((game) => `<span class="tag">${esc(game.mode)} · ${esc(game.state)} · ${game.timers} timer(s)</span>`).join("") || `<span class="muted-text">Nenhuma sessão de minigame ativa.</span>`}</div>
         <details><summary>Histórico recente de renderização</summary><div class="diagnostic-history">${(state.diagnostics.renderHistory || []).slice(-12).reverse().map((entry) => `<div><span>${esc(entry.route || "rota")}</span><strong>${Number(entry.durationMs || 0)} ms</strong><small>${esc(entry.reason || "render")} · ${esc(entry.focused || "sem foco")} · ${Number(entry.listeners || 0)} listener(s)</small></div>`).join("") || `<p class="muted-text">Nenhum render registrado.</p>`}</div></details>
@@ -8542,12 +8804,28 @@ function rankingProjection(character = currentCharacter()) {
   return projection;
 }
 
+function stableSerialize(value) {
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 async function syncRankingProjection(character = currentCharacter()) {
   const uid = character.ownerId || state.user?.uid;
   if (!uid) return;
   const projection = rankingProjection({ ...character, ownerId: uid });
-  const hash = JSON.stringify(projection);
+  const hash = stableSerialize(projection);
   if (uid === state.user?.uid && state.rankingProjectionHash === hash) return;
+  const existing = state.rankingProfiles.find((entry) => (entry.ownerId || entry.id) === uid);
+  if (existing) {
+    const { id: _id, updatedAt: _updatedAt, ...comparable } = existing;
+    if (stableSerialize(comparable) === hash) {
+      if (uid === state.user?.uid) state.rankingProjectionHash = hash;
+      return;
+    }
+  }
   if (state.demo) {
     state.rankingProfiles = state.rankingProfiles.filter((entry) => entry.id !== uid).concat({ id: uid, ...projection, updatedAt: new Date().toISOString() });
     if (uid === state.user?.uid) state.rankingProjectionHash = hash;
@@ -11610,7 +11888,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.3.1",
+    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.3.3",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -13860,24 +14138,35 @@ function activeMinigameDiagnostics() {
   ].filter(Boolean);
 }
 
+function totalActiveListeners() {
+  return state.diagnostics.listenerCount + Math.max(0, Number(window.MILLENNIUM_SECURITY_ACTIVE_LISTENERS || 0));
+}
+
 function currentDiagnosticSnapshot() {
   const registration = state.serviceWorkerRegistration;
   const serviceWorker = registration?.waiting ? "aguardando atualização" : registration?.active ? "ativo" : registration?.installing ? "instalando" : "indisponível";
-  return POLISH.diagnosticSnapshot({
-    build: MILLENNIUM_BUILD.version,
-    commit: MILLENNIUM_BUILD.commit,
-    route: state.view,
-    listeners: state.diagnostics.listenerCount,
-    renders: state.diagnostics.renders,
-    lastRenderMs: state.diagnostics.lastRenderMs,
-    reads: state.diagnostics.documentsRead,
-    writes: state.diagnostics.writes,
-    focused: state.diagnostics.lastFocusedElement,
-    online: navigator.onLine,
-    serviceWorker,
-    images: [...document.images],
-    minigames: activeMinigameDiagnostics(),
-  });
+  return {
+    ...POLISH.diagnosticSnapshot({
+      build: MILLENNIUM_BUILD.version,
+      commit: MILLENNIUM_BUILD.commit,
+      route: state.view,
+      listeners: totalActiveListeners(),
+      renders: state.diagnostics.renders,
+      lastRenderMs: state.diagnostics.lastRenderMs,
+      reads: state.diagnostics.documentsRead,
+      writes: state.diagnostics.writes,
+      focused: state.diagnostics.lastFocusedElement,
+      online: navigator.onLine,
+      serviceWorker,
+      images: [...document.images],
+      minigames: activeMinigameDiagnostics(),
+    }),
+    listenerStarts: state.diagnostics.listenerStarts,
+    catalogReads: state.diagnostics.catalogReads,
+    catalogsCached: state.catalogLoaded.size,
+    persistence: state.diagnostics.persistence || "não confirmada",
+    securityVerifications: Math.max(0, Number(window.MILLENNIUM_SECURITY_VERIFICATIONS || 0)),
+  };
 }
 
 function openReportModal() {
@@ -14040,7 +14329,7 @@ function wireEvents() {
       if (action === "demo-player") enterDemo("player");
       if (action === "demo-admin") enterDemo("admin");
       if (action === "logout") {
-        await setPresence(false);
+        await setPresence(false, { force: true });
         cleanupListeners();
         if (state.firebaseReady && state.auth?.currentUser) await state.auth.signOut();
         state.user = null;
@@ -14200,6 +14489,10 @@ function wireEvents() {
       if (action === "admin-clear-activity") await adminClearActivity(button.dataset.userId, button.dataset.activityId);
       if (action === "content-tab") {
         state.contentTab = button.dataset.tab;
+        if (state.view === "admin-content") {
+          state.routeSubscriptionKey = "";
+          activateRouteSubscriptions(state.view);
+        }
         render();
       }
       if (action === "profile-tab") {
@@ -14228,6 +14521,10 @@ function wireEvents() {
       }
       if (action === "epic-collection") {
         state.epicCollection = button.dataset.collection;
+        if (state.view === "admin-content") {
+          state.routeSubscriptionKey = "";
+          activateRouteSubscriptions(state.view);
+        }
         render();
       }
       if (action === "edit-content") openContentEdit(button.dataset.collection, button.dataset.id);
@@ -14308,6 +14605,7 @@ function wireEvents() {
       if (action === "accept-creation-proposal") await respondCreationProposal(button.dataset.requestId, "accepted");
       if (action === "contest-creation-proposal") await respondCreationProposal(button.dataset.requestId, "contested");
     } catch (error) {
+      handleFirebaseOperationError(error, `formulario:${type || "desconhecido"}`);
       console.error(error);
       toast(firebaseErrorMessage(error));
     }
@@ -14396,6 +14694,10 @@ function wireEvents() {
     const form = event.target.closest("form");
     if (!form?.dataset.form) return;
     event.preventDefault();
+    if (form.dataset.submitting === "true") return;
+    form.dataset.submitting = "true";
+    const submitControls = [...form.querySelectorAll('button[type="submit"], input[type="submit"]')];
+    submitControls.forEach((control) => { control.disabled = true; });
 
     try {
       const type = form.dataset.form;
@@ -14593,6 +14895,9 @@ function wireEvents() {
     } catch (error) {
       console.error(error);
       toast(firebaseErrorMessage(error));
+    } finally {
+      form.dataset.submitting = "false";
+      submitControls.forEach((control) => { if (control.isConnected) control.disabled = false; });
     }
   });
 }
@@ -14616,6 +14921,6 @@ window.addEventListener("beforeunload", () => {
   }
   if (state.gachaRotationTimer) window.clearInterval(state.gachaRotationTimer);
   stopActiveSealRitual("page-unload");
-  setPresence(false);
+  releasePresenceLease();
 });
 initFirebase();
