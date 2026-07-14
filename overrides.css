@@ -386,9 +386,9 @@
 .fragment-wallet span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .fragment-wallet strong { color: #f1d27c; font-size: 18px; }
 .fragment-offer-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 12px; }
-.shard-offer { display: flex; flex-direction: column; gap: 8px; min-height: 250px; }
+.shard-offer { display: grid; grid-template-rows: auto auto auto 1fr auto auto; align-content: start; gap: 8px; min-height: 250px; }
 .shard-offer .content-image { height: 112px; object-fit: cover; }
-.shard-offer > button { width: 100%; margin-top: auto; }
+.shard-offer > button { justify-self: start; width: 10.5rem; max-width: 100%; margin-top: auto; }
 .shard-balance-line { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
 .shard-balance-line b { color: var(--text); }
 .shard-progress { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.07); }

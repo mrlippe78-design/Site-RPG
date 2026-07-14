@@ -839,6 +839,7 @@ const state = {
   rankingProfiles: [],
   rankingProjectionHash: "",
   publicProfiles: [],
+  publicProfileRequests: new Set(),
   character: null,
   characterLore: null,
   weeklyMissions: [],
@@ -949,6 +950,10 @@ const state = {
   updateDraftRestored: false,
   updateDraftRouteApplied: false,
 };
+
+function dataEconomyEnabled() {
+  return state.profile?.dataEconomy !== false;
+}
 
 const NAV_GROUPS = {
   player: [
@@ -3463,6 +3468,7 @@ async function ensureUserProfile(user) {
     email: user.email,
     displayName: user.email?.split("@")[0] || "Player",
     role: "player",
+    dataEconomy: true,
     accountStatus: "active",
     restrictionReason: "",
     suspendedUntil: null,
@@ -3557,8 +3563,7 @@ function clearRouteSubscriptions() {
 }
 
 function routeCollection(path, cb, queryBuilder = null, name = path) {
-  const useEconomySnapshot = state.role !== "admin"
-    && Boolean(state.profile?.dataEconomy)
+  const useEconomySnapshot = dataEconomyEnabled()
     && !["globalMessages", "conversations", "directMessages", "guildMessages"].includes(path);
   if (useEconomySnapshot) {
     const routeKey = state.routeSubscriptionKey;
@@ -3587,7 +3592,7 @@ function routeCollection(path, cb, queryBuilder = null, name = path) {
 
 function routeDocument(path, id, cb, name = `${path}/${id}`) {
   if (state.firestorePaused) return;
-  if (state.role !== "admin" && state.profile?.dataEconomy) {
+  if (dataEconomyEnabled()) {
     const routeKey = state.routeSubscriptionKey;
     const cacheKey = `${state.user?.uid || "anonymous"}:${name}`;
     state.routeSubscriptionNames.push(`${name}:once`);
@@ -3624,7 +3629,7 @@ function subscribeUserDirectory() {
     routeCollection("users", (users) => {
       state.users = users;
       scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query.limit(500));
+    }, (query) => query.limit(100));
   } else {
     state.users = state.profile ? [{ id: state.user.uid, ...state.profile }] : [];
   }
@@ -3634,7 +3639,32 @@ function subscribeUserDirectory() {
       state.users = profiles.map((profile) => ({ id: profile.ownerId || profile.id, displayName: profile.player || profile.name || "Player", publicOnly: true }));
     }
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
-  }, (query) => state.role === "admin" ? query.limit(500) : query.where("privacy", "==", "public").limit(500));
+  }, (query) => state.role === "admin" ? query.limit(100) : query.where("privacy", "==", "public").limit(60));
+}
+
+async function loadRankingPodiumProfiles(profiles = []) {
+  if (state.demo || !state.db || state.firestorePaused) return;
+  const ids = [...new Set(profiles.slice(0, 3).map((profile) => profile.ownerId || profile.id).filter(Boolean))];
+  const pending = ids.filter((uid) => !state.publicProfiles.some((profile) => profile.id === uid || profile.ownerId === uid) && !state.publicProfileRequests.has(uid));
+  if (!pending.length) return;
+  pending.forEach((uid) => state.publicProfileRequests.add(uid));
+  const loaded = await Promise.all(pending.map(async (uid) => {
+    try {
+      const snapshot = await state.db.collection("publicProfiles").doc(uid).get();
+      state.diagnostics.documentsRead += 1;
+      return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
+    } catch (error) {
+      // Perfis privados podem negar a leitura; o ranking continua com o placeholder local.
+      return null;
+    }
+  }));
+  const additions = loaded.filter(Boolean);
+  if (!additions.length) return;
+  const loadedIds = new Set(additions.map((profile) => profile.id || profile.ownerId));
+  state.publicProfiles = state.publicProfiles.filter((profile) => !loadedIds.has(profile.id || profile.ownerId)).concat(additions);
+  if (["player-home", "profile", "ranking", "hall"].includes(state.view)) {
+    scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true, reason: "ranking-portraits" });
+  }
 }
 
 function subscribeOwnRequests() {
@@ -3716,19 +3746,19 @@ function adminContentCollections(tab = state.contentTab) {
 
 function activateRouteSubscriptions(view = state.view) {
   if (state.demo || !state.db || !state.user || state.firestorePaused) return;
-  const key = `${state.role}:${state.user.uid}:${view}:${state.profile?.dataEconomy ? "economy" : "live"}`;
+  const key = `${state.role}:${state.user.uid}:${view}:${dataEconomyEnabled() ? "economy" : "live"}`;
   if (state.routeSubscriptionKey === key) return;
   clearRouteSubscriptions();
   state.routeSubscriptionKey = key;
 
-  const needsDirectory = ["player-home", "profile", "chat", "guild", "ranking", "hall", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports", "admin-settings"].includes(view);
+  const needsDirectory = ["chat", "guild", "reports", "admin-home", "admin-users", "admin-chat", "admin-mail", "admin-ops", "admin-reports", "admin-settings"].includes(view);
   if (needsDirectory) subscribeUserDirectory();
 
   if (["admin-home", "admin-users", "admin-requests", "admin-ops", "admin-settings", "ranking"].includes(view) && state.role === "admin") {
     routeCollection("characters", (characters) => {
       state.characters = characters;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query.limit(250));
+    }, (query) => query.limit(100));
     routeCollection("accountDeletionQueue", (entries) => {
       state.accountDeletionQueueEntries = entries;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
@@ -3738,8 +3768,9 @@ function activateRouteSubscriptions(view = state.view) {
   if (["player-home", "profile", "ranking", "hall"].includes(view)) {
     routeCollection("rankings", (profiles) => {
       state.rankingProfiles = profiles;
+      loadRankingPodiumProfiles(profiles).catch((error) => console.warn("Retratos do pódio adiados:", error));
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true, reason: "ranking-live" });
-    }, (query) => query.orderBy("eligible", "desc"), "ranking-projections");
+    }, (query) => query.orderBy("eligible", "desc").limit(view === "player-home" ? 20 : 100), `ranking-projections-${view === "player-home" ? "home" : "full"}`);
   }
 
   if (["player-home", "missions", "guild", "admin-home", "admin-missions"].includes(view)) {
@@ -3784,11 +3815,11 @@ function activateRouteSubscriptions(view = state.view) {
     }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30));
   }
 
-  if (["player-home", "guild", "market", "ranking", "hall", "admin-home", "admin-ops"].includes(view)) {
+  if (["guild", "market", "admin-home", "admin-ops"].includes(view)) {
     routeCollection("guilds", (guilds) => {
       state.guilds = guilds;
       scheduleRender({ route: view, preserveFocus: true, preserveScroll: true });
-    }, (query) => query);
+    }, (query) => query.limit(60));
   }
 
   if (["guild", "admin-chat"].includes(view)) {
@@ -3843,9 +3874,12 @@ function activateRouteSubscriptions(view = state.view) {
     }, (query) => query.limit(100), `admin-content-${collection}`));
   } else {
     const routeCatalogs = new Set();
-    if (["character", "profile", "player-home", "ranking", "admin-users"].includes(view)) ["classes", "races", "affinities", "items"].forEach((entry) => routeCatalogs.add(entry));
+    if (["character", "profile"].includes(view)) ["classes", "races", "affinities", "items"].forEach((entry) => routeCatalogs.add(entry));
     if (["character", "character-life", "cultures", "professions", "codex"].includes(view)) ["classes", "races", "kingdoms", "regions", "biomes"].forEach((entry) => routeCatalogs.add(entry));
-    if (["gacha", "minigames", "inventory", "admin-economy"].includes(view)) ["gachaPets", "gachaItems", "gachaBanners", "biomes", "towerMaps", "items"].forEach((entry) => routeCatalogs.add(entry));
+    if (view === "gacha") ["gachaPets", "gachaItems", "gachaBanners", "items"].forEach((entry) => routeCatalogs.add(entry));
+    if (view === "minigames") ["towerMaps", "biomes"].forEach((entry) => routeCatalogs.add(entry));
+    if (view === "inventory") ["gachaPets", "gachaItems", "items"].forEach((entry) => routeCatalogs.add(entry));
+    if (view === "admin-economy") ["gachaPets", "gachaItems", "gachaBanners", "biomes", "towerMaps", "items"].forEach((entry) => routeCatalogs.add(entry));
     if (view === "market") ["marketListings", "auctionListings", "craftingRecipes", "items"].forEach((entry) => routeCatalogs.add(entry));
     if (view === "pass") ["seasonPass", "passMissions"].forEach((entry) => routeCatalogs.add(entry));
     if (view === "help") ["rulesChapters", "faqEntries", "tutorialSteps"].forEach((entry) => routeCatalogs.add(entry));
@@ -4586,7 +4620,7 @@ function applyThemeClasses(settings = state.settings) {
   document.body.dataset.themeAnimation = state.profile?.interfaceAnimations || settings.seasonThemeAnimation || theme.animation || "normal";
   document.body.dataset.themeMenuEffect = settings.seasonThemeMenuEffect || theme.menuEffect || "mist";
   document.body.dataset.interfaceContrast = state.profile?.interfaceContrast || "normal";
-  document.body.dataset.dataEconomy = state.profile?.dataEconomy ? "on" : "off";
+  document.body.dataset.dataEconomy = dataEconomyEnabled() ? "on" : "off";
   document.documentElement.style.setProperty("--season-primary", theme.palette.primary);
   document.documentElement.style.setProperty("--season-secondary", theme.palette.secondary);
   document.documentElement.style.setProperty("--season-accent", theme.palette.accent);
@@ -7059,7 +7093,7 @@ function renderMinigames() {
     ${renderJukebox()}
     <article class="panel span-4 leisure-card"><p class="eyebrow">Coleção</p><h3>Galeria</h3><p>Revisite mapas, títulos e artes que você já descobriu.</p><button class="ghost-button" type="button" data-nav="codex">Abrir galeria</button></article>
     <article class="panel span-4 leisure-card"><p class="eyebrow">Registros</p><h3>Estatísticas pessoais</h3><p>${Object.values(character.minigameStats || {}).reduce((sum, item) => sum + Number(item.plays || 0), 0)} partidas registradas nesta conta.</p><button class="ghost-button" type="button" data-nav="ranking">Ver recordes</button></article>
-    <article class="panel span-12"><p class="eyebrow">Preferências</p><h3>Minha Interface</h3><form class="form-grid" data-form="interface-preferences"><label><span>Aparência</span><select name="themePreference"><option value="season" ${state.profile?.themePreference !== "standard" ? "selected" : ""}>Usar aparência da temporada</option><option value="standard" ${state.profile?.themePreference === "standard" ? "selected" : ""}>Usar aparência padrão</option></select></label><label><span>Animações</span><select name="interfaceAnimations"><option value="normal" ${state.profile?.interfaceAnimations !== "reduced" && state.profile?.interfaceAnimations !== "none" ? "selected" : ""}>Normal</option><option value="reduced" ${state.profile?.interfaceAnimations === "reduced" ? "selected" : ""}>Reduzidas</option><option value="none" ${state.profile?.interfaceAnimations === "none" ? "selected" : ""}>Desligadas</option></select></label><label><span>Contraste</span><select name="interfaceContrast"><option value="normal">Normal</option><option value="high" ${state.profile?.interfaceContrast === "high" ? "selected" : ""}>Alto</option></select></label><label><span>Economia de dados</span><select name="dataEconomy"><option value="false">Desligada</option><option value="true" ${state.profile?.dataEconomy ? "selected" : ""}>Ligada</option></select></label><button class="primary-button" type="submit">Salvar preferências</button></form></article>`;
+    <article class="panel span-12"><p class="eyebrow">Preferências</p><h3>Minha Interface</h3><form class="form-grid" data-form="interface-preferences"><label><span>Aparência</span><select name="themePreference"><option value="season" ${state.profile?.themePreference !== "standard" ? "selected" : ""}>Usar aparência da temporada</option><option value="standard" ${state.profile?.themePreference === "standard" ? "selected" : ""}>Usar aparência padrão</option></select></label><label><span>Animações</span><select name="interfaceAnimations"><option value="normal" ${state.profile?.interfaceAnimations !== "reduced" && state.profile?.interfaceAnimations !== "none" ? "selected" : ""}>Normal</option><option value="reduced" ${state.profile?.interfaceAnimations === "reduced" ? "selected" : ""}>Reduzidas</option><option value="none" ${state.profile?.interfaceAnimations === "none" ? "selected" : ""}>Desligadas</option></select></label><label><span>Contraste</span><select name="interfaceContrast"><option value="normal">Normal</option><option value="high" ${state.profile?.interfaceContrast === "high" ? "selected" : ""}>Alto</option></select></label><label><span>Economia de leituras</span><select name="dataEconomy"><option value="true" ${dataEconomyEnabled() ? "selected" : ""}>Ligada (recomendado)</option><option value="false" ${dataEconomyEnabled() ? "" : "selected"}>Desligada</option></select></label><button class="primary-button" type="submit">Salvar preferências</button></form></article>`;
   return `
     <div class="grid minigame-view">
       <article class="panel span-12 minigame-hero">
@@ -7082,10 +7116,10 @@ function renderMinigames() {
       ${renderMinigameEventStrip()}
       ${tabs}
       ${tab === "quick" ? quickGames : tab === "challenges" ? challenges : recreation}
-      <article class="panel span-5 ${tab === "challenges" ? "" : "span-12"}">
+      <article class="panel ${tab === "challenges" ? "span-5" : "span-12"}">
         <div class="panel-heading"><div><p class="eyebrow">Recompensas leves</p><h3>Loja recreativa</h3></div></div>
         ${renderFragmentWallet(character)}
-        <div class="shop-list">
+        <div class="shop-list shard-offer-grid">
           ${(state.content.gachaShardShops || []).map((item) => renderShardOffer(item, character)).join("") || `<div class="empty-state">Nenhuma loja publicada.</div>`}
         </div>
       </article>
@@ -7285,7 +7319,9 @@ function rankingDisplayDetail(row = {}, tab = "prestige") {
 function rankingPortraitMarkup(row = {}, options = {}) {
   const character = row.character || {};
   const name = rankingDisplayName(row);
-  const source = character.avatarUrl || placeholderAvatar();
+  const uid = row.uid || character.ownerId || row.ownerId || "";
+  const publicProfile = state.publicProfiles.find((profile) => profile.id === uid || profile.ownerId === uid);
+  const source = character.avatarUrl || row.avatarUrl || publicProfile?.avatar || placeholderAvatar();
   const place = Number(options.place || 0);
   return `
     <span class="ranking-portrait ${place ? `ranking-portrait--${place}` : ""}">

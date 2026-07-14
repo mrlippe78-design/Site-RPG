@@ -2598,7 +2598,7 @@ label span,
 }
 
 .news-ticker p {
-  width: max-content;
+  width: 10.5rem;
   min-width: 100%;
   margin: 0;
   color: var(--text);
@@ -5051,5 +5051,150 @@ body.season-theme-void::after {
   .diagnostic-inline {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* Ajustes compactos de ranking, minigames e lojas de fragmentos — 3.6.4 */
+.minigame-hero {
+  align-items: start;
+}
+
+.minigame-hero .compact-stat-grid {
+  align-self: start;
+  height: max-content;
+}
+
+.minigame-hero .compact-stat-grid .stat {
+  align-self: start;
+  min-height: 5.25rem;
+  padding: .8rem .9rem;
+}
+
+.ranking-podium-card {
+  align-content: start;
+  min-height: 18rem;
+}
+
+.ranking-podium-card--1 {
+  min-height: 20rem;
+}
+
+.ranking-podium-card .ranking-portrait {
+  width: clamp(5.5rem, 8vw, 7rem);
+}
+
+.ranking-podium-card--1 .ranking-portrait {
+  width: clamp(6.5rem, 9vw, 8rem);
+}
+
+.fragment-wallet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: .65rem;
+  margin-bottom: .85rem;
+}
+
+.fragment-wallet > div {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  align-items: center;
+  min-width: 0;
+  padding: .65rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  background: rgba(255, 255, 255, .035);
+}
+
+.fragment-wallet span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fragment-wallet strong {
+  flex: 0 0 auto;
+  color: var(--gold-2);
+}
+
+.shard-offer-grid,
+.fragment-offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: .75rem;
+  align-items: stretch;
+}
+
+.shard-offer {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  gap: .5rem;
+  align-content: start;
+  min-width: 0;
+  padding: .9rem;
+}
+
+.shard-offer > span,
+.shard-offer > strong,
+.shard-offer > p {
+  position: relative;
+  z-index: 1;
+}
+
+.shard-balance-line {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: .7rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.shard-progress {
+  position: relative;
+  z-index: 1;
+  height: .38rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.shard-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--blue));
+}
+
+.shard-offer > button {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
+  min-width: 8.5rem;
+  min-height: 2.45rem;
+  padding: .5rem .8rem;
+}
+
+@media (max-width: 760px) {
+  .minigame-hero .compact-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ranking-podium-card,
+  .ranking-podium-card--1 {
+    min-height: 0;
+  }
+
+  .shard-offer-grid,
+  .fragment-offer-grid {
+    grid-template-columns: 1fr;
   }
 }
