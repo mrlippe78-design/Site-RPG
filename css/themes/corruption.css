@@ -1,0 +1,13 @@
+/* Tema contextual de corrupção. Vermelho continua reservado a perigo. */
+body.season-theme-corruption,
+body.theme-corruption,
+.corruption-theme {
+  --color-bg-canvas: #0b0911;
+  --color-bg-surface: #171224;
+  --color-bg-elevated: #211936;
+  --color-border-subtle: rgb(141 107 232 / 24%);
+  --color-border-strong: rgb(141 107 232 / 54%);
+  --color-accent-interface: #a68af0;
+  --color-corruption: #8d6be8;
+  --shadow-interface: 0 0 40px rgb(141 107 232 / 18%);
+}

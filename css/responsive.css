@@ -1,0 +1,22 @@
+@layer millennium.responsive {
+  .only-mobile { display: none; }
+  .safe-area-bottom { padding-block-end: max(var(--space-4), env(safe-area-inset-bottom)); }
+
+  @media (max-width: 64rem) {
+    .ds-grid { --grid-columns: 8; }
+    .hide-notebook { display: none !important; }
+  }
+
+  @media (max-width: 47.5rem) {
+    :root { --layout-topbar-min-height: 4.5rem; }
+    .ds-container { inline-size: min(100% - (2 * var(--space-3)), var(--layout-content-max)); }
+    .ds-grid { --grid-columns: 4; --grid-gap: var(--space-3); }
+    .only-mobile { display: revert; }
+    .hide-mobile { display: none !important; }
+    .mobile-full { inline-size: 100% !important; }
+  }
+
+  @media (max-width: 24.375rem) {
+    .ds-container { inline-size: min(100% - (2 * var(--space-2)), var(--layout-content-max)); }
+  }
+}

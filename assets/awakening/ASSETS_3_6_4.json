@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "license": "Original procedural artwork created for Millennium RPG; no third-party copyrighted source used.",
+  "policy": {
+    "desktopBanner": "16:9",
+    "mobileHero": "3:4",
+    "thumbnail": "4:3",
+    "sigil": "1:1"
+  },
+  "assets": [
+    {
+      "file": "aurora-despertos-hero-16x9.webp",
+      "width": 1600,
+      "height": 900,
+      "sha256": "b0b2d878b3d37b78e09cdb15c65828d6ed4f1110fb71954a09b2314275d3665a",
+      "bytes": 15998
+    },
+    {
+      "file": "aurora-despertos-hero-mobile.webp",
+      "width": 720,
+      "height": 960,
+      "sha256": "bcb96af6c2be6b8916a1906214598c86f886d01818ddb0116c8203570f1f209a",
+      "bytes": 9290
+    },
+    {
+      "file": "aurora-despertos-thumb.webp",
+      "width": 400,
+      "height": 300,
+      "sha256": "a28a8f45330827efa16392d43eb76d1c674614d5ee95b09b84014c69ad113a1d",
+      "bytes": 2380
+    },
+    {
+      "file": "sigilo-primeiro-despertar.svg",
+      "width": 512,
+      "height": 512,
+      "sha256": "1abb74be159654f5ec03745897a7da793e4b89e4a74fef5973c67e29f461a203",
+      "bytes": 1649
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "lesma-ferro",
+  "name": "Lesma de Ferro",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      105,
+      125,
+      141
+    ],
+    [
+      206,
+      218,
+      224
+    ]
+  ],
+  "shinyPalette": [
+    [
+      206,
+      218,
+      224
+    ],
+    [
+      175,
+      170,
+      231
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

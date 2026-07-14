@@ -1,25 +1,25 @@
-/* Millennium build 3.2.1 */
+/* Millennium 3.6.4 — folha legada em migração para o design system. */
 :root {
   color-scheme: dark;
-  --bg: #10100f;
-  --panel: #191817;
-  --panel-2: #22201d;
-  --line: rgba(232, 213, 169, 0.16);
-  --text: #f4efe3;
-  --muted: #b9ad97;
-  --gold: #d8b45d;
-  --gold-2: #f3cf7a;
-  --red: #b84a3c;
-  --green: #4ca77b;
-  --blue: #5b90ca;
-  --violet: #8f76c9;
-  --shadow: 0 20px 55px rgba(0, 0, 0, 0.36);
-  --radius-lg: 22px;
-  --radius: 16px;
-  --radius-sm: 11px;
-  --font-body: "Alegreya", Georgia, "Times New Roman", serif;
-  --font-title: "Cinzel", "IM Fell English SC", Georgia, serif;
-  --font-runic: "IM Fell English SC", "Cinzel", Georgia, serif;
+  --bg: var(--color-bg-canvas, #090b10);
+  --panel: var(--color-bg-surface, #111b2e);
+  --panel-2: var(--color-bg-elevated, #18243a);
+  --line: var(--color-border-subtle, rgba(158, 168, 184, 0.18));
+  --text: var(--color-text-primary, #f3f0e8);
+  --muted: var(--color-text-secondary, #9ea8b8);
+  --gold: var(--color-accent-hero, #e6b84d);
+  --gold-2: var(--palette-aurora-300, #f1d58b);
+  --red: var(--color-danger, #d85c60);
+  --green: var(--color-success, #54b987);
+  --blue: var(--color-accent-interface, #59c7ff);
+  --violet: var(--color-corruption, #8d6be8);
+  --shadow: var(--shadow-md, 0 18px 45px rgba(0, 0, 0, 0.32));
+  --radius-lg: 18px;
+  --radius: var(--radius-md, 14px);
+  --radius-sm: 10px;
+  --font-body: var(--font-family-body, "Alegreya", Georgia, "Times New Roman", serif);
+  --font-title: var(--font-family-display, "Cinzel", "IM Fell English SC", Georgia, serif);
+  --font-runic: var(--font-family-runic, "IM Fell English SC", "Cinzel", Georgia, serif);
   font-family: var(--font-body);
 }
 

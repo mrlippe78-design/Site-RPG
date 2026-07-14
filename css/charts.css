@@ -1,0 +1,22 @@
+@layer millennium.charts {
+  .chart-shell {
+    --chart-grid: rgb(158 168 184 / 22%);
+    --chart-primary: var(--color-accent-interface);
+    --chart-secondary: var(--color-accent-hero);
+    position: relative;
+    min-inline-size: 0;
+    color: var(--color-text-primary);
+  }
+  .chart-shell svg { inline-size: 100%; block-size: auto; overflow: visible; }
+  .chart-grid-line { stroke: var(--chart-grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .chart-axis-label { fill: var(--color-text-secondary); font: 700 0.75rem var(--font-family-body); }
+  .chart-series-primary { fill: rgb(89 199 255 / 16%); stroke: var(--chart-primary); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .chart-series-secondary { fill: none; stroke: var(--chart-secondary); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .progress-ring { --progress: 0; --ring-size: 7rem; inline-size: var(--ring-size); aspect-ratio: 1; border-radius: 50%; background: conic-gradient(var(--color-accent-interface) calc(var(--progress) * 1%), var(--color-bg-elevated) 0); display: grid; place-items: center; }
+  .progress-ring::before { content: ""; inline-size: 74%; aspect-ratio: 1; border-radius: inherit; background: var(--color-bg-surface); }
+  .composition-bar { display: flex; overflow: hidden; block-size: 0.75rem; border-radius: var(--radius-pill); background: var(--color-bg-elevated); }
+  .composition-bar > * { flex-basis: calc(var(--value, 0) * 1%); min-inline-size: 0; background: var(--segment-color, var(--color-accent-interface)); }
+  .chart-data-table { inline-size: 100%; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+  .chart-data-table th, .chart-data-table td { padding: var(--space-2) var(--space-3); border-block-end: 1px solid var(--color-border-subtle); text-align: start; }
+  .chart-data-table td:last-child { color: var(--color-text-primary); text-align: end; font-variant-numeric: tabular-nums; }
+}

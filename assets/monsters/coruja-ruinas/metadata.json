@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "coruja-ruinas",
+  "name": "Coruja das Ruínas",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      65,
+      104,
+      147
+    ],
+    [
+      142,
+      224,
+      230
+    ]
+  ],
+  "shinyPalette": [
+    [
+      142,
+      224,
+      230
+    ],
+    [
+      135,
+      149,
+      237
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

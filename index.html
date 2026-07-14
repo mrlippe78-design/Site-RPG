@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#16120d" />
-    <meta name="millennium-build" content="3.6.3.3" />
+    <meta name="theme-color" content="#090B10" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="millennium-build" content="3.6.4" />
     <meta name="millennium-commit" content="dev" />
     <title>Millennium RPG</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -14,73 +15,125 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800&family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="overrides.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="journey.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="backend.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="polish.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="world-alive.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="account-management.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="echoes.css?v=3.6.3.3" />
-  <link rel="stylesheet" href="security.css?v=3.6.3.3" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800&family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&display=swap" as="style" />
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800&family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800&family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet" /></noscript>
+  <link rel="stylesheet" href="styles.css?v=3.6.4" />
+  <link rel="stylesheet" href="overrides.css?v=3.6.4" />
+  <link rel="stylesheet" href="journey.css?v=3.6.4" />
+  <link rel="stylesheet" href="backend.css?v=3.6.4" />
+  <link rel="stylesheet" href="polish.css?v=3.6.4" />
+  <link rel="stylesheet" href="world-alive.css?v=3.6.4" />
+  <link rel="stylesheet" href="account-management.css?v=3.6.4" />
+  <link rel="stylesheet" href="echoes.css?v=3.6.4" />
+  <link rel="stylesheet" href="security.css?v=3.6.4" />
+  <!-- Design System 3.6.4: camada progressiva após os estilos legados. -->
+  <link rel="stylesheet" href="css/tokens.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/reset.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/typography.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/layout.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/components.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/charts.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/responsive.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/accessibility.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/themes/awakening.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/themes/oracle.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/themes/corruption.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/shell.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/auth-awakening.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/home-center.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/profile-hero.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/oracle-console.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/ranking-hero.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/secondary-modules.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/assets.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/performance.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/monsters.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/monster-economy.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/monster-modes.css?v=3.6.4" />
+  <link rel="stylesheet" href="css/minigames-vivid.css?v=3.6.4" />
   </head>
   <body>
-    <a class="skip-link" href="#mainContent">Pular para o conteúdo principal</a>
+    <a class="skip-link" id="skipLink" href="#authMain">Pular para o formulário de acesso</a>
+    <p class="sr-only" id="routeAnnouncement" role="status" aria-live="polite" aria-atomic="true"></p>
     <div class="music-control" id="musicControl">
       <button class="music-float" id="musicToggle" type="button" data-action="toggle-music" aria-label="Ativar música ambiente" title="Música ambiente">♪</button>
       <label class="music-volume" for="musicVolume"><span>Volume</span><input id="musicVolume" data-action="music-volume" type="range" min="0" max="100" value="16" aria-label="Volume da música ambiente" /></label>
     </div>
-    <section class="auth-screen" id="authScreen">
-      <div class="auth-art" aria-label="Portal do Primeiro Despertar">
+    <section class="auth-screen" id="authScreen" aria-labelledby="authTitle">
+      <div class="auth-art">
+        <picture class="auth-hero-media">
+          <source id="authHeroMobileSource" media="(max-width: 47.5rem)" srcset="assets/awakening/aurora-despertos-hero-mobile.webp" width="900" height="1200" />
+          <img id="authHeroImage" src="assets/awakening/aurora-despertos-hero-16x9.webp" width="1600" height="900" alt="Uma figura desperta diante de um portal azul e dourado que rasga a noite de Millennium." loading="eager" fetchpriority="high" decoding="async" sizes="100vw" />
+        </picture>
+        <div class="auth-aurora" aria-hidden="true"></div>
         <div class="auth-runes" aria-hidden="true"></div>
         <div class="auth-portal-shade" aria-hidden="true"></div>
         <div class="brand big auth-brand">
-          <div class="brand-mark">M</div>
+          <div class="brand-mark" aria-hidden="true">M</div>
           <div>
             <p>Millennium</p>
             <span>Interface do Oráculo</span>
           </div>
         </div>
         <div class="auth-copy">
-          <span class="season-chip">Millennium 3.6.3.3 · Edição Gratuita</span>
+          <span class="season-chip">Millennium 3.6.4 · Aurora dos Despertos</span>
           <p class="auth-kicker">Você morreu. A porta não se fechou.</p>
-          <h1>Uma janela ainda espera por você.</h1>
-          <p>Do outro lado, Millennium observa. Entre quando estiver pronto para escrever o que restou do seu destino.</p>
+          <h1 id="authTitle">Despertar dos Heróis</h1>
+          <p>Uma ruptura atravessou a escuridão. Do outro lado, a Interface registra os que ainda possuem uma história capaz de alterar Millennium.</p>
+          <dl class="auth-world-signals" aria-label="Sinais da temporada">
+            <div><dt>Temporada</dt><dd>I · Primeiro Amanhecer</dd></div>
+            <div><dt>Estado</dt><dd>Interface ativa</dd></div>
+            <div><dt>Chamado</dt><dd>Heróis despertando</dd></div>
+          </dl>
         </div>
-        <p class="auth-whisper">A terra sagrada dos deuses não pede permissão.</p>
+        <p class="auth-whisper">A terra dos deuses não pede permissão. Ela registra sua resposta.</p>
       </div>
 
-      <div class="auth-card">
-        <p class="eyebrow">Portal de acesso</p>
-        <h2>Desperte em Millennium.</h2>
-        <p class="auth-card-copy">Sua ficha permanece sob o olhar do Oráculo.</p>
-        <form class="form-stack" data-form="login">
-          <label>
-            <span>Email</span>
-            <input name="email" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span>Senha</span>
-            <input name="password" type="password" autocomplete="current-password" required />
-          </label>
-          <div class="split-actions">
-            <button class="primary-button" type="submit">Entrar</button>
-            <button class="ghost-button" type="button" data-action="register">Criar conta</button>
+      <div class="auth-access-column" id="authMain" role="main" tabindex="-1">
+        <div class="auth-card" aria-labelledby="authAccessTitle">
+          <div class="auth-sigil" aria-hidden="true"><img src="assets/awakening/sigilo-primeiro-despertar.svg" width="512" height="512" alt="" loading="lazy" decoding="async" /></div>
+          <p class="eyebrow">Portal de acesso</p>
+          <h2 id="authAccessTitle">A Interface reconhece seu eco.</h2>
+          <p class="auth-card-copy" id="authCardCopy">Entre com seu registro existente ou crie uma nova conta sem alterar o processo original de autenticação.</p>
+          <form class="form-stack auth-form" data-form="login" aria-describedby="authCardCopy authNote">
+            <label class="auth-field">
+              <span>Email do registro</span>
+              <input name="email" type="email" autocomplete="email" inputmode="email" placeholder="seuemail@exemplo.com" required />
+            </label>
+            <label class="auth-field">
+              <span>Senha</span>
+              <input name="password" type="password" autocomplete="current-password" minlength="6" placeholder="Sua chave de acesso" required />
+            </label>
+            <div class="auth-actions">
+              <button class="primary-button auth-submit" type="submit"><span>Entrar na Interface</span><i aria-hidden="true">→</i></button>
+              <button class="ghost-button" type="button" data-action="register">Criar conta</button>
+            </div>
+            <button class="auth-text-action" type="button" data-action="recover-password">Esqueci minha senha</button>
+          </form>
+          <div class="auth-note" id="authNote" role="status" aria-live="polite" hidden></div>
+          <div class="demo-actions" id="demoActions" hidden aria-label="Modos locais de demonstração">
+            <button class="ghost-button" type="button" data-action="demo-player">Demo Player</button>
+            <button class="ghost-button" type="button" data-action="demo-admin">Demo Oráculo</button>
           </div>
-        </form>
-        <div class="auth-note" id="authNote" hidden></div>
-        <div class="demo-actions" id="demoActions" hidden>
-          <button class="ghost-button" type="button" data-action="demo-player">Demo Player</button>
-          <button class="ghost-button" type="button" data-action="demo-admin">Demo Admin</button>
+          <p class="auth-integrity"><span aria-hidden="true">◇</span> Firebase Auth preservado · nenhuma expansão de backend</p>
         </div>
+        <p class="auth-legal">Ao entrar, você acessa a temporada <strong>Despertar dos Heróis</strong> sob as regras já vigentes do Millennium RPG.</p>
       </div>
+    </section>
+
+    <section class="awakening-ceremony" id="awakeningCeremony" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="awakeningCeremonyTitle" hidden>
+      <div class="awakening-ceremony-backdrop" aria-hidden="true"></div>
+      <article class="awakening-ceremony-card" tabindex="-1">
+        <button class="icon-button awakening-close" type="button" data-action="close-awakening-ceremony" aria-label="Fechar cerimônia de despertar">×</button>
+        <div id="awakeningCeremonyContent"></div>
+      </article>
     </section>
 
     <div class="app-shell" id="appShell" hidden>
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">M</div>
+          <div class="brand-mark" aria-hidden="true">M</div>
           <div>
             <p>Millennium</p>
             <span id="roleLabel">Player</span>
@@ -94,12 +147,12 @@
             <span>Temporada</span>
             <strong id="seasonLabel">Temporada 1</strong>
           </div>
-          <span class="build-badge" id="buildBadge">Build 3.6.3.3 Spark · dev</span>
+          <span class="build-badge" id="buildBadge">Build 3.6.4 Aurora · dev</span>
           <button class="ghost-button full" type="button" data-action="logout">Sair</button>
         </div>
       </aside>
 
-      <main class="content" id="mainContent" tabindex="-1">
+      <main class="content" id="mainContent" tabindex="-1" aria-labelledby="viewTitle">
         <header class="topbar">
           <div>
             <p class="eyebrow" id="contextLabel">Interface do Oráculo</p>
@@ -114,20 +167,20 @@
           </div>
         </header>
 
-        <div class="global-notice" id="globalNotice"></div>
-        <section id="viewHost"></section>
+        <div class="global-notice" id="globalNotice" role="status" aria-live="polite" aria-atomic="true"></div>
+        <section id="viewHost" aria-busy="false"></section>
       </main>
       <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegação rápida mobile"></nav>
     </div>
 
-    <div class="modal" id="modal" hidden>
+    <div class="modal" id="modal" aria-hidden="true" hidden>
       <div class="modal-card" tabindex="-1">
         <button class="icon-button close" type="button" data-action="close-modal" aria-label="Fechar">×</button>
         <div id="modalContent"></div>
       </div>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <aside class="update-notice" id="updateNotice" role="status" aria-live="polite" hidden>
       <div><strong>Uma nova versão da Interface está disponível.</strong><span>Seu rascunho será preservado antes da atualização.</span></div>
@@ -135,25 +188,31 @@
       <button class="icon-button" type="button" data-action="dismiss-update" aria-label="Lembrar depois">×</button>
     </aside>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
-  <script src="millennium-security-config.js?v=3.6.3.3"></script>
-  <script src="millennium-security-bootstrap.js?v=3.6.3.3"></script>
-  <script src="build-info.js?v=3.6.3.3"></script>
-  <script src="millennium-stability.js?v=3.6.3.3"></script>
-  <script src="millennium-world-alive.js?v=3.6.3.3"></script>
-  <script src="millennium-echoes.js?v=3.6.3.3"></script>
-  <script src="millennium-foundations.js?v=3.6.3.3"></script>
-  <script src="millennium-account-management.js?v=3.6.3.3"></script>
-  <script src="catalogs-3.1.js?v=3.6.3.3"></script>
-  <script src="millennium-core.js?v=3.6.3.3"></script>
-  <script src="millennium-journey.js?v=3.6.3.3"></script>
-  <script src="millennium-backend.js?v=3.6.3.3"></script>
-  <script src="millennium-polish.js?v=3.6.3.3"></script>
-  <script src="content-v3.js?v=3.6.3.3"></script>
-  <script src="app.js?v=3.6.3.3"></script>
-  <script src="millennium-security.js?v=3.6.3.3"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
+  <script defer src="millennium-security-config.js?v=3.6.4"></script>
+  <script defer src="millennium-security-bootstrap.js?v=3.6.4"></script>
+  <script defer src="build-info.js?v=3.6.4"></script>
+  <script defer src="millennium-performance-runtime.js?v=3.6.4"></script>
+  <script defer src="millennium-stability.js?v=3.6.4"></script>
+  <script defer src="millennium-world-alive.js?v=3.6.4"></script>
+  <script defer src="millennium-echoes.js?v=3.6.4"></script>
+  <script defer src="millennium-foundations.js?v=3.6.4"></script>
+  <script defer src="millennium-account-management.js?v=3.6.4"></script>
+  <script defer src="monster-system.js?v=3.6.4"></script>
+  <script defer src="monster-engine.js?v=3.6.4"></script>
+  <script defer src="monster-economy.js?v=3.6.4"></script>
+  <script defer src="monster-modes.js?v=3.6.4"></script>
+  <script defer src="minigames-vivid.js?v=3.6.4"></script>
+  <script defer src="catalogs-3.1.js?v=3.6.4"></script>
+  <script defer src="millennium-core.js?v=3.6.4"></script>
+  <script defer src="millennium-journey.js?v=3.6.4"></script>
+  <script defer src="millennium-backend.js?v=3.6.4"></script>
+  <script defer src="millennium-polish.js?v=3.6.4"></script>
+  <script defer src="content-v3.js?v=3.6.4"></script>
+  <script defer src="app.js?v=3.6.4"></script>
+  <script defer src="millennium-security.js?v=3.6.4"></script>
   </body>
 </html>

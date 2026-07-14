@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "lobo-bruma",
+  "name": "Lobo da Bruma",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      87,
+      128,
+      145
+    ],
+    [
+      181,
+      225,
+      231
+    ]
+  ],
+  "shinyPalette": [
+    [
+      181,
+      225,
+      231
+    ],
+    [
+      157,
+      173,
+      235
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

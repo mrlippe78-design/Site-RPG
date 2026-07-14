@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "pantera-eclipse",
+  "name": "Pantera do Eclipse",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      60,
+      39,
+      90
+    ],
+    [
+      229,
+      105,
+      193
+    ]
+  ],
+  "shinyPalette": [
+    [
+      229,
+      105,
+      193
+    ],
+    [
+      130,
+      84,
+      180
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "hidra-pantano",
+  "name": "Hidra do Pântano",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      79,
+      115,
+      45
+    ],
+    [
+      173,
+      231,
+      68
+    ]
+  ],
+  "shinyPalette": [
+    [
+      173,
+      231,
+      68
+    ],
+    [
+      149,
+      160,
+      135
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

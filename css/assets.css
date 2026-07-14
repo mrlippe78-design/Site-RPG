@@ -1,0 +1,119 @@
+/* Millennium 3.6.4 — Fase 10: política de imagens e assets. */
+@layer millennium.assets {
+  :root {
+    --asset-season-banner: url("../assets/first-awakening-portal.webp");
+    --asset-season-banner-mobile: url("../assets/first-awakening-portal-mobile.webp");
+    --asset-season-thumbnail: url("../assets/first-awakening-portal-thumb.webp");
+    --asset-placeholder-banner: url("../assets/placeholders/banner-16x9.svg");
+    --asset-placeholder-portrait: url("../assets/placeholders/portrait-4x5.svg");
+    --asset-placeholder-pet: url("../assets/placeholders/pet-card-3x4.svg");
+    --asset-placeholder-map: url("../assets/placeholders/map-16x9.svg");
+    --asset-placeholder-thumbnail: url("../assets/placeholders/thumbnail-4x3.svg");
+    --asset-placeholder-sigil: url("../assets/placeholders/sigil-1x1.svg");
+  }
+
+  img {
+    max-inline-size: 100%;
+    font-style: italic;
+  }
+
+  .home-hero-backdrop,
+  .profile-banner,
+  .hero-profile-banner img,
+  .hunt-scene-art,
+  .world-map-node img,
+  .codex-hero-media img,
+  .event-card img {
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  .hero-profile-portrait img,
+  .awakening-avatar-shell img,
+  .profile-hero-portrait img {
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+
+  .pet-image,
+  .gacha-reveal-art img,
+  .hunt-pet-runner img,
+  .profile-companion-card > img {
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  .featured-pet-art,
+  .gacha-pool-grid img,
+  .tower-deck-pet img,
+  .message-avatar img,
+  .avatar,
+  .home-hero-portrait img,
+  .activity-scene span img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+
+  .content-image,
+  .catalog-detail-modal > img,
+  .registration-preview > img,
+  .codex-card-media img,
+  .guild-card img,
+  .guild-hero > img {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  .auth-sigil img,
+  .awakening-sigil-large {
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+  }
+
+  img[loading="lazy"] {
+    content-visibility: auto;
+  }
+
+  @media (max-width: 47.5rem) {
+    .onboarding-visual {
+      background-image: linear-gradient(180deg, rgba(8, 9, 12, .2), rgba(8, 9, 12, .92)), var(--asset-season-banner-mobile) !important;
+    }
+
+    .character-record-head {
+      background-image: linear-gradient(110deg, rgba(25, 22, 20, .98), rgba(15, 16, 19, .9)), var(--asset-season-banner-mobile) !important;
+      background-position: center;
+      background-size: cover;
+    }
+
+    .gacha-sanctum {
+      background-image: linear-gradient(90deg, rgba(8, 8, 11, .98), rgba(14, 11, 18, .84)), var(--asset-season-banner-mobile) !important;
+      background-position: center;
+      background-size: cover;
+    }
+
+    .oracle-season-console {
+      background-image: linear-gradient(105deg, rgba(19, 17, 17, .98), rgba(22, 17, 26, .82)), var(--asset-season-banner-mobile) !important;
+      background-position: center;
+      background-size: cover;
+    }
+
+    body.season-theme-awakening::before {
+      background-image: var(--asset-season-banner-mobile) !important;
+    }
+  }
+
+  @media (prefers-reduced-data: reduce) {
+    body::before,
+    .home-hero-backdrop,
+    .oracle-season-console,
+    .gacha-sanctum {
+      background-image: none !important;
+    }
+  }
+
+  @media (forced-colors: active) {
+    img {
+      forced-color-adjust: auto;
+    }
+  }
+}

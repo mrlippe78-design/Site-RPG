@@ -1,0 +1,116 @@
+/* Acessibilidade intencionalmente fora de @layer para garantir proteção mínima. */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus);
+}
+
+:where(button, input, select, textarea, [role="button"]):disabled,
+:where([aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+
+:where(.sr-only, .visually-hidden) {
+  position: absolute !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+:where(.sr-only, .visually-hidden):focus,
+:where(.sr-only, .visually-hidden):active {
+  inline-size: auto !important;
+  block-size: auto !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  clip-path: none !important;
+  white-space: normal !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within { scroll-behavior: auto; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton::after { display: none; }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-border-subtle: rgb(243 240 232 / 42%);
+    --color-border-default: rgb(243 240 232 / 62%);
+    --color-text-secondary: #c8d0dc;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(button, input, select, textarea, .panel, .card, .surface) { border: 1px solid CanvasText; }
+  :where(.primary-button, .button--hero) { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
+
+/* Fase 11 — navegação, legibilidade e alvos de interação. */
+:where(h1, h2, h3, h4, [role="heading"], form, [role="region"])[id] {
+  scroll-margin-block-start: calc(var(--layout-topbar-min-height) + var(--space-4));
+}
+
+:where(input, select, textarea) {
+  accent-color: var(--color-accent-interface);
+  caret-color: var(--color-accent-interface);
+}
+
+:where([aria-busy="true"]) {
+  cursor: progress;
+}
+
+:where([aria-invalid="true"]) {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px var(--color-danger-soft);
+}
+
+:where([role="status"], [aria-live]) {
+  overflow-wrap: anywhere;
+}
+
+body[data-interface-contrast="high"] {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #dbe3ef;
+  --color-border-subtle: rgb(255 255 255 / 48%);
+  --color-border-default: rgb(255 255 255 / 68%);
+  --color-focus-ring: #bcecff;
+}
+
+body[data-theme-animation="none"] *,
+body[data-theme-animation="none"] *::before,
+body[data-theme-animation="none"] *::after {
+  scroll-behavior: auto !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+body[data-theme-animation="reduced"] :where(
+  .auth-runes,
+  .auth-aurora,
+  .home-season-orbit,
+  .oracle-orbit,
+  .affinity-reveal::before,
+  .gate-sigil i,
+  .hunt-pet-runner,
+  .skeleton::after
+) {
+  animation: none !important;
+}
+
+@media (pointer: coarse) {
+  :where(button, [role="button"], a.nav-item, .mobile-bottom-nav a, .mobile-bottom-nav button, input, select) {
+    min-block-size: var(--touch-target-min);
+  }
+}
+

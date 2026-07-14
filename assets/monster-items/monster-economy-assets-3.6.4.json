@@ -1,0 +1,101 @@
+{
+  "version": "3.6.4",
+  "phase": "13.5-C",
+  "icons": [
+    {
+      "id": "claw-storm",
+      "file": "assets/monster-items/claw-storm.webp",
+      "category": "weapon"
+    },
+    {
+      "id": "carapace-abyss",
+      "file": "assets/monster-items/carapace-abyss.webp",
+      "category": "armor"
+    },
+    {
+      "id": "eye-prism",
+      "file": "assets/monster-items/eye-prism.webp",
+      "category": "accessory"
+    },
+    {
+      "id": "rune-bastion",
+      "file": "assets/monster-items/rune-bastion.webp",
+      "category": "rune"
+    },
+    {
+      "id": "spear-starlight",
+      "file": "assets/monster-items/spear-starlight.webp",
+      "category": "weapon"
+    },
+    {
+      "id": "mantle-night",
+      "file": "assets/monster-items/mantle-night.webp",
+      "category": "armor"
+    },
+    {
+      "id": "hourglass-echo",
+      "file": "assets/monster-items/hourglass-echo.webp",
+      "category": "accessory"
+    },
+    {
+      "id": "seal-worldbreaker",
+      "file": "assets/monster-items/seal-worldbreaker.webp",
+      "category": "rune"
+    },
+    {
+      "id": "ration-moon",
+      "file": "assets/monster-items/ration-moon.webp",
+      "category": "food"
+    },
+    {
+      "id": "material-awakening",
+      "file": "assets/monster-items/material-awakening.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-ascendant",
+      "file": "assets/monster-items/material-ascendant.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-defense",
+      "file": "assets/monster-items/material-defense.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-seal",
+      "file": "assets/monster-items/material-seal.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-map",
+      "file": "assets/monster-items/material-map.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-alchemy",
+      "file": "assets/monster-items/material-alchemy.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-precision",
+      "file": "assets/monster-items/material-precision.webp",
+      "category": "material"
+    },
+    {
+      "id": "material-boss",
+      "file": "assets/monster-items/material-boss.webp",
+      "category": "material"
+    },
+    {
+      "id": "currency-po",
+      "file": "assets/monster-items/currency-po.webp",
+      "category": "currency"
+    },
+    {
+      "id": "currency-mc",
+      "file": "assets/monster-items/currency-mc.webp",
+      "category": "currency"
+    }
+  ]
+}

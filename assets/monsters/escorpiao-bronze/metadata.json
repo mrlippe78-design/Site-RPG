@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "escorpiao-bronze",
+  "name": "Escorpião de Bronze",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      139,
+      70,
+      42
+    ],
+    [
+      226,
+      137,
+      69
+    ]
+  ],
+  "shinyPalette": [
+    [
+      226,
+      137,
+      69
+    ],
+    [
+      209,
+      115,
+      132
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

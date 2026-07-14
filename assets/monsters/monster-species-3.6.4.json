@@ -1,0 +1,1344 @@
+{
+  "version": "3.6.4",
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-14T11:00:00Z",
+  "distribution": {
+    "Quebrado": 5,
+    "Comum": 5,
+    "Incomum": 4,
+    "Épico": 3,
+    "Lendário": 2,
+    "Mítico": 2,
+    "Cósmico": 1,
+    "Celestial": 1,
+    "Secret": 2
+  },
+  "species": [
+    {
+      "speciesId": "rato-brasa",
+      "name": "Rato de Brasa",
+      "rarity": "Quebrado",
+      "element": "Fogo",
+      "role": "Suporte",
+      "lore": "Uma criatura pequena que conserva calor mesmo em ruínas sem luz.",
+      "baseAttributes": {
+        "hp": 46,
+        "attack": 12,
+        "defense": 9,
+        "speed": 18,
+        "power": 13,
+        "control": 8
+      },
+      "growth": {
+        "hp": 2.6,
+        "attack": 1.1,
+        "defense": 0.8,
+        "speed": 0.7,
+        "power": 1.0,
+        "control": 0.5
+      },
+      "abilityIds": [
+        "brasa-curta"
+      ],
+      "passiveIds": [
+        "calor-residual"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "rato-brasa-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/rato-brasa/thumbnail.webp",
+        "portrait": "assets/monsters/rato-brasa/portrait.webp",
+        "idle": "assets/monsters/rato-brasa/idle.webp",
+        "battleAtlas": "assets/monsters/rato-brasa/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/rato-brasa/battle-atlas.json",
+        "towerSprite": "assets/monsters/rato-brasa/tower-sprite.webp",
+        "metadata": "assets/monsters/rato-brasa/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "corvo-eco-partido",
+      "name": "Corvo do Eco Partido",
+      "rarity": "Quebrado",
+      "element": "Som",
+      "role": "Controle",
+      "lore": "Seu canto falha até encontrar a frequência exata que rompe uma concentração.",
+      "baseAttributes": {
+        "hp": 42,
+        "attack": 11,
+        "defense": 8,
+        "speed": 21,
+        "power": 15,
+        "control": 15
+      },
+      "growth": {
+        "hp": 2.4,
+        "attack": 1.0,
+        "defense": 0.7,
+        "speed": 0.9,
+        "power": 1.1,
+        "control": 1.0
+      },
+      "abilityIds": [
+        "grito-dissonante"
+      ],
+      "passiveIds": [
+        "eco-imprevisto"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "corvo-eco-partido-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/corvo-eco-partido/thumbnail.webp",
+        "portrait": "assets/monsters/corvo-eco-partido/portrait.webp",
+        "idle": "assets/monsters/corvo-eco-partido/idle.webp",
+        "battleAtlas": "assets/monsters/corvo-eco-partido/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/corvo-eco-partido/battle-atlas.json",
+        "towerSprite": "assets/monsters/corvo-eco-partido/tower-sprite.webp",
+        "metadata": "assets/monsters/corvo-eco-partido/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "lesma-ferro",
+      "name": "Lesma de Ferro",
+      "rarity": "Quebrado",
+      "element": "Metal",
+      "role": "Defesa",
+      "lore": "Avança devagar, mas transforma passagens estreitas em muralhas.",
+      "baseAttributes": {
+        "hp": 62,
+        "attack": 8,
+        "defense": 20,
+        "speed": 5,
+        "power": 7,
+        "control": 11
+      },
+      "growth": {
+        "hp": 3.2,
+        "attack": 0.7,
+        "defense": 1.4,
+        "speed": 0.3,
+        "power": 0.6,
+        "control": 0.8
+      },
+      "abilityIds": [
+        "casco-bloqueador"
+      ],
+      "passiveIds": [
+        "peso-imovel"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "lesma-ferro-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/lesma-ferro/thumbnail.webp",
+        "portrait": "assets/monsters/lesma-ferro/portrait.webp",
+        "idle": "assets/monsters/lesma-ferro/idle.webp",
+        "battleAtlas": "assets/monsters/lesma-ferro/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/lesma-ferro/battle-atlas.json",
+        "towerSprite": "assets/monsters/lesma-ferro/tower-sprite.webp",
+        "metadata": "assets/monsters/lesma-ferro/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "mimico-bolso",
+      "name": "Mímico de Bolso",
+      "rarity": "Quebrado",
+      "element": "Vazio",
+      "role": "Utilidade",
+      "lore": "Um cofre dentado que guarda objetos, segredos e erros de inventário.",
+      "baseAttributes": {
+        "hp": 50,
+        "attack": 13,
+        "defense": 12,
+        "speed": 13,
+        "power": 12,
+        "control": 12
+      },
+      "growth": {
+        "hp": 2.7,
+        "attack": 1.0,
+        "defense": 0.9,
+        "speed": 0.7,
+        "power": 0.9,
+        "control": 0.8
+      },
+      "abilityIds": [
+        "mordida-de-cofre"
+      ],
+      "passiveIds": [
+        "bolso-impossivel"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "mimico-bolso-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/mimico-bolso/thumbnail.webp",
+        "portrait": "assets/monsters/mimico-bolso/portrait.webp",
+        "idle": "assets/monsters/mimico-bolso/idle.webp",
+        "battleAtlas": "assets/monsters/mimico-bolso/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/mimico-bolso/battle-atlas.json",
+        "towerSprite": "assets/monsters/mimico-bolso/tower-sprite.webp",
+        "metadata": "assets/monsters/mimico-bolso/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "sapo-cinzas",
+      "name": "Sapo das Cinzas",
+      "rarity": "Quebrado",
+      "element": "Cinzas",
+      "role": "Debuff",
+      "lore": "Expele uma névoa seca que apaga contornos e enfraquece a precisão.",
+      "baseAttributes": {
+        "hp": 48,
+        "attack": 10,
+        "defense": 10,
+        "speed": 14,
+        "power": 16,
+        "control": 16
+      },
+      "growth": {
+        "hp": 2.5,
+        "attack": 0.8,
+        "defense": 0.8,
+        "speed": 0.7,
+        "power": 1.1,
+        "control": 1.1
+      },
+      "abilityIds": [
+        "fumaca-morta"
+      ],
+      "passiveIds": [
+        "cinza-nos-olhos"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "sapo-cinzas-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/sapo-cinzas/thumbnail.webp",
+        "portrait": "assets/monsters/sapo-cinzas/portrait.webp",
+        "idle": "assets/monsters/sapo-cinzas/idle.webp",
+        "battleAtlas": "assets/monsters/sapo-cinzas/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/sapo-cinzas/battle-atlas.json",
+        "towerSprite": "assets/monsters/sapo-cinzas/tower-sprite.webp",
+        "metadata": "assets/monsters/sapo-cinzas/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "lobo-bruma",
+      "name": "Lobo da Bruma",
+      "rarity": "Comum",
+      "element": "Névoa",
+      "role": "Ataque",
+      "lore": "Caça pelo deslocamento do ar quando a visão já não serve.",
+      "baseAttributes": {
+        "hp": 72,
+        "attack": 24,
+        "defense": 16,
+        "speed": 25,
+        "power": 17,
+        "control": 12
+      },
+      "growth": {
+        "hp": 3.4,
+        "attack": 1.7,
+        "defense": 1.0,
+        "speed": 1.3,
+        "power": 1.1,
+        "control": 0.7
+      },
+      "abilityIds": [
+        "presa-nebulosa"
+      ],
+      "passiveIds": [
+        "cacador-de-lentos"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "lobo-bruma-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/lobo-bruma/thumbnail.webp",
+        "portrait": "assets/monsters/lobo-bruma/portrait.webp",
+        "idle": "assets/monsters/lobo-bruma/idle.webp",
+        "battleAtlas": "assets/monsters/lobo-bruma/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/lobo-bruma/battle-atlas.json",
+        "towerSprite": "assets/monsters/lobo-bruma/tower-sprite.webp",
+        "metadata": "assets/monsters/lobo-bruma/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "raposa-cobre",
+      "name": "Raposa de Cobre",
+      "rarity": "Comum",
+      "element": "Metal",
+      "role": "Utilidade",
+      "lore": "Conhece rotas urbanas, peças esquecidas e o valor de cada atalho.",
+      "baseAttributes": {
+        "hp": 65,
+        "attack": 19,
+        "defense": 15,
+        "speed": 28,
+        "power": 18,
+        "control": 15
+      },
+      "growth": {
+        "hp": 3.0,
+        "attack": 1.3,
+        "defense": 0.9,
+        "speed": 1.5,
+        "power": 1.1,
+        "control": 0.9
+      },
+      "abilityIds": [
+        "salto-de-sucata"
+      ],
+      "passiveIds": [
+        "farejo-de-fragmentos"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "raposa-cobre-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/raposa-cobre/thumbnail.webp",
+        "portrait": "assets/monsters/raposa-cobre/portrait.webp",
+        "idle": "assets/monsters/raposa-cobre/idle.webp",
+        "battleAtlas": "assets/monsters/raposa-cobre/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/raposa-cobre/battle-atlas.json",
+        "towerSprite": "assets/monsters/raposa-cobre/tower-sprite.webp",
+        "metadata": "assets/monsters/raposa-cobre/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "coruja-ruinas",
+      "name": "Coruja das Ruínas",
+      "rarity": "Comum",
+      "element": "Eco",
+      "role": "Alcance",
+      "lore": "Lê paredes como páginas e identifica movimentos atrás de estruturas antigas.",
+      "baseAttributes": {
+        "hp": 61,
+        "attack": 22,
+        "defense": 13,
+        "speed": 23,
+        "power": 22,
+        "control": 18
+      },
+      "growth": {
+        "hp": 2.9,
+        "attack": 1.5,
+        "defense": 0.8,
+        "speed": 1.2,
+        "power": 1.4,
+        "control": 1.0
+      },
+      "abilityIds": [
+        "visao-atravessada"
+      ],
+      "passiveIds": [
+        "olhos-da-ruina"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "coruja-ruinas-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/coruja-ruinas/thumbnail.webp",
+        "portrait": "assets/monsters/coruja-ruinas/portrait.webp",
+        "idle": "assets/monsters/coruja-ruinas/idle.webp",
+        "battleAtlas": "assets/monsters/coruja-ruinas/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/coruja-ruinas/battle-atlas.json",
+        "towerSprite": "assets/monsters/coruja-ruinas/tower-sprite.webp",
+        "metadata": "assets/monsters/coruja-ruinas/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "javali-musgo",
+      "name": "Javali de Musgo",
+      "rarity": "Comum",
+      "element": "Natureza",
+      "role": "Defesa",
+      "lore": "Uma colina teimosa coberta de raízes e presas.",
+      "baseAttributes": {
+        "hp": 88,
+        "attack": 22,
+        "defense": 25,
+        "speed": 14,
+        "power": 13,
+        "control": 17
+      },
+      "growth": {
+        "hp": 4.2,
+        "attack": 1.4,
+        "defense": 1.6,
+        "speed": 0.7,
+        "power": 0.8,
+        "control": 1.0
+      },
+      "abilityIds": [
+        "investida-raiz"
+      ],
+      "passiveIds": [
+        "casco-de-musgo"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "javali-musgo-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/javali-musgo/thumbnail.webp",
+        "portrait": "assets/monsters/javali-musgo/portrait.webp",
+        "idle": "assets/monsters/javali-musgo/idle.webp",
+        "battleAtlas": "assets/monsters/javali-musgo/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/javali-musgo/battle-atlas.json",
+        "towerSprite": "assets/monsters/javali-musgo/tower-sprite.webp",
+        "metadata": "assets/monsters/javali-musgo/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "mariposa-lunar",
+      "name": "Mariposa Lunar",
+      "rarity": "Comum",
+      "element": "Lunar",
+      "role": "Suporte",
+      "lore": "Poeira prateada marca aliados e caminhos seguros durante a escuridão.",
+      "baseAttributes": {
+        "hp": 58,
+        "attack": 15,
+        "defense": 12,
+        "speed": 26,
+        "power": 25,
+        "control": 21
+      },
+      "growth": {
+        "hp": 2.7,
+        "attack": 1.0,
+        "defense": 0.8,
+        "speed": 1.4,
+        "power": 1.6,
+        "control": 1.2
+      },
+      "abilityIds": [
+        "poeira-da-lua"
+      ],
+      "passiveIds": [
+        "vigilia-noturna"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "mariposa-lunar-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/mariposa-lunar/thumbnail.webp",
+        "portrait": "assets/monsters/mariposa-lunar/portrait.webp",
+        "idle": "assets/monsters/mariposa-lunar/idle.webp",
+        "battleAtlas": "assets/monsters/mariposa-lunar/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/mariposa-lunar/battle-atlas.json",
+        "towerSprite": "assets/monsters/mariposa-lunar/tower-sprite.webp",
+        "metadata": "assets/monsters/mariposa-lunar/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "pantera-eclipse",
+      "name": "Pantera do Eclipse",
+      "rarity": "Incomum",
+      "element": "Eclipse",
+      "role": "Assassino",
+      "lore": "Ataca do ponto em que luz e sombra deixam de concordar.",
+      "baseAttributes": {
+        "hp": 92,
+        "attack": 39,
+        "defense": 22,
+        "speed": 43,
+        "power": 29,
+        "control": 20
+      },
+      "growth": {
+        "hp": 4.1,
+        "attack": 2.4,
+        "defense": 1.2,
+        "speed": 2.0,
+        "power": 1.6,
+        "control": 1.0
+      },
+      "abilityIds": [
+        "salto-do-eclipse"
+      ],
+      "passiveIds": [
+        "predador-isolado"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "pantera-eclipse-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/pantera-eclipse/thumbnail.webp",
+        "portrait": "assets/monsters/pantera-eclipse/portrait.webp",
+        "idle": "assets/monsters/pantera-eclipse/idle.webp",
+        "battleAtlas": "assets/monsters/pantera-eclipse/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/pantera-eclipse/battle-atlas.json",
+        "towerSprite": "assets/monsters/pantera-eclipse/tower-sprite.webp",
+        "metadata": "assets/monsters/pantera-eclipse/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "urso-sineiro",
+      "name": "Urso Sineiro",
+      "rarity": "Incomum",
+      "element": "Som",
+      "role": "Defesa",
+      "lore": "Cada passo produz um badalar que obriga inimigos a encará-lo.",
+      "baseAttributes": {
+        "hp": 122,
+        "attack": 30,
+        "defense": 45,
+        "speed": 16,
+        "power": 25,
+        "control": 33
+      },
+      "growth": {
+        "hp": 5.2,
+        "attack": 1.7,
+        "defense": 2.4,
+        "speed": 0.8,
+        "power": 1.3,
+        "control": 1.8
+      },
+      "abilityIds": [
+        "badalo-provocador"
+      ],
+      "passiveIds": [
+        "corpo-de-campanario"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "urso-sineiro-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/urso-sineiro/thumbnail.webp",
+        "portrait": "assets/monsters/urso-sineiro/portrait.webp",
+        "idle": "assets/monsters/urso-sineiro/idle.webp",
+        "battleAtlas": "assets/monsters/urso-sineiro/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/urso-sineiro/battle-atlas.json",
+        "towerSprite": "assets/monsters/urso-sineiro/tower-sprite.webp",
+        "metadata": "assets/monsters/urso-sineiro/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "escorpiao-bronze",
+      "name": "Escorpião de Bronze",
+      "rarity": "Incomum",
+      "element": "Ferrugem",
+      "role": "Debuff",
+      "lore": "Construído para uma guerra perdida, conserva veneno e memória metálica.",
+      "baseAttributes": {
+        "hp": 94,
+        "attack": 33,
+        "defense": 31,
+        "speed": 29,
+        "power": 31,
+        "control": 39
+      },
+      "growth": {
+        "hp": 4.2,
+        "attack": 2.0,
+        "defense": 1.7,
+        "speed": 1.4,
+        "power": 1.8,
+        "control": 2.1
+      },
+      "abilityIds": [
+        "ferrao-corrosivo"
+      ],
+      "passiveIds": [
+        "oxidacao-acumulada"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "escorpiao-bronze-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/escorpiao-bronze/thumbnail.webp",
+        "portrait": "assets/monsters/escorpiao-bronze/portrait.webp",
+        "idle": "assets/monsters/escorpiao-bronze/idle.webp",
+        "battleAtlas": "assets/monsters/escorpiao-bronze/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/escorpiao-bronze/battle-atlas.json",
+        "towerSprite": "assets/monsters/escorpiao-bronze/tower-sprite.webp",
+        "metadata": "assets/monsters/escorpiao-bronze/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "tartaruga-mar-negro",
+      "name": "Tartaruga do Mar Negro",
+      "rarity": "Incomum",
+      "element": "Água",
+      "role": "Proteção",
+      "lore": "Carrega no casco uma superfície escura que desvia projéteis e presságios.",
+      "baseAttributes": {
+        "hp": 132,
+        "attack": 24,
+        "defense": 49,
+        "speed": 12,
+        "power": 28,
+        "control": 24
+      },
+      "growth": {
+        "hp": 5.5,
+        "attack": 1.4,
+        "defense": 2.6,
+        "speed": 0.6,
+        "power": 1.5,
+        "control": 1.3
+      },
+      "abilityIds": [
+        "escudo-de-mare"
+      ],
+      "passiveIds": [
+        "casco-abissal"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "tartaruga-mar-negro-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/tartaruga-mar-negro/thumbnail.webp",
+        "portrait": "assets/monsters/tartaruga-mar-negro/portrait.webp",
+        "idle": "assets/monsters/tartaruga-mar-negro/idle.webp",
+        "battleAtlas": "assets/monsters/tartaruga-mar-negro/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/tartaruga-mar-negro/battle-atlas.json",
+        "towerSprite": "assets/monsters/tartaruga-mar-negro/tower-sprite.webp",
+        "metadata": "assets/monsters/tartaruga-mar-negro/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "quimera-tres-fomes",
+      "name": "Quimera das Três Fomes",
+      "rarity": "Épico",
+      "element": "Entropia",
+      "role": "Híbrido",
+      "lore": "Três gargantas alternam fogo, toxina e impacto sem concordar sobre a presa.",
+      "baseAttributes": {
+        "hp": 148,
+        "attack": 52,
+        "defense": 38,
+        "speed": 36,
+        "power": 52,
+        "control": 42
+      },
+      "growth": {
+        "hp": 6.0,
+        "attack": 3.1,
+        "defense": 2.0,
+        "speed": 1.8,
+        "power": 3.0,
+        "control": 2.3
+      },
+      "abilityIds": [
+        "fome-tripla"
+      ],
+      "passiveIds": [
+        "alternancia-entropica"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "quimera-tres-fomes-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/quimera-tres-fomes/thumbnail.webp",
+        "portrait": "assets/monsters/quimera-tres-fomes/portrait.webp",
+        "idle": "assets/monsters/quimera-tres-fomes/idle.webp",
+        "battleAtlas": "assets/monsters/quimera-tres-fomes/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/quimera-tres-fomes/battle-atlas.json",
+        "towerSprite": "assets/monsters/quimera-tres-fomes/tower-sprite.webp",
+        "metadata": "assets/monsters/quimera-tres-fomes/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "dragao-oficina",
+      "name": "Dragão de Oficina",
+      "rarity": "Épico",
+      "element": "Fogo",
+      "role": "Atacante",
+      "lore": "Parafusos e placas sustentam uma fornalha que aprendeu a respirar.",
+      "baseAttributes": {
+        "hp": 155,
+        "attack": 58,
+        "defense": 43,
+        "speed": 32,
+        "power": 57,
+        "control": 27
+      },
+      "growth": {
+        "hp": 6.2,
+        "attack": 3.4,
+        "defense": 2.2,
+        "speed": 1.6,
+        "power": 3.2,
+        "control": 1.4
+      },
+      "abilityIds": [
+        "fornalha-viva"
+      ],
+      "passiveIds": [
+        "calor-acumulado"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "dragao-oficina-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/dragao-oficina/thumbnail.webp",
+        "portrait": "assets/monsters/dragao-oficina/portrait.webp",
+        "idle": "assets/monsters/dragao-oficina/idle.webp",
+        "battleAtlas": "assets/monsters/dragao-oficina/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/dragao-oficina/battle-atlas.json",
+        "towerSprite": "assets/monsters/dragao-oficina/tower-sprite.webp",
+        "metadata": "assets/monsters/dragao-oficina/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "hidra-pantano",
+      "name": "Hidra do Pântano",
+      "rarity": "Épico",
+      "element": "Veneno",
+      "role": "Controle",
+      "lore": "Cada cabeça guarda uma fome, uma toxina e um método de sobrevivência.",
+      "baseAttributes": {
+        "hp": 168,
+        "attack": 48,
+        "defense": 46,
+        "speed": 26,
+        "power": 54,
+        "control": 58
+      },
+      "growth": {
+        "hp": 6.7,
+        "attack": 2.8,
+        "defense": 2.4,
+        "speed": 1.3,
+        "power": 3.1,
+        "control": 3.3
+      },
+      "abilityIds": [
+        "mordidas-convergentes"
+      ],
+      "passiveIds": [
+        "cabecas-despertas"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "hidra-pantano-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/hidra-pantano/thumbnail.webp",
+        "portrait": "assets/monsters/hidra-pantano/portrait.webp",
+        "idle": "assets/monsters/hidra-pantano/idle.webp",
+        "battleAtlas": "assets/monsters/hidra-pantano/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/hidra-pantano/battle-atlas.json",
+        "towerSprite": "assets/monsters/hidra-pantano/tower-sprite.webp",
+        "metadata": "assets/monsters/hidra-pantano/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "fenrir-mil-pegadas",
+      "name": "Fenrir das Mil Pegadas",
+      "rarity": "Lendário",
+      "element": "Natureza",
+      "role": "Caçador",
+      "lore": "Todos os clãs reconhecem suas pegadas, mas nenhum conseguiu contá-las.",
+      "baseAttributes": {
+        "hp": 205,
+        "attack": 78,
+        "defense": 54,
+        "speed": 72,
+        "power": 52,
+        "control": 38
+      },
+      "growth": {
+        "hp": 8.0,
+        "attack": 4.4,
+        "defense": 2.8,
+        "speed": 3.8,
+        "power": 2.8,
+        "control": 1.9
+      },
+      "abilityIds": [
+        "cacada-ancestral"
+      ],
+      "passiveIds": [
+        "marca-do-chefe"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "fenrir-mil-pegadas-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/fenrir-mil-pegadas/thumbnail.webp",
+        "portrait": "assets/monsters/fenrir-mil-pegadas/portrait.webp",
+        "idle": "assets/monsters/fenrir-mil-pegadas/idle.webp",
+        "battleAtlas": "assets/monsters/fenrir-mil-pegadas/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/fenrir-mil-pegadas/battle-atlas.json",
+        "towerSprite": "assets/monsters/fenrir-mil-pegadas/tower-sprite.webp",
+        "metadata": "assets/monsters/fenrir-mil-pegadas/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "grifo-sol-partido",
+      "name": "Grifo do Sol Partido",
+      "rarity": "Lendário",
+      "element": "Solar",
+      "role": "Híbrido",
+      "lore": "Penas douradas queimam quem tenta reivindicar seu juramento.",
+      "baseAttributes": {
+        "hp": 192,
+        "attack": 71,
+        "defense": 58,
+        "speed": 61,
+        "power": 70,
+        "control": 43
+      },
+      "growth": {
+        "hp": 7.6,
+        "attack": 4.0,
+        "defense": 3.0,
+        "speed": 3.2,
+        "power": 4.0,
+        "control": 2.1
+      },
+      "abilityIds": [
+        "mergulho-solar"
+      ],
+      "passiveIds": [
+        "aura-do-sol-partido"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "grifo-sol-partido-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/grifo-sol-partido/thumbnail.webp",
+        "portrait": "assets/monsters/grifo-sol-partido/portrait.webp",
+        "idle": "assets/monsters/grifo-sol-partido/idle.webp",
+        "battleAtlas": "assets/monsters/grifo-sol-partido/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/grifo-sol-partido/battle-atlas.json",
+        "towerSprite": "assets/monsters/grifo-sol-partido/tower-sprite.webp",
+        "metadata": "assets/monsters/grifo-sol-partido/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "leviata-vidro-negro",
+      "name": "Leviatã de Vidro Negro",
+      "rarity": "Mítico",
+      "element": "Abismo",
+      "role": "Controle",
+      "lore": "Quando emerge, o terreno se torna reflexo e as rotas deixam de ser confiáveis.",
+      "baseAttributes": {
+        "hp": 278,
+        "attack": 86,
+        "defense": 88,
+        "speed": 34,
+        "power": 102,
+        "control": 110
+      },
+      "growth": {
+        "hp": 10.0,
+        "attack": 4.6,
+        "defense": 4.8,
+        "speed": 1.7,
+        "power": 5.5,
+        "control": 5.8
+      },
+      "abilityIds": [
+        "mare-de-vidro"
+      ],
+      "passiveIds": [
+        "rota-refletida"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "leviata-vidro-negro-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/leviata-vidro-negro/thumbnail.webp",
+        "portrait": "assets/monsters/leviata-vidro-negro/portrait.webp",
+        "idle": "assets/monsters/leviata-vidro-negro/idle.webp",
+        "battleAtlas": "assets/monsters/leviata-vidro-negro/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/leviata-vidro-negro/battle-atlas.json",
+        "towerSprite": "assets/monsters/leviata-vidro-negro/tower-sprite.webp",
+        "metadata": "assets/monsters/leviata-vidro-negro/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "cervo-primeiro-bosque",
+      "name": "Cervo do Primeiro Bosque",
+      "rarity": "Mítico",
+      "element": "Natureza",
+      "role": "Suporte",
+      "lore": "Lembra a floresta anterior aos deuses e restaura o que a corrupção apagou.",
+      "baseAttributes": {
+        "hp": 248,
+        "attack": 68,
+        "defense": 82,
+        "speed": 55,
+        "power": 112,
+        "control": 88
+      },
+      "growth": {
+        "hp": 9.2,
+        "attack": 3.6,
+        "defense": 4.4,
+        "speed": 2.8,
+        "power": 6.0,
+        "control": 4.6
+      },
+      "abilityIds": [
+        "renascimento-do-bosque"
+      ],
+      "passiveIds": [
+        "memoria-verde"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "cervo-primeiro-bosque-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/cervo-primeiro-bosque/thumbnail.webp",
+        "portrait": "assets/monsters/cervo-primeiro-bosque/portrait.webp",
+        "idle": "assets/monsters/cervo-primeiro-bosque/idle.webp",
+        "battleAtlas": "assets/monsters/cervo-primeiro-bosque/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/cervo-primeiro-bosque/battle-atlas.json",
+        "towerSprite": "assets/monsters/cervo-primeiro-bosque/tower-sprite.webp",
+        "metadata": "assets/monsters/cervo-primeiro-bosque/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "cao-vazio-portas",
+      "name": "Cão do Vazio Entre Portas",
+      "rarity": "Cósmico",
+      "element": "Vazio",
+      "role": "Especial",
+      "lore": "Fareja caminhos que a Interface se recusa a registrar.",
+      "baseAttributes": {
+        "hp": 315,
+        "attack": 118,
+        "defense": 92,
+        "speed": 112,
+        "power": 126,
+        "control": 104
+      },
+      "growth": {
+        "hp": 11.0,
+        "attack": 6.2,
+        "defense": 4.8,
+        "speed": 5.8,
+        "power": 6.6,
+        "control": 5.4
+      },
+      "abilityIds": [
+        "salto-entre-portas"
+      ],
+      "passiveIds": [
+        "instabilidade-vazia"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "cao-vazio-portas-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/cao-vazio-portas/thumbnail.webp",
+        "portrait": "assets/monsters/cao-vazio-portas/portrait.webp",
+        "idle": "assets/monsters/cao-vazio-portas/idle.webp",
+        "battleAtlas": "assets/monsters/cao-vazio-portas/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/cao-vazio-portas/battle-atlas.json",
+        "towerSprite": "assets/monsters/cao-vazio-portas/tower-sprite.webp",
+        "metadata": "assets/monsters/cao-vazio-portas/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "quimera-halo-fraturado",
+      "name": "Quimera do Halo Fraturado",
+      "rarity": "Celestial",
+      "element": "Constelação",
+      "role": "Suporte",
+      "lore": "Sete fragmentos orbitam um corpo que ainda tenta escolher uma promessa.",
+      "baseAttributes": {
+        "hp": 352,
+        "attack": 105,
+        "defense": 125,
+        "speed": 84,
+        "power": 154,
+        "control": 132
+      },
+      "growth": {
+        "hp": 12.0,
+        "attack": 5.4,
+        "defense": 6.4,
+        "speed": 4.2,
+        "power": 7.8,
+        "control": 6.8
+      },
+      "abilityIds": [
+        "juramento-das-esferas"
+      ],
+      "passiveIds": [
+        "halo-reconstituido"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "quimera-halo-fraturado-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/quimera-halo-fraturado/thumbnail.webp",
+        "portrait": "assets/monsters/quimera-halo-fraturado/portrait.webp",
+        "idle": "assets/monsters/quimera-halo-fraturado/idle.webp",
+        "battleAtlas": "assets/monsters/quimera-halo-fraturado/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/quimera-halo-fraturado/battle-atlas.json",
+        "towerSprite": "assets/monsters/quimera-halo-fraturado/tower-sprite.webp",
+        "metadata": "assets/monsters/quimera-halo-fraturado/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "paradoxo-sem-nome",
+      "name": "Paradoxo Sem Nome",
+      "rarity": "Secret",
+      "element": "Paradoxo",
+      "role": "Especial",
+      "lore": "A Interface registra seus efeitos, mas não consegue registrar sua origem.",
+      "baseAttributes": {
+        "hp": 410,
+        "attack": 168,
+        "defense": 142,
+        "speed": 151,
+        "power": 181,
+        "control": 176
+      },
+      "growth": {
+        "hp": 14.0,
+        "attack": 8.5,
+        "defense": 7.0,
+        "speed": 7.6,
+        "power": 9.0,
+        "control": 8.8
+      },
+      "abilityIds": [
+        "duas-possibilidades"
+      ],
+      "passiveIds": [
+        "registro-impossivel"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "paradoxo-sem-nome-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/paradoxo-sem-nome/thumbnail.webp",
+        "portrait": "assets/monsters/paradoxo-sem-nome/portrait.webp",
+        "idle": "assets/monsters/paradoxo-sem-nome/idle.webp",
+        "battleAtlas": "assets/monsters/paradoxo-sem-nome/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/paradoxo-sem-nome/battle-atlas.json",
+        "towerSprite": "assets/monsters/paradoxo-sem-nome/tower-sprite.webp",
+        "metadata": "assets/monsters/paradoxo-sem-nome/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    },
+    {
+      "speciesId": "devorador-ultimo-eclipse",
+      "name": "Devorador do Último Eclipse",
+      "rarity": "Secret",
+      "element": "Vazio",
+      "role": "Chefe",
+      "lore": "Ri onde a luz termina e transforma falhas do mundo em alimento.",
+      "baseAttributes": {
+        "hp": 438,
+        "attack": 182,
+        "defense": 151,
+        "speed": 138,
+        "power": 194,
+        "control": 164
+      },
+      "growth": {
+        "hp": 14.8,
+        "attack": 9.2,
+        "defense": 7.5,
+        "speed": 6.9,
+        "power": 9.8,
+        "control": 8.2
+      },
+      "abilityIds": [
+        "eclipse-devorador"
+      ],
+      "passiveIds": [
+        "erro-primordial"
+      ],
+      "schemaVersion": 1,
+      "shiny": {
+        "enabled": true,
+        "powerModifier": 1,
+        "paletteId": "devorador-ultimo-eclipse-shiny"
+      },
+      "assets": {
+        "status": "ready-block-b",
+        "thumbnail": "assets/monsters/devorador-ultimo-eclipse/thumbnail.webp",
+        "portrait": "assets/monsters/devorador-ultimo-eclipse/portrait.webp",
+        "idle": "assets/monsters/devorador-ultimo-eclipse/idle.webp",
+        "battleAtlas": "assets/monsters/devorador-ultimo-eclipse/battle-atlas.webp",
+        "battleAtlasMeta": "assets/monsters/devorador-ultimo-eclipse/battle-atlas.json",
+        "towerSprite": "assets/monsters/devorador-ultimo-eclipse/tower-sprite.webp",
+        "metadata": "assets/monsters/devorador-ultimo-eclipse/metadata.json"
+      },
+      "implementationStatus": {
+        "catalog": "ready",
+        "adapter": "ready",
+        "pixelArt": "ready-block-b",
+        "abilities": "ready-block-b",
+        "passives": "ready-block-b"
+      }
+    }
+  ],
+  "phase": "13.5-B"
+}

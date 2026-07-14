@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 9,
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": 4,
+      "fps": 4,
+      "loop": true
+    },
+    "entry": {
+      "row": 1,
+      "frames": 4,
+      "fps": 4,
+      "loop": false
+    },
+    "move": {
+      "row": 2,
+      "frames": 4,
+      "fps": 4,
+      "loop": true
+    },
+    "attack": {
+      "row": 3,
+      "frames": 4,
+      "fps": 6,
+      "loop": false
+    },
+    "ability": {
+      "row": 4,
+      "frames": 4,
+      "fps": 6,
+      "loop": false
+    },
+    "damage": {
+      "row": 5,
+      "frames": 4,
+      "fps": 4,
+      "loop": false
+    },
+    "defend": {
+      "row": 6,
+      "frames": 4,
+      "fps": 4,
+      "loop": false
+    },
+    "defeat": {
+      "row": 7,
+      "frames": 4,
+      "fps": 4,
+      "loop": false
+    },
+    "victory": {
+      "row": 8,
+      "frames": 4,
+      "fps": 4,
+      "loop": false
+    }
+  }
+}

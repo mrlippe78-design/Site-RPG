@@ -1,0 +1,479 @@
+/* Millennium 3.6.4 — Fase 8
+   Oráculo: autoridade mística, análise e rastreabilidade.
+   Camada visual; não altera permissões, regras econômicas ou segurança. */
+
+body[data-interface-scope="oracle"] {
+  --oracle-ivory: #f5f1e8;
+  --oracle-blue-deep: #07111f;
+  --oracle-blue-panel: #0d1c30;
+  --oracle-blue-raised: #142b45;
+  --oracle-gold: #e6b84d;
+  --oracle-interface: #74c9f4;
+  --oracle-line: rgb(116 201 244 / 22%);
+  --oracle-line-gold: rgb(230 184 77 / 34%);
+  --oracle-glow: 0 0 44px rgb(89 199 255 / 16%);
+}
+
+body[data-interface-scope="oracle"] .app-shell {
+  background:
+    radial-gradient(circle at 74% -8%, rgb(89 199 255 / 12%), transparent 30rem),
+    linear-gradient(120deg, transparent 0 49.85%, rgb(116 201 244 / 4%) 50%, transparent 50.15%),
+    linear-gradient(rgb(116 201 244 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(116 201 244 / 4%) 1px, transparent 1px),
+    var(--oracle-blue-deep);
+  background-size: auto, auto, 4rem 4rem, 4rem 4rem, auto;
+}
+
+body[data-interface-scope="oracle"] .sidebar {
+  background:
+    radial-gradient(circle at 50% 0, rgb(89 199 255 / 12%), transparent 16rem),
+    linear-gradient(180deg, rgb(10 27 47 / 99%), rgb(5 13 25 / 99%));
+}
+
+body[data-interface-scope="oracle"] .sidebar .brand-mark {
+  border-radius: 28% 72% 28% 72%;
+  transform: rotate(45deg);
+}
+
+body[data-interface-scope="oracle"] .sidebar .brand-mark::first-letter {
+  transform: rotate(-45deg);
+}
+
+.oracle-console {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow: clip;
+  isolation: isolate;
+}
+
+.oracle-console::before {
+  content: "";
+  position: absolute;
+  inset: -1rem -1.25rem auto;
+  height: 24rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 12%, rgb(230 184 77 / 7%), transparent 15rem),
+    radial-gradient(circle at 82% 8%, rgb(89 199 255 / 10%), transparent 22rem);
+}
+
+.oracle-command-header {
+  position: relative;
+  min-height: 15rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(10rem, .5fr) minmax(16rem, .75fr);
+  align-items: center;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  overflow: hidden;
+  border: 1px solid var(--oracle-line-gold);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 3%), transparent 38%),
+    radial-gradient(circle at 72% 42%, rgb(89 199 255 / 12%), transparent 18rem),
+    linear-gradient(112deg, rgb(7 17 31 / 98%), rgb(13 35 59 / 95%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 24px 70px rgb(0 0 0 / 28%), var(--oracle-glow);
+}
+
+.oracle-command-header::before,
+.oracle-command-header::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.oracle-command-header::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0 9%, var(--oracle-line) 9% calc(9% + 1px), transparent calc(9% + 1px) 91%, var(--oracle-line) 91% calc(91% + 1px), transparent calc(91% + 1px)),
+    linear-gradient(transparent 0 14%, var(--oracle-line) 14% calc(14% + 1px), transparent calc(14% + 1px) 86%, var(--oracle-line) 86% calc(86% + 1px), transparent calc(86% + 1px));
+  opacity: .35;
+}
+
+.oracle-command-header::after {
+  inset: .65rem;
+  border: 1px solid rgb(116 201 244 / 8%);
+  border-radius: .9rem;
+}
+
+.oracle-command-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 50rem;
+}
+
+.oracle-command-copy h2 {
+  margin: .2rem 0 .55rem;
+  color: var(--oracle-ivory);
+  font-size: clamp(1.9rem, 4vw, 3.7rem);
+  line-height: .98;
+  letter-spacing: -.035em;
+}
+
+.oracle-command-copy > p:not(.eyebrow) {
+  max-width: 46rem;
+  margin: 0;
+  color: #b7c5d5;
+  font-size: clamp(.95rem, 1.5vw, 1.08rem);
+}
+
+.oracle-command-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem .7rem;
+  margin-top: 1.2rem;
+  color: #9fb1c4;
+  font-size: .78rem;
+}
+
+.oracle-command-status strong { color: var(--oracle-gold); }
+.oracle-status-dot {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 .25rem rgb(84 185 135 / 10%), 0 0 1rem rgb(84 185 135 / 50%);
+}
+
+.oracle-eye-constellation {
+  position: relative;
+  z-index: 1;
+  place-self: center;
+  width: clamp(8.5rem, 16vw, 13rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(116 201 244 / 18%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(230 184 77 / 12%), transparent 45%);
+  box-shadow: inset 0 0 3rem rgb(89 199 255 / 8%);
+}
+
+.oracle-eye-constellation::before,
+.oracle-eye-constellation::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border: 1px solid rgb(230 184 77 / 25%);
+  transform: rotate(45deg);
+}
+
+.oracle-eye-constellation::after {
+  inset: 25%;
+  border-color: rgb(116 201 244 / 32%);
+  transform: rotate(0deg);
+}
+
+.oracle-eye-core {
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 45%;
+  aspect-ratio: 1.5;
+  border: 1px solid rgb(230 184 77 / 52%);
+  border-radius: 100% 0 100% 0;
+  transform: rotate(45deg);
+  background: #081321;
+  color: var(--oracle-interface);
+  font-size: clamp(1.35rem, 3vw, 2.3rem);
+  box-shadow: 0 0 2rem rgb(89 199 255 / 25%), inset 0 0 1.25rem rgb(89 199 255 / 12%);
+}
+
+.oracle-eye-core::first-letter { transform: rotate(-45deg); }
+.oracle-orbit { position: absolute; inset: 4%; border: 1px dashed rgb(116 201 244 / 28%); border-radius: 50%; }
+.oracle-orbit.orbit-b { inset: 20%; border-color: rgb(230 184 77 / 30%); transform: rotate(28deg); }
+.oracle-eye-constellation i,
+.oracle-eye-constellation b { position: absolute; width: .36rem; height: .36rem; border-radius: 50%; background: var(--oracle-interface); box-shadow: 0 0 .8rem currentColor; }
+.oracle-eye-constellation i { top: 13%; right: 19%; }
+.oracle-eye-constellation b { bottom: 14%; left: 20%; color: var(--oracle-gold); background: currentColor; }
+
+.oracle-metric-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.oracle-metric {
+  min-width: 0;
+  min-height: 5rem;
+  display: grid;
+  align-content: center;
+  gap: .25rem;
+  padding: .8rem .9rem;
+  border: 1px solid var(--oracle-line);
+  border-radius: .7rem;
+  background: rgb(0 0 0 / 16%);
+}
+
+.oracle-metric span {
+  color: #90a4b8;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.oracle-metric strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--oracle-ivory);
+  font-family: var(--font-family-display);
+  font-size: clamp(1.05rem, 2vw, 1.55rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oracle-route-nav {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: .4rem;
+  padding: .5rem;
+  overflow-x: auto;
+  border: 1px solid var(--oracle-line);
+  border-radius: .85rem;
+  background: rgb(7 17 31 / 88%);
+  scrollbar-width: thin;
+}
+
+.oracle-route-link {
+  min-width: 5.8rem;
+  min-height: 2.5rem;
+  padding: .5rem .65rem;
+  border: 1px solid transparent;
+  border-radius: .55rem;
+  background: transparent;
+  color: #9fb1c4;
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.oracle-route-link:hover,
+.oracle-route-link:focus-visible {
+  color: var(--oracle-ivory);
+  border-color: var(--oracle-line);
+  background: rgb(116 201 244 / 7%);
+}
+
+.oracle-route-link.active,
+.oracle-route-link[aria-current="page"] {
+  color: #07111f;
+  border-color: var(--oracle-gold);
+  background: var(--oracle-gold);
+  box-shadow: 0 0 1.4rem rgb(230 184 77 / 16%);
+}
+
+.oracle-security-link { color: #ffb3b6; border-color: rgb(216 92 96 / 20%); }
+.oracle-route-content { min-width: 0; }
+.oracle-route-content > .grid,
+.oracle-route-content > section > .grid { gap: 1rem; }
+
+body[data-interface-scope="oracle"] .oracle-route-content .panel {
+  border-color: var(--oracle-line);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 2.5%), transparent 42%),
+    linear-gradient(180deg, rgb(15 34 55 / 94%), rgb(8 22 39 / 96%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%), 0 18px 50px rgb(0 0 0 / 18%);
+}
+
+body[data-interface-scope="oracle"] .oracle-route-content .panel::before {
+  background: linear-gradient(90deg, var(--oracle-interface), var(--oracle-gold), transparent);
+  opacity: .35;
+}
+
+body[data-interface-scope="oracle"] .oracle-route-content .panel h2,
+body[data-interface-scope="oracle"] .oracle-route-content .panel h3,
+body[data-interface-scope="oracle"] .oracle-route-content .panel h4 { color: var(--oracle-ivory); }
+
+body[data-interface-scope="oracle"] .oracle-route-content .panel .eyebrow { color: var(--oracle-interface); }
+body[data-interface-scope="oracle"] .oracle-route-content input,
+body[data-interface-scope="oracle"] .oracle-route-content select,
+body[data-interface-scope="oracle"] .oracle-route-content textarea {
+  border-color: rgb(116 201 244 / 20%);
+  background: rgb(3 12 23 / 72%);
+}
+
+.oracle-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid var(--oracle-line);
+}
+.oracle-section-heading h3,
+.oracle-section-heading p { margin: 0; }
+
+.oracle-command-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.oracle-command-card {
+  position: relative;
+  min-width: 0;
+  min-height: 8.4rem;
+  display: grid;
+  grid-template-columns: 2.7rem minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--oracle-line);
+  border-radius: .8rem;
+  background: linear-gradient(135deg, rgb(116 201 244 / 7%), rgb(0 0 0 / 12%));
+  color: var(--oracle-ivory);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.oracle-command-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -25% -65% 35%;
+  height: 8rem;
+  border: 1px solid rgb(230 184 77 / 16%);
+  transform: rotate(24deg);
+}
+.oracle-command-card:hover { border-color: var(--oracle-line-gold); transform: translateY(-2px); box-shadow: var(--oracle-glow); }
+.oracle-command-icon { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; border: 1px solid var(--oracle-line-gold); border-radius: 50%; color: var(--oracle-gold); background: rgb(0 0 0 / 18%); font-size: 1.2rem; }
+.oracle-command-card span:nth-child(2) { display: grid; gap: .18rem; min-width: 0; }
+.oracle-command-card small { color: var(--oracle-interface); font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.oracle-command-card strong { font-size: 1rem; }
+.oracle-command-card em { color: #9fb1c4; font-size: .78rem; font-style: normal; line-height: 1.35; }
+.oracle-command-card > b { position: absolute; right: .75rem; bottom: .65rem; max-width: 60%; overflow: hidden; color: var(--oracle-gold); font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.oracle-priority-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.oracle-priority-columns section { display: grid; align-content: start; gap: .45rem; }
+.oracle-priority-columns h4 { margin: 0 0 .25rem; color: var(--oracle-interface); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.oracle-priority-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .18rem .6rem; padding: .7rem; border: 1px solid rgb(116 201 244 / 14%); border-radius: .55rem; background: rgb(0 0 0 / 12%); color: var(--oracle-ivory); text-align: left; }
+.oracle-priority-row span { grid-row: 1 / 3; align-self: center; padding: .25rem .4rem; border: 1px solid var(--oracle-line); color: var(--oracle-interface); font-size: .62rem; text-transform: uppercase; }
+.oracle-priority-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oracle-priority-row small { color: #91a4b8; }
+.oracle-count-badge { display: grid; place-items: center; min-width: 2.2rem; height: 2.2rem; border: 1px solid rgb(216 92 96 / 34%); border-radius: 50%; color: #ffb3b6; background: rgb(216 92 96 / 9%); font-weight: 900; }
+
+.oracle-world-ledger dl { display: grid; gap: .3rem; margin: 0; }
+.oracle-world-ledger dl > div { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem 0; border-bottom: 1px solid var(--oracle-line); }
+.oracle-world-ledger dt { color: #95a8ba; }
+.oracle-world-ledger dd { margin: 0; color: var(--oracle-gold); font-family: var(--font-family-display); font-weight: 800; }
+
+.oracle-rank-list { display: grid; gap: .45rem; }
+.oracle-rank-list button { position: relative; min-height: 3.8rem; display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: .7rem; padding: .65rem .75rem .85rem; overflow: hidden; border: 1px solid var(--oracle-line); border-radius: .55rem; background: rgb(0 0 0 / 12%); color: var(--oracle-ivory); text-align: left; }
+.oracle-rank-list button > b { color: var(--oracle-gold); }
+.oracle-rank-list button > span { display: grid; min-width: 0; }
+.oracle-rank-list button strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oracle-rank-list button small { color: #91a4b8; }
+.oracle-rank-list button em { color: var(--oracle-interface); font-style: normal; font-weight: 900; }
+.oracle-rank-list button i { position: absolute; left: 0; bottom: 0; width: var(--oracle-rank-progress); height: .2rem; background: linear-gradient(90deg, var(--oracle-gold), var(--oracle-interface)); }
+
+/* Existing modules receive a clearer administrative hierarchy. */
+.oracle-console[data-oracle-route="admin-users"] .oracle-route-content > .grid > .panel:first-child { position: sticky; top: 1rem; align-self: start; max-height: calc(100dvh - 8rem); overflow: auto; }
+.oracle-console[data-oracle-route="admin-users"] .user-row.active { border-color: var(--oracle-gold); background: linear-gradient(90deg, rgb(230 184 77 / 12%), rgb(116 201 244 / 5%)); }
+.oracle-console[data-oracle-route="admin-users"] .account-management-card.danger { border-color: rgb(216 92 96 / 35%); background: rgb(75 16 27 / 25%); }
+.oracle-console[data-oracle-route="admin-economy"] .economy-hero,
+.oracle-console[data-oracle-route="admin-content"] .content-admin-hero,
+.oracle-console[data-oracle-route="admin-ops"] .diagnostic-console { border-color: var(--oracle-line-gold); }
+.oracle-console[data-oracle-route="admin-reports"] .report-row { border-color: var(--oracle-line); background: rgb(0 0 0 / 14%); }
+.oracle-console[data-oracle-route="admin-reports"] .report-friendly-id { color: var(--oracle-interface); }
+.oracle-console[data-oracle-route="admin-ops"] .diagnostic-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.oracle-console[data-oracle-route="ranking"] .ranking-podium,
+.oracle-console[data-oracle-route="ranking"] .ranking-row { border-color: var(--oracle-line); }
+
+/* Security center: comparison ledger requested for the Oracle. */
+body[data-interface-scope="oracle"] .security-modal { background: rgb(2 7 14 / 88%); }
+body[data-interface-scope="oracle"] .security-modal-card { width: min(78rem, 100%); border-color: var(--oracle-line-gold); border-radius: 1rem; background: linear-gradient(150deg, #07111f, #0d1c30); }
+.oracle-security-console { gap: 1rem; }
+.oracle-security-masthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid var(--oracle-line); border-radius: .8rem; background: linear-gradient(120deg, rgb(116 201 244 / 8%), rgb(230 184 77 / 4%)); }
+.oracle-security-masthead h2,
+.oracle-security-masthead p { margin: 0; }
+.oracle-security-masthead > div { display: grid; gap: .35rem; }
+.oracle-security-masthead > div > p:last-child { color: #9fb1c4; }
+.oracle-security-eye { display: grid; place-items: center; width: 4.2rem; height: 4.2rem; border: 1px solid var(--oracle-line-gold); border-radius: 100% 0 100% 0; transform: rotate(45deg); color: var(--oracle-interface); font-size: 1.5rem; box-shadow: inset 0 0 1.5rem rgb(89 199 255 / 12%), 0 0 1.5rem rgb(89 199 255 / 12%); }
+body[data-interface-scope="oracle"] .security-status-grid article { border-color: var(--oracle-line); background: rgb(0 0 0 / 14%); }
+body[data-interface-scope="oracle"] .security-admin-incident { gap: 1rem; padding: 1rem; border-color: var(--oracle-line); border-radius: .75rem; background: linear-gradient(140deg, rgb(255 255 255 / 2%), rgb(0 0 0 / 16%)); }
+.security-decision-ledger { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; margin: 0; }
+.security-decision-ledger > div { min-width: 0; padding: .65rem; border: 1px solid var(--oracle-line); background: rgb(0 0 0 / 14%); }
+.security-decision-ledger dt { color: #91a4b8; font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.security-decision-ledger dd { margin: .2rem 0 0; overflow: hidden; color: var(--oracle-ivory); font-weight: 800; text-overflow: ellipsis; }
+.security-comparison-scroll { overflow-x: auto; border: 1px solid var(--oracle-line); border-radius: .65rem; }
+.security-comparison-table { width: 100%; min-width: 42rem; border-collapse: collapse; color: var(--oracle-ivory); font-size: .76rem; }
+.security-comparison-table caption { padding: .65rem .75rem; color: var(--oracle-interface); text-align: left; font-weight: 800; }
+.security-comparison-table th,
+.security-comparison-table td { padding: .6rem .75rem; border-top: 1px solid var(--oracle-line); text-align: left; }
+.security-comparison-table thead th { color: #9fb1c4; background: rgb(0 0 0 / 18%); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; }
+.security-comparison-table tbody th { color: var(--oracle-gold); }
+body[data-interface-scope="oracle"] .security-admin-actions { position: sticky; bottom: -.1rem; z-index: 2; padding: .65rem; border: 1px solid var(--oracle-line); border-radius: .65rem; background: rgb(7 17 31 / 94%); backdrop-filter: blur(14px); }
+
+@media (max-width: 78rem) {
+  .oracle-command-header { grid-template-columns: minmax(0, 1fr) 9rem; }
+  .oracle-metric-grid { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .oracle-route-nav { grid-template-columns: repeat(9, minmax(6rem, 1fr)); }
+  .oracle-command-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 64rem) {
+  .oracle-command-header { min-height: 0; grid-template-columns: minmax(0, 1fr) 7.5rem; }
+  .oracle-eye-constellation { width: 7.5rem; }
+  .oracle-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .oracle-console[data-oracle-route="admin-users"] .oracle-route-content > .grid > .panel:first-child { position: static; max-height: none; }
+  .oracle-console[data-oracle-route="admin-ops"] .diagnostic-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .security-decision-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 47.5rem) {
+  .oracle-console { gap: .7rem; }
+  .oracle-command-header { grid-template-columns: 1fr; padding: 1rem; border-radius: .85rem; }
+  .oracle-command-copy h2 { font-size: clamp(1.75rem, 9vw, 2.5rem); }
+  .oracle-eye-constellation { position: absolute; top: .8rem; right: .8rem; width: 4.5rem; opacity: .45; }
+  .oracle-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: .4rem; }
+  .oracle-metric { min-height: 4.25rem; padding: .65rem; }
+  .oracle-route-nav { margin-inline: -.15rem; padding: .35rem; grid-template-columns: repeat(9, 6rem); scroll-snap-type: x proximity; }
+  .oracle-route-link { min-width: 6rem; scroll-snap-align: start; }
+  .oracle-command-grid,
+  .oracle-priority-columns { grid-template-columns: 1fr; }
+  .oracle-command-card { min-height: 7.1rem; }
+  .oracle-section-heading { align-items: flex-start; }
+  .oracle-section-heading .action-row { width: 100%; }
+  .oracle-route-content .form-grid,
+  .oracle-route-content .support-form-grid { grid-template-columns: 1fr; }
+  .oracle-route-content .wide { grid-column: auto; }
+  .security-decision-ledger { grid-template-columns: 1fr 1fr; }
+  body[data-interface-scope="oracle"] .security-modal { padding: 0; }
+  body[data-interface-scope="oracle"] .security-modal-card { max-height: 96dvh; border-radius: 1rem 1rem 0 0; }
+  body[data-interface-scope="oracle"] .security-admin-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  body[data-interface-scope="oracle"] .security-admin-actions button { width: 100%; min-height: 2.75rem; }
+}
+
+@media (max-width: 24.375rem) {
+  .oracle-command-header { padding: .85rem; }
+  .oracle-command-status { align-items: flex-start; flex-direction: column; }
+  .oracle-metric-grid { gap: .4rem; }
+  .oracle-metric strong { font-size: 1rem; }
+  .oracle-command-card { grid-template-columns: 2.25rem minmax(0, 1fr); padding: .8rem; }
+  .oracle-command-icon { width: 2.25rem; height: 2.25rem; }
+  .security-decision-ledger { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-command-card,
+  .oracle-route-link,
+  .oracle-orbit { transition: none !important; animation: none !important; }
+}
+
+@media (forced-colors: active) {
+  .oracle-command-header,
+  .oracle-route-nav,
+  .oracle-command-card,
+  .oracle-metric,
+  .security-comparison-scroll,
+  .security-decision-ledger > div { border: 1px solid CanvasText; }
+  .oracle-route-link.active { color: HighlightText; background: Highlight; }
+}

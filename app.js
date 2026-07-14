@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.3.3", commit: "dev", cacheName: "millennium-shell-v3.6.3.3" };
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.4", commit: "dev", cacheName: "millennium-shell-v3.6.4" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -33,6 +33,15 @@ const STABILITY = window.MILLENNIUM_STABILITY_31 || {
     return true;
   },
   boundedHistory: (history, entry, maximum = 30) => [...(history || []), entry].slice(-maximum),
+};
+const PERF_RUNTIME = window.MILLENNIUM_PERFORMANCE_364 || {
+  version: 0,
+  profile: () => ({ tier: "standard", reducedMotion: false, maxCanvasDpr: 2 }),
+  applyProfile: () => ({}),
+  preloadMonster: () => Promise.resolve([]),
+  prepareImages: () => {},
+  setVisibility: () => {},
+  report: () => ({}),
 };
 const POLISH = window.MILLENNIUM_POLISH_31 || {
   createLifecycle: () => ({ state: "running", terminal: false, can: () => false, transition: () => "running", history: [] }),
@@ -63,6 +72,26 @@ const ECHOES = window.MILLENNIUM_ECHOES_33 || {
   alchemyChallenge: () => ({ ingredients: [], recipe: [], clues: [] }),
   evaluateAlchemy: () => ({ correct: 0, total: 0, score: 0, passed: false }),
 };
+
+const VIVID = window.MILLENNIUM_MINIGAMES_VIVID_364 || {
+  version: 0,
+  defaultEvents: [],
+  hashSeed: (seed = "millennium") => [...String(seed)].reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261),
+  randomFromSeed: () => Math.random,
+  isEventActive: (event = {}) => event.status === "active",
+  normalizeEvent: (event = {}) => event,
+  eventsForMode: () => [],
+  modeModifier: () => ({ scoreMultiplier: 1, timeModifier: 0, difficultyModifier: 0, events: [] }),
+  createAimConfig: (_seed, _difficulty, _level) => ({ seconds: 40, magazine: 6, reloadMs: 1000, spawnMs: 600, targetLifeMs: 1500, maxTargets: 5, drift: .15, scoreMultiplier: 1, eventNames: [] }),
+  createSealConfig: (_seed, _difficulty, level = 1) => ({ rounds: Math.min(5, 2 + Number(level || 1)), baseLength: 4, corruptionPerError: 40, scoreMultiplier: 1, eventNames: [] }),
+  createCartographyExpedition: () => ({ size: 7, cells: [], player: { x: 0, y: 0 }, exit: { x: 6, y: 6 }, relicTarget: 1, relics: 0, damage: 0, moves: 0, remaining: 90, scoreMultiplier: 1, eventNames: [] }),
+  moveCartography: (session) => ({ moved: false, session }),
+  createAlchemyLab: () => ({ ingredients: [], recipe: [], selection: [], heat: 35, targetHeat: 45, targetStability: 50, stability: 50, essence: 0, clues: [], scoreMultiplier: 1, eventNames: [] }),
+  addAlchemyIngredient: (session) => session,
+  adjustAlchemyHeat: (session) => session,
+  evaluateAlchemyLab: () => ({ correct: 0, total: 0, passed: false, score: 0, heatDistance: 0 }),
+};
+
 const FOUNDATIONS = window.MILLENNIUM_FOUNDATIONS_34 || {
   minigameLevels: [{ id: 1, name: "Nível 1", rewardFactor: 1 }, { id: 2, name: "Nível 2", rewardFactor: 1.12 }, { id: 3, name: "Nível 3", rewardFactor: 1.28 }],
   musicTracks: [],
@@ -174,6 +203,7 @@ const PRESENCE_CHECK_MS = 60 * 1000;
 const PRESENCE_LEASE_TTL_MS = 2 * 60 * 1000;
 const PRESENCE_ONLINE_WINDOW_MS = 20 * 60 * 1000;
 const ORACLE_LABEL = "Oráculo";
+const AWAKENING_CEREMONY_VERSION = "3.6.4";
 const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
   { key: "for", label: "Força", short: "FOR" },
@@ -228,6 +258,7 @@ const DEFAULT_CONTENT = {
     levelMax: 99,
     eventActive: false,
     eventName: "",
+    minigameEvents: [],
     bannerRateUp: "",
     rareRateUpChance: 0.3,
     soundEnabled: true,
@@ -621,6 +652,7 @@ const PLAYER_NAVIGATION = [
     { id: "creations", label: "Criações", icon: "⌁" },
     { id: "roulette", label: "Afinidade", icon: "✦" },
     { id: "gacha", label: "Invocação", icon: "◇" },
+    { id: "monsters", label: "Monstros", icon: "◆" },
     { id: "minigames", label: "Minigames", icon: "▣" },
     { id: "inventory", label: "Inventário", icon: "◎" },
     { id: "grimoire", label: "Grimório", icon: "✧" },
@@ -640,18 +672,18 @@ const PLAYER_NAVIGATION = [
 ];
 
 const ADMIN_NAVIGATION = [
-    { id: "admin-home", label: "Controle", icon: "⚙" },
-    { id: "admin-users", label: "Usuários", icon: "◈" },
-    { id: "admin-content", label: "Forja", icon: "✚" },
-    { id: "admin-rewards", label: "Prêmios", icon: "✦" },
-    { id: "admin-economy", label: "Economia", icon: "◈" },
+    { id: "admin-home", label: "Conselho", icon: "◉" },
+    { id: "admin-users", label: "Contas", icon: "◇" },
+    { id: "admin-content", label: "Conteúdo", icon: "✚" },
+    { id: "admin-rewards", label: "Recompensas", icon: "✦" },
+    { id: "admin-economy", label: "Economia", icon: "⌬" },
     { id: "admin-mail", label: "Correio", icon: "@" },
-    { id: "admin-requests", label: "Validações", icon: "✓" },
-    { id: "admin-ops", label: "Operações", icon: "◆" },
+    { id: "admin-requests", label: "Decisões", icon: "✓" },
+    { id: "admin-ops", label: "Auditoria", icon: "◆" },
     { id: "admin-chat", label: "Chat", icon: "☷" },
     { id: "admin-missions", label: "Missões", icon: "☰" },
     { id: "admin-settings", label: "Temporada", icon: "◌" },
-    { id: "admin-reports", label: "Denúncias", icon: "!" },
+    { id: "admin-reports", label: "Reports", icon: "!" },
 ];
 
 const NAVS = {
@@ -660,13 +692,14 @@ const NAVS = {
 };
 
 const VIEW_TITLES = {
-  "player-home": "Suporte do player",
-  profile: "Perfil público",
+  "player-home": "Centro do Despertar",
+  profile: "Identidade do Herói",
   character: "Ficha do personagem",
   "character-life": "Dar Vida",
   creations: "Poderes e técnicas",
   roulette: "Roleta de afinidade",
-  gacha: "Invocação dimensional",
+  gacha: "Invocação dos Monstros",
+  monsters: "Monstros Vinculados",
   minigames: "Minigames do Oráculo",
   inventory: "Inventário e dinheiro",
   grimoire: "Grimório e títulos",
@@ -683,18 +716,34 @@ const VIEW_TITLES = {
   chat: "Chat da comunidade",
   missions: "Missões semanais",
   reports: "Reports e denúncias",
-  "admin-home": "Painel de controle",
-  "admin-users": "Usuários e fichas",
-  "admin-content": "Forja do Oráculo",
+  "admin-home": "Conselho do Oráculo",
+  "admin-users": "Contas e identidades",
+  "admin-content": "Arquivo e conteúdo",
   "admin-rewards": "Enviar prêmios",
-  "admin-economy": "Economia, cofre e minigames",
+  "admin-economy": "Tesouraria e economia",
   "admin-mail": "Correio místico",
-  "admin-requests": "Validações e nerf",
-  "admin-ops": "Operações e auditoria",
+  "admin-requests": "Câmara de decisões",
+  "admin-ops": "Auditoria e diagnóstico",
   "admin-chat": "Chat e sussurros",
   "admin-missions": "Missões semanais",
   "admin-settings": "Temporada, avisos e temas",
-  "admin-reports": "Bugs e denúncias",
+  "admin-reports": "Reports e moderação",
+};
+
+const SECONDARY_MODULES = {
+  gacha: { eyebrow: "Ritual dimensional", title: "Santuário das Invocações", description: "Banners, probabilidades e Cofre dos Ecos reunidos em uma única cerimônia visual.", icon: "◇", tone: "interface", links: [["monsters", "Monstros"], ["inventory", "Inventário"], ["codex", "Codex"]] },
+  monsters: { eyebrow: "Vínculos despertos", title: "Santuário dos Monstros Vinculados", description: "Cuide, equipe, desenvolva e organize criaturas com progressão real e pixel art carregada sob demanda.", icon: "◆", tone: "hero", links: [["gacha", "Invocação"], ["minigames", "Modos"], ["inventory", "Inventário"]] },
+  market: { eyebrow: "Entreposto do Despertar", title: "Mercado, Forja e Trocas", description: "Compre, fabrique, negocie e consulte fragmentos sem perder o contexto da sua economia.", icon: "$", tone: "hero", links: [["inventory", "Inventário"], ["gacha", "Invocação"], ["pass", "Passe"]] },
+  inventory: { eyebrow: "Arsenal do herói", title: "Inventário e Cofre Pessoal", description: "Equipamentos, relíquias, pets e moedas organizados como patrimônio vivo do personagem.", icon: "◎", tone: "success", links: [["market", "Mercado"], ["gacha", "Invocação"], ["profile", "Perfil"]] },
+  guild: { eyebrow: "Salão das alianças", title: "Guildas, Partys e Juramentos", description: "Organize companheiros, missões coletivas e comunicação de grupo em uma sala de comando única.", icon: "⚔", tone: "hero", links: [["chat", "Chat"], ["missions", "Missões"], ["ranking", "Ranking"]] },
+  missions: { eyebrow: "Quadro de jornadas", title: "Missões e Progresso Narrativo", description: "Escolha objetivos, acompanhe solicitações e registre feitos para julgamento do Oráculo.", icon: "☰", tone: "interface", links: [["guild", "Guilda"], ["pass", "Passe"], ["diary", "Diário"]] },
+  "admin-missions": { eyebrow: "Câmara de jornadas", title: "Missões sob autoridade do Oráculo", description: "Publicação, acompanhamento e revisão de objetivos semanais sem alterar suas recompensas.", icon: "☰", tone: "oracle", links: [["admin-home", "Conselho"], ["admin-requests", "Decisões"], ["admin-settings", "Temporada"]] },
+  pass: { eyebrow: "Trilha da Aurora", title: "Passe do Despertar", description: "Progresso sazonal, marcos gratuitos e recompensas Premium apresentados como uma jornada contínua.", icon: "◆", tone: "hero", links: [["missions", "Missões"], ["minigames", "Minigames"], ["market", "Mercado"]] },
+  chat: { eyebrow: "Vozes de Millennium", title: "Chat da Comunidade", description: "Mensagens globais e conversas privadas com hierarquia clara e leitura confortável em qualquer tela.", icon: "☷", tone: "interface", links: [["guild", "Guilda"], ["profile", "Perfil"], ["reports", "Reports"]] },
+  "admin-chat": { eyebrow: "Escuta do Oráculo", title: "Comunicações e Sussurros", description: "A mesma rede de mensagens, apresentada dentro da autoridade administrativa preservada.", icon: "☷", tone: "oracle", links: [["admin-home", "Conselho"], ["admin-reports", "Reports"], ["admin-users", "Contas"]] },
+  minigames: { eyebrow: "Campo de provas", title: "Minigames e Expedições", description: "Energia, atividades, mapas e recordes reunidos em uma central de desafios sem loops de leitura.", icon: "▣", tone: "corruption", links: [["pass", "Passe"], ["codex", "Mapas"], ["inventory", "Inventário"]] },
+  codex: { eyebrow: "Arquivo vivo", title: "Codex, Mapas e Memórias", description: "Conhecimento, territórios e registros do mundo organizados como uma biblioteca explorável.", icon: "✥", tone: "interface", links: [["cultures", "Culturas"], ["professions", "Ofícios"], ["minigames", "Expedições"]] },
+  "admin-settings": { eyebrow: "Engrenagem da temporada", title: "Configurações e Identidade Global", description: "Temporada, avisos, temas e preferências operacionais com hierarquia administrativa explícita.", icon: "◌", tone: "oracle", links: [["admin-home", "Conselho"], ["admin-content", "Conteúdo"], ["admin-ops", "Auditoria"]] },
 };
 
 const state = {
@@ -721,6 +770,10 @@ const state = {
   codexSort: "name",
   codexScrollByTab: {},
   profileTab: "overview",
+  monsterTab: "summary",
+  selectedMonsterId: "",
+  monsterOperationInProgress: false,
+  monsterInventoryFilter: "all",
   chatTab: "global",
   helpTab: "tutorial",
   marketTab: "market",
@@ -730,7 +783,7 @@ const state = {
   rankingTab: "prestige",
   rankingRange: "season",
   expandedAttribute: "for",
-  gachaTab: "pets",
+  gachaTab: "monsters",
   vaultTab: "all",
   minigameTab: "quick",
   minigameDifficulty: "facil",
@@ -741,6 +794,7 @@ const state = {
   activeCartographySession: null,
   activeAlchemySession: null,
   gachaRotationTimer: 0,
+  gachaRotationIntervalMs: 0,
   gachaRotationHour: WORLD.rotationId(Date.now()),
   serverTimeOffsetMs: 0,
   resolvingActivityIds: new Set(),
@@ -836,6 +890,9 @@ const state = {
   passActivityTracking: false,
   onboardingShown: false,
   onboardingStep: 0,
+  awakeningCeremonyOpen: false,
+  awakeningCeremonyScheduled: false,
+  awakeningCeremonyReturnFocus: null,
   pendingLiveRender: false,
   unsubs: [],
   routeUnsubs: [],
@@ -881,9 +938,9 @@ const NAV_GROUPS = {
     { label: "Suporte", ids: ["reports"] },
   ],
   admin: [
-    { label: "Oráculo", ids: ["admin-home", "admin-users", "admin-requests", "admin-reports"] },
-    { label: "Mundo e economia", ids: ["admin-content", "admin-rewards", "admin-economy", "admin-mail"] },
-    { label: "Operação", ids: ["admin-ops", "admin-chat", "admin-missions", "admin-settings"] },
+    { label: "Núcleo de decisão", ids: ["admin-home", "admin-users", "admin-requests", "admin-reports"] },
+    { label: "Registros do mundo", ids: ["admin-content", "admin-rewards", "admin-economy", "admin-mail"] },
+    { label: "Observação e crise", ids: ["admin-ops", "admin-chat", "admin-missions", "admin-settings"] },
     { label: "Jogador · Obrigatório", ids: ["character", "roulette", "missions", "chat"] },
     { label: "Jogador · Recomendado", ids: ["character-life", "creations", "guild", "cultures", "professions"] },
     { label: "Jogador · Opcional", ids: ["player-home", "profile", "codex", "help", "gacha", "inventory", "grimoire", "market", "pass", "ranking", "hall", "diary"] },
@@ -902,6 +959,176 @@ function esc(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+const MEDIA_SPECS = Object.freeze({
+  avatar: [320, 320],
+  portrait: [800, 1000],
+  banner: [1600, 900],
+  event: [1280, 720],
+  map: [1280, 720],
+  thumbnail: [400, 300],
+  "pet-card": [768, 1024],
+  "pet-thumbnail": [320, 320],
+  sigil: [512, 512],
+  generic: [640, 480],
+});
+
+function mediaAttrs(kind = "generic", loading = "lazy") {
+  const [width, height] = MEDIA_SPECS[kind] || MEDIA_SPECS.generic;
+  const safeLoading = loading === "eager" ? "eager" : "lazy";
+  return `width="${width}" height="${height}" loading="${safeLoading}" decoding="async"`;
+}
+
+function mediaSpecForImage(image) {
+  const source = String(image?.getAttribute?.("src") || image?.currentSrc || "").toLowerCase();
+  if (source.includes("sigilo") || image?.closest?.(".auth-sigil, .awakening-sigil-large")) return "sigil";
+  if (source.includes("/pets/") || image?.closest?.(".pet-card, .gacha-reveal-art, .hunt-pet-runner")) {
+    return source.includes("-thumb.") || image?.closest?.(".gacha-pool-grid, .tower-deck-pet, .featured-pet, .activity-scene") ? "pet-thumbnail" : "pet-card";
+  }
+  if (source.includes("/maps/") || image?.closest?.(".world-map-node, .hunt-expedition-scene, .cartography-session")) {
+    return source.includes("-thumb.") || image?.closest?.(".codex-card-media") ? "thumbnail" : "map";
+  }
+  if (image?.matches?.(".home-hero-backdrop, .profile-banner") || image?.closest?.(".hero-profile-banner")) return "banner";
+  if (image?.matches?.(".avatar") || image?.closest?.(".message-avatar, .home-hero-portrait")) return "avatar";
+  if (image?.closest?.(".hero-profile-portrait, .awakening-avatar-shell")) return "portrait";
+  if (image?.matches?.(".content-image") || image?.closest?.(".catalog-detail-modal, .registration-preview, .codex-card-media, .guild-card")) return "thumbnail";
+  return "generic";
+}
+
+function normalizeRenderedImages(root = document) {
+  if (!root?.querySelectorAll) return;
+  const images = root.matches?.("img") ? [root] : Array.from(root.querySelectorAll("img"));
+  images.forEach((image) => {
+    const kind = mediaSpecForImage(image);
+    const [width, height] = MEDIA_SPECS[kind] || MEDIA_SPECS.generic;
+    if (!image.hasAttribute("alt")) image.setAttribute("alt", "");
+    if (!image.hasAttribute("width")) image.setAttribute("width", String(width));
+    if (!image.hasAttribute("height")) image.setAttribute("height", String(height));
+    const eager = image.id === "authHeroImage" || image.matches(".home-hero-backdrop") || image.closest(".awakening-portrait-stage");
+    if (!image.hasAttribute("loading")) image.setAttribute("loading", eager ? "eager" : "lazy");
+    if (!image.hasAttribute("decoding")) image.setAttribute("decoding", "async");
+  });
+}
+
+
+function humanizeAccessibleName(value) {
+  return String(value || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .trim();
+}
+
+function normalizeRenderedAccessibility(root = document) {
+  if (!root?.querySelectorAll) return;
+  const controls = root.matches?.("input, select, textarea") ? [root] : Array.from(root.querySelectorAll("input, select, textarea"));
+  controls.forEach((control) => {
+    const hasName = Boolean(control.getAttribute("aria-label") || control.getAttribute("aria-labelledby") || control.labels?.length);
+    if (hasName || control.type === "hidden") return;
+    const nearby = control.closest("label")?.querySelector("span, strong")?.textContent?.trim();
+    const fallback = nearby || control.getAttribute("placeholder") || humanizeAccessibleName(control.name || control.id || control.type || "Campo");
+    if (fallback) control.setAttribute("aria-label", fallback);
+  });
+
+  const buttons = root.matches?.("button, [role='button']") ? [root] : Array.from(root.querySelectorAll("button, [role='button']"));
+  buttons.forEach((button) => {
+    const hasName = Boolean(button.getAttribute("aria-label") || button.getAttribute("aria-labelledby"));
+    const text = button.textContent?.replace(/\s+/g, " ").trim() || "";
+    if (hasName || /[\p{L}\p{N}]/u.test(text)) return;
+    const fallback = button.getAttribute("title") || humanizeAccessibleName(button.dataset?.action || button.dataset?.nav || "Ação");
+    if (fallback) button.setAttribute("aria-label", fallback);
+  });
+
+  const progressBars = root.matches?.("[role='progressbar']") ? [root] : Array.from(root.querySelectorAll("[role='progressbar']"));
+  progressBars.forEach((bar) => {
+    if (!bar.hasAttribute("aria-valuemin")) bar.setAttribute("aria-valuemin", "0");
+    if (!bar.hasAttribute("aria-valuemax")) bar.setAttribute("aria-valuemax", "100");
+    if (!bar.hasAttribute("aria-valuenow")) {
+      const indicator = bar.querySelector("i, span");
+      const width = Number.parseFloat(indicator?.style?.width || "");
+      if (Number.isFinite(width)) bar.setAttribute("aria-valuenow", String(Math.max(0, Math.min(100, Math.round(width)))));
+    }
+  });
+
+  const tabs = root.matches?.("[role='tab']") ? [root] : Array.from(root.querySelectorAll("[role='tab']"));
+  tabs.forEach((tab) => {
+    const selected = tab.getAttribute("aria-selected") === "true" || tab.getAttribute("aria-current") === "page" || tab.classList.contains("active");
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+
+  const links = root.matches?.("a[target='_blank']") ? [root] : Array.from(root.querySelectorAll("a[target='_blank']"));
+  links.forEach((link) => {
+    const rel = new Set(String(link.rel || "").split(/\s+/).filter(Boolean));
+    rel.add("noopener");
+    rel.add("noreferrer");
+    link.rel = [...rel].join(" ");
+  });
+}
+
+function announceCurrentRoute() {
+  const announcer = $("#routeAnnouncement");
+  if (!announcer || announcer.dataset.route === state.view) return;
+  announcer.dataset.route = state.view;
+  announcer.textContent = `Área carregada: ${$("#viewTitle")?.textContent || VIEW_TITLES[state.view] || "Painel"}.`;
+}
+
+function syncGameplayVisibility(hidden = document.hidden) {
+  state.runtimeSuspended = Boolean(hidden);
+
+  const aim = state.activeAimSession;
+  if (aim && !aim.finished) {
+    aim.runtimePaused = Boolean(hidden);
+    if (hidden && aim.frame) { window.cancelAnimationFrame(aim.frame); aim.frame = 0; }
+    if (!hidden && aim.drawFrame && !aim.frame) {
+      aim.lastFrame = performance.now();
+      aim.frame = window.requestAnimationFrame(aim.drawFrame);
+    }
+  }
+
+  const seals = state.activeSealSession;
+  if (seals && !seals.finished) {
+    if (hidden) {
+      seals.runtimePaused = true;
+      (seals.timers || []).forEach((timer) => window.clearTimeout(timer));
+      seals.timers = [];
+      document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = true; button.classList.remove("active"); });
+    } else if (seals.runtimePaused) {
+      seals.runtimePaused = false;
+      presentSealRound(seals);
+    }
+  }
+
+  const cartography = state.activeCartographySession;
+  if (cartography && !cartography.finished) cartography.runtimePaused = Boolean(hidden);
+
+  const tower = state.activeTowerSession;
+  if (tower && !tower.finished) {
+    tower.runtimePaused = Boolean(hidden);
+    if (hidden && tower.animationFrame) { window.cancelAnimationFrame(tower.animationFrame); tower.animationFrame = null; }
+    if (!hidden && tower.looping && !tower.animationFrame) {
+      tower.lastFrame = performance.now();
+      tower.animationFrame = window.requestAnimationFrame(() => runTowerFrame(tower));
+    }
+  }
+
+  state.monsterBattleRuntimePaused = Boolean(hidden);
+  if (hidden && state.monsterBattleTimer) {
+    window.clearTimeout(state.monsterBattleTimer);
+    state.monsterBattleTimer = 0;
+  } else if (!hidden && state.monsterBattleAnimating && state.monsterBattleStep) {
+    state.monsterBattleStep();
+  }
+
+  if (hidden) playSound.ctx?.suspend?.().catch(() => {});
+}
+
+function syncDocumentVisibility() {
+  const hidden = document.hidden;
+  document.documentElement.dataset.documentVisibility = hidden ? "hidden" : "visible";
+  PERF_RUNTIME.setVisibility?.(hidden);
+  syncGameplayVisibility(hidden);
+  startGachaRotationTicker();
 }
 
 function slug(value) {
@@ -1201,7 +1428,7 @@ function fileToDataUrl(file) {
 
 function mediaInput(name, label, value = "", options = {}) {
   const id = `${name}-${cryptoRandom().slice(0, 8)}`;
-  const preview = value ? `<img src="${esc(value)}" alt="${esc(label)}" />` : `<span>Prévia</span>`;
+  const preview = value ? `<img src="${esc(value)}" alt="${esc(label)}" ${mediaAttrs("generic")} />` : `<span>Prévia</span>`;
   return `
     <label class="media-field">
       <span>${esc(label)}</span>
@@ -1270,13 +1497,13 @@ function cropImageStyle(character = {}, prefix = "avatar") {
 
 function renderProfileBanner(character = {}, options = {}) {
   const source = character.bannerUrl || SEASON_ART.login;
-  return `<div class="profile-banner-shell ${character.bannerUrl ? "" : "fallback"}"><img class="profile-banner" style="${esc(cropImageStyle(character, "banner"))}" src="${esc(source)}" alt="${esc(options.alt || "Banner do personagem")}" /></div>`;
+  return `<div class="profile-banner-shell ${character.bannerUrl ? "" : "fallback"}"><img class="profile-banner" style="${esc(cropImageStyle(character, "banner"))}" src="${esc(source)}" alt="${esc(options.alt || "Banner do personagem")}" ${mediaAttrs("banner")} /></div>`;
 }
 
 function renderProfileAvatar(character = {}, options = {}) {
   const rarity = options.rarity || "Comum";
   const online = options.online === true;
-  return `<div class="avatar-frame ${rarityClass(rarity)}" title="${esc(options.title || "Presença do personagem")}"><div class="avatar-viewport"><img class="avatar" style="${esc(cropImageStyle(character, "avatar"))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="${esc(options.alt || "Avatar do personagem")}" /></div>${options.showStatus === false ? "" : `<span class="profile-online-dot ${online ? "online" : ""}" aria-label="${online ? "Online" : "Offline"}"></span>`}</div>`;
+  return `<div class="avatar-frame ${rarityClass(rarity)}" title="${esc(options.title || "Presença do personagem")}"><div class="avatar-viewport"><img class="avatar" style="${esc(cropImageStyle(character, "avatar"))}" src="${esc(character.avatarUrl || placeholderAvatar())}" alt="${esc(options.alt || "Avatar do personagem")}" ${mediaAttrs("avatar")} /></div>${options.showStatus === false ? "" : `<span class="profile-online-dot ${online ? "online" : ""}" aria-label="${online ? "Online" : "Offline"}"></span>`}</div>`;
 }
 
 function cropEditor(prefix, label, imageUrl, character = {}, draft = null) {
@@ -1287,7 +1514,7 @@ function cropEditor(prefix, label, imageUrl, character = {}, draft = null) {
   const source = imageUrl || (prefix === "avatar" ? placeholderAvatar() : SEASON_ART.login);
   return `
     <section class="crop-editor wide" data-crop-editor="${esc(prefix)}">
-      <div class="crop-editor-preview ${esc(prefix)}"><img data-crop-preview-image="${esc(prefix)}" src="${esc(source)}" style="object-position:${x}% ${y}%;transform:scale(${zoom})" alt="Prévia de ${esc(label)}" /></div>
+      <div class="crop-editor-preview ${esc(prefix)}"><img data-crop-preview-image="${esc(prefix)}" src="${esc(source)}" style="object-position:${x}% ${y}%;transform:scale(${zoom})" alt="Prévia de ${esc(label)}" ${mediaAttrs(prefix === "banner" ? "banner" : "portrait")} /></div>
       <div class="crop-editor-controls">
         <div><span>${esc(label)}</span><small>Arraste os controles e veja exatamente como ficará.</small></div>
         <label><span>Horizontal</span><input type="range" min="0" max="100" step="1" name="${esc(prefix)}FocusX" data-crop-control="${esc(prefix)}" value="${x}" /></label>
@@ -1361,7 +1588,7 @@ async function previewMediaInput(input) {
   const preview = input.closest("form")?.querySelector(`[data-media-preview="${CSS.escape(field)}"]`);
   if (!preview) return;
   const url = await fileToDataUrl(file);
-  preview.innerHTML = `<img src="${esc(url)}" alt="Prévia de imagem" />`;
+  preview.innerHTML = `<img src="${esc(url)}" alt="Prévia de imagem" ${mediaAttrs("generic")} />`;
   const cropImage = input.closest("form")?.querySelector(`[data-crop-preview-image="${CSS.escape(field.replace(/Url$/, ""))}"]`);
   if (cropImage) cropImage.src = url;
 }
@@ -1558,6 +1785,25 @@ function defaultCharacter(uid, displayName = "") {
     gachaFragments: {},
     gachaVault: [],
     gachaHistory: [],
+    monsterSchemaVersion: 1,
+    monsterInstances: [],
+    monsterInventory: [],
+    monsterResources: { cores: {}, fragments: {}, materials: {} },
+    monsterTeams: { active: [], arena: [], dungeon: [], tower: [] },
+    monsterEconomyVersion: 1,
+    monsterGachaPity: { rareMonster: 0, max: 30 },
+    monsterGachaHistory: [],
+    monsterFirstTenClaimed: false,
+    monsterDungeon: { unlockedPhase: 1, bestPhase: 0, attempts: 0, bestScore: 0 },
+    monsterDungeonHistory: [],
+    monsterArena: { points: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, defenseIndex: 0 },
+    monsterArenaHistory: [],
+    arenaDefenseSnapshot: null,
+    arenaFragments: 0,
+    arenaShopPurchases: {},
+    arenaShopHistory: [],
+    monsterWorldBoss: { bestDamage: 0, attempts: 0, lastDamage: 0 },
+    monsterWorldBossHistory: [],
     activeActivities: [],
     minigameStats: {},
     minigameProgress: {},
@@ -1887,7 +2133,7 @@ function isCharacterBanned(character = currentCharacter()) {
 }
 
 function playSound(kind) {
-  if (state.settings.soundEnabled === false) return;
+  if (state.settings.soundEnabled === false || document.hidden) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -2228,7 +2474,7 @@ function generatedPetPortrait(item = {}) {
     oddity: `<path d="M65 286 Q67 196 139 169 Q112 126 144 94 Q177 61 203 114 Q236 66 270 105 Q301 141 258 177 Q319 209 319 286Z"/><circle cx="155" cy="173" r="24"/><circle cx="229" cy="173" r="24"/>`,
     wraith: `<path d="M62 286 Q86 213 133 184 L124 111 160 143 192 72 225 143 262 111 251 184 Q302 214 322 286 L250 259 220 288 192 257 160 288 130 259Z"/><path d="M143 176 Q192 125 241 176 L224 234 192 254 160 234Z"/>`,
   };
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 384 384"><defs><radialGradient id="a" cx="52%" cy="35%"><stop offset="0" stop-color="hsl(${hue} 58% 35%)"/><stop offset=".6" stop-color="hsl(${secondary} 34% 15%)"/><stop offset="1" stop-color="#06070a"/></radialGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${secondary} 68% 61%)"/><stop offset="1" stop-color="hsl(${hue} 72% 28%)"/></linearGradient></defs><rect width="384" height="384" fill="url(#a)"/><circle cx="192" cy="180" r="132" fill="none" stroke="hsl(${hue} 62% 68%)" stroke-opacity=".18" stroke-width="2"/><g fill="#090b0f" stroke="url(#b)" stroke-opacity=".72" stroke-width="3">${silhouettes[kind]}</g><g fill="hsl(${secondary} 90% 75%)"><circle cx="171" cy="191" r="5"/><circle cx="214" cy="191" r="5"/></g><text x="316" y="60" text-anchor="middle" font-family="serif" font-size="38" fill="hsl(${hue} 70% 70%)" opacity=".72">${mark}</text><rect x="22" y="318" width="340" height="44" rx="4" fill="#06070a" fill-opacity=".82"/><text x="38" y="348" font-family="serif" font-weight="700" font-size="20" fill="#f1dfb6">${initials}</text><text x="346" y="348" text-anchor="end" font-family="serif" font-size="13" fill="hsl(${hue} 65% 72%)">${String(item.rarity || "ECO").toUpperCase()}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="512" viewBox="0 0 384 512"><defs><radialGradient id="a" cx="52%" cy="35%"><stop offset="0" stop-color="hsl(${hue} 58% 35%)"/><stop offset=".6" stop-color="hsl(${secondary} 34% 15%)"/><stop offset="1" stop-color="#06070a"/></radialGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${secondary} 68% 61%)"/><stop offset="1" stop-color="hsl(${hue} 72% 28%)"/></linearGradient></defs><rect width="384" height="512" fill="url(#a)"/><circle cx="192" cy="224" r="142" fill="none" stroke="hsl(${hue} 62% 68%)" stroke-opacity=".18" stroke-width="2"/><g transform="translate(0 42)" fill="#090b0f" stroke="url(#b)" stroke-opacity=".72" stroke-width="3">${silhouettes[kind]}</g><g transform="translate(0 42)" fill="hsl(${secondary} 90% 75%)"><circle cx="171" cy="191" r="5"/><circle cx="214" cy="191" r="5"/></g><text x="316" y="72" text-anchor="middle" font-family="serif" font-size="38" fill="hsl(${hue} 70% 70%)" opacity=".72">${mark}</text><rect x="22" y="438" width="340" height="50" rx="4" fill="#06070a" fill-opacity=".82"/><text x="38" y="471" font-family="serif" font-weight="700" font-size="20" fill="#f1dfb6">${initials}</text><text x="346" y="471" text-anchor="end" font-family="serif" font-size="13" fill="hsl(${hue} 65% 72%)">${String(item.rarity || "ECO").toUpperCase()}</text></svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
@@ -2299,9 +2545,13 @@ function gachaNow() {
 }
 
 function refreshGachaCountdown() {
+  if (document.hidden) return;
+  const countdowns = document.querySelectorAll("[data-gacha-countdown]");
+  const routeNeedsRotation = ["gacha", "admin-economy"].includes(state.view);
+  if (!countdowns.length && !routeNeedsRotation) return;
   const now = gachaNow();
   const hour = WORLD.rotationId(now);
-  document.querySelectorAll("[data-gacha-countdown]").forEach((element) => {
+  countdowns.forEach((element) => {
     const end = Number(element.dataset.gachaEnds || 0);
     const parts = WORLD.countdownParts(end || activeGachaBanner(element.dataset.gachaType || "pets").endsAt, now);
     element.textContent = `Próxima rotação em ${parts.label}`;
@@ -2309,17 +2559,24 @@ function refreshGachaCountdown() {
   if (hour !== state.gachaRotationHour) {
     state.gachaRotationHour = hour;
     try { localStorage.setItem("millennium:last-pet-rotation", String(hour)); } catch { /* storage unavailable */ }
-    if (!state.rolling && ["gacha", "admin-economy"].includes(state.view)) {
+    if (!state.rolling && routeNeedsRotation) {
       scheduleRender({ preserveFocus: true, preserveScroll: true, reason: "gacha-hourly-rotation" });
     }
   }
 }
 
 function startGachaRotationTicker() {
+  const active = !document.hidden && (["gacha", "admin-economy"].includes(state.view) || Boolean(document.querySelector("[data-gacha-countdown]")));
+  const nextInterval = active ? 1000 : 60000;
+  if (state.gachaRotationTimer && state.gachaRotationIntervalMs === nextInterval) {
+    refreshGachaCountdown();
+    return;
+  }
   if (state.gachaRotationTimer) window.clearInterval(state.gachaRotationTimer);
   state.gachaRotationHour = WORLD.rotationId(gachaNow());
+  state.gachaRotationIntervalMs = nextInterval;
   refreshGachaCountdown();
-  state.gachaRotationTimer = window.setInterval(refreshGachaCountdown, 1000);
+  state.gachaRotationTimer = window.setInterval(refreshGachaCountdown, nextInterval);
 }
 
 function gachaRatesFor(type = "pets") {
@@ -2351,7 +2608,7 @@ function openGachaPool(type = "pets") {
     <section class="gacha-pool-modal">
       <p class="eyebrow">Pool completo · rotação ${banner.rotationId || banner.hour}</p>
       <h2>${esc(banner.name)}</h2>
-      <div class="gacha-pool-grid">${pool.map((item) => `<article class="${rarityClass(item.rarity)} ${featuredIds.has(item.id) ? "featured" : ""}">${type === "pets" ? `<img src="${esc(petImageFor(item, { thumbnail: true }))}" alt="${esc(item.altText || item.name)}" loading="lazy" />` : `<span class="relic-silhouette">${esc(item.name.slice(0, 1))}</span>`}<div><small>${esc(item.rarity || "Comum")}${featuredIds.has(item.id) ? " · rate-up" : ""}</small><strong>${esc(item.name)}</strong><p>${esc(item.trait || item.effect || item.description || "Registro do pool.")}</p></div></article>`).join("")}</div>
+      <div class="gacha-pool-grid">${pool.map((item) => `<article class="${rarityClass(item.rarity)} ${featuredIds.has(item.id) ? "featured" : ""}">${type === "pets" ? `<img src="${esc(petImageFor(item, { thumbnail: true }))}" alt="${esc(item.altText || item.name)}" ${mediaAttrs("pet-thumbnail")} />` : `<span class="relic-silhouette">${esc(item.name.slice(0, 1))}</span>`}<div><small>${esc(item.rarity || "Comum")}${featuredIds.has(item.id) ? " · rate-up" : ""}</small><strong>${esc(item.name)}</strong><p>${esc(item.trait || item.effect || item.description || "Registro do pool.")}</p></div></article>`).join("")}</div>
     </section>`;
   $("#modal").hidden = false;
 }
@@ -2718,18 +2975,159 @@ function mondayResetKey(date = new Date()) {
   return copy.toISOString().slice(0, 10);
 }
 
+function setAuthNote(message, tone = "neutral") {
+  const note = $("#authNote");
+  if (!note) return;
+  note.hidden = !message;
+  note.textContent = message || "";
+  note.dataset.tone = tone;
+}
+
 function showAuth() {
   document.body.classList.remove("account-restricted");
+  document.body.dataset.interfaceScope = "auth";
   clearRestrictionTimer();
+  closeAwakeningCeremony({ markSeen: false, restoreFocus: false, resumeOnboarding: false });
+  if (!state.user) state.awakeningCeremonyScheduled = false;
   $("#authScreen").hidden = false;
   $("#appShell").hidden = true;
+  const skipLink = $("#skipLink");
+  if (skipLink) {
+    skipLink.href = "#authMain";
+    skipLink.textContent = "Pular para o formulário de acesso";
+  }
   updateMusicButton();
   $("#demoActions").hidden = false;
-  $("#authNote").hidden = false;
-  $("#authNote").textContent = state.firebaseReady
-    ? "Modo demo local disponível para testar a interface sem alterar contas reais."
-    : "Firebase não carregou nesta sessão. Use o modo demo local para testar a interface.";
+  setAuthNote(
+    state.firebaseReady
+      ? "Modo demo local disponível para testar a interface sem alterar contas reais."
+      : "Firebase não carregou nesta sessão. Use o modo demo local para testar a interface.",
+    state.firebaseReady ? "neutral" : "danger",
+  );
   updateBuildBadge();
+  normalizeRenderedImages($("#authScreen"));
+  normalizeRenderedAccessibility($("#authScreen"));
+}
+
+function awakeningCeremonyStorageKey(uid = state.user?.uid || "anonymous") {
+  return `millennium:awakening-ceremony:${uid}:${AWAKENING_CEREMONY_VERSION}`;
+}
+
+function awakeningCeremonySeen() {
+  try { return localStorage.getItem(awakeningCeremonyStorageKey()) === "seen"; } catch { return false; }
+}
+
+function markAwakeningCeremonySeen() {
+  try { localStorage.setItem(awakeningCeremonyStorageKey(), "seen"); } catch { /* storage unavailable */ }
+}
+
+function awakeningCeremonyEligible(character = currentCharacter()) {
+  if (!state.user || state.role === "admin" || state.accountDeletionQueue || accountIsRestricted()) return false;
+  if (!hasAcceptedTerms()) return false;
+  return Boolean(character.characterName || character.technicalCreationComplete || character.creationLocked);
+}
+
+function awakeningCeremonyMarkup(character = currentCharacter()) {
+  const affinity = getAffinity(character.affinityId);
+  const race = getRace(character.raceId);
+  const roleClass = getClass(character.classId);
+  const title = activeTitle(character);
+  let totals = character.base || {};
+  try { totals = getTotals(character); } catch { /* preserve presentation with base values */ }
+  const values = ATTRIBUTES.map((attribute) => Number(totals[attribute.key] ?? character.base?.[attribute.key] ?? 0));
+  const maxValue = Math.max(1, ...values);
+  const heroName = character.characterName || state.profile?.displayName || "Escolhido";
+  const titleName = title?.name || "Recém-Desperto";
+  const avatar = character.avatarUrl || placeholderAvatar();
+  const summary = character.characterDescription
+    || character.story
+    || "A Interface abriu uma janela para uma história que ainda não terminou.";
+  return `
+    <div class="awakening-record">
+      <section class="awakening-portrait-stage" aria-label="Retrato do herói despertado">
+        <img class="awakening-sigil-large" src="assets/awakening/sigilo-primeiro-despertar.svg" alt="" aria-hidden="true" ${mediaAttrs("sigil")} />
+        <div class="awakening-avatar-shell"><img src="${esc(avatar)}" style="${esc(cropImageStyle(character, "avatar"))}" alt="Retrato de ${esc(heroName)}" ${mediaAttrs("portrait", "eager")} /></div>
+        <div class="awakening-portrait-caption"><span>Registro reconhecido</span><strong>${esc(heroName)}</strong></div>
+      </section>
+      <section class="awakening-record-copy">
+        <p class="eyebrow">Cerimônia do Primeiro Despertar</p>
+        <h2 id="awakeningCeremonyTitle">A aurora encontrou ${esc(heroName)}.</h2>
+        <p class="awakening-title-line">${esc(titleName)}</p>
+        <p class="awakening-summary">${esc(summary)}</p>
+        <div class="awakening-identity-grid" aria-label="Identidade do personagem">
+          <div><span>Afinidade</span><strong>${esc(affinity?.name || "Ainda não revelada")}</strong></div>
+          <div><span>Raça</span><strong>${esc(race?.name || "Não registrada")}</strong></div>
+          <div><span>Classe</span><strong>${esc(roleClass?.name || "Não registrada")}</strong></div>
+        </div>
+        <div class="awakening-stats" aria-label="Atributos atuais">
+          ${ATTRIBUTES.map((attribute, index) => {
+            const value = values[index];
+            const fill = Math.max(8, Math.round((value / maxValue) * 100));
+            return `<div class="awakening-stat" style="--awakening-stat-fill:${fill}%"><span>${esc(attribute.short)}</span><strong>${value}</strong></div>`;
+          }).join("")}
+        </div>
+        <div class="awakening-ceremony-actions">
+          <button class="primary-button intense" type="button" data-action="close-awakening-ceremony">Entrar em Millennium</button>
+          <button class="ghost-button" type="button" data-action="awakening-open-onboarding">Rever jornada inicial</button>
+        </div>
+      </section>
+    </div>`;
+}
+
+function openAwakeningCeremony(options = {}) {
+  const ceremony = $("#awakeningCeremony");
+  const content = $("#awakeningCeremonyContent");
+  if (!ceremony || !content || !state.user || state.role === "admin") return false;
+  const character = currentCharacter();
+  if (!options.force && (!awakeningCeremonyEligible(character) || awakeningCeremonySeen())) return false;
+  state.awakeningCeremonyReturnFocus = document.activeElement;
+  state.awakeningCeremonyOpen = true;
+  state.awakeningCeremonyScheduled = true;
+  content.innerHTML = awakeningCeremonyMarkup(character);
+  normalizeRenderedImages(content);
+  normalizeRenderedAccessibility(content);
+  ceremony.hidden = false;
+  ceremony.setAttribute("aria-hidden", "false");
+  const appShell = $("#appShell");
+  if (appShell) appShell.inert = true;
+  window.requestAnimationFrame(() => ceremony.querySelector(".awakening-ceremony-card")?.focus());
+  return true;
+}
+
+function closeAwakeningCeremony(options = {}) {
+  const { markSeen = true, restoreFocus = true, resumeOnboarding = true } = options;
+  const ceremony = $("#awakeningCeremony");
+  if (!ceremony) return;
+  const wasOpen = !ceremony.hidden || state.awakeningCeremonyOpen;
+  ceremony.hidden = true;
+  ceremony.setAttribute("aria-hidden", "true");
+  state.awakeningCeremonyOpen = false;
+  const appShell = $("#appShell");
+  if (appShell && $("#modal")?.hidden) appShell.inert = false;
+  if (wasOpen && markSeen) markAwakeningCeremonySeen();
+  if (restoreFocus && state.awakeningCeremonyReturnFocus?.isConnected) state.awakeningCeremonyReturnFocus.focus();
+  state.awakeningCeremonyReturnFocus = null;
+  if (wasOpen && resumeOnboarding) window.setTimeout(() => maybeOpenOnboarding(), 180);
+}
+
+function maybeOpenAwakeningCeremony() {
+  if (state.awakeningCeremonyScheduled || awakeningCeremonySeen()) return false;
+  if (!awakeningCeremonyEligible()) return false;
+  state.awakeningCeremonyScheduled = true;
+  window.setTimeout(() => openAwakeningCeremony(), 180);
+  return true;
+}
+
+function trapAwakeningCeremonyFocus(event) {
+  if (!state.awakeningCeremonyOpen || event.key !== "Tab") return;
+  const ceremony = $("#awakeningCeremony");
+  const focusable = [...ceremony.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hidden && element.getClientRects().length);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 }
 
 
@@ -2788,7 +3186,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.3.3 Spark.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.4 Aurora.",
     "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
     "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
     "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
@@ -3678,6 +4076,11 @@ function subscribeCore() {
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
+  const skipLink = $("#skipLink");
+  if (skipLink) {
+    skipLink.href = "#mainContent";
+    skipLink.textContent = "Pular para o conteúdo principal";
+  }
   if (accountIsRestricted(state.profile)) {
     clearRouteSubscriptions();
     stopCharacterSubscription();
@@ -3711,7 +4114,7 @@ function enterDemo(role) {
   state.characterIntroSeen = false;
   state.settings = { ...DEFAULT_CONTENT.settings };
   state.content = defaultContentState();
-  const playerChar = defaultCharacter("demo-player", "Player Demo");
+  const playerChar = seedDemoMonsters(defaultCharacter("demo-player", "Player Demo"));
   const existingChar = {
     ...defaultCharacter("demo-existing", "Viajante Demo"),
     characterName: "Ariadne Vesper",
@@ -3928,7 +4331,56 @@ async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
   });
 }
 
+function secondaryModuleStats(view, character = currentCharacter()) {
+  const totalFragments = Object.values(character.gachaFragments || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+  const guild = currentGuild();
+  const passLevel = seasonPassLevel(character);
+  const maps = state.content.towerMaps || [];
+  const common = {
+    gacha: [["Millennium Coins", Number(character.millenniumCoins || 0).toLocaleString("pt-BR")], ["Pity raro", `${Number(character.monsterGachaPity?.rareMonster || 0)}/${Math.max(1, Number(character.monsterGachaPity?.max || monsterApi()?.monsterPityMax || 30))}`], ["Monstros", `${monsterInstancesForCharacter(character).length}/25`]],
+    market: [["Peças de Ouro", Number(character.gold || 0).toLocaleString("pt-BR")], ["Millennium Coins", Number(character.millenniumCoins || 0).toLocaleString("pt-BR")], ["Fragmentos", totalFragments.toLocaleString("pt-BR")]],
+    inventory: [["Itens", `${(character.inventory || []).length}`], ["Equipados", `${equippedItems(character).length}`], ["Pets", `${(character.gachaVault || []).filter((item) => item.kind === "pet").length}`]],
+    guild: [["Aliança", guild?.name || "Sem guilda"], ["Membros", `${guild?.memberIds?.length || 0}/${GUILD_MEMBER_LIMIT}`], ["Mensagens", `${state.guildMessages.length}`]],
+    missions: [["Ativas", `${(character.activeMissions || []).length}`], ["Semana", `${state.weeklyMissions.length}`], ["Em análise", `${pendingProgressRequests().length}`]],
+    "admin-missions": [["Publicadas", `${state.weeklyMissions.length}`], ["Solicitações", `${state.progressRequests.length}`], ["Temporada", state.settings.gameStarted ? "Ativa" : "Pré-lançamento"]],
+    pass: [["Nível do Passe", `${passLevel}`], ["XP sazonal", Number(character.seasonPassXp || 0).toLocaleString("pt-BR")], ["Trilha", character.premiumPassUnlocked ? "Premium" : "Gratuita"]],
+    chat: [["Online", `${state.users.filter(isUserOnline).length}`], ["Global", `${state.globalMessages.length}`], ["Diretas", `${state.privateMessages.length}`]],
+    "admin-chat": [["Online", `${state.users.filter(isUserOnline).length}`], ["Mensagens", `${state.globalMessages.length}`], ["Reports", `${state.reports.length}`]],
+    minigames: [["Energia", `${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}`], ["Atividades", `${(character.activeActivities || []).length}`], ["Mapas", `${maps.length}`]],
+    codex: [["Aba", VIEW_TITLES[state.view] ? String(state.codexTab || "world") : "world"], ["Mapas", `${maps.length}`], ["Eventos", `${(state.content.worldEvents || []).length}`]],
+    "admin-settings": [["Temporada", `${Number(state.settings.seasonNumber || 1)}`], ["Tema", state.settings.seasonTheme || "padrão"], ["Estado", state.settings.seasonThemeState || "ativo"]],
+  };
+  return common[view] || [];
+}
+
+function renderSecondaryModuleFrame(view, content) {
+  const module = SECONDARY_MODULES[view];
+  if (!module) return content;
+  const stats = secondaryModuleStats(view);
+  const links = (module.links || []).filter(([nav]) => NAVS[state.role].some((item) => item.id === nav));
+  const mapContext = view === "codex" ? `<span class="secondary-module-context"><i aria-hidden="true">⌖</i>${state.codexTab === "world" ? "Mapa mundial em foco" : `Arquivo: ${esc(state.codexTab || "world")}`}</span>` : "";
+  return `
+    <section class="secondary-module secondary-module--${esc(module.tone || "interface")}" data-secondary-module="${esc(view)}">
+      <header class="secondary-module-hero">
+        <div class="secondary-module-symbol" aria-hidden="true">${module.icon}</div>
+        <div class="secondary-module-copy">
+          <p class="eyebrow">${esc(module.eyebrow)}</p>
+          <h2>${esc(module.title)}</h2>
+          <p>${esc(module.description)}</p>
+          <div class="secondary-module-context-row">${mapContext}<span class="secondary-module-context"><i aria-hidden="true">✦</i>Interface 3.6.4</span></div>
+        </div>
+        <div class="secondary-module-ledger" aria-label="Resumo do módulo">
+          ${stats.map(([label, value]) => `<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join("")}
+        </div>
+      </header>
+      ${links.length ? `<nav class="secondary-module-links" aria-label="Atalhos relacionados">${links.map(([nav, label]) => `<button class="secondary-module-link" type="button" data-nav="${esc(nav)}">${esc(label)}</button>`).join("")}</nav>` : ""}
+      <div class="secondary-module-content">${content}</div>
+    </section>
+  `;
+}
+
 function finishRender(startedAt) {
+  $("#viewHost")?.setAttribute("aria-busy", "false");
   state.diagnostics.renders += 1;
   state.diagnostics.lastRenderMs = Math.round((performance.now() - startedAt) * 100) / 100;
   state.diagnostics.lastRoute = state.view;
@@ -3950,6 +4402,7 @@ function finishRender(startedAt) {
 
 function render() {
   const startedAt = performance.now();
+  $("#viewHost")?.setAttribute("aria-busy", "true");
   state.pendingInputRender = false;
   if (!state.user) {
     showAuth();
@@ -3969,6 +4422,11 @@ function render() {
 
   $("#authScreen").hidden = true;
   $("#appShell").hidden = false;
+  const skipLink = $("#skipLink");
+  if (skipLink) {
+    skipLink.href = "#mainContent";
+    skipLink.textContent = "Pular para o conteúdo principal";
+  }
   updateMusicButton();
   const nav = NAVS[state.role];
   if (!nav.some((item) => item.id === state.view)) state.view = nav[0].id;
@@ -4008,11 +4466,21 @@ function render() {
 
   const chatScroll = captureChatScroll();
   const renderer = VIEW_RENDERERS[state.view] || renderPlayerHome;
-  STABILITY.replaceHtmlIfChanged($("#viewHost"), renderer());
+  const rawViewContent = renderer();
+  const viewContent = renderSecondaryModuleFrame(state.view, rawViewContent);
+  const oracleFramed = state.role === "admin" && (state.view.startsWith("admin-") || state.view === "ranking")
+    ? renderOracleFrame(state.view, viewContent)
+    : viewContent;
+  STABILITY.replaceHtmlIfChanged($("#viewHost"), oracleFramed);
+  normalizeRenderedImages($("#viewHost"));
+  normalizeRenderedAccessibility($("#viewHost"));
+  announceCurrentRoute();
+  startGachaRotationTicker();
   restoreChatScroll(chatScroll);
   restoreUpdateDrafts();
   restoreLocalFormDrafts();
-  maybeOpenOnboarding();
+  const awakeningScheduled = maybeOpenAwakeningCeremony();
+  if (!awakeningScheduled && !state.awakeningCeremonyOpen) maybeOpenOnboarding();
   finishRender(startedAt);
 }
 
@@ -4031,6 +4499,7 @@ function applyThemeClasses(settings = state.settings) {
     "echoes-theme",
     `season-${Number(settings.seasonNumber || 1)}`,
   ].filter(Boolean).join(" ");
+  document.body.dataset.interfaceScope = state.role === "admin" ? "oracle" : "player";
   document.body.dataset.themeAnimation = state.profile?.interfaceAnimations || settings.seasonThemeAnimation || theme.animation || "normal";
   document.body.dataset.themeMenuEffect = settings.seasonThemeMenuEffect || theme.menuEffect || "mist";
   document.body.dataset.interfaceContrast = state.profile?.interfaceContrast || "normal";
@@ -4041,8 +4510,11 @@ function applyThemeClasses(settings = state.settings) {
   document.documentElement.style.setProperty("--season-danger", theme.palette.danger);
   document.documentElement.style.setProperty("--season-success", theme.palette.success);
   document.documentElement.style.setProperty("--season-background", theme.background ? `url("${theme.background.replace(/["'()]/g, "")}")` : "none");
-  const authArt = document.querySelector(".auth-art");
-  if (authArt && theme.loginArt) authArt.style.backgroundImage = `linear-gradient(90deg,rgba(5,6,8,.2),rgba(5,6,8,.72)),url("${theme.loginArt.replace(/["'()]/g, "")}")`;
+  const authHero = document.querySelector("#authHeroImage");
+  const authHeroMobile = document.querySelector("#authHeroMobileSource");
+  const safeLoginArt = String(theme.loginArt || "").replace(/["'()]/g, "");
+  if (authHero) authHero.src = safeLoginArt || "assets/awakening/aurora-despertos-hero-16x9.webp";
+  if (authHeroMobile) authHeroMobile.srcset = safeLoginArt || "assets/awakening/aurora-despertos-hero-mobile.webp";
 }
 
 function onboardingSteps() {
@@ -4056,7 +4528,7 @@ function onboardingSteps() {
 
 function maybeOpenOnboarding() {
   const version = state.settings.onboardingVersion || state.settings.rulesVersion || "3.0";
-  if (state.role === "admin" || state.onboardingShown || state.profile?.tutorialSeenVersion === version || !hasAcceptedTerms()) return;
+  if (state.role === "admin" || state.onboardingShown || state.awakeningCeremonyOpen || state.profile?.tutorialSeenVersion === version || !hasAcceptedTerms()) return;
   state.onboardingShown = true;
   window.setTimeout(() => openOnboarding(0), 160);
 }
@@ -4158,7 +4630,7 @@ function renderGroupedNavigation(nav, compact = false) {
       <section class="nav-group ${compact ? "compact" : ""}" aria-label="${esc(group.label)}">
         <span class="nav-group-label">${esc(group.label)}</span>
         <div class="nav-group-items">
-          ${items.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></button>`).join("")}
+          ${items.map((item) => `<button class="nav-item ${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}" ${state.view === item.id ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span></button>`).join("")}
         </div>
       </section>
     `;
@@ -4171,8 +4643,8 @@ function renderMobileBottomNav(nav) {
     : ["player-home", "profile", "roulette", "chat", "missions"];
   const quick = preferred.map((id) => nav.find((item) => item.id === id)).filter(Boolean);
   return [
-    ...quick.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}"><span>${item.icon}</span><small>${item.label}</small></button>`),
-    `<button class="${quick.some((item) => item.id === state.view) ? "" : "active"}" type="button" data-action="open-more-nav"><span>☰</span><small>Mais</small></button>`,
+    ...quick.map((item) => `<button class="${state.view === item.id ? "active" : ""}" type="button" data-nav="${item.id}" title="${esc(item.label)}" ${state.view === item.id ? 'aria-current="page"' : ""}><span aria-hidden="true">${item.icon}</span><small>${item.label}</small></button>`),
+    `<button class="${quick.some((item) => item.id === state.view) ? "" : "active"}" type="button" data-action="open-more-nav" title="Abrir todas as áreas" ${quick.some((item) => item.id === state.view) ? "" : 'aria-current="page"'}><span aria-hidden="true">☰</span><small>Mais</small></button>`,
   ].join("");
 }
 
@@ -4251,136 +4723,254 @@ function renderTermsGate() {
   `;
 }
 
+function homeSeasonSnapshot(character = currentCharacter()) {
+  const level = seasonPassLevel(character);
+  const xp = Math.max(0, Number(character.seasonPassXp || 0));
+  const percent = Math.max(2, Math.min(100, Math.round((level / 50) * 100)));
+  return {
+    level,
+    xp,
+    percent,
+    premium: character.premiumPassUnlocked === true,
+  };
+}
+
+function homeMissionSpotlight(character = currentCharacter()) {
+  const missions = Array.isArray(state.weeklyMissions) ? state.weeklyMissions : [];
+  const activeIds = new Set(character.activeMissions || []);
+  const pending = pendingProgressRequests().filter((request) => request.type === "mission");
+  const active = missions.find((mission) => activeIds.has(mission.id));
+  const awaiting = missions.find((mission) => pending.some((request) => request.missionId === mission.id));
+  const mission = active || awaiting || missions[0] || null;
+  if (!mission) {
+    return {
+      title: "Nenhuma missão publicada",
+      description: "O Oráculo ainda não abriu uma missão para esta semana.",
+      reward: "Aguardando registro",
+      rarity: "Comum",
+      status: "Indisponível",
+      tone: "idle",
+    };
+  }
+  const isActive = activeIds.has(mission.id);
+  const isPending = pending.some((request) => request.missionId === mission.id);
+  return {
+    ...mission,
+    title: mission.title || mission.name || "Missão sem nome",
+    status: isPending ? "Aguardando Oráculo" : isActive ? "Em andamento" : "Disponível agora",
+    tone: isPending ? "pending" : isActive ? "active" : "available",
+  };
+}
+
+function homeActivityEntries(character = currentCharacter()) {
+  const entries = [];
+  recentNews().slice(-6).reverse().forEach((message) => {
+    entries.push({
+      icon: message.type === "rare" ? "✦" : message.type === "admin-alert" ? "!" : message.type === "join" ? "+" : "◇",
+      title: message.type === "rare" ? "Raridade registrada" : message.type === "join" ? "Novo despertar" : "Pulso do mundo",
+      text: message.text || message.senderName || "A Interface registrou um movimento.",
+      when: message.createdAt,
+      tone: message.type === "rare" ? "rare" : message.type === "admin-alert" ? "danger" : "interface",
+    });
+  });
+  pendingProgressRequests().slice(-3).reverse().forEach((request) => {
+    entries.push({
+      icon: "⌛",
+      title: `${progressTypeLabel(request.type)} em análise`,
+      text: request.title || request.description || "O Oráculo está examinando este registro.",
+      when: request.createdAt,
+      tone: "pending",
+    });
+  });
+  if (character.pendingGift) {
+    entries.push({
+      icon: "✧",
+      title: "Correio místico",
+      text: character.pendingGift.message || "Uma recompensa aguarda confirmação.",
+      when: character.pendingGift.createdAt,
+      tone: "hero",
+    });
+  }
+  if (state.privateMessages.some((message) => message.senderId !== state.user?.uid && !message.readAt)) {
+    entries.push({
+      icon: "✉",
+      title: "Mensagem não lida",
+      text: "Há um chamado direto aguardando sua atenção.",
+      when: new Date().toISOString(),
+      tone: "interface",
+    });
+  }
+  return entries
+    .sort((left, right) => timeValue(right.when) - timeValue(left.when))
+    .slice(0, 6);
+}
+
+function renderHomeActivity(entries) {
+  if (!entries.length) {
+    return `<div class="empty-state home-activity-empty"><strong>Nenhuma atividade recente.</strong><span>Quando o mundo se mover, a Interface registrará os sinais aqui.</span></div>`;
+  }
+  return entries.map((entry) => `
+    <article class="home-activity-entry" data-tone="${esc(entry.tone || "interface")}">
+      <span class="home-activity-icon" aria-hidden="true">${esc(entry.icon || "◇")}</span>
+      <div>
+        <strong>${esc(entry.title)}</strong>
+        <p>${esc(entry.text)}</p>
+        ${entry.when ? `<time>${esc(tsText(entry.when))}</time>` : ""}
+      </div>
+    </article>
+  `).join("");
+}
+
 function renderPlayerHome() {
   const character = currentCharacter();
-  const totals = getTotals(character);
   const affinity = getAffinity(character.affinityId);
+  const race = getRace(character.raceId);
+  const klass = getClass(character.classId);
   const title = activeTitle(character);
-  const pityMax = Number(state.settings.pityMax || 30);
-  const pity = Number(character.pityCounter || 0);
-  const pending = character.pendingGift;
-  const onlinePlayers = state.users.filter((user) => user.role !== "admin" && isUserOnline(user));
-  const topRank = leaderboard().slice(0, 5);
-  const news = recentNews();
-  const nextSteps = playerNextSteps(character);
+  const level = Math.max(1, Number(character.level || levelFromXp(character.xp || 0)));
   const journey = currentJourney(character);
   const narrative = window.MILLENNIUM_JOURNEY_31.narrativeProgress(characterLifeSource());
   const nextEssential = journey.next || { label: "Explorar Millennium", nav: "codex", description: "A Interface aguarda seu próximo registro." };
+  const season = homeSeasonSnapshot(character);
+  const featuredMission = homeMissionSpotlight(character);
+  const activity = homeActivityEntries(character);
+  const onlinePlayers = state.users.filter((user) => user.role !== "admin" && isUserOnline(user));
+  const ranking = leaderboard();
+  const activeWorldEvent = (state.content.worldEvents || []).find((event) => normalize(event.status) === "ativo");
+  const nextWorldEvent = activeWorldEvent || (state.content.worldEvents || []).find((event) => normalize(event.status).includes("breve")) || null;
+  const rareSignals = recentNews().filter((message) => message.type === "rare").length;
+  const heroName = character.characterName || state.profile?.displayName || "Escolhido sem registro";
+  const heroBackdrop = character.bannerUrl || nextWorldEvent?.imageUrl || "assets/awakening/aurora-despertos-hero-16x9.webp";
+  const avatar = character.avatarUrl || placeholderAvatar();
   const pendencies = [
     character.pendingGift ? "Recompensa no correio" : "",
-    pendingProgressRequests().length ? `${pendingProgressRequests().length} solicitação(ões) em análise` : "",
-    pendingIncomingRequests().length ? `${pendingIncomingRequests().length} convite(s) ou pedido(s)` : "",
+    pendingProgressRequests().length ? `${pendingProgressRequests().length} validação(ões) em análise` : "",
+    pendingIncomingRequests().length ? `${pendingIncomingRequests().length} convite(s) pendente(s)` : "",
     state.privateMessages.some((message) => message.senderId !== state.user?.uid && !message.readAt) ? "Mensagem direta não lida" : "",
   ].filter(Boolean);
-  const activeWorldEvent = (state.content.worldEvents || []).find((event) => normalize(event.status) === "ativo");
+  const currentRank = ranking.findIndex((entry) => (entry.ownerId || entry.id) === state.user?.uid) + 1;
+  const quickActions = [
+    ["character", "⌁", "Ficha", "Atributos e origem"],
+    ["missions", "✦", "Missões", "Jornada semanal"],
+    ["codex", "◇", "Codex", "Mundo e mapa"],
+    ["guild", "⚔", "Guilda", "Companheiros"],
+    ["inventory", "▣", "Inventário", "Itens e pets"],
+    ["chat", "✉", "Mensagens", "Pulso social"],
+  ];
   return `
-    <div class="grid">
-      <article class="first-awakening-guide span-12 ${newPlayerMode(character) ? "new-player-mode" : "journey-complete"}">
-        <div><p class="eyebrow">Seu Primeiro Despertar</p><h2>${journey.complete ? "A Interface reconhece sua jornada." : `${journey.completed} de ${journey.total} etapas essenciais`}</h2><p>${journey.complete ? "O registro inicial está completo. Continue desenvolvendo seu personagem sem transformar números em vitória automática." : nextEssential.description}</p><div class="journey-home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${journey.percentage}"><i style="width:${journey.percentage}%"></i></div></div>
-        <div class="action-row"><button class="primary-button intense" type="button" data-nav="${esc(nextEssential.nav)}">${esc(nextEssential.label)}</button><button class="ghost-button" type="button" data-action="open-onboarding">Ver jornada completa</button></div>
-      </article>
-      <article class="today-dashboard span-12">
-        <header><div><p class="eyebrow">Hoje em Millennium</p><h2>${esc(character.characterName || "Escolhido sem registro")}</h2></div><span class="tag">Dar Vida ${narrative.percentage}%</span></header>
-        <div class="today-dashboard-grid">
-          <section><span>Estado atual</span><strong>${character.technicalCreationComplete || character.creationLocked ? "Registro técnico concluído" : "Registro técnico pendente"}</strong><p>${esc(character.currentLocation || "Limiar das Cortinas")} · ${esc(character.physicalState || "Íntegro")} · ${esc(character.essenceState || "Plena")}</p></section>
-          <section class="today-primary-action"><span>Próximo passo</span><strong>${esc(nextEssential.label)}</strong><p>${esc(nextEssential.description)}</p><button class="primary-button" type="button" data-nav="${esc(nextEssential.nav)}">Continuar</button></section>
-          <section><span>O mundo se moveu</span>${news.slice(-3).reverse().map((item) => `<p>${esc(item.text || item.senderName || "Movimento registrado")}</p>`).join("") || `<p>Nenhum acontecimento recente foi registrado.</p>`}</section>
-          <section><span>Pendências</span>${pendencies.map((item) => `<p>• ${esc(item)}</p>`).join("") || `<p>Nenhuma pendência imediata.</p>`}</section>
+    <div class="grid awakening-center-home">
+      <article class="home-hero-panel span-12" aria-labelledby="homeHeroName">
+        <img class="home-hero-backdrop" src="${esc(heroBackdrop)}" style="${esc(cropImageStyle(character, "banner"))}" alt="" width="1600" height="900" loading="eager" decoding="async" fetchpriority="high" />
+        <div class="home-hero-veil" aria-hidden="true"></div>
+        <div class="home-hero-content">
+          <section class="home-hero-identity">
+            <div class="home-hero-portrait ${rarityClass(title?.rarity || affinity?.rarity || "Comum")}">
+              <img src="${esc(avatar)}" style="${esc(cropImageStyle(character, "avatar"))}" alt="Retrato de ${esc(heroName)}" ${mediaAttrs("portrait", "eager")} />
+              <span aria-hidden="true">${esc(level)}</span>
+            </div>
+            <div class="home-hero-copy">
+              <p class="eyebrow">Herói atual · Temporada I</p>
+              <h2 id="homeHeroName">${esc(heroName)}</h2>
+              <strong class="home-hero-title ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Desperto sem título")}</strong>
+              <div class="home-identity-tags">
+                <span>${esc(klass?.name || "Classe não registrada")}</span>
+                <span>${esc(race?.name || "Raça não registrada")}</span>
+                <span>${esc(affinity?.name || "Afinidade adormecida")}</span>
+              </div>
+              <p class="home-hero-location">${esc(character.currentLocation || "Limiar das Cortinas")} · ${esc(character.physicalState || "Íntegro")}</p>
+              <div class="home-hero-ledger" aria-label="Resumo do personagem">
+                <div><span>Nível</span><strong>${level}</strong></div>
+                <div><span>Prestígio</span><strong>${prestigeFor(character).toLocaleString("pt-BR")}</strong></div>
+                <div><span>PO</span><strong>${Number(character.gold || 0).toLocaleString("pt-BR")}</strong></div>
+                <div><span>Essências</span><strong>${Number(character.affinityAttempts ?? state.settings.defaultAffinityAttempts ?? 0)}</strong></div>
+              </div>
+              <div class="home-hero-actions">
+                <button class="primary-button intense" type="button" data-nav="${esc(nextEssential.nav)}">${esc(nextEssential.label)}</button>
+                <button class="ghost-button" type="button" data-nav="profile">Abrir perfil</button>
+                <button class="ghost-button" type="button" data-action="open-awakening-ceremony">Rever despertar</button>
+              </div>
+            </div>
+          </section>
+          <aside class="home-season-card" aria-label="Progresso da temporada">
+            <div class="home-season-orbit" aria-hidden="true"><span>${season.level}</span></div>
+            <p class="eyebrow">Despertar dos Heróis</p>
+            <h3>Passe ${season.level} de 50</h3>
+            <p>${season.xp.toLocaleString("pt-BR")} XP sazonal · ${season.premium ? "Trilha Premium" : "Trilha Free"}</p>
+            <div class="home-season-progress" role="progressbar" aria-label="Progresso da temporada" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${season.percent}"><i style="width:${season.percent}%"></i></div>
+            <div class="home-season-meta"><span>${season.percent}% da trilha</span><strong>Dar Vida ${narrative.percentage}%</strong></div>
+            <button class="home-season-link" type="button" data-nav="pass">Ver recompensas da temporada <span aria-hidden="true">→</span></button>
+          </aside>
         </div>
-        <nav class="today-shortcuts" aria-label="Atalhos de jornada"><button type="button" data-nav="character">Personagem</button><button type="button" data-nav="roulette">Afinidade</button><button type="button" data-nav="codex">Mapa e Codex</button><button type="button" data-nav="missions">Missões</button><button type="button" data-nav="chat">Mensagens</button></nav>
       </article>
-      <div class="span-12">${renderManifestationPanel(character)}</div>
-      ${activeWorldEvent ? `
-        <article class="world-event-banner span-12">
-          ${activeWorldEvent.imageUrl ? `<img src="${esc(activeWorldEvent.imageUrl)}" alt="" />` : ""}
-          <div>
-            <p class="eyebrow">Evento mundial ativo</p>
-            <h2>${esc(activeWorldEvent.name)}</h2>
-            <p>${esc(activeWorldEvent.description || "A Interface detectou uma anomalia.")}</p>
-            <div class="tag-row"><span class="tag">${esc(activeWorldEvent.modifier || "Modificador desconhecido")}</span><span class="tag">${esc(activeWorldEvent.reward || "Recompensa sazonal")}</span></div>
-          </div>
-          <button class="primary-button" type="button" data-nav="codex" data-codex-target="events">Abrir evento</button>
+
+      ${character.pendingGift ? `
+        <article class="home-gift-signal span-12">
+          <span aria-hidden="true">✧</span>
+          <div><strong>O Correio Místico respondeu.</strong><p>${esc(character.pendingGift.message || "Uma recompensa aguarda confirmação.")}</p></div>
+          <button class="primary-button" type="button" data-action="claim-gift">Confirmar recebimento</button>
         </article>
       ` : ""}
-      ${pending ? `
-        <article class="gift-panel span-12">
-          <div>
-            <p class="eyebrow">Correio místico</p>
-            <h2>Você recebeu um presente do Oráculo</h2>
-            <p>${esc(pending.message || "Recompensa entregue. Abra seu perfil para ver os novos registros.")}</p>
-            <div class="tag-row">${(pending.rewards || []).map((reward) => `<span class="tag">${esc(reward)}</span>`).join("")}</div>
+
+      <nav class="home-command-deck span-12" aria-label="Ações rápidas do Centro do Despertar">
+        ${quickActions.map(([nav, icon, label, detail]) => `<button type="button" data-nav="${nav}"><span aria-hidden="true">${icon}</span><strong>${label}</strong><small>${detail}</small></button>`).join("")}
+      </nav>
+
+      <article class="home-world-event span-12 ${nextWorldEvent ? "has-event" : "is-quiet"}">
+        ${nextWorldEvent?.imageUrl ? `<img src="${esc(nextWorldEvent.imageUrl)}" alt="" width="1280" height="720" loading="lazy" decoding="async" />` : ""}
+        <div class="home-world-event-copy">
+          <p class="eyebrow">${activeWorldEvent ? "Evento mundial ativo" : "Próximo sinal mundial"}</p>
+          <h2>${esc(nextWorldEvent?.name || "O mundo permanece em vigília")}</h2>
+          <p>${esc(nextWorldEvent?.description || "Nenhuma anomalia foi publicada. A Interface continua observando as fronteiras.")}</p>
+          <div class="home-world-event-tags">
+            <span>${esc(nextWorldEvent?.modifier || "Sem modificador global")}</span>
+            <span>${esc(nextWorldEvent?.reward || "Recompensa ainda não revelada")}</span>
           </div>
-          <button class="primary-button" type="button" data-action="claim-gift">Recebido</button>
+        </div>
+        <button class="primary-button" type="button" data-nav="codex" data-codex-target="events">Consultar evento</button>
+      </article>
+
+      <section class="home-primary-grid span-12" aria-label="Missão e pulso do mundo">
+        <article class="home-mission-spotlight" data-status="${esc(featuredMission.tone)}">
+          <header>
+            <div><p class="eyebrow">Missão em destaque</p><span class="home-mission-rarity ${rarityClass(featuredMission.rarity)}">${missionIcon(featuredMission.rarity)} ${esc(featuredMission.rarity || "Comum")}</span></div>
+            <span class="home-mission-status">${esc(featuredMission.status)}</span>
+          </header>
+          <h2>${esc(featuredMission.title)}</h2>
+          <p>${esc(featuredMission.description)}</p>
+          <div class="home-mission-reward"><span>Recompensa prevista</span><strong>${esc(featuredMission.reward || "A definir")}</strong></div>
+          <div class="home-mission-actions"><button class="primary-button" type="button" data-nav="missions">Abrir missão</button><span>${state.weeklyMissions.length} missão(ões) publicadas nesta semana</span></div>
         </article>
-      ` : ""}
-      <article class="panel span-7">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Resumo</p>
-            <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
+
+        <article class="home-world-pulse">
+          <header><div><p class="eyebrow">Pulso do mundo</p><h2>Millennium está acordado</h2></div><span class="home-live-indicator"><i></i> Dados já carregados</span></header>
+          <div class="home-pulse-metrics">
+            <div><span>Escolhidos online</span><strong>${onlinePlayers.length}</strong><small>presenças reconhecidas</small></div>
+            <div><span>Guildas ativas</span><strong>${state.guilds.length}</strong><small>juramentos registrados</small></div>
+            <div><span>Missões abertas</span><strong>${state.weeklyMissions.length}</strong><small>caminhos desta semana</small></div>
+            <div><span>Sinais raros</span><strong>${rareSignals}</strong><small>ecos no chat recente</small></div>
           </div>
-          <span class="tag">${title ? esc(title.name) : (character.profilePublic ? "Perfil público" : "Perfil privado")}</span>
-        </div>
-        <div class="stat-grid">
-          ${renderStat("PO", character.gold || 0)}
-          ${renderStat("XP", character.xp || 0)}
-          ${renderStat("Nível", character.level || levelFromXp(character.xp || 0))}
-          ${renderStat("Essências", character.affinityAttempts ?? state.settings.defaultAffinityAttempts)}
-          ${renderStat("Prestígio", prestigeFor(character))}
-          ${renderStat("Raros", character.totalRares || 0)}
-          ${renderStat("PV máx.", totals.hpMax)}
-          ${renderStat("PP máx.", totals.ppMax)}
-          ${renderStat("Views", profileViewsFor(state.user.uid))}
-        </div>
-        <div class="meter-block">
-          <div class="panel-heading compact">
-            <span>Pity da roleta</span>
-            <strong>${pity}/${pityMax}</strong>
+          <div class="home-pulse-leader">
+            <span>Referência atual</span>
+            <strong>${esc(ranking[0]?.characterName || "Nenhum herói ranqueado")}</strong>
+            <small>${currentRank ? `Sua posição: #${currentRank}` : "Sua ficha ainda não entrou no ranking"}</small>
           </div>
-          ${renderPityBar(pity, pityMax)}
-        </div>
+        </article>
+      </section>
+
+      <article class="home-activity-stream span-8">
+        <header><div><p class="eyebrow">Atividade recente</p><h2>O que mudou desde seu último chamado</h2></div><button class="ghost-button" type="button" data-nav="chat">Abrir mensagens</button></header>
+        <div class="home-activity-list">${renderHomeActivity(activity)}</div>
       </article>
-      <article class="panel span-5 affinity-mini">
-        <p class="eyebrow">Afinidade</p>
-        <h3>${esc(affinity?.name || "Não sorteada")}</h3>
-        <p>${affinity ? `${esc(getCategory(affinity.categoryId)?.name)} · ${esc(bonusToText(affinity.bonus))}` : "Use a roleta quando tiver essências disponíveis."}</p>
-        <div class="action-row">
-          <button class="ghost-button" type="button" data-nav="roulette">Roleta</button>
-          <button class="ghost-button" type="button" data-nav="codex">Codex</button>
-        </div>
-      </article>
-      <article class="panel span-4">
-        <div class="panel-heading"><div><p class="eyebrow">Online agora</p><h3>${onlinePlayers.length} player(s)</h3></div></div>
-        <div class="online-strip">
-          ${onlinePlayers.slice(0, 8).map((user) => `<button class="online-pill" type="button" data-action="open-user-profile" data-user-id="${esc(user.id)}"><span></span>${esc(displayNameWithTitle(user.id, user.displayName || user.email))}</button>`).join("") || `<div class="empty-state compact">Ninguém online agora.</div>`}
-        </div>
-      </article>
-      <article class="panel span-4">
-        <div class="panel-heading"><div><p class="eyebrow">Ranking</p><h3>Top 5</h3></div></div>
-        <div class="mini-rank">
-          ${topRank.map((char, index) => `<button class="ranking-row compact" type="button" data-action="open-user-profile" data-user-id="${esc(char.ownerId)}"><strong>#${index + 1}</strong><span>${esc(char.characterName || getUserName(char.ownerId))}</span><b>${prestigeFor(char)}</b></button>`).join("") || `<div class="empty-state compact">Sem ranking ainda.</div>`}
-        </div>
-      </article>
-      <article class="panel span-4">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Missões</p>
-            <h3>Semana atual</h3>
-          </div>
-          <button class="ghost-button" type="button" data-nav="missions">Ver missões</button>
-        </div>
-        <div class="list">${renderMissionList(state.weeklyMissions.slice(0, 3))}</div>
-      </article>
-      <article class="panel span-8">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Chat</p>
-            <h3>Conquistas recentes</h3>
-          </div>
-          <button class="ghost-button" type="button" data-nav="chat">Abrir chat</button>
-        </div>
-        <div class="list">${renderMessages(state.globalMessages.filter((msg) => msg.type === "rare").slice(-3))}</div>
-      </article>
+
+      <aside class="home-journey-panel span-4">
+        <p class="eyebrow">Jornada inicial</p>
+        <h2>${journey.complete ? "Registro reconhecido" : `${journey.completed} de ${journey.total} etapas`}</h2>
+        <p>${journey.complete ? "Sua fundação está pronta. Agora cada decisão amplia a crônica do personagem." : nextEssential.description}</p>
+        <div class="home-journey-progress" role="progressbar" aria-label="Progresso da jornada inicial" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${journey.percentage}"><i style="width:${journey.percentage}%"></i></div>
+        <div class="home-journey-meta"><span>${journey.percentage}% concluído</span><strong>${pendencies.length ? `${pendencies.length} pendência(s)` : "Sem pendências"}</strong></div>
+        ${pendencies.length ? `<ul class="home-pendency-list">${pendencies.slice(0, 4).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>` : `<p class="home-journey-clear">A Interface não detectou bloqueios imediatos.</p>`}
+        <button class="primary-button" type="button" data-action="open-onboarding">Ver jornada completa</button>
+      </aside>
     </div>
   `;
 }
@@ -4433,95 +5023,393 @@ function renderNextStep(step) {
   `;
 }
 
-function renderProfile() {
-  const character = currentCharacter();
-  const totals = getTotals(character);
+
+function profileSealGlyph(entry = {}, fallback = "◇") {
+  const source = entry && typeof entry === "object" ? entry : {};
+  const candidate = String(source.symbol || source.icon || source.sigil || "").trim();
+  if (candidate && candidate.length <= 4 && !/^https?:/i.test(candidate)) return candidate;
+  const words = String(source.name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return fallback;
+  return words.slice(0, 2).map((word) => word.slice(0, 1).toUpperCase()).join("");
+}
+
+function renderProfileSeal(kind, entry, fallback) {
+  const name = entry?.name || `Sem ${kind.toLowerCase()} definida`;
+  return `
+    <div class="hero-identity-seal" data-seal-kind="${esc(normalize(kind))}" aria-label="${esc(kind)}: ${esc(name)}">
+      <span aria-hidden="true">${esc(profileSealGlyph(entry, fallback))}</span>
+      <small>${esc(kind)}</small>
+      <strong>${esc(name)}</strong>
+    </div>
+  `;
+}
+
+function renderHeroPortrait(character = {}, options = {}) {
+  const source = character.avatarUrl || placeholderAvatar();
+  const fallback = placeholderAvatar();
+  const name = character.characterName || "Personagem sem nome";
+  const title = options.title || activeTitle(character);
+  return `
+    <figure class="hero-profile-portrait ${rarityClass(title?.rarity || "Comum")}">
+      <div class="hero-profile-portrait-frame">
+        <img
+          src="${esc(source)}"
+          data-fallback-src="${esc(fallback)}"
+          data-visual-kind="hero"
+          data-visual-id="${esc(character.ownerId || character.id || name)}"
+          style="${esc(cropImageStyle(character, "avatar"))}"
+          width="600"
+          height="750"
+          loading="${options.eager ? "eager" : "lazy"}"
+          decoding="async"
+          alt="Retrato de ${esc(name)}"
+        />
+      </div>
+      <figcaption>
+        <span>${options.online ? "Presença reconhecida" : "Eco em repouso"}</span>
+        <strong>Nível ${Number(character.level || levelFromXp(character.xp || 0))}</strong>
+      </figcaption>
+    </figure>
+  `;
+}
+
+function profileRadarGeometry(values = [], maximum = 10) {
+  const center = 120;
+  const outer = 86;
+  const point = (index, radius) => {
+    const angle = (-Math.PI / 2) + (index * Math.PI * 2 / 5);
+    return [center + Math.cos(angle) * radius, center + Math.sin(angle) * radius];
+  };
+  const polygon = (radius) => ATTRIBUTES.map((_, index) => point(index, radius).map((value) => value.toFixed(2)).join(",")).join(" ");
+  const data = values.map((value, index) => point(index, outer * Math.max(0, Number(value || 0)) / maximum));
+  return { center, outer, point, polygon, data, dataPoints: data.map((coords) => coords.map((value) => value.toFixed(2)).join(",")).join(" ") };
+}
+
+function renderProfileRadar(totals = {}, idPrefix = "hero") {
+  const values = ATTRIBUTES.map((attribute) => Math.max(0, Number(totals[attribute.key] || 0)));
+  const maximum = Math.max(10, Math.ceil(Math.max(...values, 1) / 5) * 5);
+  const geometry = profileRadarGeometry(values, maximum);
+  const labelRadius = 107;
+  const description = ATTRIBUTES.map((attribute, index) => `${attribute.short} ${values[index]}`).join(", ");
+  return `
+    <figure class="profile-radar chart-shell" aria-labelledby="${esc(idPrefix)}-radar-title ${esc(idPrefix)}-radar-caption">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Matriz de combate</p><h3 id="${esc(idPrefix)}-radar-title">Atributos do herói</h3></div>
+        <span class="tag">Escala 0–${maximum}</span>
+      </div>
+      <svg viewBox="0 0 240 240" role="img" aria-labelledby="${esc(idPrefix)}-radar-svg-title ${esc(idPrefix)}-radar-svg-desc">
+        <title id="${esc(idPrefix)}-radar-svg-title">Gráfico radar dos cinco atributos</title>
+        <desc id="${esc(idPrefix)}-radar-svg-desc">${esc(description)}.</desc>
+        ${[0.25, 0.5, 0.75, 1].map((factor) => `<polygon class="profile-radar-grid" points="${geometry.polygon(geometry.outer * factor)}"></polygon>`).join("")}
+        ${ATTRIBUTES.map((_, index) => {
+          const [x, y] = geometry.point(index, geometry.outer);
+          return `<line class="profile-radar-axis" x1="${geometry.center}" y1="${geometry.center}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}"></line>`;
+        }).join("")}
+        <polygon class="profile-radar-series" points="${geometry.dataPoints}"></polygon>
+        ${geometry.data.map(([x, y], index) => `<circle class="profile-radar-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4"><title>${esc(ATTRIBUTES[index].label)}: ${values[index]}</title></circle>`).join("")}
+        ${ATTRIBUTES.map((attribute, index) => {
+          const [x, y] = geometry.point(index, labelRadius);
+          return `<text class="profile-radar-label" x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle">${esc(attribute.short)}</text>`;
+        }).join("")}
+      </svg>
+      <figcaption id="${esc(idPrefix)}-radar-caption" class="sr-only">${esc(description)}.</figcaption>
+      <dl class="profile-chart-values" aria-label="Valores textuais dos atributos">
+        ${ATTRIBUTES.map((attribute, index) => `<div><dt>${esc(attribute.label)}</dt><dd>${values[index]}</dd></div>`).join("")}
+        <div><dt>Defesa</dt><dd>${Number(totals.def || 0)}</dd></div>
+      </dl>
+    </figure>
+  `;
+}
+
+function renderProfileProgress(character = {}, totals = {}, idPrefix = "hero") {
+  const progression = progressionFor(character);
+  const percentage = Math.max(0, Math.min(100, Number(progression.percentage || 0)));
+  const radius = 48;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - percentage / 100);
+  return `
+    <section class="profile-progression" aria-labelledby="${esc(idPrefix)}-progress-title">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Ascensão</p><h3 id="${esc(idPrefix)}-progress-title">Progresso do nível</h3></div>
+        <span class="tag">${Number(progression.freePoints || 0)} ponto(s) livre(s)</span>
+      </div>
+      <div class="profile-progression-body">
+        <div class="profile-progress-ring">
+          <svg viewBox="0 0 120 120" role="img" aria-labelledby="${esc(idPrefix)}-ring-title ${esc(idPrefix)}-ring-desc">
+            <title id="${esc(idPrefix)}-ring-title">Progresso para o próximo nível</title>
+            <desc id="${esc(idPrefix)}-ring-desc">${percentage}% concluído. ${Number(progression.progressXp || 0)} de ${Number(progression.requiredXp || 0)} pontos de experiência.</desc>
+            <circle class="profile-ring-track" cx="60" cy="60" r="${radius}"></circle>
+            <circle class="profile-ring-value" cx="60" cy="60" r="${radius}" stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"></circle>
+          </svg>
+          <div><strong>${percentage}%</strong><span>Nível ${Number(progression.level || 1)}</span></div>
+        </div>
+        <dl class="profile-derived-stats">
+          <div><dt>Experiência</dt><dd>${Number(progression.progressXp || 0).toLocaleString("pt-BR")} / ${Number(progression.requiredXp || 0).toLocaleString("pt-BR")}</dd></div>
+          <div><dt>Restante</dt><dd>${Number(progression.remainingXp || 0).toLocaleString("pt-BR")} XP</dd></div>
+          <div><dt>PV máximo</dt><dd>${Number(totals.hpMax || 0).toLocaleString("pt-BR")}</dd></div>
+          <div><dt>PP máximo</dt><dd>${Number(totals.ppMax || 0).toLocaleString("pt-BR")}</dd></div>
+          <div><dt>Prestígio</dt><dd>${Number(prestigeFor(character)).toLocaleString("pt-BR")}</dd></div>
+        </dl>
+      </div>
+    </section>
+  `;
+}
+
+function profileCompositionSegments(totals = {}) {
+  const composition = totals.composition || {};
+  const sum = (source = {}) => ATTRIBUTES.reduce((total, attribute) => total + Math.max(0, Number(source?.[attribute.key] || 0)), 0);
+  const segments = [
+    { id: "base", label: "Base", value: sum(composition.base), tone: "base" },
+    { id: "development", label: "Desenvolvimento", value: sum(composition.development), tone: "development" },
+    { id: "lineage", label: "Raça e classe", value: sum(composition.raceBonus) + sum(composition.classBonus), tone: "lineage" },
+    { id: "affinity", label: "Afinidade", value: sum(composition.affinityBonus), tone: "affinity" },
+    { id: "equipment", label: "Equipamentos", value: sum(composition.equipmentBonus), tone: "equipment" },
+  ];
+  const total = Math.max(1, segments.reduce((result, segment) => result + segment.value, 0));
+  return segments.map((segment) => ({ ...segment, percentage: Math.round(segment.value / total * 100) }));
+}
+
+function renderProfileComposition(totals = {}) {
+  const segments = profileCompositionSegments(totals);
+  return `
+    <section class="profile-composition" aria-labelledby="profile-composition-title">
+      <div class="profile-chart-heading"><div><p class="eyebrow">Composição</p><h3 id="profile-composition-title">Origem da potência</h3></div></div>
+      <div class="profile-composition-list">
+        ${segments.map((segment) => `
+          <div class="profile-composition-row" data-tone="${esc(segment.tone)}">
+            <div><span>${esc(segment.label)}</span><strong>${Number(segment.value).toLocaleString("pt-BR")}</strong></div>
+            <div class="profile-composition-track" role="img" aria-label="${esc(segment.label)}: ${segment.value} pontos, ${segment.percentage}% da composição positiva"><i style="width:${segment.percentage}%"></i></div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function profileEquipmentEntries(character = {}) {
+  return [
+    ...(character.inventory || []).filter((item) => item.equipped).map((item) => ({ ...item, source: "Inventário" })),
+    ...(character.gachaVault || []).filter((item) => item.equipped && item.kind === "item").map((item) => ({ ...item, source: "Relíquia invocada" })),
+  ].sort((a, b) => rarityScore(b.rarity) - rarityScore(a.rarity));
+}
+
+function renderProfileEquipment(character = {}, options = {}) {
+  const entries = profileEquipmentEntries(character);
+  const limit = Number(options.limit || 6);
+  const idPrefix = options.idPrefix || "profile";
+  return `
+    <section class="profile-equipment" aria-labelledby="${esc(idPrefix)}-equipment-title">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Arsenal ativo</p><h3 id="${esc(idPrefix)}-equipment-title">Equipamentos</h3></div>
+        <span class="tag">${entries.length} equipado(s)</span>
+      </div>
+      <div class="profile-equipment-list">
+        ${entries.slice(0, limit).map((item) => `
+          <article class="profile-equipment-item ${rarityClass(item.rarity)}">
+            <span class="profile-equipment-rune" aria-hidden="true">${item.kind === "item" ? "◇" : /armadura|escudo/i.test(normalize(item.categoryId || item.category || item.name)) ? "⬡" : "◊"}</span>
+            <div><small>${esc(item.source)} · ${esc(item.rarity || "Comum")}</small><strong>${esc(item.name || "Item sem nome")}</strong><p>${esc(bonusToText(item.bonus || {}) || item.effect || item.description || "Sem bônus descrito.")}</p></div>
+          </article>
+        `).join("") || `<div class="empty-state compact"><span class="empty-state__icon" aria-hidden="true">◇</span><p>Nenhum equipamento está ativo.</p></div>`}
+      </div>
+    </section>
+  `;
+}
+
+function profileEarnedAchievementIds(character = {}) {
+  const ids = new Set(derivedAchievementIds(character));
+  (character.achievements || []).forEach((entry) => ids.add(typeof entry === "string" ? entry : entry?.id));
+  return ids;
+}
+
+function renderProfileAchievementsSummary(character = {}, options = {}) {
+  const earned = profileEarnedAchievementIds(character);
+  const catalog = state.content.achievements || [];
+  const records = catalog.filter((entry) => earned.has(entry.id));
+  const limit = Number(options.limit || 4);
+  const idPrefix = options.idPrefix || "profile";
+  return `
+    <section class="profile-achievement-summary" aria-labelledby="${esc(idPrefix)}-achievement-title">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Marcas da jornada</p><h3 id="${esc(idPrefix)}-achievement-title">Conquistas</h3></div>
+        <span class="tag">${records.length} reconhecida(s)</span>
+      </div>
+      <div class="profile-achievement-list">
+        ${records.slice(0, limit).map((achievement) => `
+          <article class="profile-achievement-medal ${rarityClass(achievement.rarity)}">
+            <span aria-hidden="true">✦</span><div><small>${esc(achievement.rarity || "Conquista")}</small><strong>${esc(achievement.name)}</strong><p>${esc(achievement.description || "Feito registrado pela Interface.")}</p></div>
+          </article>
+        `).join("") || `<div class="empty-state compact"><span class="empty-state__icon" aria-hidden="true">✦</span><p>A primeira conquista ainda aguarda seu nome.</p></div>`}
+      </div>
+    </section>
+  `;
+}
+
+function profileChronicleEntries(character = {}) {
+  const ownerId = character.ownerId || character.id || state.user?.uid;
+  const entries = [];
+  const add = (entry = {}) => {
+    if (!entry.title) return;
+    entries.push({
+      title: entry.title,
+      detail: entry.detail || "Registro preservado pela Interface.",
+      tone: entry.tone || "interface",
+      at: entry.at || "",
+      timestamp: timeValue(entry.at),
+    });
+  };
+  (state.progressRequests || []).filter((request) => request.uid === ownerId && request.status === "aprovado").forEach((request) => add({
+    title: request.type === "mission" ? "Missão reconhecida" : request.type === "training" ? "Treino validado" : "Progresso aprovado",
+    detail: request.title || request.name || request.description || "O Oráculo aprovou um avanço.",
+    tone: "success",
+    at: request.reviewedAt || request.updatedAt || request.createdAt,
+  }));
+  (character.rollHistory || []).forEach((roll) => add({ title: "Afinidade consultada", detail: roll.affinityName || roll.name || "A roleta respondeu ao chamado.", tone: "interface", at: roll.createdAt }));
+  (character.titles || []).forEach((title) => add({ title: "Título conquistado", detail: title.name, tone: "hero", at: title.obtainedAt || title.createdAt }));
+  (character.gachaVault || []).filter((item) => item.obtainedAt).forEach((item) => add({ title: item.kind === "pet" ? "Companheiro invocado" : "Relíquia invocada", detail: item.name, tone: rarityKey(item.rarity), at: item.obtainedAt }));
+  if (character.createdAt || character.awakenedAt) add({ title: "Primeiro despertar", detail: `${character.characterName || "O herói"} foi reconhecido pela Interface.`, tone: "hero", at: character.awakenedAt || character.createdAt });
+  const ordered = entries.sort((a, b) => b.timestamp - a.timestamp);
+  if (ordered.length) return ordered.slice(0, 8);
+  return [
+    { title: "Registro atual", detail: character.story || "A crônica começa quando o personagem entra em Millennium.", tone: "interface", at: "", timestamp: 0 },
+    { title: "Identidade reconhecida", detail: `${character.characterName || "O personagem"} aguarda os próximos capítulos.`, tone: "hero", at: "", timestamp: 0 },
+  ];
+}
+
+function renderProfileChronicle(character = {}, options = {}) {
+  const entries = profileChronicleEntries(character);
+  const limit = Number(options.limit || 6);
+  const idPrefix = options.idPrefix || "profile";
+  return `
+    <section class="profile-chronicle" aria-labelledby="${esc(idPrefix)}-chronicle-title">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Crônica da jornada</p><h3 id="${esc(idPrefix)}-chronicle-title">Marcos preservados</h3></div>
+        <span class="tag">${Math.min(entries.length, limit)} capítulo(s)</span>
+      </div>
+      <ol class="profile-timeline">
+        ${entries.slice(0, limit).map((entry) => `
+          <li data-tone="${esc(entry.tone)}">
+            <span class="profile-timeline-node" aria-hidden="true"></span>
+            <div><time>${entry.at ? esc(tsText(entry.at)) : "Registro vigente"}</time><strong>${esc(entry.title)}</strong><p>${esc(entry.detail)}</p></div>
+          </li>
+        `).join("")}
+      </ol>
+    </section>
+  `;
+}
+
+function renderProfileCompanions(character = {}, options = {}) {
+  const companions = monsterInstancesForCharacter(character)
+    .map((entry) => ({ ...entry, calculatedPower: monsterApi().calculateMonsterStats(entry, monsterItemsForCharacter(character)).totalPower }))
+    .sort((a, b) => b.calculatedPower - a.calculatedPower);
+  const limit = Number(options.limit || 4);
+  const idPrefix = options.idPrefix || "profile";
+  return `
+    <section class="profile-companions" aria-labelledby="${esc(idPrefix)}-companions-title">
+      <div class="profile-chart-heading">
+        <div><p class="eyebrow">Vínculos ativos</p><h3 id="${esc(idPrefix)}-companions-title">Monstros Vinculados</h3></div>
+        <span class="tag">${companions.length} no registro</span>
+      </div>
+      <div class="profile-companion-grid">
+        ${companions.slice(0, limit).map((monster) => `<article class="profile-companion-card ${monsterRarityClass(monster.rarity)}"><img src="${esc(monsterAsset(monster, "thumbnail"))}" width="64" height="64" loading="lazy" decoding="async" alt="${esc(monsterDisplayName(monster))}" /><div><small>${esc(monster.rarity)} · ${"★".repeat(monster.stars)}</small><strong>${esc(monsterDisplayName(monster))}</strong><p>${esc(monster.speciesName)} · Nv. ${monster.level}</p><b>${monster.calculatedPower}</b></div></article>`).join("") || `<div class="empty-state compact"><span class="empty-state__icon" aria-hidden="true">◆</span><p>Nenhum monstro aceitou o vínculo ainda.</p></div>`}
+      </div>
+      <div class="action-row"><button class="ghost-button" type="button" data-nav="monsters">Abrir santuário</button></div>
+    </section>
+  `;
+}
+
+function renderProfileProtagonist(character = {}, options = {}) {
   const race = getRace(character.raceId);
   const klass = getClass(character.classId);
   const affinity = getAffinity(character.affinityId);
   const title = activeTitle(character);
+  const privateProfile = Boolean(options.privateProfile);
+  const name = character.characterName || "Personagem sem nome";
+  const player = options.playerName || state.profile?.displayName || character.playerName || "Player";
+  const online = Boolean(options.online);
+  const actions = options.actions || "";
+  const description = privateProfile ? "Este herói preservou sua ficha detalhada em sigilo." : (character.characterDescription || "Uma presença ainda sem descrição pública.");
+  const bannerSource = character.bannerUrl || SEASON_ART.login || POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).hero;
+  const bannerFallback = POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).fallback || placeholderAvatar();
+  return `
+    <article class="profile-protagonist ${options.compact ? "profile-protagonist--compact" : ""} ${privateProfile ? "is-private" : ""}">
+      <div class="profile-protagonist-banner" aria-hidden="true">
+        <img src="${esc(bannerSource)}" data-fallback-src="${esc(bannerFallback)}" data-visual-kind="hero" data-visual-id="${esc(character.ownerId || character.id || name)}-banner" style="${esc(cropImageStyle(character, "banner"))}" width="1600" height="900" loading="${options.eager ? "eager" : "lazy"}" decoding="async" alt="" />
+      </div>
+      <div class="profile-protagonist-veil" aria-hidden="true"></div>
+      <div class="profile-protagonist-layout">
+        ${renderHeroPortrait(character, { title, online, eager: options.eager })}
+        <div class="profile-protagonist-copy">
+          <div class="profile-protagonist-heading">
+            <div>
+              <p class="eyebrow">${online ? "Online agora" : "Eco em repouso"} · ${esc(player)}</p>
+              <h2>${esc(name)}</h2>
+              <strong class="profile-main-title ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Sem título equipado")}</strong>
+            </div>
+            ${actions ? `<div class="profile-protagonist-actions">${actions}</div>` : ""}
+          </div>
+          <p class="profile-protagonist-description">${esc(description)}</p>
+          <div class="hero-seal-row">
+            ${renderProfileSeal("Afinidade", privateProfile ? null : affinity, "◈")}
+            ${renderProfileSeal("Raça", privateProfile ? null : race, "✦")}
+            ${renderProfileSeal("Classe", privateProfile ? null : klass, "⚔")}
+          </div>
+          <dl class="profile-hero-ledger">
+            <div><dt>Nível</dt><dd>${Number(character.level || levelFromXp(character.xp || 0))}</dd></div>
+            <div><dt>Prestígio</dt><dd>${privateProfile ? "—" : Number(prestigeFor(character)).toLocaleString("pt-BR")}</dd></div>
+            <div><dt>Localização</dt><dd>${privateProfile ? "Oculta" : esc(character.currentLocation || "Limiar das Cortinas")}</dd></div>
+            <div><dt>Privacidade</dt><dd>${privateProfile ? "Protegida" : "Pública"}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderProfile() {
+  const character = currentCharacter();
+  const totals = getTotals(character);
   const equippedFrame = (character.inventory || []).find((item) => item.equipped && /moldura|aura|perfil/i.test(normalize(`${item.name || ""} ${item.category || ""} ${item.categoryId || ""}`)));
-  const showcasePets = [...(character.gachaVault || [])]
-    .filter((item) => item.kind === "pet")
-    .sort((a, b) => instancePower(b) - instancePower(a))
-    .slice(0, 3);
   const tabs = [
-    ["overview", "Visão"],
+    ["overview", "Crônica"],
     ["inventory", "Itens"],
-    ["pets", "Pets"],
+    ["pets", "Monstros"],
     ["cosmetics", "Cosméticos"],
     ["titles", "Títulos"],
     ["powers", "Poderes"],
     ["history", "Histórico"],
     ["achievements", "Conquistas"],
   ];
+  const actions = `
+    <button class="ghost-button" type="button" data-action="preview-profile-card">Prévia pública</button>
+    <button class="ghost-button" type="button" data-action="copy-profile-card">Copiar cartão</button>
+    <button class="ghost-button" type="button" data-action="toggle-profile-public">${character.profilePublic ? "Deixar privado" : "Deixar público"}</button>
+  `;
   return `
-    <div class="grid">
-      <article class="panel span-12 profile-card-social">
-        ${renderProfileBanner(character)}
-        <div class="profile-grid">
-          ${renderProfileAvatar(character, { rarity: equippedFrame?.rarity || title?.rarity || "Comum", title: equippedFrame?.name || "Moldura da raridade do título equipado", online: isUserOnline(state.profile || {}) })}
-          <div class="profile-identity">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online agora" : "Offline"} · ${esc(state.profile?.displayName || "Player")}</p>
-                <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
-                <strong class="profile-title-line ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Sem título equipado")}</strong>
-              </div>
-              <div class="action-row">
-                <button class="ghost-button" type="button" data-action="preview-profile-card">Prévia pública</button>
-                <button class="ghost-button" type="button" data-action="copy-profile-card">Copiar cartão</button>
-                <button class="ghost-button" type="button" data-action="toggle-profile-public">
-                  ${character.profilePublic ? "Deixar privado" : "Deixar público"}
-                </button>
-              </div>
-            </div>
-            <p>${esc(race?.name)} · ${esc(klass?.name)} · ${esc(affinity?.name || "Sem afinidade")}</p>
-            <p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>
-            <div class="profile-mini-stats">
-              <span>PO ${Number(character.gold || 0).toLocaleString("pt-BR")}</span>
-              <span>MC ${Number(character.millenniumCoins || 0).toLocaleString("pt-BR")}</span>
-              <span>Energia ${currentGachaEnergy(character)}/${GACHA_ENERGY_MAX}</span>
-              <span>Views ${state.profileViews.filter((view) => view.targetId === state.user?.uid).length}</span>
-            </div>
-            <div class="profile-social-line">
-              <span>${(character.gachaVault || []).filter((item) => item.kind === "pet").length} companheiro(s) no cofre</span>
-              <span>${(character.achievements || derivedAchievementIds(character).size)} conquista(s)</span>
-              <span>${character.profilePublic ? "Cartão público" : "Cartão privado"}</span>
-            </div>
-            <div class="tag-row">
-              ${(character.titles || []).slice(0, 3).map((title) => `<span class="tag">${esc(title.name)} · ${esc(title.rarity || "Título")}</span>`).join("") || `<span class="tag">Sem títulos</span>`}
-              ${(character.titles || []).length > 3 ? `<span class="tag">+${(character.titles || []).length - 3} na galeria</span>` : ""}
-            </div>
-            <div class="token-row">${renderTokens(character.tokens || [])}</div>
-            <div class="profile-presence">
-              <span class="presence-mark">${equippedFrame ? "✦" : "◇"}</span>
-              <span>${esc(equippedFrame?.name || "Nenhuma moldura equipada")}</span>
-              <span class="presence-separator">•</span>
-              <span>${showcasePets.length ? `${showcasePets.length} companheiro(s) em destaque` : "Cofre aguardando um companheiro"}</span>
-            </div>
-          </div>
-        </div>
-      </article>
-      <div class="span-12 profile-manifestation-grid">${renderManifestationPanel(character)}${renderPotentialProfile(character)}</div>
-      <article class="panel span-12 profile-showcase-panel">
-        <div class="panel-heading"><div><p class="eyebrow">Vitrine do despertar</p><h3>Companheiros que carregam seu nome</h3></div><span class="tag">Poder do cofre</span></div>
-        <div class="profile-showcase-grid">
-          ${showcasePets.map((pet) => `<div class="profile-showcase-pet ${rarityClass(pet.rarity)}">${(pet.imageUrl || petImageFor(pet)) ? `<img src="${esc(pet.imageUrl || petImageFor(pet))}" alt="${esc(pet.name)}" />` : `<span class="profile-showcase-mark">${esc((pet.name || "P").slice(0, 1))}</span>`}<div><small>${esc(pet.rarity)} · ${"★".repeat(Number(pet.stars || 1))}</small><strong>${esc(pet.name)}</strong><p>${esc(pet.trait || pet.description || "Companheiro dimensional.")}</p></div><b>${instancePower(pet)}</b></div>`).join("") || `<div class="empty-state">Quando um companheiro aceitar seu chamado, ele aparecerá aqui.</div>`}
-        </div>
-      </article>
-      <article class="panel span-12">
-        <div class="tabs profile-tabs">
-          ${tabs.map(([id, label]) => `<button class="tab ${state.profileTab === id ? "active" : ""}" type="button" data-action="profile-tab" data-tab="${id}">${label}</button>`).join("")}
+    <div class="grid hero-profile-sheet">
+      <div class="span-12">
+        ${renderProfileProtagonist(character, { playerName: state.profile?.displayName || "Player", online: isUserOnline(state.profile || {}), actions, eager: true })}
+      </div>
+      <div class="span-12 profile-identity-status" aria-label="Estado da identidade visual">
+        <span><i aria-hidden="true">${equippedFrame ? "✦" : "◇"}</i>${esc(equippedFrame?.name || "Moldura padrão da Interface")}</span>
+        <span>${(character.tokens || []).length} token(s) reconhecido(s)</span>
+        <span>${profileViewsFor(state.user?.uid)} visualização(ões)</span>
+        <span>${character.profilePublic ? "Cartão público" : "Cartão privado"}</span>
+      </div>
+      <article class="panel span-5 profile-data-panel">${renderProfileRadar(totals, "owner-profile")}</article>
+      <article class="panel span-3 profile-data-panel">${renderProfileProgress(character, totals, "owner-profile")}${renderProfileComposition(totals)}</article>
+      <article class="panel span-4 profile-data-panel">${renderProfileEquipment(character, { limit: 5, idPrefix: "owner-profile" })}</article>
+      <article class="panel span-7 profile-data-panel">${renderProfileCompanions(character, { limit: 4, idPrefix: "owner-profile" })}</article>
+      <article class="panel span-5 profile-data-panel">${renderProfileAchievementsSummary(character, { limit: 4, idPrefix: "owner-profile" })}</article>
+      <article class="panel span-12 profile-data-panel">${renderProfileChronicle(character, { limit: 6, idPrefix: "owner-profile" })}</article>
+      <article class="panel span-12 profile-tabs-shell">
+        <div class="tabs profile-tabs" role="tablist" aria-label="Seções detalhadas do perfil">
+          ${tabs.map(([id, label]) => `<button class="tab ${state.profileTab === id ? "active" : ""}" type="button" role="tab" aria-selected="${state.profileTab === id}" data-action="profile-tab" data-tab="${id}">${label}</button>`).join("")}
         </div>
       </article>
       ${renderProfileTab(character, totals)}
       <article class="panel span-12">
         <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Correio</p>
-            <h3>Pedidos, presentes e convites</h3>
-          </div>
+          <div><p class="eyebrow">Correio</p><h3>Pedidos, presentes e convites</h3></div>
           <span class="tag">${pendingIncomingRequests().length + (character.pendingGift ? 1 : 0)} pendente(s)</span>
         </div>
         <div class="mailbox-list">${renderMailbox()}</div>
@@ -4535,8 +5423,9 @@ function renderProfileTab(character, totals) {
   if (tab === "inventory") {
     return `<article class="panel span-12"><div class="inventory-grid">${renderInventoryItems(character.inventory || [], true)}</div></article>`;
   }
-  if (tab === "pets") {
-    return `<article class="panel span-12"><div class="pet-grid">${renderPets([...(character.gachaVault || []).filter((item) => item.kind === "pet"), ...(character.pets || [])])}</div></article>`;
+  if (state.profileTab === "pets") {
+    const monsters = monsterInstancesForCharacter(character);
+    return `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Monstros Vinculados</p><h3>Coleção ativa</h3></div><button class="primary-button" type="button" data-nav="monsters">Abrir santuário</button></div><div class="profile-companion-grid">${monsters.slice(0, 8).map((entry) => `<article class="profile-companion-card ${monsterRarityClass(entry.rarity)}"><img src="${esc(monsterAsset(entry, "thumbnail"))}" width="64" height="64" loading="lazy" decoding="async" alt="${esc(monsterDisplayName(entry))}" /><div><small>${esc(entry.rarity)} · ${"★".repeat(entry.stars)}</small><strong>${esc(monsterDisplayName(entry))}</strong><p>${esc(entry.speciesName)} · Nv. ${entry.level}</p><b>${monsterApi().calculateMonsterStats(entry, monsterItemsForCharacter(character)).totalPower}</b></div></article>`).join("") || `<div class="empty-state">Nenhum monstro vinculado.</div>`}</div></article>`;
   }
   if (tab === "cosmetics") {
     const cosmetics = (character.inventory || []).filter((item) => /cosmet|moldura|banner|aura|perfil|traje|token/i.test(normalize(`${item.category || ""} ${item.categoryId || ""} ${item.name || ""}`)));
@@ -4587,23 +5476,27 @@ function renderProfileTab(character, totals) {
     return `<article class="panel span-12"><div class="achievement-grid">${renderAchievements(character)}</div></article>`;
   }
   return `
-    <article class="panel span-4">
-      <p class="eyebrow">Atributos</p>
-      <div class="attribute-grid">${ATTRIBUTES.map((attr) => renderStat(attr.short, totals[attr.key])).join("")}${renderStat("DEF", totals.def)}</div>
-    </article>
-    <article class="panel span-4">
-      <p class="eyebrow">História</p>
+    <article class="panel span-7 profile-narrative-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Memória</p><h3>História do personagem</h3></div><span class="tag">Crônica principal</span></div>
       <p>${esc(character.story || "Nenhuma história registrada.")}</p>
-    </article>
-    <article class="panel span-4">
+      <div class="profile-narrative-divider"></div>
       <p class="eyebrow">Personalidade</p>
       <p>${esc(character.personality || "Nenhuma personalidade registrada.")}</p>
+    </article>
+    <article class="panel span-5 profile-narrative-panel">
+      <div class="panel-heading"><div><p class="eyebrow">Direção</p><h3>Desejos e limites</h3></div></div>
+      <dl class="profile-story-ledger">
+        <div><dt>Objetivo atual</dt><dd>${esc(character.objective || "Ainda não declarado.")}</dd></div>
+        <div><dt>Medo ou perda</dt><dd>${esc(character.fear || "Ainda não declarado.")}</dd></div>
+        <div><dt>Origem</dt><dd>${esc(character.originType || "Retornado")}</dd></div>
+        <div><dt>Ofício</dt><dd>${esc(character.profession || character.professionId || "Não registrado")}</dd></div>
+      </dl>
     </article>
     <article class="panel span-12 faction-pledge-panel">
       ${getFaction(character.factionId) ? `
         <div class="panel-heading"><div><p class="eyebrow">Vínculo de facção</p><h3>${esc(getFaction(character.factionId).name)}</h3></div><span class="tag">${Number(character.factionReputation || 0)} reputação</span></div>
         <p>${esc(getFaction(character.factionId).description || "")}</p>
-        <div class="tag-row"><span class="tag">${esc(getFaction(character.factionId).benefit || "Caminhos proprios")}</span><span class="tag danger">${esc(getFaction(character.factionId).risk || "Toda escolha tem custo")}</span></div>
+        <div class="tag-row"><span class="tag">${esc(getFaction(character.factionId).benefit || "Caminhos próprios")}</span><span class="tag danger">${esc(getFaction(character.factionId).risk || "Toda escolha tem custo")}</span></div>
         <blockquote>${esc(getFaction(character.factionId).quote || "Seu juramento foi registrado.")}</blockquote>
       ` : state.settings.factionsUnlocked ? `
         <div class="panel-heading"><div><p class="eyebrow">Escolha narrativa</p><h3>Declare seu primeiro vínculo</h3></div><button class="ghost-button" type="button" data-nav="codex">Conhecer facções</button></div>
@@ -4614,7 +5507,7 @@ function renderProfileTab(character, totals) {
         </form>
       ` : `
         <div class="panel-heading"><div><p class="eyebrow">Conteúdo de temporada</p><h3>Juramentos ainda não foram abertos</h3></div><span class="tag">Bloqueado pelo cânone</span></div>
-        <p>Você pode estudar todas as facções no Codex, mas o primeiro vínculo será liberado dentro da história pelo Oráculo. Conhecimento não é pertencimento.</p>
+        <p>Você pode estudar todas as facções no Codex, mas o primeiro vínculo será liberado dentro da história pelo Oráculo.</p>
         <button class="ghost-button" type="button" data-nav="codex" data-codex-target="reputation">Conhecer facções</button>
       `}
     </article>
@@ -4939,7 +5832,7 @@ function renderCatalogCard(entry, type) {
   const keywords = type === "culture" ? entry.keywords || [] : entry.knowledge || [];
   return `
     <article class="journey-catalog-card" data-catalog-entry="${esc(entry.id)}">
-      <div class="journey-catalog-thumb">${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" loading="lazy" />` : `<span aria-hidden="true">${esc(entry.name.slice(0, 1))}</span>`}</div>
+      <div class="journey-catalog-thumb">${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" ${mediaAttrs("thumbnail")} />` : `<span aria-hidden="true">${esc(entry.name.slice(0, 1))}</span>`}</div>
       <div><small>${esc(category)}</small><h3>${esc(entry.name)}</h3><p>${esc(entry.summary || "Registro em preparação.")}</p><div class="keyword-row">${keywords.slice(0, 4).map((word) => `<span>${esc(word)}</span>`).join("")}</div></div>
       <button class="ghost-button" type="button" data-action="catalog-details" data-catalog-type="${type}" data-catalog-id="${esc(entry.id)}">Abrir registro</button>
     </article>`;
@@ -4974,7 +5867,7 @@ function openCatalogDetails(type, id) {
   const image = entry.imageHero || entry.imageThumbnail || entry.emblemUrl || "";
   $("#modalContent").innerHTML = `
     <article class="catalog-detail-modal">
-      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" />` : `<div class="catalog-detail-fallback" aria-hidden="true">${esc(entry.name.slice(0, 1))}</div>`}
+      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || entry.name)}" ${mediaAttrs("thumbnail")} />` : `<div class="catalog-detail-fallback" aria-hidden="true">${esc(entry.name.slice(0, 1))}</div>`}
       <div><p class="eyebrow">${type === "culture" ? "Cultura" : "Ofício"}</p><h2>${esc(entry.name)}</h2><p>${esc(entry.summary || "")}</p><dl>${catalogEntryDetails(entry, type)}</dl><div class="review-warning"><strong>Sem bônus automático de atributo.</strong><span>${type === "culture" ? "Cultura concede idioma, costumes, contatos e familiaridade narrativa." : "Ofício concede conhecimento, ferramentas, receitas e experiência narrativa."}</span></div></div>
     </article>`;
   $("#modal").hidden = false;
@@ -5106,7 +5999,7 @@ function registrationPreviewCard(entry, kind, fallback = "Escolha uma opção pa
   const keywords = Array.isArray(entry.keywords) ? entry.keywords.slice(0, 4) : [];
   return `
     <aside class="registration-preview">
-      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || `${kind} ${entry.name}`)}" loading="lazy" />` : `<span class="catalog-fallback" aria-hidden="true">${esc(String(entry.name || kind).slice(0, 1))}</span>`}
+      ${image ? `<img src="${esc(image)}" alt="${esc(entry.altText || `${kind} ${entry.name}`)}" ${mediaAttrs("thumbnail")} />` : `<span class="catalog-fallback" aria-hidden="true">${esc(String(entry.name || kind).slice(0, 1))}</span>`}
       <div><p class="eyebrow">${esc(kind)}</p><h3>${esc(entry.name)}</h3><p>${esc(summary)}</p>
       ${bonus && bonus !== "Sem bônus" ? `<span class="tag">Vantagem: ${esc(bonus)}</span>` : ""}
       ${tradeoff ? `<span class="tag danger">Limitação: ${esc(tradeoff)}</span>` : ""}
@@ -5500,91 +6393,90 @@ function renderRoulette() {
   `;
 }
 
-function gachaCost(type = "pets", qty = 1) {
-  const one = type === "items" ? 120 : 100;
-  return qty >= 10 ? one * 9 : one;
+function gachaCost(type = "monsters", qty = 1) {
+  const one = 100;
+  return Number(qty || 1) >= 10 ? one * 9 : one;
+}
+
+function monsterInvocationResultDescription(reward = {}) {
+  if (reward.category === "monster") return `${reward.shiny ? "Forma Shiny · " : ""}${reward.description || "Monstro Vinculado"}`;
+  if (reward.category === "gold" || reward.category === "coins") return reward.description || "Moeda de progressão";
+  const quantity = Math.max(1, Number(reward.quantity || 1));
+  return `${quantity > 1 ? `${quantity}x · ` : ""}${reward.description || "Recurso dos Monstros Vinculados"}`;
+}
+
+function monsterInvocationInventorySummary(character = currentCharacter()) {
+  const api = monsterApi();
+  const inventory = monsterItemsForCharacter(character);
+  const resources = monsterResourcesForCharacter(character);
+  const countBy = (category) => inventory.filter((entry) => api.itemById(entry.itemId)?.category === category).reduce((sum, entry) => sum + Math.max(1, Number(entry.quantity || 1)), 0);
+  const cores = Object.values(resources.cores || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount || 0)), 0);
+  const materials = Object.values(resources.materials || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount || 0)), 0);
+  const fragments = Object.values(resources.fragments || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount || 0)), 0);
+  return { equipment: countBy("equipment"), books: countBy("book"), consumables: countBy("food"), cores, materials, fragments };
+}
+
+function renderMonsterInvocationReward(reward = {}) {
+  const image = reward.image || (reward.category === "monster" ? monsterApi().assetBundleForSpecies(reward.speciesId).thumbnail : "assets/monsters/placeholder-monster.svg");
+  return `<article class="monster-reward-card ${monsterRarityClass(reward.rarity)} ${reward.shiny ? "shiny" : ""}"><img src="${esc(image)}" alt="" width="64" height="64" loading="lazy" decoding="async" /><div><small>${esc(reward.rarity || "Comum")} · ${esc(reward.category || "recurso")}${reward.forced ? " · garantia" : ""}</small><strong>${esc(reward.name || "Eco do portal")}</strong></div><p>${esc(monsterInvocationResultDescription(reward))}</p></article>`;
 }
 
 function renderGacha() {
+  const api = monsterApi();
   const character = currentCharacter();
-  const type = state.gachaTab === "items" ? "items" : "pets";
-  const banner = activeGachaBanner(type);
-  const costOne = gachaCost(type, 1);
-  const costTen = gachaCost(type, 10);
-  const coins = Number(character.millenniumCoins || 0);
-  const vaultItems = type === "pets"
-    ? (character.gachaVault || []).filter((item) => item.kind === "pet")
-    : (character.inventory || []).filter((item) => item.source === "Invocacao dimensional");
-  const collectionPool = gachaPool(type);
-  const discovered = new Set(vaultItems.map((item) => item.sourceId || item.id).filter(Boolean));
-  const collectionPercent = collectionPool.length ? Math.round((discovered.size / collectionPool.length) * 100) : 0;
-  const spotlight = banner.featured?.[0] || collectionPool[0] || {};
-  const rates = gachaRatesFor(type);
-  return `
-    <div class="grid gacha-view">
-      <article class="panel span-12 gacha-sanctum ${state.rolling ? "is-opening" : ""}">
-        <div class="gacha-banner-copy">
-          <p class="eyebrow">Cofre dos Ecos · ${type === "pets" ? "Companheiros" : "Relíquias"}</p>
-          <h2>${esc(banner.name || (type === "pets" ? "Companheiros do Despertar" : "Relíquias do Oráculo"))}</h2>
-          <p>${esc(banner.description || "Rasgue o selo e descubra qual eco respondeu ao seu chamado.")}</p>
-          <div class="gacha-ledger"><span><small>Saldo</small><b>${coins.toLocaleString("pt-BR")} MC</b></span><span><small>Coleção</small><b>${discovered.size}/${collectionPool.length} · ${collectionPercent}%</b></span><span><small>Rotação global</small><b data-gacha-countdown data-gacha-type="${esc(type)}" data-gacha-ends="${banner.endsAt.getTime()}">${esc(WORLD.countdownParts(banner.endsAt, gachaNow()).label)}</b></span></div>
-          <div class="tabs gacha-kind-tabs"><button class="tab ${type === "pets" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="pets">Companheiros</button><button class="tab ${type === "items" ? "active" : ""}" type="button" data-action="gacha-tab" data-tab="items">Relíquias</button></div>
-          <div class="action-row gacha-info-actions"><button class="ghost-button" type="button" data-action="gacha-odds" data-kind="${esc(type)}">Ver probabilidades</button><button class="ghost-button" type="button" data-action="gacha-pool" data-kind="${esc(type)}">Ver pool completo</button></div>
+  const pool = api.invocationPoolSummary();
+  const coins = Math.max(0, Number(character.millenniumCoins || 0));
+  const costOne = gachaCost("monsters", 1);
+  const costTen = gachaCost("monsters", 10);
+  const monsters = monsterInstancesForCharacter(character);
+  const discovered = new Set(monsters.map((entry) => entry.speciesId));
+  const collectionPercent = pool.species.length ? Math.round((discovered.size / pool.species.length) * 100) : 0;
+  const pity = Math.max(0, Number(character.monsterGachaPity?.rareMonster || 0));
+  const pityMax = Math.max(1, Number(state.settings.pityMax || character.monsterGachaPity?.max || pool.pityMax || 30));
+  const pityPercent = Math.min(100, Math.round((pity / pityMax) * 100));
+  const inventorySummary = monsterInvocationInventorySummary(character);
+  const spotlight = pool.species[(WORLD.rotationId(gachaNow()) + discovered.size) % Math.max(1, pool.species.length)] || pool.species[0];
+  const recentResults = state.lastGachaResults || [];
+  return `<div class="monster-invocation-view ${state.rolling ? "is-opening" : ""}">
+    <article class="panel monster-invocation-sanctum">
+      <div class="monster-invocation-layout">
+        <div class="monster-invocation-copy">
+          <p class="eyebrow">Invocação dos Monstros · economia integrada</p>
+          <h2>Um portal. Monstros e tudo que os faz evoluir.</h2>
+          <p>O antigo Gacha separado foi reunido em um contrato único. O portal pode entregar uma nova espécie, livros de XP, equipamentos funcionais, Núcleos, materiais, PO ou pequenas quantidades de MC.</p>
+          <div class="monster-invocation-ledger"><span><small>Saldo</small><b>${coins.toLocaleString("pt-BR")} MC</b></span><span><small>Bestiário</small><b>${discovered.size}/${pool.species.length} · ${collectionPercent}%</b></span><span><small>Pity raro</small><b>${pity}/${pityMax}</b></span></div>
+          <div class="monster-pity-track" role="progressbar" aria-label="Pity para monstro raro" aria-valuemin="0" aria-valuemax="${pityMax}" aria-valuenow="${pity}"><span style="width:${pityPercent}%"></span></div>
+          <div class="action-row gacha-info-actions"><button class="ghost-button" type="button" data-action="monster-gacha-odds">Ver probabilidades</button><button class="ghost-button" type="button" data-action="monster-gacha-pool">Ver pool completo</button><button class="ghost-button" type="button" data-nav="monsters">Abrir Monstros Vinculados</button></div>
         </div>
-        <div class="gacha-vault-gate" aria-label="Portal de invocação">
-          <div class="gate-sigil"><i></i><i></i><i></i><span>${state.rolling ? "Rompendo o selo" : "Toque o impossível"}</span></div>
-          <div class="gacha-actions">
-            <button class="primary-button intense" type="button" data-action="invoke-gacha" data-kind="${esc(type)}" data-qty="1" ${coins >= costOne && !state.rolling ? "" : "disabled"}>Invocar 1x <small>${costOne} MC</small></button>
-            <button class="primary-button" type="button" data-action="invoke-gacha" data-kind="${esc(type)}" data-qty="10" ${coins >= costTen && !state.rolling ? "" : "disabled"}>Invocar 10x <small>${costTen} MC</small></button>
-          </div>
+        <div class="monster-invocation-gate" aria-label="Portal da Invocação dos Monstros">
+          <div class="monster-invocation-sigil"><img src="${esc(spotlight?.image || "assets/monsters/placeholder-monster.svg")}" alt="${esc(spotlight?.name || "Monstro em destaque")}" width="160" height="160" /><span>${state.rolling ? "O selo está respondendo" : "Garantia de monstro no 10x"}</span></div>
+          <div class="monster-invocation-actions"><button class="primary-button intense" type="button" data-action="invoke-gacha" data-kind="monsters" data-qty="1" ${coins >= costOne && !state.rolling ? "" : "disabled"}>Invocar 1×<small>${costOne} MC</small></button><button class="primary-button" type="button" data-action="invoke-gacha" data-kind="monsters" data-qty="10" ${coins >= costTen && !state.rolling ? "" : "disabled"}>Invocar 10×<small>${costTen} MC · 1 monstro garantido</small></button></div>
         </div>
-        <div class="gacha-spotlight ${rarityClass(spotlight.rarity)}">
-          ${(type === "pets" && petImageFor(spotlight)) ? `<img src="${esc(petImageFor(spotlight))}" alt="${esc(spotlight.name || "Destaque")}" />` : `<div class="relic-silhouette">${esc((spotlight.name || "?").slice(0, 1))}</div>`}
-          <small>Eco em ascensão · ${esc(spotlight.rarity || "Desconhecido")}</small><strong>${esc(spotlight.name || "Registro oculto")}</strong><p>${esc(spotlight.trait || spotlight.effect || spotlight.description || "A Interface ainda não revelou esta presença.")}</p>
-          <span class="gacha-odds">Pity ${Number(character.gachaPity?.[type] || 0)}/${Math.max(1, Number(state.settings.pityMax || 30))} · taxas publicadas</span>
-        </div>
-      </article>
-
-      <article class="panel span-12 gacha-rate-table">
-        <div class="panel-heading"><div><p class="eyebrow">Contrato de invocação</p><h3>Taxas reais do pool atual</h3></div><span class="tag">Pesos publicados · sem taxa escondida</span></div>
-        <div class="rarity-rate-strip">${rates.map((entry) => `<span class="${rarityClass(entry.name)}"><small>${esc(entry.name)}</small><b>${entry.percentage.toLocaleString("pt-BR", { minimumFractionDigits: entry.percentage < 1 ? 3 : 2, maximumFractionDigits: 4 })}%</b></span>`).join("")}</div>
-      </article>
-
-      <article class="panel span-5">
-        <div class="panel-heading"><div><p class="eyebrow">Rate-up da hora</p><h3>Destaques do banner</h3></div></div>
-        <div class="featured-gacha">
-          ${banner.featured.map((item) => `
-            <div class="featured-card ${rarityClass(item.rarity)}">
-              ${(type === "pets" && petImageFor(item)) ? `<img class="featured-pet-art" src="${esc(petImageFor(item, { thumbnail: true }))}" alt="${esc(item.altText || item.name)}" loading="lazy" />` : ""}
-              <span>${esc(item.rarity)}</span>
-              <strong>${esc(item.name)}</strong>
-              <p>${esc(item.trait || item.effect || item.description || "")}</p>
-            </div>
-          `).join("") || `<div class="empty-state">Sem destaques desta raridade ainda.</div>`}
-        </div>
-      </article>
-
-      <article class="panel span-7">
-        <div class="panel-heading"><div><p class="eyebrow">Resultado</p><h3>Últimas invocações</h3></div></div>
-        <div class="gacha-results">
-          ${(state.lastGachaResults || []).map((item) => `
-            <div class="result-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}">
-              <span>${esc(item.rarity)}${item.shiny ? " · Radiante" : ""}</span>
-              <strong>${esc(item.name)}</strong>
-              <p>${"★".repeat(Number(item.stars || 1))} · Poder ${instancePower(item)} · ${esc(item.trait || item.description || "")}</p>
-            </div>
-          `).join("") || `<div class="empty-state">A próxima invocação aparece aqui com cor, raridade e estrelas.</div>`}
-        </div>
-      </article>
-
-      <article class="panel span-12">
-        <div class="panel-heading"><div><p class="eyebrow">${type === "pets" ? "Cofre dimensional" : "Inventário dimensional"}</p><h3>${type === "pets" ? "Sua coleção de companheiros" : "Relíquias já enviadas ao personagem"}</h3></div><span class="tag">${vaultItems.length} registro(s)</span></div>
-        <div class="collection-progress"><span style="width:${collectionPercent}%"></span></div>
-        <p class="hint">${discovered.size} descoberta(s) unicas de ${collectionPool.length}. Copias continuam valiosas para estrelas e fragmentos.</p>
-        <div class="gacha-vault">${type === "pets" ? renderGachaVault(vaultItems) : `<div class="inventory-grid">${renderInventoryItems(vaultItems, true)}</div>`}</div>
-      </article>
+      </div>
+    </article>
+    <article class="panel"><div class="panel-heading"><div><p class="eyebrow">Contrato publicado</p><h3>Probabilidades por categoria</h3></div><span class="tag">Total 100%</span></div><div class="monster-contract-grid">${pool.categories.map((entry) => `<div class="monster-contract-rate"><small>${esc(entry.label)}</small><b>${Number(entry.percentage).toLocaleString("pt-BR")}%</b></div>`).join("")}</div><p class="hint">Fragmentos de Arena nunca aparecem neste portal. Duplicatas de monstros são convertidas em Fragmentos da Espécie.</p></article>
+    <div class="monster-economy-grid">
+      <article class="panel monster-economy-panel"><div class="panel-heading"><div><p class="eyebrow">Última abertura</p><h3>Resultado do portal</h3></div><span class="tag">${recentResults.length || 0} eco(s)</span></div><div class="monster-reward-grid">${recentResults.map(renderMonsterInvocationReward).join("") || `<div class="empty-state">A próxima invocação será exibida aqui depois da confirmação da gravação.</div>`}</div></article>
+      <article class="panel monster-economy-panel"><div class="panel-heading"><div><p class="eyebrow">Inventário exclusivo</p><h3>Recursos dos monstros</h3></div><button class="ghost-button" type="button" data-nav="monsters">Gerenciar</button></div><div class="monster-economy-summary"><div><small>Equipamentos</small><strong>${inventorySummary.equipment}</strong></div><div><small>Livros</small><strong>${inventorySummary.books}</strong></div><div><small>Consumíveis</small><strong>${inventorySummary.consumables}</strong></div><div><small>Núcleos</small><strong>${inventorySummary.cores}</strong></div><div><small>Materiais</small><strong>${inventorySummary.materials}</strong></div><div><small>Fragmentos</small><strong>${inventorySummary.fragments}</strong></div></div><ul class="monster-invocation-rules"><li>Equipamentos alteram o cálculo real do monstro.</li><li>Livros aplicam XP e respeitam o limite da estrela.</li><li>Núcleos e materiais são consumidos apenas em ascensões confirmadas.</li><li>PO e MC entram no mesmo recibo da invocação.</li></ul></article>
     </div>
-  `;
+  </div>`;
+}
+
+function openMonsterGachaOdds() {
+  const api = monsterApi();
+  const pool = api.invocationPoolSummary();
+  $("#modalContent").innerHTML = `<section><div class="panel-heading"><div><p class="eyebrow">Contrato verificável</p><h2>Probabilidades da Invocação dos Monstros</h2></div><button class="aim-exit" type="button" data-action="close-modal">Fechar</button></div><div class="monster-contract-grid">${pool.categories.map((entry) => `<div class="monster-contract-rate"><small>${esc(entry.label)}</small><b>${entry.percentage}%</b></div>`).join("")}</div><div class="monster-panel-grid" style="margin-top:1rem"><article class="monster-panel"><h3>Garantias</h3><ul class="monster-invocation-rules"><li>Todo giro 10× contém ao menos um monstro.</li><li>Ao atingir ${pool.pityMax} resultados sem monstro Épico ou superior, o próximo resultado força um monstro raro.</li><li>Duplicatas viram Fragmentos da Espécie.</li></ul></article><article class="monster-panel"><h3>Forma Shiny</h3><p>Chance base de ${(pool.shinyChance * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}% quando o resultado é um monstro. A forma usa o mesmo atlas por troca de paleta.</p><p>Fragmentos de Arena não fazem parte do pool.</p></article></div></section>`;
+  $("#modal").hidden = false;
+  focusModal();
+}
+
+function openMonsterGachaPool() {
+  const api = monsterApi();
+  const pool = api.invocationPoolSummary();
+  const items = pool.items.filter((entry) => ["book", "equipment", "food", "core"].includes(entry.category));
+  $("#modalContent").innerHTML = `<section><div class="panel-heading"><div><p class="eyebrow">Conteúdo publicado</p><h2>Pool completo</h2></div><button class="aim-exit" type="button" data-action="close-modal">Fechar</button></div><div class="monster-pool-section"><h3>25 espécies</h3><div class="monster-pool-grid">${pool.species.map((entry) => `<article class="monster-pool-entry ${monsterRarityClass(entry.rarity)}"><img src="${esc(entry.image)}" alt="" loading="lazy" /><small>${esc(entry.rarity)}</small><strong>${esc(entry.name)}</strong></article>`).join("")}</div></div><div class="monster-pool-section"><h3>Itens, livros e Núcleos</h3><div class="monster-pool-grid">${items.map((entry) => `<article class="monster-pool-entry ${monsterRarityClass(entry.rarity)}"><img src="${esc(entry.image)}" alt="" loading="lazy" /><small>${esc(entry.rarity)} · ${esc(entry.category)}</small><strong>${esc(entry.name)}</strong></article>`).join("")}</div></div><div class="monster-pool-section"><h3>Materiais de progressão</h3><div class="monster-pool-grid">${pool.resources.map((entry) => `<article class="monster-pool-entry ${monsterRarityClass(entry.rarity)}"><img src="${esc(entry.image)}" alt="" loading="lazy" /><small>${esc(entry.rarity)}</small><strong>${esc(entry.name)}</strong></article>`).join("")}</div></div></section>`;
+  $("#modal").hidden = false;
+  focusModal();
 }
 
 function difficultyById(id) {
@@ -5592,6 +6484,8 @@ function difficultyById(id) {
 }
 
 function freePetsForActivity(character = currentCharacter()) {
+  const monsters = monsterInstancesForCharacter(character).filter((monster) => !["dead", "lost"].includes(monster.condition));
+  if (monsters.length) return monsters.map((monster) => { const calc = monsterApi().calculateMonsterStats(monster, monsterItemsForCharacter(character), { mode: "tower" }); return { ...monster, kind: "pet", name: monsterDisplayName(monster), imageUrl: monsterAsset(monster, "towerSprite"), sourceId: monster.speciesId, td: { damage: Math.max(8, calc.stats.attack * .42 + calc.stats.power * .24), range: 64 + calc.stats.control * .35, cooldown: Math.max(.48, 1.65 - calc.stats.speed / 180) } }; });
   return (character.gachaVault || []).filter((item) => item.kind === "pet" && !petBusy(item));
 }
 
@@ -5645,9 +6539,9 @@ function openHuntActivity(activityId) {
     <section class="hunt-expedition-modal">
       <button class="aim-exit" type="button" data-action="close-modal">Sair</button>
       <div class="hunt-expedition-scene" style="--hunt-progress:${progress.percent}%">
-        <img class="hunt-scene-art" src="${esc(huntSceneFor(activity))}" alt="${esc(activity.biome || "Território da incursão")}" />
+        <img class="hunt-scene-art" src="${esc(huntSceneFor(activity))}" alt="${esc(activity.biome || "Território da incursão")}" ${mediaAttrs("map", "eager")} />
         <div class="hunt-scene-vignette"></div>
-        <div class="hunt-pet-runner"><img src="${esc(petImageFor(pet))}" alt="${esc(activity.petName)}" /></div>
+        <div class="hunt-pet-runner"><img src="${esc(petImageFor(pet))}" alt="${esc(activity.petName)}" ${mediaAttrs("pet-card", "eager")} /></div>
         <div class="hunt-threat threat-one"></div><div class="hunt-threat threat-two"></div>
         <div class="hunt-scene-copy"><span>${esc(activity.difficultyName || "Incursão")}</span><h2>${esc(activity.biome || "Território desconhecido")}</h2><p>${esc((activity.events || [])[eventIndex] || "A Interface tenta acompanhar os passos do companheiro.")}</p></div>
       </div>
@@ -5674,7 +6568,7 @@ function renderActivities(character = currentCharacter()) {
     const eventText = (activity.events || ["Rastros apagados", "Vento estranho", "Sinais no caminho"])[Math.max(0, stage - 1)] || "O caminho muda a cada passo.";
     return `
       <div class="activity-card ${ready ? "ready" : ""}">
-        <div class="activity-scene"><img src="${esc(huntSceneFor(activity))}" alt="" /><span><img src="${esc(activity.petImageUrl || petImageFor({ id: activity.petSourceId || activity.petId, sourceId: activity.petSourceId, name: activity.petName, rarity: activity.petRarity || "Comum" }))}" alt="" /></span></div>
+        <div class="activity-scene"><img src="${esc(huntSceneFor(activity))}" alt="" ${mediaAttrs("map")} /><span><img src="${esc(activity.petImageUrl || petImageFor({ id: activity.petSourceId || activity.petId, sourceId: activity.petSourceId, name: activity.petName, rarity: activity.petRarity || "Comum" }))}" alt="" ${mediaAttrs("pet-thumbnail")} /></span></div>
         <div class="activity-copy">
           <span>${esc(activity.type)} · ${esc(activity.difficultyName)}</span>
           <strong>${esc(activity.petName)}</strong>
@@ -5696,6 +6590,341 @@ function renderJukebox() {
   const activeId = state.musicTrack || state.settings.seasonThemeMainMusic || state.settings.seasonTheme || "awakening";
   const active = FOUNDATIONS.musicTrack(activeId);
   return `<article class="panel span-12 jukebox-panel"><div class="panel-heading"><div><p class="eyebrow">Som · Jukebox</p><h3>${esc(active?.name || "Motivo da temporada")}</h3><p>${esc(active?.mood || "Escolha uma trilha para explorar Millennium.")}</p></div><div class="action-row"><button class="ghost-button" type="button" data-action="toggle-music">${state.musicOn ? "Pausar" : "Tocar"}</button><button class="primary-button" type="button" data-action="next-music-track">Próxima</button></div></div><div class="jukebox-track-grid">${(FOUNDATIONS.musicTracks || []).map((track) => `<button class="jukebox-track ${track.id === activeId ? "active" : ""}" type="button" data-action="select-music-track" data-track-id="${esc(track.id)}"><span>♪</span><strong>${esc(track.name)}</strong><small>${esc(track.mood)}</small></button>`).join("")}</div></article>`;
+}
+
+function monsterModesApi() {
+  const api = window.MILLENNIUM_MONSTERS_364;
+  if (!api?.modesVersion) throw new Error("O motor dos modos de monstros não foi carregado.");
+  return api;
+}
+
+function monsterModeTeam(character = currentCharacter(), mode = "dungeon") {
+  const monsters = monsterInstancesForCharacter(character);
+  const ids = Array.isArray(character.monsterTeams?.[mode]) ? character.monsterTeams[mode] : [];
+  const selected = ids.map((id) => monsters.find((monster) => monster.instanceId === id)).filter(Boolean).slice(0, 3);
+  return selected.length ? selected : monsters.slice(0, 3);
+}
+
+function renderMonsterModeTeam(character, mode) {
+  const team = monsterModeTeam(character, mode);
+  return `<div class="monster-team-strip">${team.map((monster) => `<article class="monster-team-unit"><img src="${esc(monsterAsset(monster, "thumbnail"))}" alt="" loading="lazy" /><div><strong>${esc(monsterDisplayName(monster))}</strong><small>Nv. ${monster.level} · ${"★".repeat(monster.stars)} · ${esc(monster.element)}</small></div></article>`).join("") || `<div class="empty-state compact">Escolha até três monstros no Santuário.</div>`}</div>`;
+}
+
+function arenaOpponentPool(character = currentCharacter()) {
+  const api = monsterModesApi();
+  const ownPoints = Number(character.monsterArena?.points || 0);
+  const real = (state.characters || [])
+    .filter((entry) => entry.id !== character.id && entry.arenaDefenseSnapshot?.members?.length)
+    .map((entry) => ({ ...entry.arenaDefenseSnapshot, arenaPoints: Number(entry.monsterArena?.points || entry.arenaDefenseSnapshot.arenaPoints || 0), artificial: false }))
+    .sort((a, b) => Math.abs(Number(a.arenaPoints || 0) - ownPoints) - Math.abs(Number(b.arenaPoints || 0) - ownPoints))
+    .slice(0, 3);
+  const ai = Array.from({ length: Math.max(2, 5 - real.length) }, (_, index) => api.buildAiOpponent(index, ownPoints));
+  return [...real, ...ai].slice(0, 5);
+}
+
+function arenaRankingRows(character = currentCharacter()) {
+  const rows = (state.characters || []).filter((entry) => entry.arenaDefenseSnapshot?.members?.length || entry.id === character.id).map((entry) => ({
+    id: entry.id,
+    name: entry.characterName || entry.playerName || entry.displayName || "Vinculado",
+    points: Number(entry.monsterArena?.points || 0),
+    defense: Number(entry.monsterArena?.defenseIndex || 0),
+  }));
+  if (!rows.some((entry) => entry.id === character.id)) rows.push({ id: character.id, name: character.characterName || character.playerName || "Você", points: Number(character.monsterArena?.points || 0), defense: Number(character.monsterArena?.defenseIndex || 0) });
+  return rows.sort((a, b) => b.points - a.points || b.defense - a.defense).slice(0, 10);
+}
+
+function renderDungeonMode(character) {
+  const api = monsterModesApi();
+  const unlocked = Math.max(1, Number(character.monsterDungeon?.unlockedPhase || 1));
+  const best = Number(character.monsterDungeon?.bestPhase || 0);
+  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">Boss Rush em pixel art</p><h3>Masmorra dos Vinculados</h3><p>Cada fase possui somente um chefe. O cálculo e a animação acontecem localmente; apenas o resultado final é gravado.</p></div><span class="tag">Melhor fase ${best}</span></div>${renderMonsterModeTeam(character, "dungeon")}<div class="action-row"><button class="ghost-button" type="button" data-nav="monsters">Editar equipe da Masmorra</button></div></article><article class="panel monster-mode-card wide"><div class="dungeon-phase-list">${api.dungeonPhases.map((phase) => { const locked = phase.phase > unlocked; const species = api.speciesForId(phase.speciesId); return `<article class="dungeon-phase ${locked ? "locked" : ""}"><img src="${esc(api.assetBundleForSpecies(phase.speciesId).thumbnail)}" alt="" loading="lazy" /><div><small>Fase ${phase.phase} · ${esc(phase.element)} · poder ×${phase.power.toFixed(2)}</small><h4>${esc(phase.name)}</h4><p>${locked ? `Derrote a fase ${phase.phase - 1} para liberar.` : `Drop principal: ${esc(api.resourceById(phase.materialId)?.name || phase.materialId)}.`}</p></div><div class="action-row"><button class="primary-button ${phase.phase === unlocked ? "intense" : ""}" type="button" data-action="monster-dungeon-start" data-phase="${phase.phase}" ${locked ? "disabled" : ""}>${phase.phase <= best ? "Reenfrentar" : "Enfrentar"}</button></div></article>`; }).join("")}</div></article></div>`;
+}
+
+function renderArenaMode(character) {
+  const api = monsterModesApi();
+  const arena = character.monsterArena || {};
+  const points = Number(arena.points || 0);
+  const league = api.leagueFor(points);
+  const opponents = arenaOpponentPool(character);
+  const ranking = arenaRankingRows(character);
+  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">PvP assíncrono</p><h3>Arena dos Vinculados</h3><p>O defensor permanece offline. Você enfrenta um snapshot versionado, e nenhuma leitura ocorre durante os turnos.</p></div><span class="tag">Liga ${esc(league.name)}</span></div><div class="arena-rank-panel"><div class="arena-rank-stat"><small>Pontos</small><strong>${points}</strong></div><div class="arena-rank-stat"><small>Vitórias</small><strong>${Number(arena.wins || 0)}</strong></div><div class="arena-rank-stat"><small>Defesa</small><strong>${Number(arena.defenseIndex || 0)}</strong></div><div class="arena-rank-stat"><small>Fragmentos</small><strong>${Number(character.arenaFragments || 0)}</strong></div></div>${renderMonsterModeTeam(character, "arena")}<div class="action-row"><button class="primary-button" type="button" data-action="monster-arena-save-defense">Registrar defesa offline</button><button class="ghost-button" type="button" data-nav="monsters">Editar equipe da Arena</button></div></article><article class="panel monster-mode-card"><p class="eyebrow">Adversários carregados nesta abertura</p><h3>Desafiar posição</h3><div class="arena-opponent-list">${opponents.map((opponent, index) => `<article class="arena-opponent"><div><small>${esc(opponent.league || api.leagueFor(opponent.arenaPoints).name)} · ${Number(opponent.arenaPoints || 0)} pts · ${opponent.artificial ? "IA do Oráculo" : "snapshot de player"}</small><h4>${esc(opponent.ownerName)}</h4><div class="arena-opponent-portraits">${opponent.members.map((member) => `<img src="${esc(member.image)}" title="${esc(member.name)}" alt="" loading="lazy" />`).join("")}</div><p>Poder ${Number(opponent.totalPower || 0).toLocaleString("pt-BR")}</p></div><button class="primary-button" type="button" data-action="monster-arena-challenge" data-opponent-index="${index}">Desafiar</button></article>`).join("")}</div></article><article class="panel monster-mode-card"><p class="eyebrow">Ranking offline</p><h3>Top da temporada</h3><div class="mode-history">${ranking.map((entry, index) => `<div class="mode-history-entry"><span>${index + 1}. ${esc(entry.name)}</span><strong>${entry.points} pts</strong></div>`).join("")}</div><p class="hint">A lista usa dados já carregados. Não existe listener em tempo real.</p></article></div>`;
+}
+
+function renderWorldBossMode(character) {
+  const api = monsterModesApi();
+  const boss = api.worldBoss;
+  const best = Number(character.monsterWorldBoss?.bestDamage || 0);
+  const attempts = Number(character.monsterWorldBoss?.attempts || 0);
+  const rows = (state.characters || []).map((entry) => ({ name: entry.characterName || entry.playerName || "Vinculado", damage: Number(entry.monsterWorldBoss?.bestDamage || 0) })).filter((entry) => entry.damage > 0).sort((a, b) => b.damage - a.damage).slice(0, 10);
+  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="world-boss-hero"><div class="world-boss-art"><img src="${esc(boss.image)}" alt="${esc(boss.name)}" /></div><div><p class="eyebrow">Evento de dano · vida narrativa infinita</p><h3>${esc(boss.name)}</h3><p>O objetivo é causar o maior dano possível em ${boss.maxRounds} turnos. O HP global nunca é reduzido no Firebase.</p><div class="world-boss-meter"><i></i></div><div class="arena-rank-panel"><div class="arena-rank-stat"><small>Seu recorde</small><strong>${best.toLocaleString("pt-BR")}</strong></div><div class="arena-rank-stat"><small>Tentativas</small><strong>${attempts}</strong></div><div class="arena-rank-stat"><small>Elemento</small><strong>${esc(boss.element)}</strong></div><div class="arena-rank-stat"><small>Turnos</small><strong>${boss.maxRounds}</strong></div></div>${renderMonsterModeTeam(character, "dungeon")}<div class="action-row"><button class="primary-button intense" type="button" data-action="monster-world-boss-start">Iniciar tentativa</button><button class="ghost-button" type="button" data-nav="monsters">Editar equipe</button></div></div></div></article><article class="panel monster-mode-card wide"><p class="eyebrow">Classificação pelo melhor dano</p><h3>Ranking do Boss Mundial</h3><div class="mode-history">${rows.map((entry, index) => `<div class="mode-history-entry"><span>${index + 1}. ${esc(entry.name)}</span><strong>${entry.damage.toLocaleString("pt-BR")}</strong></div>`).join("") || `<div class="empty-state compact">Nenhum recorde carregado nesta sessão.</div>`}</div></article></div>`;
+}
+
+function arenaOfferImage(offer) {
+  const api = monsterModesApi();
+  if (offer.type === "item") return api.itemById(offer.itemId)?.image || "assets/monster-items/material-awakening.webp";
+  if (offer.type === "core") return api.itemById(offer.itemId)?.image || "assets/monster-items/core-epico.webp";
+  return "assets/monster-items/material-precision.webp";
+}
+
+function renderArenaShopMode(character) {
+  const api = monsterModesApi();
+  const purchases = character.arenaShopPurchases || {};
+  return `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">Economia competitiva controlada</p><h3>Loja da Arena</h3><p>Fragmentos de Arena não aparecem no Gacha. Recompensas sazonais priorizam prestígio, não poder ilimitado.</p></div><span class="tag">${Number(character.arenaFragments || 0)} fragmentos</span></div><div class="arena-shop-grid">${api.arenaShop.map((offer) => { const bought = Number(purchases[offer.offerId] || 0); const exhausted = bought >= offer.limit; return `<article class="arena-shop-card"><img src="${esc(arenaOfferImage(offer))}" alt="" loading="lazy" /><div><small>${offer.cost} Fragmentos · ${bought}/${offer.limit}</small><strong>${esc(offer.name)}</strong></div><div class="action-row"><button class="primary-button" type="button" data-action="monster-arena-shop-buy" data-offer-id="${esc(offer.offerId)}" ${exhausted || Number(character.arenaFragments || 0) < offer.cost ? "disabled" : ""}>${exhausted ? "Limite atingido" : "Comprar"}</button></div></article>`; }).join("")}</div></article></div>`;
+}
+
+function renderMonsterModesChallenge(character, difficulty, energy, towerMaps, towerDraft, towerStage) {
+  const tab = ["dungeon", "arena", "boss", "shop", "tower"].includes(state.monsterModeTab) ? state.monsterModeTab : "dungeon";
+  const freePets = freePetsForActivity(character);
+  const petOptions = (field, includeEmpty = false) => `${includeEmpty ? `<option value="">Sem torre</option>` : ""}${freePets.map((pet) => `<option value="${esc(pet.instanceId)}" ${draftValue(towerDraft, field, "") === pet.instanceId ? "selected" : ""}>${esc(pet.name)} · ${esc(pet.rarity)} · ${"★".repeat(Number(pet.stars || 1))}</option>`).join("")}`;
+  const tower = `<div class="monster-mode-grid"><article class="panel monster-mode-card wide"><div class="panel-heading"><div><p class="eyebrow">Defesa com monstros reais</p><h3>Tower Defense dos Vinculados</h3><p>O motor atual foi preservado, mas agora usa as instâncias, atributos, estrelas e sprites dos Monstros Vinculados.</p></div></div>${renderMonsterModeTeam(character, "tower")}<form class="form-stack compact-form" data-form="tower-defense"><label><span>Monstro 1</span><select name="towerPet1" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("towerPet1") : `<option>Nenhum monstro</option>`}</select></label><label><span>Monstro 2</span><select name="towerPet2">${petOptions("towerPet2", true)}</select></label><label><span>Monstro 3</span><select name="towerPet3">${petOptions("towerPet3", true)}</select></label><label><span>Monstro 4</span><select name="towerPet4">${petOptions("towerPet4", true)}</select></label><label><span>Mapa</span><select name="mapId">${towerMaps.map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label><input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><input type="hidden" name="stageLevel" value="${FOUNDATIONS.clampLevel(state.minigameLevel)}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length && towerStage.unlocked ? "" : "disabled"}>${towerStage.unlocked ? `Iniciar · ${difficulty.cost} energia` : "Nível bloqueado"}</button></form></article></div>`;
+  return `<section class="panel span-12 monster-mode-shell"><div class="panel-heading"><div><p class="eyebrow">Modos dos Monstros Vinculados</p><h3>Masmorra, Arena, Boss Mundial e defesa</h3></div><span class="tag">Combates locais</span></div><div class="monster-mode-tabs" role="tablist">${[["dungeon","Masmorra"],["arena","Arena PvP"],["boss","Boss Mundial"],["shop","Loja da Arena"],["tower","Tower Defense"]].map(([id,label]) => `<button class="ghost-button ${tab === id ? "active" : ""}" type="button" data-action="monster-mode-tab" data-tab="${id}" aria-selected="${tab === id}">${label}</button>`).join("")}</div>${tab === "dungeon" ? renderDungeonMode(character) : tab === "arena" ? renderArenaMode(character) : tab === "boss" ? renderWorldBossMode(character) : tab === "shop" ? renderArenaShopMode(character) : tower}</section>`;
+}
+
+function battleUnitMarkup(unit, side) {
+  return `<article class="battle-unit" data-battle-side="${side}" data-battle-index="${unit.index}"><img src="${esc(unit.image)}" alt="${esc(unit.name)}" /><strong>${esc(unit.name)}</strong><div class="battle-hp"><i style="width:100%"></i></div><small data-battle-hp>${Math.round(unit.hp)}/${Math.round(unit.maxHp)}</small></article>`;
+}
+
+function openMonsterBattle(result, title, subtitle) {
+  state.activeMonsterBattle = result;
+  $("#modalContent").innerHTML = `<section class="monster-battle-modal"><div class="panel-heading"><div><p class="eyebrow">${esc(subtitle)}</p><h2>${esc(title)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><div class="monster-battle-stage"><div class="battle-side ally">${result.teams.a.map((unit) => battleUnitMarkup(unit, "a")).join("")}</div><div class="battle-versus">VS<br><small>seed ${esc(result.seed.slice(-8))}</small></div><div class="battle-side enemy">${result.teams.b.map((unit) => battleUnitMarkup(unit, "b")).join("")}</div></div><div class="battle-log" data-monster-battle-log aria-live="polite"><p>A simulação determinística foi concluída. Reproduzindo o registro local…</p></div><div class="battle-result-banner" data-monster-battle-result hidden></div><div class="action-row"><button class="ghost-button" type="button" data-action="monster-battle-skip">Pular animação</button><button class="primary-button" type="button" data-action="close-modal">Concluir</button></div></section>`;
+  $("#modal").hidden = false;
+  focusModal();
+  animateMonsterBattle(result);
+}
+
+function updateBattleUnitVisual(unit) {
+  const card = document.querySelector(`[data-battle-side="${unit.side}"][data-battle-index="${unit.index}"]`);
+  if (!card) return;
+  const percent = Math.max(0, Math.round(unit.hp / unit.maxHp * 100));
+  const bar = card.querySelector(".battle-hp i");
+  const label = card.querySelector("[data-battle-hp]");
+  if (bar) bar.style.width = `${percent}%`;
+  if (label) label.textContent = `${Math.round(unit.hp)}/${Math.round(unit.maxHp)}`;
+  card.classList.toggle("low", percent <= 35);
+  card.classList.toggle("defeated", unit.defeated || percent <= 0);
+}
+
+function finishMonsterBattleAnimation(result) {
+  const banner = document.querySelector("[data-monster-battle-result]");
+  if (banner) { banner.hidden = false; banner.innerHTML = `<strong>${result.winner === "a" ? "Vitória dos seus Vinculados" : "A equipe adversária prevaleceu"}</strong><p>${result.rounds} turno(s) · hash ${esc(result.resultHash)} · dano ${Number(result.summary.damageA || result.damage || 0).toLocaleString("pt-BR")}</p>`; }
+  state.monsterBattleAnimating = false;
+  state.monsterBattleTimer = 0;
+  state.monsterBattleStep = null;
+}
+
+function animateMonsterBattle(result) {
+  state.monsterBattleAnimating = true;
+  const units = { a: result.teams.a.map((unit) => ({ ...unit, hp: unit.maxHp, defeated: false })), b: result.teams.b.map((unit) => ({ ...unit, hp: unit.maxHp, defeated: false })) };
+  let index = 0;
+  const delay = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? 40 : 260;
+  const step = () => {
+    if (document.hidden || state.monsterBattleRuntimePaused) { state.monsterBattleTimer = 0; return; }
+    if (!state.monsterBattleAnimating || index >= result.log.length) { result.teams.a.forEach(updateBattleUnitVisual); result.teams.b.forEach(updateBattleUnitVisual); finishMonsterBattleAnimation(result); return; }
+    const event = result.log[index++];
+    const actor = [...units.a, ...units.b].find((unit) => unit.name === event.actor && !unit.defeated);
+    const target = [...units.a, ...units.b].find((unit) => unit.name === event.target && !unit.defeated) || actor;
+    document.querySelectorAll(".battle-unit.active").forEach((card) => card.classList.remove("active"));
+    const actorCard = actor && document.querySelector(`[data-battle-side="${actor.side}"][data-battle-index="${actor.index}"]`);
+    if (actorCard) actorCard.classList.add("active");
+    if (event.type === "damage" && target) { target.hp = Math.max(0, target.hp - Number(event.value || 0)); target.defeated = target.hp <= 0; const targetCard = document.querySelector(`[data-battle-side="${target.side}"][data-battle-index="${target.index}"]`); if (targetCard) { targetCard.classList.remove("hit"); void targetCard.offsetWidth; targetCard.classList.add("hit"); } updateBattleUnitVisual(target); }
+    if (event.type === "heal" && target) { target.hp = Math.min(target.maxHp, target.hp + Number(event.value || 0)); updateBattleUnitVisual(target); }
+    const log = document.querySelector("[data-monster-battle-log]");
+    if (log) { const text = event.type === "damage" ? `${event.actor} usou ${event.ability} em ${event.target}: ${event.value} dano${event.critical ? " crítico" : ""}${event.effective ? " efetivo" : ""}.` : event.type === "heal" ? `${event.actor} restaurou ${event.value} de ${event.target}.` : event.type === "shield" ? `${event.actor} concedeu ${event.value} de escudo.` : event.type === "passive" ? `${event.actor} ativou ${event.ability}.` : `${event.actor} ativou ${event.ability || event.status || "um efeito"}.`; log.insertAdjacentHTML("beforeend", `<p>${esc(text)}</p>`); log.scrollTop = log.scrollHeight; }
+    state.monsterBattleTimer = window["set" + "Timeout"](step, delay);
+  };
+  state.monsterBattleStep = step;
+  step();
+}
+
+function skipMonsterBattleAnimation() {
+  state.monsterBattleAnimating = false;
+  if (state.monsterBattleTimer) window.clearTimeout(state.monsterBattleTimer);
+  if (state.activeMonsterBattle) { state.activeMonsterBattle.teams.a.forEach(updateBattleUnitVisual); state.activeMonsterBattle.teams.b.forEach(updateBattleUnitVisual); finishMonsterBattleAnimation(state.activeMonsterBattle); }
+}
+
+async function startMonsterDungeon(phaseNumber) {
+  if (state.monsterModeResolving) return;
+  state.monsterModeResolving = true;
+  try {
+    const api = monsterModesApi(); const character = currentCharacter();
+    if (!canStartMinigameEvent("dungeon", character)) return;
+    const team = monsterModeTeam(character, "dungeon");
+    if (!team.length) return toast("Escolha uma equipe de monstros para a Masmorra.");
+    const unlocked = Math.max(1, Number(character.monsterDungeon?.unlockedPhase || 1));
+    if (Number(phaseNumber) > unlocked) return toast("Esta fase ainda está bloqueada.");
+    const snapshot = api.createTeamSnapshot(team, monsterItemsForCharacter(character), "boss", { ownerId: character.id, ownerName: character.characterName || "Vinculados", seed: `dungeon-team:${character.id}:${phaseNumber}` });
+    const rawResult = api.simulateDungeon(snapshot, Number(phaseNumber), { seed: `dungeon:${character.id}:${phaseNumber}:${Date.now()}` });
+    const eventModifier = activeModeEventModifier("dungeon");
+    const result = { ...rawResult, score: Math.round(Number(rawResult.score || 0) * eventModifier.scoreMultiplier), rewards: scaleModeRewardObject(rawResult.rewards, eventModifier.scoreMultiplier), eventNames: eventModifier.events.map((event) => event.name) };
+    const rewardPatch = api.applyModeRewards(character, result.rewards);
+    const dungeon = { ...(character.monsterDungeon || {}), bestPhase: Math.max(Number(character.monsterDungeon?.bestPhase || 0), result.victory ? Number(phaseNumber) : 0), unlockedPhase: Math.max(unlocked, result.victory ? Math.min(api.dungeonPhases.length, Number(phaseNumber) + 1) : unlocked), attempts: Number(character.monsterDungeon?.attempts || 0) + 1, bestScore: Math.max(Number(character.monsterDungeon?.bestScore || 0), result.score) };
+    const receipt = { id: `dungeon-${api.hashSeed(result.seed).toString(36)}`, phase: Number(phaseNumber), victory: result.victory, score: result.score, hash: result.resultHash, seed: result.seed, createdAt: new Date().toISOString() };
+    await updateCharacter(state.user.uid, { ...rewardPatch, monsterDungeon: dungeon, monsterDungeonHistory: [receipt, ...(character.monsterDungeonHistory || [])].slice(0, 50), ...minigameEventAttemptPatch("dungeon", character) });
+    render();
+    openMonsterBattle(result, result.phase.name, `Masmorra · Fase ${result.phase.phase} · ${result.victory ? "vitória" : "derrota"}${result.eventNames?.length ? ` · Evento: ${result.eventNames.join(" / ")}` : ""}`);
+  } finally { state.monsterModeResolving = false; }
+}
+
+async function saveMonsterArenaDefense() {
+  const api = monsterModesApi(); const character = currentCharacter(); const team = monsterModeTeam(character, "arena");
+  if (!team.length) return toast("Escolha uma equipe da Arena.");
+  const snapshot = api.createTeamSnapshot(team, monsterItemsForCharacter(character), "arena", { ownerId: character.id, ownerName: character.characterName || character.playerName || "Vinculado", seed: `arena-defense:${character.id}:${Date.now()}` });
+  snapshot.arenaPoints = Number(character.monsterArena?.points || 0); snapshot.league = api.leagueFor(snapshot.arenaPoints).name;
+  await updateCharacter(state.user.uid, { arenaDefenseSnapshot: snapshot, monsterArena: { ...(character.monsterArena || {}), defenseIndex: snapshot.totalPower, defenseUpdatedAt: new Date().toISOString() } });
+  render(); toast("Defesa offline registrada em um único snapshot.");
+}
+
+async function challengeMonsterArena(opponentIndex) {
+  if (state.monsterModeResolving) return;
+  state.monsterModeResolving = true;
+  try {
+    const api = monsterModesApi(); const character = currentCharacter();
+    if (!canStartMinigameEvent("arena", character)) return;
+    const team = monsterModeTeam(character, "arena");
+    if (!team.length) return toast("Escolha uma equipe da Arena.");
+    const opponent = arenaOpponentPool(character)[Number(opponentIndex)]; if (!opponent) return toast("Adversário indisponível.");
+    const own = api.createTeamSnapshot(team, monsterItemsForCharacter(character), "arena", { ownerId: character.id, ownerName: character.characterName || "Você", seed: `arena-team:${character.id}:${Date.now()}` });
+    const result = api.simulateBattle(own, opponent, { seed: `arena:${character.id}:${opponent.snapshotId}:${Date.now()}`, mode: "arena", maxRounds: 20 });
+    const arenaEvent = activeModeEventModifier("arena");
+    result.eventNames = arenaEvent.events.map((event) => event.name);
+    const pointsBefore = Number(character.monsterArena?.points || 0); const delta = api.arenaPointsDelta(result, own.totalPower, opponent.totalPower); const won = result.winner === "a"; const points = Math.max(0, pointsBefore + (won ? Math.max(8, delta) : Math.min(-5, delta - 15)));
+    const fragmentGain = Math.max(1, Math.round((won ? 12 + Math.max(0, Math.floor((Number(opponent.arenaPoints || 0) - pointsBefore) / 180)) : 4) * arenaEvent.scoreMultiplier));
+    const arena = { ...(character.monsterArena || {}), points, wins: Number(character.monsterArena?.wins || 0) + (won ? 1 : 0), losses: Number(character.monsterArena?.losses || 0) + (won ? 0 : 1), streak: won ? Number(character.monsterArena?.streak || 0) + 1 : 0, bestStreak: Math.max(Number(character.monsterArena?.bestStreak || 0), won ? Number(character.monsterArena?.streak || 0) + 1 : 0), lastBattleAt: new Date().toISOString() };
+    const receipt = { id: `arena-${api.hashSeed(result.seed).toString(36)}`, opponentId: opponent.ownerId, opponentName: opponent.ownerName, victory: won, pointsBefore, pointsAfter: points, fragmentGain, seed: result.seed, hash: result.resultHash, createdAt: new Date().toISOString() };
+    await updateCharacter(state.user.uid, { monsterArena: arena, arenaFragments: Number(character.arenaFragments || 0) + fragmentGain, monsterArenaHistory: [receipt, ...(character.monsterArenaHistory || [])].slice(0, 80), ...minigameEventAttemptPatch("arena", character) });
+    render(); openMonsterBattle(result, `${own.ownerName} × ${opponent.ownerName}`, `Arena assíncrona · ${won ? "+" + Math.max(0, points - pointsBefore) : points - pointsBefore} pontos · +${fragmentGain} fragmentos${result.eventNames?.length ? ` · Evento: ${result.eventNames.join(" / ")}` : ""}`);
+  } finally { state.monsterModeResolving = false; }
+}
+
+async function startMonsterWorldBoss() {
+  if (state.monsterModeResolving) return;
+  state.monsterModeResolving = true;
+  try {
+    const api = monsterModesApi(); const character = currentCharacter();
+    if (!canStartMinigameEvent("boss", character)) return;
+    const team = monsterModeTeam(character, "dungeon");
+    if (!team.length) return toast("Escolha uma equipe para o Boss Mundial.");
+    const snapshot = api.createTeamSnapshot(team, monsterItemsForCharacter(character), "boss", { ownerId: character.id, ownerName: character.characterName || "Vinculados", seed: `world-team:${character.id}` });
+    const rawResult = api.simulateWorldBoss(snapshot, { seed: `world-boss:${character.id}:${Date.now()}` });
+    const bossEvent = activeModeEventModifier("boss");
+    const result = { ...rawResult, damage: Math.round(Number(rawResult.damage || 0) * bossEvent.scoreMultiplier), score: Math.round(Number(rawResult.score || rawResult.damage || 0) * bossEvent.scoreMultiplier), rewards: scaleModeRewardObject(rawResult.rewards, bossEvent.scoreMultiplier), eventNames: bossEvent.events.map((event) => event.name) };
+    const previousBest = Number(character.monsterWorldBoss?.bestDamage || 0); const newBest = Math.max(previousBest, result.damage); const rewardPatch = api.applyModeRewards(character, result.rewards);
+    const receipt = { id: `boss-${api.hashSeed(result.seed).toString(36)}`, damage: result.damage, improved: result.damage > previousBest, seed: result.seed, hash: result.resultHash, createdAt: new Date().toISOString() };
+    await updateCharacter(state.user.uid, { ...rewardPatch, monsterWorldBoss: { bestDamage: newBest, attempts: Number(character.monsterWorldBoss?.attempts || 0) + 1, lastDamage: result.damage, updatedAt: new Date().toISOString() }, monsterWorldBossHistory: [receipt, ...(character.monsterWorldBossHistory || [])].slice(0, 40), ...minigameEventAttemptPatch("boss", character) });
+    render(); openMonsterBattle(result, api.worldBoss.name, `Boss Mundial · ${result.damage.toLocaleString("pt-BR")} de dano${result.damage > previousBest ? " · novo recorde" : ""}${result.eventNames?.length ? ` · Evento: ${result.eventNames.join(" / ")}` : ""}`);
+  } finally { state.monsterModeResolving = false; }
+}
+
+async function buyArenaOffer(offerId) {
+  const api = monsterModesApi(); const character = currentCharacter(); const offer = api.arenaShop.find((entry) => entry.offerId === offerId); if (!offer) return;
+  const balance = Number(character.arenaFragments || 0); const purchases = { ...(character.arenaShopPurchases || {}) }; const bought = Number(purchases[offer.offerId] || 0);
+  if (balance < offer.cost || bought >= offer.limit) return toast("Saldo insuficiente ou limite atingido.");
+  const patch = { arenaFragments: balance - offer.cost, arenaShopPurchases: { ...purchases, [offer.offerId]: bought + 1 } };
+  if (offer.type === "item") patch.monsterInventory = [...monsterItemsForCharacter(character), api.createItemInstance(offer.itemId, { source: "Loja da Arena", seed: `${offerId}:${Date.now()}` })];
+  if (offer.type === "core") patch.monsterResources = { ...monsterResourcesForCharacter(character), cores: { ...(monsterResourcesForCharacter(character).cores || {}), [offer.itemId]: Number(monsterResourcesForCharacter(character).cores?.[offer.itemId] || 0) + offer.quantity } };
+  if (offer.type === "active-fragments") { const active = monsterModeTeam(character, "arena")[0]; if (!active) return toast("Defina um monstro ativo na Arena."); patch.monsterResources = { ...monsterResourcesForCharacter(character), fragments: { ...(monsterResourcesForCharacter(character).fragments || {}), [active.speciesId]: Number(monsterResourcesForCharacter(character).fragments?.[active.speciesId] || 0) + offer.quantity } }; }
+  patch.arenaShopHistory = [{ id: `shop-${api.hashSeed(`${offerId}:${Date.now()}`).toString(36)}`, offerId, cost: offer.cost, createdAt: new Date().toISOString() }, ...(character.arenaShopHistory || [])].slice(0, 50);
+  await updateCharacter(state.user.uid, patch); render(); toast(`${offer.name} adquirido.`);
+}
+
+
+
+function minigameEvents() {
+  return Array.isArray(state.settings.minigameEvents) ? state.settings.minigameEvents.map((entry) => VIVID.normalizeEvent(entry)) : [];
+}
+
+
+function activeModeEventModifier(mode) {
+  return VIVID.modeModifier(minigameEvents(), mode);
+}
+
+function activeMinigameEvents(mode) {
+  return minigameEvents().filter((event) => event.mode === mode && (VIVID.isEventActive ? VIVID.isEventActive(event) : event.status === "active"));
+}
+
+function minigameEventAttemptState(character = currentCharacter()) {
+  return character?.minigameEventAttempts && typeof character.minigameEventAttempts === "object" ? character.minigameEventAttempts : {};
+}
+
+function canStartMinigameEvent(mode, character = currentCharacter()) {
+  const attempts = minigameEventAttemptState(character);
+  const blocked = activeMinigameEvents(mode).find((event) => Number(attempts[event.id] || 0) >= Number(event.attemptLimit || 3));
+  if (!blocked) return true;
+  toast(`Limite do evento ${blocked.name} atingido: ${Number(blocked.attemptLimit || 3)} tentativa(s).`);
+  return false;
+}
+
+function minigameEventAttemptPatch(mode, character = currentCharacter()) {
+  const events = activeMinigameEvents(mode);
+  if (!events.length) return {};
+  const attempts = { ...minigameEventAttemptState(character) };
+  events.forEach((event) => { attempts[event.id] = Number(attempts[event.id] || 0) + 1; });
+  return { minigameEventAttempts: attempts };
+}
+
+function scaleModeRewardObject(value, factor) {
+  if (Array.isArray(value)) return value.map((entry) => scaleModeRewardObject(entry, factor));
+  if (!value || typeof value !== "object") return typeof value === "number" ? Math.max(0, Math.round(value * factor)) : value;
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, typeof entry === "number" ? Math.max(0, Math.round(entry * factor)) : scaleModeRewardObject(entry, factor)]));
+}
+
+
+function renderMinigameEventStrip() {
+  const active = minigameEvents().filter((event) => VIVID.isEventActive ? VIVID.isEventActive(event) : event.status === "active");
+  if (!active.length) return "";
+  return `<article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Eventos do Oráculo</p><h3>Anomalias ativas nos minigames</h3></div><span class="tag">${active.length} ativo(s)</span></div><div class="minigame-event-strip">${active.map((event) => `<article class="minigame-event-chip"><small>${esc(event.mode)} · ${esc(event.metric)}</small><strong>${esc(event.name)}</strong><span>${esc(event.description)}</span><small>${esc(event.reward)} · tentativas ${Number(minigameEventAttemptState()[event.id] || 0)}/${Number(event.attemptLimit || 3)}</small></article>`).join("")}</div></article>`;
+}
+
+function renderAdminMinigameEvents() {
+  const events = minigameEvents();
+  return `
+    <article class="panel span-12">
+      <div class="panel-heading"><div><p class="eyebrow">Eventos dos minigames</p><h3>Publicação sem editar código</h3></div><span class="tag">${events.length} configurado(s)</span></div>
+      <div class="oracle-minigame-events">
+        <form class="form-stack" data-form="admin-minigame-event">
+          <label><span>Nome</span><input name="name" maxlength="100" required /></label>
+          <label><span>Minigame</span><select name="mode">${[["aim","Prova da Mira"],["seals","Ritual dos Selos"],["cartography","Cartografia"],["alchemy","Alquimia"],["dungeon","Masmorra"],["arena","Arena"],["boss","Boss Mundial"],["tower","Tower Defense"]].map(([id,label]) => `<option value="${id}">${label}</option>`).join("")}</select></label>
+          <label><span>Status</span><select name="status"><option value="draft">Rascunho</option><option value="scheduled">Agendado</option><option value="active">Ativo</option><option value="ended">Encerrado</option></select></label>
+          <label><span>Métrica</span><select name="metric"><option value="score">Pontuação</option><option value="damage">Dano</option><option value="rounds">Rodadas</option><option value="relics">Relíquias</option><option value="quality">Qualidade</option></select></label>
+          <label><span>Início</span><input name="startsAt" type="datetime-local" /></label>
+          <label><span>Término</span><input name="endsAt" type="datetime-local" /></label>
+          <label><span>Limite de tentativas</span><input name="attemptLimit" type="number" min="1" max="99" value="3" /></label>
+          <label><span>Multiplicador de score</span><input name="scoreMultiplier" type="number" min=".25" max="5" step=".05" value="1" /></label>
+          <label><span>Modificador de tempo</span><input name="timeModifier" type="number" min="-120" max="300" value="0" /></label>
+          <label><span>Dificuldade adicional</span><input name="difficultyModifier" type="number" min="-3" max="6" value="0" /></label>
+          <label><span>Recompensa</span><input name="reward" maxlength="180" value="Recompensa temática" /></label>
+          <label><span>Banner local ou URL permitida</span><input name="banner" maxlength="500" placeholder="assets/events/evento.webp" /></label>
+          <label><span>Versão da configuração</span><input name="version" type="number" min="1" max="999" value="1" /></label>
+          <label><span>Descrição</span><textarea name="description" rows="4" maxlength="500"></textarea></label>
+          <button class="primary-button" type="submit">Salvar evento</button>
+        </form>
+        <div class="oracle-event-list">${events.map((event) => `<article class="oracle-event-card"><header><div><small>${esc(event.mode)} · ${esc(event.status)}</small><strong>${esc(event.name)}</strong></div><button class="icon-button" type="button" data-action="delete-minigame-event" data-event-id="${esc(event.id)}" aria-label="Excluir evento">×</button></header><p>${esc(event.description)}</p><small>${esc(event.reward)} · score ×${Number(event.scoreMultiplier || 1).toLocaleString("pt-BR")}</small></article>`).join("") || `<div class="empty-state">Nenhum evento configurado. Eventos não usam polling e são carregados somente ao abrir o módulo.</div>`}</div>
+      </div>
+    </article>`;
+}
+
+async function saveAdminMinigameEvent(form) {
+  const values = formValues(form);
+  const event = VIVID.normalizeEvent({
+    ...values,
+    startsAt: values.startsAt || new Date().toISOString(),
+    endsAt: values.endsAt || "",
+    updatedAt: new Date().toISOString(),
+  });
+  const next = [event, ...minigameEvents().filter((entry) => entry.id !== event.id)].slice(0, 60);
+  await writeDoc("settings", "system", { minigameEvents: next });
+  state.settings = { ...state.settings, minigameEvents: next };
+  form.reset();
+  render();
+  toast("Evento de minigame salvo.");
+}
+
+async function deleteAdminMinigameEvent(eventId) {
+  const next = minigameEvents().filter((entry) => entry.id !== eventId);
+  await writeDoc("settings", "system", { minigameEvents: next });
+  state.settings = { ...state.settings, minigameEvents: next };
+  render();
+  toast("Evento removido.");
 }
 
 function renderMinigames() {
@@ -5722,50 +6951,27 @@ function renderMinigames() {
       ${[["quick", "Jogos rápidos"], ["challenges", "Desafios"], ["recreation", "Recreação"]].map(([id, label]) => `<button class="ghost-button ${tab === id ? "active" : ""}" type="button" data-action="leisure-tab" data-tab="${id}">${label}</button>`).join("")}
     </article>`;
   const quickGames = `
-    <article class="panel span-3 leisure-card">
-      <div class="panel-heading"><div><p class="eyebrow">Reflexo</p><h3>Prova da Mira</h3></div></div>
-      <p>Alvos rápidos e pontuação por precisão.</p><div class="leisure-meta"><span>30–90 s</span><span>Toque e mouse</span></div>${minigameStageMeta("aim", difficulty)}
+    <article class="panel span-3 leisure-card vivid-card aim-card">
+      <div class="panel-heading"><div><p class="eyebrow">Primeira pessoa</p><h3>Prova da Mira</h3></div></div>
+      <p>Estande pseudo-3D com munição, recarga, profundidade, combos e alvos hostis.</p><div class="leisure-meta"><span>30–90 s</span><span>Toque e mouse</span></div>${minigameStageMeta("aim", difficulty)}
       <button class="primary-button intense" type="button" data-action="start-aim-game" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && aimStage.unlocked ? "" : "disabled"}>${aimStage.unlocked ? `Jogar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
-    <article class="panel span-3 leisure-card minigame-card-world">
+    <article class="panel span-3 leisure-card minigame-card-world vivid-card seal-card">
       <div class="panel-heading"><div><p class="eyebrow">Memória</p><h3>Ritual dos Selos</h3></div></div>
       <p>Reproduza a sequência antes que o eco desapareça.</p><div class="leisure-meta"><span>1 minuto</span><span>Toque e teclado</span></div>${minigameStageMeta("seals", difficulty)}
       <button class="primary-button" type="button" data-action="start-seal-ritual" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && sealStage.unlocked ? "" : "disabled"}>${sealStage.unlocked ? `Iniciar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
-    <article class="panel span-3 leisure-card">
-      <div class="panel-heading"><div><p class="eyebrow">Mapa</p><h3>Cartografia Perdida</h3></div></div>
-      <p>Reorganize uma região de Millennium antes do tempo acabar.</p><div class="leisure-meta"><span>2 minutos</span><span>Sem pets</span></div>${minigameStageMeta("cartography", difficulty)}
+    <article class="panel span-3 leisure-card vivid-card cartography-card">
+      <div class="panel-heading"><div><p class="eyebrow">Exploração</p><h3>Cartografia Perdida</h3></div></div>
+      <p>Explore a névoa, recupere relíquias, evite armadilhas e encontre a saída.</p><div class="leisure-meta"><span>2 minutos</span><span>Sem pets</span></div>${minigameStageMeta("cartography", difficulty)}
       <button class="primary-button" type="button" data-action="start-cartography" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && mapStage.unlocked ? "" : "disabled"}>${mapStage.unlocked ? `Reconstruir · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>
-    <article class="panel span-3 leisure-card">
-      <div class="panel-heading"><div><p class="eyebrow">Lógica</p><h3>Alquimia Instável</h3></div></div>
-      <p>Leia as pistas e escolha a ordem segura dos ingredientes.</p><div class="leisure-meta"><span>2–4 minutos</span><span>Sem pets</span></div>${minigameStageMeta("alchemy", difficulty)}
+    <article class="panel span-3 leisure-card vivid-card alchemy-card">
+      <div class="panel-heading"><div><p class="eyebrow">Laboratório</p><h3>Alquimia Instável</h3></div></div>
+      <p>Controle ordem, temperatura, estabilidade e essência em um caldeirão visual.</p><div class="leisure-meta"><span>2–4 minutos</span><span>Sem pets</span></div>${minigameStageMeta("alchemy", difficulty)}
       <button class="primary-button" type="button" data-action="start-alchemy" data-difficulty="${esc(difficulty.id)}" ${energy >= difficulty.cost && alchemyStage.unlocked ? "" : "disabled"}>${alchemyStage.unlocked ? `Misturar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
     </article>`;
-  const challenges = `
-    <article class="panel span-6">
-      <div class="panel-heading"><div><p class="eyebrow">Estratégia</p><h3>Pet Hunt</h3></div></div>
-      <p class="risk-line">Risco ${Math.round(difficulty.risk * 100)}% · Duração base ${Math.round(8 + difficulty.cost * 7)} min.</p>${minigameStageMeta("hunt", difficulty)}${companionPrompt}
-      <form class="form-stack compact-form" data-form="pet-hunt">
-        <label><span>Pet</span><select name="petId" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("petId", huntDraft) : `<option>Nenhum pet livre</option>`}</select></label>
-        <label><span>Destino</span><select name="biome">${(state.content.biomes || []).map((biome) => `<option value="${esc(biome.id)}" ${draftValue(huntDraft, "biome", "") === biome.id ? "selected" : ""}>${esc(biome.name)}</option>`).join("")}</select></label>
-        <label><span>Rota</span><select name="route"><option value="cautious">Cautelosa</option><option value="balanced" selected>Equilibrada</option><option value="deep">Profunda</option></select></label>
-        <label><span>Duração</span><select name="durationMinutes"><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
-        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><input type="hidden" name="stageLevel" value="${stageLevel}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length && huntStage.unlocked ? "" : "disabled"}>${huntStage.unlocked ? `Enviar Hunt · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
-      </form>
-    </article>
-    <article class="panel span-6">
-      <div class="panel-heading"><div><p class="eyebrow">Tático</p><h3>Tower Defense</h3></div></div><p>Monte um deck de até quatro companheiros e defenda as rotas.</p>${minigameStageMeta("tower", difficulty)}${companionPrompt}
-      <form class="form-stack compact-form" data-form="tower-defense">
-        <label><span>Companheiro 1</span><select name="towerPet1" ${freePets.length ? "" : "disabled"}>${freePets.length ? petOptions("towerPet1", towerDraft) : `<option>Nenhum pet livre</option>`}</select></label>
-        <label><span>Companheiro 2</span><select name="towerPet2">${petOptions("towerPet2", towerDraft, true)}</select></label>
-        <label><span>Companheiro 3</span><select name="towerPet3">${petOptions("towerPet3", towerDraft, true)}</select></label>
-        <label><span>Companheiro 4</span><select name="towerPet4">${petOptions("towerPet4", towerDraft, true)}</select></label>
-        <label><span>Mapa</span><select name="mapId">${towerMaps.map((map) => `<option value="${esc(map.id)}">${esc(map.name)} · ${esc(map.difficulty)}</option>`).join("")}</select></label>
-        <input type="hidden" name="difficulty" value="${esc(difficulty.id)}" /><input type="hidden" name="stageLevel" value="${stageLevel}" /><button class="primary-button" ${energy >= difficulty.cost && freePets.length && towerStage.unlocked ? "" : "disabled"}>${towerStage.unlocked ? `Iniciar · ${difficulty.cost} energia` : "Nível bloqueado"}</button>
-      </form>
-    </article>
-    <article class="panel span-12"><div class="panel-heading"><div><p class="eyebrow">Em campo</p><h3>Atividades simultâneas</h3></div></div><div class="activity-list">${renderActivities(character)}</div></article>`;
+  const challenges = renderMonsterModesChallenge(character, difficulty, energy, towerMaps, towerDraft, towerStage);
   const recreation = `
     ${renderJukebox()}
     <article class="panel span-4 leisure-card"><p class="eyebrow">Coleção</p><h3>Galeria</h3><p>Revisite mapas, títulos e artes que você já descobriu.</p><button class="ghost-button" type="button" data-nav="codex">Abrir galeria</button></article>
@@ -5781,8 +6987,8 @@ function renderMinigames() {
         <div class="stat-grid compact-stat-grid">
           ${renderStat("Energia", `${energy}/${GACHA_ENERGY_MAX}`)}
           ${renderStat("Coins", character.millenniumCoins || 0)}
-          ${renderStat("Pets livres", freePets.length)}
-          ${renderStat("Atividades", (character.activeActivities || []).length)}
+          ${renderStat("Monstros livres", freePets.length)}
+          ${renderStat("Arena", `${Number(character.monsterArena?.points || 0)} pts`)}
         </div>
       </article>
 
@@ -5790,6 +6996,7 @@ function renderMinigames() {
         ${renderDifficultyTabs()}
         ${renderMinigameLevelTabs()}
       </article>
+      ${renderMinigameEventStrip()}
       ${tabs}
       ${tab === "quick" ? quickGames : tab === "challenges" ? challenges : recreation}
       <article class="panel span-5 ${tab === "challenges" ? "" : "span-12"}">
@@ -5868,7 +7075,7 @@ function renderPets(pets) {
   if (!pets.length) return `<div class="empty-state">Nenhum pet exibido.</div>`;
   return pets.map((pet) => `
     <div class="pet-card ${rarityClass(pet.rarity)}">
-      ${(pet.imageUrl || petImageFor(pet)) ? `<img class="pet-image" src="${esc(pet.imageUrl || petImageFor(pet))}" alt="${esc(pet.name)}" />` : `<div class="pet-image placeholder">PET</div>`}
+      ${(pet.imageUrl || petImageFor(pet)) ? `<img class="pet-image" src="${esc(pet.imageUrl || petImageFor(pet))}" alt="${esc(pet.name)}" ${mediaAttrs("pet-card")} />` : `<div class="pet-image placeholder">PET</div>`}
       <strong>${esc(pet.name)}</strong>
       <p>${esc(pet.rarity || "Pet")} ${pet.stars ? `· ${"★".repeat(Math.min(MAX_GACHA_STARS, Number(pet.stars || 1)))}` : ""}</p>
     </div>
@@ -5882,7 +7089,7 @@ function renderGachaVault(items, options = {}) {
     const recoveryCost = petRecoveryCost(item);
     return `
       <article class="vault-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}">
-        <div class="vault-art">${(item.imageUrl || (item.kind === "pet" ? petImageFor(item) : "")) ? `<img src="${esc(item.imageUrl || petImageFor(item))}" alt="${esc(item.name)}" />` : `<span>${esc(item.kind === "pet" ? "PET" : "ITEM")}</span>`}</div>
+        <div class="vault-art">${(item.imageUrl || (item.kind === "pet" ? petImageFor(item) : "")) ? `<img src="${esc(item.imageUrl || petImageFor(item))}" alt="${esc(item.name)}" ${mediaAttrs("pet-card")} />` : `<span>${esc(item.kind === "pet" ? "PET" : "ITEM")}</span>`}</div>
         <div class="vault-body">
           <span>${esc(item.rarity || "Comum")} ${item.shiny ? "· Radiante" : ""}</span>
           <h3>${esc(item.name)}</h3>
@@ -5910,7 +7117,7 @@ function renderTokens(tokens) {
   if (!tokens.length) return `<span class="token-chip muted">Sem tokens</span>`;
   return tokens.map((token) => `
     <span class="token-chip ${rarityClass(token.rarity)}" title="${esc(token.description || token.name)}">
-      ${token.imageUrl ? `<img src="${esc(token.imageUrl)}" alt="${esc(token.name)}" />` : `<b>${esc(token.icon || String(token.name || "T").slice(0, 1))}</b>`}
+      ${token.imageUrl ? `<img src="${esc(token.imageUrl)}" alt="${esc(token.name)}" ${mediaAttrs("pet-thumbnail")} />` : `<b>${esc(token.icon || String(token.name || "T").slice(0, 1))}</b>`}
       <small>${esc(token.name)}</small>
     </span>
   `).join("");
@@ -5977,73 +7184,179 @@ function renderGrimoire() {
   `;
 }
 
+function rankingDisplayName(row = {}) {
+  const character = row.character || {};
+  return row.name || character.characterName || character.displayName || getUserName(character.ownerId || row.uid) || "Herói sem nome";
+}
+
+function rankingDisplayDetail(row = {}, tab = "prestige") {
+  if (row.detail) return row.detail;
+  const character = row.character || {};
+  if (tab === "guilds") return "Guilda ativa em Millennium";
+  const title = activeTitle(character);
+  const affinity = getAffinity(character.affinityId);
+  return `${title?.name || "Sem título"} · ${affinity?.name || "Sem afinidade"}`;
+}
+
+function rankingPortraitMarkup(row = {}, options = {}) {
+  const character = row.character || {};
+  const name = rankingDisplayName(row);
+  const source = character.avatarUrl || placeholderAvatar();
+  const place = Number(options.place || 0);
+  return `
+    <span class="ranking-portrait ${place ? `ranking-portrait--${place}` : ""}">
+      <img src="${esc(source)}" style="${esc(cropImageStyle(character, "avatar"))}" width="160" height="200" loading="lazy" decoding="async" alt="Retrato de ${esc(name)}" />
+    </span>
+  `;
+}
+
+function renderRankingPodium(rows = [], tab = "prestige", topScore = 1) {
+  const podium = rows.slice(0, 3);
+  if (!podium.length) return `<div class="ranking-empty-hero"><span aria-hidden="true">◇</span><h3>Nenhuma lenda registrada</h3><p>O pódio surgirá quando existirem fichas elegíveis neste ranking.</p></div>`;
+  return `
+    <section class="ranking-podium" aria-label="Pódio dos três primeiros">
+      ${podium.map((row, index) => {
+        const place = index + 1;
+        const character = row.character || {};
+        const title = activeTitle(character);
+        const relative = Math.max(0, Math.min(100, Math.round((Number(row.score || 0) / Math.max(1, topScore)) * 100)));
+        return `
+          <button class="ranking-podium-card ranking-podium-card--${place}" type="button" data-place="${place}" data-action="open-user-profile" data-user-id="${esc(row.uid || character.ownerId || "")}">
+            <span class="ranking-podium-crown" aria-hidden="true">${place === 1 ? "✦" : place === 2 ? "◆" : "◇"}</span>
+            <span class="ranking-podium-place">${place}º</span>
+            ${rankingPortraitMarkup(row, { place })}
+            <span class="ranking-podium-copy">
+              <strong>${esc(rankingDisplayName(row))}</strong>
+              <small>${esc(title?.name || rankingDisplayDetail(row, tab))}</small>
+            </span>
+            <span class="ranking-podium-score">${esc(row.scoreText || Number(row.score || 0).toLocaleString("pt-BR"))}<small>${esc(row.sub || "pontos")}</small></span>
+            <span class="ranking-podium-progress" role="progressbar" aria-label="${relative}% do líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${relative}"><i style="width:${relative}%"></i></span>
+          </button>
+        `;
+      }).join("")}
+    </section>
+  `;
+}
+
+function renderPrestigeBreakdownPanel(character = {}) {
+  const detail = prestigeBreakdown(character);
+  const pieces = [
+    ["Nível", detail.level], ["Experiência", detail.xp], ["Missões", detail.missions],
+    ["Desenvolvimento", detail.development], ["Companheiros", detail.pets], ["Peças de Ouro", detail.po],
+    ["Poderes", detail.powers], ["Técnicas", detail.techniques], ["Conquistas", detail.achievements],
+    ["Passe", detail.pass], ["Raridades", detail.rarities],
+  ];
+  const total = Math.max(1, Number(detail.total || 0));
+  return `
+    <article class="ranking-prestige-breakdown" aria-labelledby="prestigeBreakdownTitle">
+      <div class="ranking-section-heading">
+        <div><p class="eyebrow">Composição preservada</p><h3 id="prestigeBreakdownTitle">De onde vem seu Prestígio</h3></div>
+        <strong>${Number(detail.total || 0).toLocaleString("pt-BR")}</strong>
+      </div>
+      <p class="ranking-breakdown-note">A fórmula permanece idêntica à base técnica preservada. Esta visualização apenas revela a contribuição já calculada de cada componente.</p>
+      <dl class="ranking-breakdown-grid">
+        ${pieces.map(([label, value]) => {
+          const amount = Math.max(0, Number(value || 0));
+          const percent = Math.max(amount > 0 ? 3 : 0, Math.round(amount / total * 100));
+          return `<div><dt>${esc(label)}</dt><dd><strong>${amount.toLocaleString("pt-BR")}</strong><span aria-hidden="true"><i style="width:${percent}%"></i></span></dd></div>`;
+        }).join("")}
+      </dl>
+    </article>
+  `;
+}
+
+function renderRankingSelfPosition(rows = [], tab = "prestige", topScore = 1) {
+  const ownIndex = rows.findIndex((row) => row.uid === state.user?.uid || row.character?.ownerId === state.user?.uid);
+  if (ownIndex < 0) return `<aside class="ranking-self-card ranking-self-card--empty"><span aria-hidden="true">◇</span><div><small>Sua posição</small><strong>Ainda não ranqueado</strong><p>Conclua e bloqueie tecnicamente sua ficha para entrar nesta classificação.</p></div></aside>`;
+  const row = rows[ownIndex];
+  const character = row.character || {};
+  const above = ownIndex > 0 ? rows[ownIndex - 1] : null;
+  const difference = above ? Math.max(0, Number(above.score || 0) - Number(row.score || 0)) : 0;
+  const relative = Math.max(0, Math.min(100, Math.round((Number(row.score || 0) / Math.max(1, topScore)) * 100)));
+  return `
+    <aside class="ranking-self-card" aria-label="Sua posição no ranking">
+      <span class="ranking-self-place">#${ownIndex + 1}</span>
+      ${rankingPortraitMarkup(row)}
+      <div class="ranking-self-copy">
+        <small>Sua posição fixa</small>
+        <strong>${esc(rankingDisplayName(row))}</strong>
+        <p>${ownIndex === 0 ? "Você ocupa a liderança atual." : `<span class="sr-only">Diferença para a posição acima: </span>${difference.toLocaleString("pt-BR")} ${esc(row.sub || "pontos")} separam você do jogador acima.`}</p>
+        <span class="ranking-relative-bar ranking-relative-bar--self" role="progressbar" aria-label="${relative}% do líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${relative}"><i style="width:${relative}%"></i></span>
+      </div>
+      <div class="ranking-self-score"><strong>${esc(row.scoreText || Number(row.score || 0).toLocaleString("pt-BR"))}</strong><span>${esc(row.sub || (tab === "prestige" ? "prestígio" : "pontos"))}</span></div>
+    </aside>
+  `;
+}
+
 function renderRanking() {
   const tabs = [
-    ["prestige", "Prestígio"],
-    ["level", "Nível"],
-    ["gold", "PO"],
-    ["coins", "Millennium"],
-    ["affinity", "Afinidades"],
-    ["missions", "Missões"],
-    ["rolls", "Giros"],
-    ["aim", "Mira"],
-    ["hunt", "Pet Hunt"],
-    ["tower", "Tower"],
-    ["pets", "Pets"],
-    ["items", "Itens"],
-    ["guilds", "Guildas"],
-    ["views", "Perfis"],
-    ["achievements", "Conquistas"],
-    ["pass", "Passe"],
-    ["collection", "Coleções"],
-    ["secrets", "Secret+"],
+    ["prestige", "Prestígio"], ["level", "Nível"], ["gold", "PO"], ["coins", "Millennium"],
+    ["affinity", "Afinidades"], ["missions", "Missões"], ["rolls", "Giros"], ["aim", "Mira"],
+    ["dungeon", "Masmorra"], ["arena", "Arena"], ["tower", "Tower"], ["pets", "Monstros"], ["items", "Itens"],
+    ["guilds", "Guildas"], ["views", "Perfis"], ["achievements", "Conquistas"], ["pass", "Passe"],
+    ["collection", "Coleções"], ["secrets", "Secret+"],
   ];
   const tab = state.rankingTab || "prestige";
-  const rangedTabs = new Set(["missions", "rolls", "aim", "hunt", "tower", "views", "collection", "secrets"]);
+  const rangedTabs = new Set(["missions", "rolls", "aim", "dungeon", "tower", "views", "collection", "secrets"]);
   const supportsRange = rangedTabs.has(tab);
   const range = supportsRange ? (state.rankingRange || "season") : "all";
   const rows = rankRows(tab, range).slice(0, 30);
   const topScore = Math.max(1, Number(rows[0]?.score || 1));
+  const currentRow = rows.find((row) => row.uid === state.user?.uid || row.character?.ownerId === state.user?.uid);
+  const prestigeCharacter = currentRow?.character || currentCharacter();
+  const listRows = rows.slice(3);
+  const periodLabel = supportsRange ? (range === "daily" ? "Últimas 24h" : range === "weekly" ? "Últimos 7 dias" : range === "all" ? "Todos os tempos" : "Temporada atual") : "Patrimônio atual";
   return `
-    <div class="grid">
-      <article class="panel span-12">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Ranking</p>
-            <h2>Ranks vivos de Millennium</h2>
-          </div>
-          <div class="action-row">
-            <span class="tag">${supportsRange ? (range === "daily" ? "Últimas 24h" : range === "weekly" ? "Últimos 7 dias" : range === "all" ? "Todos os tempos" : "Temporada atual") : "Patrimônio atual"}</span>
-            ${state.role === "admin" ? `<button class="primary-button" type="button" data-action="rebuild-rankings">Reconstruir todos os ranks</button>` : ""}
-          </div>
+    <section class="ranking-command-center" data-ranking-tab="${esc(tab)}">
+      <header class="ranking-hero-header">
+        <div>
+          <p class="eyebrow">Cartografia de Prestígio</p>
+          <h2>Os nomes que movem Millennium</h2>
+          <p>Compare posições, leia a distância até o líder e acompanhe sua evolução sem alterar nenhuma fórmula de pontuação.</p>
         </div>
-        <div class="tabs codex-tabs">${tabs.map(([id, label]) => `<button class="tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}">${label}</button>`).join("")}</div>
-        ${supportsRange ? `<div class="ranking-range-row" role="group" aria-label="Período do ranking">
-          ${[["daily", "Diário"], ["weekly", "Semanal"], ["season", "Temporada"], ["all", "Todos"]].map(([id, label]) => `<button class="range-chip ${range === id ? "active" : ""}" type="button" data-action="ranking-range" data-range="${id}">${label}</button>`).join("")}
-        </div>` : `<p class="ranking-range-note">Este rank é recalculado a partir das fichas registradas. Perfil privado oculta detalhes, mas não remove a colocação.</p>`}
-        <div class="ranking-list">
-          ${rows.map((row, index) => {
-            const char = row.character || {};
-            const title = activeTitle(char);
-            const affinity = getAffinity(char.affinityId);
-            return `
-              <button class="ranking-row ${row.uid === state.user?.uid || char.ownerId === state.user?.uid ? "self" : ""}" type="button" data-action="open-user-profile" data-user-id="${esc(row.uid || char.ownerId || "")}">
-                <strong class="ranking-place">#${index + 1}</strong>
-                <div>
-                  <h3>${esc(row.name || char.characterName || char.displayName || getUserName(char.ownerId || row.uid))}</h3>
-                  <p>${esc(row.detail || `${title ? title.name : "Sem título"} · ${affinity?.name || "Sem afinidade"}`)}</p>
-                  ${tab === "prestige" ? `<div class="ranking-relative-bar" role="progressbar" aria-label="${Math.round((Number(row.score || 0) / topScore) * 100)}% do líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((Number(row.score || 0) / topScore) * 100)}"><i style="width:${Math.round((Number(row.score || 0) / topScore) * 100)}%"></i></div>` : ""}
-                </div>
-                <div class="ranking-score">
-                  <strong>${esc(row.scoreText || row.score)}</strong>
-                  <span>${tab === "prestige" && index > 0 ? `${(topScore - Number(row.score || 0)).toLocaleString("pt-BR")} atrás do líder` : esc(row.sub || "pontos")}</span>
-                </div>
-              </button>
-            `;
-          }).join("") || `<div class="empty-state">Nenhuma ficha elegível no ranking.</div>`}
+        <div class="ranking-hero-actions">
+          <span class="ranking-period-badge">${esc(periodLabel)}</span>
+          ${state.role === "admin" ? `<button class="primary-button" type="button" data-action="rebuild-rankings">Reconstruir todos os ranks</button>` : ""}
         </div>
-      </article>
-    </div>
+      </header>
+
+      <nav class="ranking-tabs" aria-label="Categorias de ranking">
+        ${tabs.map(([id, label]) => `<button class="ranking-tab ${tab === id ? "active" : ""}" type="button" data-action="ranking-tab" data-tab="${id}" aria-pressed="${tab === id}">${label}</button>`).join("")}
+      </nav>
+
+      ${supportsRange ? `<div class="ranking-range-row ranking-range-row--hero" role="group" aria-label="Período do ranking">
+        ${[["daily", "Diário"], ["weekly", "Semanal"], ["season", "Temporada"], ["all", "Todos"]].map(([id, label]) => `<button class="range-chip ${range === id ? "active" : ""}" type="button" data-action="ranking-range" data-range="${id}" aria-pressed="${range === id}">${label}</button>`).join("")}
+      </div>` : `<p class="ranking-range-note ranking-range-note--hero">Este rank é recalculado a partir dos registros existentes. Perfil privado mantém a colocação, mas seus detalhes continuam protegidos.</p>`}
+
+      ${renderRankingPodium(rows, tab, topScore)}
+
+      <div class="ranking-content-grid">
+        <article class="ranking-ledger" aria-labelledby="rankingLedgerTitle">
+          <div class="ranking-section-heading"><div><p class="eyebrow">Classificação</p><h3 id="rankingLedgerTitle">Demais posições</h3></div><span>${rows.length} registro(s)</span></div>
+          <div class="ranking-list ranking-list--hero">
+            ${listRows.map((row, index) => {
+              const position = index + 4;
+              const char = row.character || {};
+              const relative = Math.max(0, Math.min(100, Math.round((Number(row.score || 0) / topScore) * 100)));
+              const above = rows[position - 2];
+              const difference = above ? Math.max(0, Number(above.score || 0) - Number(row.score || 0)) : 0;
+              const isSelf = row.uid === state.user?.uid || char.ownerId === state.user?.uid;
+              return `
+                <button class="ranking-row ranking-row--hero ${isSelf ? "self" : ""}" type="button" data-action="open-user-profile" data-user-id="${esc(row.uid || char.ownerId || "")}">
+                  <strong class="ranking-place">#${position}</strong>
+                  ${rankingPortraitMarkup(row)}
+                  <span class="ranking-row-copy"><strong>${esc(rankingDisplayName(row))}</strong><small>${esc(rankingDisplayDetail(row, tab))}</small><span class="ranking-relative-bar" role="progressbar" aria-label="${relative}% do líder" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${relative}"><i style="width:${relative}%"></i></span></span>
+                  <span class="ranking-score"><strong>${esc(row.scoreText || Number(row.score || 0).toLocaleString("pt-BR"))}</strong><small>${position === 1 ? "Líder" : `<span class="sr-only">Diferença para a posição acima: </span>${difference.toLocaleString("pt-BR")} até a posição acima`}</small></span>
+                </button>
+              `;
+            }).join("") || (rows.length ? `<div class="ranking-list-complete"><span aria-hidden="true">✦</span><p>O pódio contém todos os registros atuais desta categoria.</p></div>` : `<div class="empty-state">Nenhuma ficha elegível no ranking.</div>`)}
+          </div>
+        </article>
+        ${tab === "prestige" ? renderPrestigeBreakdownPanel(prestigeCharacter) : `<article class="ranking-context-panel"><p class="eyebrow">Leitura da categoria</p><h3>${esc(tabs.find(([id]) => id === tab)?.[1] || "Ranking")}</h3><p>As posições usam os mesmos dados e critérios da versão anterior. A nova camada altera somente apresentação, comparação e acessibilidade.</p><dl><div><dt>Líder</dt><dd>${esc(rankingDisplayName(rows[0] || {}))}</dd></div><div><dt>Maior marca</dt><dd>${Number(rows[0]?.score || 0).toLocaleString("pt-BR")}</dd></div><div><dt>Participantes</dt><dd>${rows.length}</dd></div></dl></article>`}
+      </div>
+
+      ${renderRankingSelfPosition(rows, tab, topScore)}
+    </section>
   `;
 }
 
@@ -6092,9 +7405,10 @@ function rankRows(tab, range = "season") {
   if (tab === "missions") return byChar((char) => char.__rankingProjection ? periodValue(char, "missions") : approved(char).filter((request) => ["mission", "guildMission", "training"].includes(request.type)).length, "aprovações");
   if (tab === "rolls") return byChar((char) => char.__rankingProjection ? periodValue(char, "rolls") : rollCount(char), "giros", (char) => `${Number(char.totalRares || 0)} raros registrados`);
   if (tab === "aim") return byChar((char) => char.__rankingProjection ? projectedBest(char, "aim") : (range === "all" || range === "season" ? Number(char.minigameStats?.aim?.bestScore || 0) : bestRun(char, "aim")), "melhor score");
-  if (tab === "hunt") return byChar((char) => char.__rankingProjection ? projectedBest(char, "hunt") : (range === "all" || range === "season" ? Number(char.minigameStats?.hunt?.bestScore || 0) : bestRun(char, "hunt")), "melhor score");
+  if (tab === "dungeon") return byChar((char) => Number(char.monsterDungeon?.bestScore || 0), "melhor score", (char) => `Fase máxima ${Number(char.monsterDungeon?.bestPhase || 0)} · ${Number(char.monsterDungeon?.attempts || 0)} tentativa(s)`);
+  if (tab === "arena") return byChar((char) => Number(char.monsterArena?.points || 0), "pontos de Arena", (char) => `${monsterModesApi()?.leagueFor(Number(char.monsterArena?.points || 0))?.name || "Iniciado"} · ${Number(char.monsterArena?.wins || 0)} vitória(s) · Defesa ${Number(char.monsterArena?.defenseIndex || 0)}`);
   if (tab === "tower") return byChar((char) => char.__rankingProjection ? projectedBest(char, "tower") : (range === "all" || range === "season" ? Number(char.minigameStats?.tower?.bestScore || 0) : bestRun(char, "tower")), "melhor score");
-  if (tab === "pets") return byChar((char) => char.__rankingProjection ? Number(char.petCount || 0) : (char.gachaVault || []).filter((item) => item.kind === "pet").length, "companheiros");
+  if (tab === "pets") return byChar((char) => char.__rankingProjection ? Number(char.petCount || 0) : Math.max((char.monsterInstances || []).length, (char.gachaVault || []).filter((item) => item.kind === "pet").length), "monstros vinculados");
   if (tab === "items") return byChar((char) => char.__rankingProjection ? Number(char.itemCount || 0) : (char.inventory || []).length, "itens");
   if (tab === "views") return byChar((char) => char.__rankingProjection ? periodValue(char, "views") : state.profileViews.filter((view) => view.targetId === char.ownerId && isWithinRankingRange(view, range, "viewedAt")).length, "visualizações únicas");
   if (tab === "achievements") return byChar((char) => char.__rankingProjection ? Number(char.achievementCount || 0) : derivedAchievementIds(char).size, "conquistas");
@@ -6135,7 +7449,7 @@ function renderWorldMap() {
       <div class="world-map-nodes">
         ${places.map((item, index) => `
           <button class="world-map-node ${item.id === "cortinas" ? "corrupted" : ""}" style="--node-index:${index}" type="button" data-action="open-codex-entry" data-collection="${esc(item.collection)}" data-entry-id="${esc(item.id)}">
-            <img src="${esc(codexImageFor(item, index, "world"))}" alt="Mapa ilustrado de ${esc(item.name)}" loading="lazy" decoding="async" />
+            <img src="${esc(codexImageFor(item, index, "world"))}" alt="Mapa ilustrado de ${esc(item.name)}" ${mediaAttrs("map")} />
             <small>${esc(item.type)}</small>
             <strong>${esc(item.name)}</strong>
           </button>
@@ -6233,7 +7547,7 @@ function renderCodexResults(tab = state.codexTab || "affinities") {
           return `
             <article class="codex-card codex-card-summary" role="listitem">
               <div class="codex-card-media">
-                <img src="${esc(visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="480" height="270" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+                <img src="${esc(visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="400" height="300" style="object-position:${visual.focusX}% ${visual.focusY}%" />
               </div>
               <div class="codex-card-body">
                 <div class="codex-card-meta">${presentation.meta.slice(0, 6).map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
@@ -6308,7 +7622,7 @@ function openCodexEntry(collection, id) {
   const presentation = POLISH.codexPresentation(tab, item, codexContextFor(tab, item));
   $("#modalContent").innerHTML = `
     <section class="codex-entry-modal" aria-labelledby="codex-entry-title">
-      <img src="${esc(visual.hero)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id)}" alt="${esc(visual.alt)}" loading="eager" decoding="async" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+      <img src="${esc(visual.hero)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id)}" alt="${esc(visual.alt)}" width="1280" height="720" loading="eager" decoding="async" style="object-position:${visual.focusX}% ${visual.focusY}%" />
       <div>
         <p class="eyebrow">${esc(item.era || item.region || item.role || kingdom?.name || "Codex Millennium")}</p>
         <h2 id="codex-entry-title">${esc(presentation.title)}</h2>
@@ -6452,7 +7766,7 @@ function renderShardOffer(item, character = currentCharacter()) {
   const canBuy = owned >= cost;
   return `
     <article class="shop-card shard-offer ${rarityClass(item.rarity)}">
-      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
+      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" ${mediaAttrs("thumbnail")} />` : ""}
       <span>${esc(fragmentName)}</span>
       <strong>${esc(item.name)}</strong>
       <p>${esc(item.type || "Recompensa")} · ${esc(item.description || "")}</p>
@@ -6561,7 +7875,7 @@ function renderMarket() {
 function marketCards(items, detail, currency = "PO") {
   return sortByName(items).map((item) => `
     <div class="content-card market-card">
-      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" />` : ""}
+      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name)}" ${mediaAttrs("thumbnail")} />` : ""}
       <span>${esc(item.rarity || item.category || "Mercado")}</span>
       <h3>${esc(item.name)}</h3>
       <p>${esc(detail(item))}</p>
@@ -6576,12 +7890,12 @@ function marketCards(items, detail, currency = "PO") {
 function updateCodexSearchResults() {
   if (state.view === "codex") {
     const results = document.querySelector('[data-search-results="codex"]');
-    if (results) STABILITY.replaceHtmlIfChanged(results, renderCodexResults());
+    if (results) { STABILITY.replaceHtmlIfChanged(results, renderCodexResults()); normalizeRenderedImages(results); }
     return;
   }
   if (state.view === "help" && state.helpTab === "search") {
     const results = document.querySelector('[data-search-results="global-search"]');
-    if (results) STABILITY.replaceHtmlIfChanged(results, renderGlobalSearchResults());
+    if (results) { STABILITY.replaceHtmlIfChanged(results, renderGlobalSearchResults()); normalizeRenderedImages(results); }
   }
 }
 
@@ -6593,6 +7907,7 @@ function updateMarketSearchResults() {
   const count = document.querySelector("[data-market-result-count]");
   if (count) count.textContent = `${filtered.length} de ${(state.content.marketListings || []).length} item(ns)`;
   STABILITY.replaceHtmlIfChanged(results, marketCards(filtered, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"));
+  normalizeRenderedImages(results);
 }
 
 function updateCultureSearchResults() {
@@ -6601,7 +7916,7 @@ function updateCultureSearchResults() {
   const results = document.querySelector('[data-search-results="cultures"]');
   const count = document.querySelector('[data-catalog-count="cultures"]');
   if (count) count.textContent = `${entries.length} registro(s)`;
-  if (results) STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "culture")).join("") || `<div class="empty-state">Nenhuma cultura corresponde à busca.</div>`);
+  if (results) { STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "culture")).join("") || `<div class="empty-state">Nenhuma cultura corresponde à busca.</div>`); normalizeRenderedImages(results); }
 }
 
 function updateProfessionSearchResults() {
@@ -6610,7 +7925,7 @@ function updateProfessionSearchResults() {
   const results = document.querySelector('[data-search-results="professions"]');
   const count = document.querySelector('[data-catalog-count="professions"]');
   if (count) count.textContent = `${entries.length} registro(s)`;
-  if (results) STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "profession")).join("") || `<div class="empty-state">Nenhum ofício corresponde à busca.</div>`);
+  if (results) { STABILITY.replaceHtmlIfChanged(results, entries.map((entry) => renderCatalogCard(entry, "profession")).join("") || `<div class="empty-state">Nenhum ofício corresponde à busca.</div>`); normalizeRenderedImages(results); }
 }
 
 const SEARCH_CONTROLLERS = Object.freeze({
@@ -6677,7 +7992,7 @@ function renderPlayerBazaar(character) {
       <div class="bazaar-listing-grid">
         ${listings.map((listing) => `
           <article class="bazaar-listing ${rarityClass(listing.itemSnapshot?.rarity || "Comum")}">
-            ${listing.itemSnapshot?.imageUrl ? `<img class="content-image" src="${esc(listing.itemSnapshot.imageUrl)}" alt="${esc(listing.itemSnapshot.name)}" />` : ""}
+            ${listing.itemSnapshot?.imageUrl ? `<img class="content-image" src="${esc(listing.itemSnapshot.imageUrl)}" alt="${esc(listing.itemSnapshot.name)}" ${mediaAttrs("thumbnail")} />` : ""}
             <span>${esc(listing.itemSnapshot?.rarity || "Comum")} · ${esc(listing.currency === "coins" ? "Millennium Coins" : "PO")}</span>
             <h3>${esc(listing.itemSnapshot?.name || listing.name || "Item")}</h3>
             <p>Vendido por ${esc(getUserName(listing.sellerId))} · ${Number(listing.price || 0).toLocaleString("pt-BR")}</p>
@@ -6723,7 +8038,7 @@ function renderAuctionMarket() {
     const claimed = highest?.status === "claimed";
     return `
       <article class="content-card market-card auction-card ${rarityClass(auction.rarity)}">
-        ${auction.imageUrl ? `<img class="content-image" src="${esc(auction.imageUrl)}" alt="${esc(auction.name)}" />` : ""}
+        ${auction.imageUrl ? `<img class="content-image" src="${esc(auction.imageUrl)}" alt="${esc(auction.name)}" ${mediaAttrs("thumbnail")} />` : ""}
         <span>${esc(auction.rarity || "Leilão")} · ${!scheduled ? "Aguardando publicação" : ended ? "Encerrado" : "Aberto"}</span>
         <h3>${esc(auction.name)}</h3>
         <p>${esc(auction.description || "")}</p>
@@ -7294,7 +8609,7 @@ function renderMessageIdentity(message = {}) {
   const playerName = getUserName(message.senderId) || message.senderName || "Player";
   const characterName = character.characterName || playerName;
   return `
-    <button class="message-avatar" type="button" data-action="open-user-profile" data-user-id="${esc(message.senderId)}" aria-label="Abrir perfil de ${esc(characterName)}"><img src="${esc(character.avatarUrl || placeholderAvatar())}" style="${esc(cropImageStyle(character, "avatar"))}" alt="" /></button>
+    <button class="message-avatar" type="button" data-action="open-user-profile" data-user-id="${esc(message.senderId)}" aria-label="Abrir perfil de ${esc(characterName)}"><img src="${esc(character.avatarUrl || placeholderAvatar())}" style="${esc(cropImageStyle(character, "avatar"))}" alt="" ${mediaAttrs("avatar")} /></button>
     <div class="message-identity">
       <button class="link-button message-author" type="button" data-action="open-user-profile" data-user-id="${esc(message.senderId)}">${esc(characterName)}</button>
       <small>${esc(playerName)}${title ? ` · ${esc(title.name)}` : " · Sem título equipado"}</small>
@@ -7493,52 +8808,130 @@ function renderReports() {
     </div>`;
 }
 
+
+const ORACLE_ROUTE_DETAILS = Object.freeze({
+  "admin-home": { eyebrow: "Núcleo de comando", title: "Conselho do Oráculo", description: "Uma leitura consolidada do mundo, das filas administrativas e dos sinais que exigem decisão." },
+  "admin-users": { eyebrow: "Identidades registradas", title: "Contas e fichas", description: "Administre acesso, personagem, economia e cofre sem perder a trilha de auditoria." },
+  "admin-content": { eyebrow: "Arquivo vivo", title: "Conteúdo e Forja", description: "Organize raças, classes, afinidades, itens, banners, mapas e registros canônicos." },
+  "admin-rewards": { eyebrow: "Concessões", title: "Recompensas do Oráculo", description: "Entregue prêmios com alvo, origem e consequência claramente identificados." },
+  "admin-economy": { eyebrow: "Tesouraria", title: "Economia, cofre e esforço", description: "Observe moedas, energia, fragmentos, companheiros e resultados de minigames." },
+  "admin-mail": { eyebrow: "Correspondência", title: "Correio místico", description: "Envie mensagens administrativas preservando autoria e contexto." },
+  "admin-requests": { eyebrow: "Câmara de decisões", title: "Validações e balanceamento", description: "Compare propostas, limites e contramedidas antes de registrar uma decisão." },
+  "admin-ops": { eyebrow: "Observatório", title: "Auditoria e diagnóstico", description: "Acompanhe leituras, listeners, migrações, termos e manutenção da Interface." },
+  "admin-chat": { eyebrow: "Vigília", title: "Comunicações", description: "Observe o fluxo social sem confundir moderação com narrativa." },
+  "admin-missions": { eyebrow: "Mandatos", title: "Missões semanais", description: "Publique objetivos e recompensas sem alterar o cânone econômico fora da regra existente." },
+  "admin-settings": { eyebrow: "Ciclo sazonal", title: "Temporada e temas", description: "Controle avisos, aparência e estado da temporada com ações críticas explicitamente separadas." },
+  "admin-reports": { eyebrow: "Tribunal de moderação", title: "Reports e denúncias", description: "Classifique, investigue e responda registros técnicos ou sociais." },
+  "ranking": { eyebrow: "Cartografia de prestígio", title: "Ranks sob observação", description: "Leia posições e diferenças sem modificar a fórmula de Prestígio." },
+});
+
+function oraclePendingCount() {
+  return state.progressRequests.filter((request) => request.status === "pendente" || creationRequestStatus(request) === "em análise").length;
+}
+
+function oracleOpenReportCount() {
+  return state.reports.filter((report) => !["resolvido", "fechado"].includes(reportStatusLabel(report.status))).length;
+}
+
+function oracleRouteMetrics(view) {
+  const players = state.users.filter((user) => user.role !== "admin");
+  const online = players.filter(isUserOnline).length;
+  const activeAccounts = players.filter((user) => normalizedAccountStatus(user) === "active").length;
+  const restricted = Math.max(0, players.length - activeAccounts);
+  const totalCoins = state.characters.reduce((sum, character) => sum + Number(character.millenniumCoins || 0), 0);
+  const totalGold = state.characters.reduce((sum, character) => sum + Number(character.gold || 0), 0);
+  const catalogCount = Object.values(state.content || {}).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
+  const routeMap = {
+    "admin-users": [["Contas", players.length], ["Online", online], ["Restritas", restricted], ["Fichas", state.characters.length]],
+    "admin-content": [["Registros", catalogCount], ["Raças", state.content.races?.length || 0], ["Itens", state.content.items?.length || 0], ["Banners", state.content.gachaBanners?.length || 0]],
+    "admin-economy": [["PO", totalGold.toLocaleString("pt-BR")], ["MC", totalCoins.toLocaleString("pt-BR")], ["Cofres", state.characters.reduce((sum, character) => sum + (character.gachaVault || []).length, 0)], ["Atividades", state.characters.reduce((sum, character) => sum + (character.activeActivities || []).length, 0)]],
+    "admin-requests": [["Pendentes", oraclePendingCount()], ["Total", state.progressRequests.length], ["Players", players.length], ["Fichas", state.characters.length]],
+    "admin-reports": [["Abertos", oracleOpenReportCount()], ["Total", state.reports.length], ["Online", online], ["Build", MILLENNIUM_BUILD.version]],
+    "admin-ops": [["Listeners", totalActiveListeners()], ["Leituras", state.diagnostics.documentsRead], ["Escritas", state.diagnostics.writes], ["Build", MILLENNIUM_BUILD.version]],
+    ranking: [["Players", players.length], ["Fichas", state.characters.length], ["Líder", Math.max(0, ...state.characters.map((character) => prestigeFor(character)))], ["Online", online]],
+  };
+  return routeMap[view] || [["Players", players.length], ["Online", online], ["Decisões", oraclePendingCount()], ["Reports", oracleOpenReportCount()]];
+}
+
+function renderOracleFrame(view, content) {
+  const details = ORACLE_ROUTE_DETAILS[view] || { eyebrow: "Interface administrativa", title: VIEW_TITLES[view] || "Oráculo", description: "Autoridade, contexto e rastreabilidade para cada decisão." };
+  const metrics = oracleRouteMetrics(view);
+  const routeButtons = [
+    ["admin-home", "Conselho"], ["admin-users", "Contas"], ["admin-content", "Conteúdo"],
+    ["admin-economy", "Economia"], ["ranking", "Ranks"], ["admin-requests", "Decisões"],
+    ["admin-reports", "Reports"], ["admin-ops", "Auditoria"],
+  ];
+  return `<section class="oracle-console" data-oracle-route="${esc(view)}">
+    <header class="oracle-command-header">
+      <div class="oracle-command-copy">
+        <p class="eyebrow">${esc(details.eyebrow)}</p>
+        <h2>${esc(details.title)}</h2>
+        <p>${esc(details.description)}</p>
+        <div class="oracle-command-status"><span class="oracle-status-dot" aria-hidden="true"></span><strong>Interface 3.6.4</strong><span>${state.demo ? "Ambiente demonstrativo" : "Sessão administrativa"}</span></div>
+      </div>
+      <div class="oracle-eye-constellation" aria-hidden="true"><span class="oracle-orbit orbit-a"></span><span class="oracle-orbit orbit-b"></span><span class="oracle-eye-core">◉</span><i></i><b></b></div>
+      <div class="oracle-metric-grid" aria-label="Métricas desta área">${metrics.map(([label, value]) => `<article class="oracle-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></article>`).join("")}</div>
+    </header>
+    <nav class="oracle-route-nav" aria-label="Áreas principais do Oráculo">
+      ${routeButtons.map(([target, label]) => `<button class="oracle-route-link ${view === target ? "active" : ""}" type="button" data-nav="${target}" ${view === target ? 'aria-current="page"' : ""}>${label}</button>`).join("")}
+      <button class="oracle-route-link oracle-security-link" type="button" data-action="open-security-center">Segurança</button>
+    </nav>
+    <div class="oracle-route-content">${content}</div>
+  </section>`;
+}
+
+function renderOracleCommandCard({ nav = "", action = "", icon = "◇", eyebrow = "Comando", title, description, badge = "" }) {
+  const data = nav ? `data-nav="${esc(nav)}"` : `data-action="${esc(action)}"`;
+  return `<button class="oracle-command-card" type="button" ${data}><span class="oracle-command-icon" aria-hidden="true">${esc(icon)}</span><span><small>${esc(eyebrow)}</small><strong>${esc(title)}</strong><em>${esc(description)}</em></span>${badge ? `<b>${esc(badge)}</b>` : ""}</button>`;
+}
+
 function renderAdminHome() {
   const players = state.users.filter((user) => user.role !== "admin");
-  const reportsOpen = state.reports.filter((report) => report.status !== "resolvido").length;
-  const pendingRequests = state.progressRequests.filter((request) => request.status === "pendente").length;
-  const totalRolls = state.characters.reduce((sum, char) => sum + Number(char.totalRolls || 0), 0);
-  const totalRares = state.characters.reduce((sum, char) => sum + Number(char.totalRares || 0), 0);
-  const totalCoins = state.characters.reduce((sum, char) => sum + Number(char.millenniumCoins || 0), 0);
-  const activePets = state.characters.reduce((sum, char) => sum + (char.activeActivities || []).length, 0);
-  return `
-    <div class="grid">
-      <article class="panel span-12">
-        <div class="stat-grid">
-          ${renderStat("Players", players.length)}
-          ${renderStat("Fichas", state.characters.length)}
-          ${renderStat("Reports abertos", reportsOpen)}
-          ${renderStat("Validações", pendingRequests)}
-          ${renderStat("Giros totais", totalRolls)}
-          ${renderStat("Raros", totalRares)}
-          ${renderStat("Missões semanais", state.weeklyMissions.length)}
-          ${renderStat("MC no servidor", totalCoins)}
-          ${renderStat("Pets em campo", activePets)}
-        </div>
-        <div class="action-row admin-home-shortcuts">
-          <button class="primary-button" type="button" data-nav="ranking">Abrir Central de Ranks</button>
-          <button class="ghost-button" type="button" data-action="rebuild-rankings">Reconstruir todos os ranks</button>
-        </div>
-      </article>
-      <article class="panel span-7">
-        <div class="panel-heading"><div><p class="eyebrow">Observação</p><h3>Roleta e prestígio</h3></div></div>
-        <div class="scroll-list">
-          ${players.map((user) => {
-            const character = getCharacterFor(user.id);
-            return `<div class="user-row">
-              <strong>${esc(user.displayName || user.email)}</strong>
-              <p>${esc(character.characterName || "Sem personagem")} · ${Number(character.affinityAttempts || 0)} essência(s) · pity ${Number(character.pityCounter || 0)}/${Number(state.settings.pityMax || 30)}</p>
-              <span>${Number(character.totalRolls || 0)} giros · ${Number(character.totalRares || 0)} raros · ${prestigeFor(character)} prestígio</span>
-            </div>`;
-          }).join("") || `<div class="empty-state">Nenhum player cadastrado.</div>`}
-        </div>
-      </article>
-      <article class="panel span-5">
-        <div class="panel-heading"><div><p class="eyebrow">Eventos</p><h3>Ganhos raros</h3></div></div>
-        <div class="scroll-list">${renderMessages(state.globalMessages.filter((message) => message.type === "rare").slice(-8))}</div>
-      </article>
-    </div>
-  `;
+  const reportsOpen = oracleOpenReportCount();
+  const pendingRequests = oraclePendingCount();
+  const totalRolls = state.characters.reduce((sum, character) => sum + Number(character.totalRolls || 0), 0);
+  const totalCoins = state.characters.reduce((sum, character) => sum + Number(character.millenniumCoins || 0), 0);
+  const totalGold = state.characters.reduce((sum, character) => sum + Number(character.gold || 0), 0);
+  const activePets = state.characters.reduce((sum, character) => sum + (character.activeActivities || []).length, 0);
+  const ranked = [...state.characters].sort((a, b) => prestigeFor(b) - prestigeFor(a)).slice(0, 5);
+  const urgentRequests = state.progressRequests
+    .filter((request) => request.status === "pendente" || creationRequestStatus(request) === "em análise")
+    .sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt)).slice(0, 4);
+  const urgentReports = state.reports
+    .filter((report) => !["resolvido", "fechado"].includes(reportStatusLabel(report.status)))
+    .sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt)).slice(0, 4);
+  return `<div class="grid oracle-dashboard-grid">
+    <article class="panel span-12 oracle-command-deck">
+      <div class="oracle-section-heading"><div><p class="eyebrow">Comandos principais</p><h3>Escolha o domínio de intervenção</h3></div><span class="tag">Nenhuma ação automática</span></div>
+      <div class="oracle-command-grid">
+        ${renderOracleCommandCard({ nav: "admin-users", icon: "◇", eyebrow: "Identidades", title: "Contas e fichas", description: "Acesso, personagem, economia e cofre.", badge: `${players.length}` })}
+        ${renderOracleCommandCard({ nav: "admin-economy", icon: "⌬", eyebrow: "Tesouraria", title: "Economia", description: "MC, PO, energia, fragmentos e atividades.", badge: `${totalCoins} MC` })}
+        ${renderOracleCommandCard({ nav: "admin-content", icon: "✚", eyebrow: "Arquivo", title: "Conteúdo", description: "Raças, classes, afinidades, itens e mapas.", badge: `${state.content.items?.length || 0} itens` })}
+        ${renderOracleCommandCard({ nav: "ranking", icon: "#", eyebrow: "Prestígio", title: "Ranks", description: "Posições, diferenças e projeções já calculadas.", badge: ranked[0] ? `${prestigeFor(ranked[0])}` : "—" })}
+        ${renderOracleCommandCard({ nav: "admin-requests", icon: "✓", eyebrow: "Julgamento", title: "Decisões", description: "Poderes, técnicas, progressão e nerfs.", badge: `${pendingRequests}` })}
+        ${renderOracleCommandCard({ action: "open-security-center", icon: "◉", eyebrow: "Integridade", title: "Segurança", description: "Incidentes, snapshots, quarentenas e recursos.", badge: window.MILLENNIUM_APP_CHECK_STATE?.enabled ? "Ativo" : "Pendente" })}
+      </div>
+    </article>
+    <article class="panel span-8 oracle-priority-panel">
+      <div class="oracle-section-heading"><div><p class="eyebrow">Fila crítica</p><h3>Registros que exigem decisão</h3></div><span class="oracle-count-badge">${pendingRequests + reportsOpen}</span></div>
+      <div class="oracle-priority-columns">
+        <section><h4>Validações</h4>${urgentRequests.map((request) => `<button class="oracle-priority-row" type="button" data-nav="admin-requests"><span>${esc(progressTypeLabel(request.type))}</span><strong>${esc(request.title || "Solicitação")}</strong><small>${esc(getUserName(request.uid))} · ${esc(tsText(request.createdAt))}</small></button>`).join("") || `<div class="empty-state">Nenhuma validação urgente.</div>`}</section>
+        <section><h4>Reports</h4>${urgentReports.map((report) => `<button class="oracle-priority-row" type="button" data-nav="admin-reports"><span>${esc(reportStatusLabel(report.status))}</span><strong>${esc(report.title || "Report")}</strong><small>${esc(getUserName(report.reporterId))} · ${esc(tsText(report.createdAt))}</small></button>`).join("") || `<div class="empty-state">Nenhum report aberto.</div>`}</section>
+      </div>
+    </article>
+    <article class="panel span-4 oracle-world-ledger">
+      <div class="oracle-section-heading"><div><p class="eyebrow">Estado do mundo</p><h3>Recursos observados</h3></div></div>
+      <dl><div><dt>PO em circulação</dt><dd>${totalGold.toLocaleString("pt-BR")}</dd></div><div><dt>Millennium Coins</dt><dd>${totalCoins.toLocaleString("pt-BR")}</dd></div><div><dt>Giros registrados</dt><dd>${totalRolls.toLocaleString("pt-BR")}</dd></div><div><dt>Pets em campo</dt><dd>${activePets}</dd></div><div><dt>Missões semanais</dt><dd>${state.weeklyMissions.length}</dd></div></dl>
+    </article>
+    <article class="panel span-7 oracle-rank-observatory">
+      <div class="oracle-section-heading"><div><p class="eyebrow">Ranks</p><h3>Prestígio sob observação</h3></div><button class="ghost-button" type="button" data-nav="ranking">Abrir central</button></div>
+      <div class="oracle-rank-list">${ranked.map((character, index) => { const score = prestigeFor(character); const leader = Math.max(1, prestigeFor(ranked[0] || {})); return `<button type="button" data-action="open-user-profile" data-user-id="${esc(character.ownerId || character.id)}"><b>#${index + 1}</b><span><strong>${esc(character.characterName || getUserName(character.ownerId || character.id))}</strong><small>${esc(getUserName(character.ownerId || character.id))}</small></span><em>${score}</em><i style="--oracle-rank-progress:${Math.max(4, Math.round(score / leader * 100))}%"></i></button>`; }).join("") || `<div class="empty-state">Sem dados de Prestígio.</div>`}</div>
+    </article>
+    <article class="panel span-5 oracle-audit-ledger">
+      <div class="oracle-section-heading"><div><p class="eyebrow">Auditoria</p><h3>Últimos ecos administrativos</h3></div><button class="ghost-button" type="button" data-nav="admin-ops">Diagnóstico</button></div>
+      <div class="scroll-list">${renderAuditRows()}</div>
+    </article>
+  </div>`;
 }
 
 function renderAdminEconomy() {
@@ -8237,7 +9630,7 @@ function contentCards(items, detail, collection = "") {
   if (!items.length) return `<div class="empty-state">Nada cadastrado.</div>`;
   return sortByName(items).map((item) => `
     <div class="content-card">
-      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || item.id)}" />` : ""}
+      ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || item.id)}" ${mediaAttrs("thumbnail")} />` : ""}
       <span>${esc(item.id)}</span>
       <h3>${esc(item.name || item.title || item.id)}</h3>
       <p>${esc(detail(item))}</p>
@@ -8502,6 +9895,7 @@ function renderAdminSettings() {
           `).join("")}
         </div>
       </article>
+      ${renderAdminMinigameEvents()}
       <article class="panel span-12 panic-panel">
         <div>
           <p class="eyebrow">Operação</p>
@@ -8581,6 +9975,412 @@ function renderAdminReports() {
     </div>`;
 }
 
+function monsterApi() {
+  return window.MILLENNIUM_MONSTERS_364;
+}
+
+function monsterLegacySources(character = currentCharacter()) {
+  return [
+    ...(character.gachaVault || []).filter((entry) => entry.kind === "pet"),
+    ...(character.pets || []),
+  ];
+}
+
+function monsterInstancesForCharacter(character = currentCharacter()) {
+  const api = monsterApi();
+  const native = Array.isArray(character.monsterInstances) ? character.monsterInstances : [];
+  if (native.length) return native.map((entry) => api.normalizeMonsterInstance(entry));
+  return monsterLegacySources(character).map((entry) => api.normalizeMonsterInstance(entry));
+}
+
+function monsterItemsForCharacter(character = currentCharacter()) {
+  return Array.isArray(character.monsterInventory) ? character.monsterInventory.map((entry) => ({ ...entry })) : [];
+}
+
+function monsterResourcesForCharacter(character = currentCharacter()) {
+  return {
+    cores: { ...(character.monsterResources?.cores || {}) },
+    fragments: { ...(character.monsterResources?.fragments || {}) },
+    materials: { ...(character.monsterResources?.materials || {}) },
+  };
+}
+
+function selectedMonsterInstance(character = currentCharacter()) {
+  const monsters = monsterInstancesForCharacter(character);
+  if (!monsters.length) return null;
+  const selected = monsters.find((entry) => entry.instanceId === state.selectedMonsterId) || monsters[0];
+  state.selectedMonsterId = selected.instanceId;
+  return selected;
+}
+
+function monsterDefinitionFor(instance) {
+  return instance ? monsterApi().speciesForId(instance.speciesId) : null;
+}
+
+function monsterDisplayName(instance) {
+  return instance?.customName || instance?.displayName || instance?.speciesName || monsterDefinitionFor(instance)?.name || "Monstro sem nome";
+}
+
+function monsterAsset(instance, kind = "thumbnail") {
+  if (!instance) return "assets/monsters/placeholder-monster.svg";
+  const speciesId = instance.speciesId || "";
+  const assets = monsterApi().assetBundleForSpecies(speciesId);
+  if (speciesId && ["portrait", "idle", "battleAtlas", "towerSprite"].includes(kind)) {
+    const mode = kind === "towerSprite" ? "tower" : kind === "battleAtlas" ? "battle" : "profile";
+    PERF_RUNTIME.preloadMonster?.(speciesId, mode).catch?.(() => {});
+  }
+  return assets[kind] || assets.thumbnail;
+}
+
+function monsterInventoryDefinition(entry) {
+  return monsterApi().itemById(entry?.itemId);
+}
+
+function monsterQuantity(character, itemId) {
+  return monsterItemsForCharacter(character).filter((entry) => entry.itemId === itemId).reduce((sum, entry) => sum + Math.max(0, Number(entry.quantity || 1)), 0);
+}
+
+function monsterResourceCount(resources, kind, id) {
+  if (kind === "core") return Number(resources.cores?.[id] || 0);
+  if (kind === "fragment") return Number(resources.fragments?.[id] || 0);
+  return Number(resources.materials?.[id] || 0);
+}
+
+function monsterRarityClass(rarity) {
+  return rarityClass(rarity || "Comum");
+}
+
+function replaceMonsterInstance(list, next) {
+  return list.map((entry) => entry.instanceId === next.instanceId ? next : entry);
+}
+
+function monsterHistoryEntry(type, detail) {
+  return { id: `mh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type, detail, createdAt: new Date().toISOString() };
+}
+
+function seedDemoMonsters(character) {
+  const api = monsterApi();
+  const monsters = [
+    api.createNativeInstance("lobo-bruma", { instanceId: "demo-monster-lobo", customName: "Neblina", level: 18, stars: 1, bond: 42, energy: 86 }),
+    api.createNativeInstance("mariposa-lunar", { instanceId: "demo-monster-mariposa", customName: "Lúmen", level: 31, stars: 2, bond: 65, energy: 71, shiny: true, shinyUnlocked: true }),
+    api.createNativeInstance("pantera-eclipse", { instanceId: "demo-monster-pantera", level: 47, stars: 2, bond: 36, energy: 58 }),
+  ];
+  monsters[0].equipment = [{ slot: "weapon", itemInstanceId: "demo-eq-blade", itemId: "blade-ember" }];
+  monsters[1].equipment = [{ slot: "accessory", itemInstanceId: "demo-eq-amulet", itemId: "amulet-mist" }];
+  monsters[2].equipment = [{ slot: "rune", itemInstanceId: "demo-eq-rune", itemId: "rune-focus" }];
+  character.monsterInstances = monsters;
+  character.monsterInventory = api.starterInventory();
+  character.monsterResources = api.starterResources(monsters.map((entry) => entry.speciesId));
+  character.monsterTeams = { active: monsters.map((entry) => entry.instanceId), arena: monsters.map((entry) => entry.instanceId), dungeon: monsters.map((entry) => entry.instanceId), tower: monsters.map((entry) => entry.instanceId) };
+  character.monsterEconomyVersion = 1;
+  character.monsterGachaPity = { rareMonster: 0, max: api.monsterPityMax || 30 };
+  character.monsterGachaHistory = [];
+  return character;
+}
+
+function renderMonsterRoster(monsters, selected) {
+  return `
+    <aside class="panel monster-roster" aria-label="Coleção de Monstros Vinculados">
+      <div class="monster-roster-head"><div><p class="eyebrow">Bestiário pessoal</p><h3>Seus monstros</h3></div><span class="tag">${monsters.length}/25</span></div>
+      <div class="monster-roster-list">
+        ${monsters.map((entry) => {
+          const definition = monsterDefinitionFor(entry);
+          return `<button class="monster-roster-card ${entry.instanceId === selected?.instanceId ? "active" : ""} ${monsterRarityClass(entry.rarity)}" type="button" data-action="monster-select" data-monster-id="${esc(entry.instanceId)}" aria-pressed="${entry.instanceId === selected?.instanceId}"><img src="${esc(monsterAsset(entry, "thumbnail"))}" alt="" width="64" height="64" loading="lazy" decoding="async" /><span><strong>${esc(monsterDisplayName(entry))}</strong><small>${esc(definition?.name || entry.speciesName)} · Nv. ${entry.level}</small></span><span class="monster-stars" aria-label="${entry.stars} estrelas">${"★".repeat(entry.stars)}</span></button>`;
+        }).join("") || `<div class="monster-empty"><p>Nenhum monstro vinculado.</p></div>`}
+      </div>
+    </aside>`;
+}
+
+function renderMonsterHero(monster, calculation) {
+  const definition = calculation.definition;
+  const xpPercent = monster.level >= monsterApi().levelCapForStars(monster.stars) ? 100 : Math.min(100, Math.round((Number(monster.currentXp || 0) / Math.max(1, Number(monster.requiredXp || 1))) * 100));
+  const canUseShiny = Boolean(monster.shinyUnlocked);
+  return `
+    <article class="monster-hero-card ${monsterRarityClass(monster.rarity)}">
+      <div class="monster-hero-top">
+        <div class="monster-identity"><p class="eyebrow">${esc(monster.rarity)} · ${esc(monster.element)} · ${esc(monster.role)}</p><h2>${esc(monsterDisplayName(monster))}</h2><p>${esc(definition?.name || monster.speciesName)}</p><div class="monster-rarity-line"><span>${"★".repeat(monster.stars)} ${monster.stars}/7</span><span>${esc(monster.condition)}</span><span>Vínculo ${monster.bond}%</span></div></div>
+        <div class="monster-power-badge"><small>Poder</small><strong>${Number(calculation.totalPower).toLocaleString("pt-BR")}</strong></div>
+      </div>
+      <div class="monster-avatar-stage"><img class="${monster.shiny ? "shiny" : ""}" src="${esc(monsterAsset(monster, "idle"))}" data-monster-idle alt="${esc(definition?.name || monster.speciesName)} em pixel art${monster.shiny ? ", forma Shiny" : ""}" width="256" height="256" decoding="async" /></div>
+      <span class="monster-form-badge">${monster.shiny ? "Forma Shiny" : "Forma normal"}</span>
+      <div class="monster-level-strip"><strong>Nível ${monster.level}</strong><div class="monster-xp-track" role="progressbar" aria-label="Experiência do monstro" aria-valuemin="0" aria-valuemax="${monster.requiredXp}" aria-valuenow="${monster.currentXp}"><span style="width:${xpPercent}%"></span></div><small>${monster.level >= monsterApi().levelCapForStars(monster.stars) ? "Limite da estrela" : `${monster.currentXp}/${monster.requiredXp} XP`}</small></div>
+      <div class="action-row" style="padding:0 1.1rem 1.1rem"><button class="ghost-button monster-shiny-toggle" type="button" data-action="monster-toggle-shiny" aria-pressed="${monster.shiny}" ${canUseShiny ? "" : "disabled"}>${monster.shiny ? "Usar forma normal" : "Usar forma Shiny"}</button><button class="ghost-button" type="button" data-action="monster-tab" data-tab="care">Cuidar</button><button class="ghost-button" type="button" data-action="monster-tab" data-tab="evolution">Evoluir</button></div>
+    </article>`;
+}
+
+function renderMonsterStats(monster, calculation) {
+  const labels = { hp: "Vida", attack: "Ataque", defense: "Defesa", speed: "Velocidade", power: "Poder arcano", control: "Controle" };
+  return `<article class="monster-panel"><p class="eyebrow">Cálculo unificado</p><h3>Atributos finais</h3><div class="monster-stat-grid">${Object.entries(calculation.stats).map(([key, value]) => `<div class="monster-stat"><small>${esc(labels[key] || key)}</small><strong>${Number(value).toLocaleString("pt-BR")}</strong><em>nível, estrela, vínculo e itens</em></div>`).join("")}</div></article>`;
+}
+
+function renderMonsterSummary(monster, calculation, character) {
+  const resources = monsterResourcesForCharacter(character);
+  const definition = calculation.definition;
+  const equipped = calculation.equipment;
+  return `
+    <div class="monster-panel-grid">
+      ${renderMonsterStats(monster, calculation)}
+      <article class="monster-panel"><p class="eyebrow">Estado atual</p><h3>Vínculo e prontidão</h3><div class="monster-condition-bars"><div class="monster-condition-line"><span>Energia</span><div class="bar"><span style="width:${monster.energy}%"></span></div><strong>${monster.energy}%</strong></div><div class="monster-condition-line"><span>Vínculo</span><div class="bar"><span style="width:${monster.bond}%"></span></div><strong>${monster.bond}%</strong></div></div><p>${esc(definition?.lore || "Uma criatura vinculada à Interface.")}</p></article>
+      <article class="monster-panel wide"><div class="panel-heading"><div><p class="eyebrow">Equipamento ativo</p><h3>Modificadores reais</h3></div><span class="tag">${equipped.length}/${monsterApi().equipmentSlots.length}</span></div><div class="monster-equipment-layout">${monsterApi().equipmentSlots.map((slot) => { const entry = equipped.find((item) => item.slot === slot); return entry ? `<div class="monster-slot filled"><img src="${esc(entry.definition.image)}" alt="" /><strong>${esc(entry.definition.name)}</strong><small>${esc(slot)}</small></div>` : `<div class="monster-slot"><span>◇</span><strong>${esc(slot)}</strong><small>Vazio</small></div>`; }).join("")}</div></article>
+      <article class="monster-panel wide"><p class="eyebrow">Recursos da espécie</p><h3>Ascensão e desenvolvimento</h3><div class="monster-resource-row"><span class="monster-resource">Fragmentos: <strong>${monsterResourceCount(resources, "fragment", monster.speciesId)}</strong></span><span class="monster-resource">Essência do Despertar: <strong>${monsterResourceCount(resources, "material", "essence-awakening")}</strong></span><span class="monster-resource">Essência Ascendente: <strong>${monsterResourceCount(resources, "material", "essence-ascendant")}</strong></span></div></article>
+    </div>`;
+}
+
+function monsterItemEffectText(definition) {
+  return (definition?.effects || []).map((effect) => monsterApi().effectDescription(effect)).join("; ") || (definition?.category === "book" ? `Concede ${definition.xp} XP.` : definition?.category === "food" ? "Recupera energia e aumenta vínculo." : "Recurso de progressão.");
+}
+
+function renderMonsterEquipment(monster, calculation, character) {
+  const inventory = monsterItemsForCharacter(character);
+  const equipmentItems = inventory.filter((entry) => monsterInventoryDefinition(entry)?.category === "equipment");
+  return `<div class="monster-panel-grid"><article class="monster-panel wide"><p class="eyebrow">Slots</p><h3>Equipamentos do monstro</h3><div class="monster-equipment-layout">${monsterApi().equipmentSlots.map((slot) => { const equipped = calculation.equipment.find((entry) => entry.slot === slot); return equipped ? `<div class="monster-slot filled"><img src="${esc(equipped.definition.image)}" alt="" /><strong>${esc(equipped.definition.name)}</strong><small>${esc(monsterItemEffectText(equipped.definition))}</small><button class="link-button" type="button" data-action="monster-unequip" data-slot="${esc(slot)}">Remover</button></div>` : `<div class="monster-slot"><span>◇</span><strong>${esc(slot)}</strong><small>Nenhum item</small></div>`; }).join("")}</div></article><article class="monster-panel wide"><p class="eyebrow">Inventário dos Vinculados</p><h3>Itens disponíveis</h3><div class="monster-item-list">${equipmentItems.map((entry) => { const definition = monsterInventoryDefinition(entry); const equippedElsewhere = monsterInstancesForCharacter(character).some((candidate) => candidate.instanceId !== monster.instanceId && (candidate.equipment || []).some((equip) => equip.itemInstanceId === entry.instanceId)); return `<article class="monster-item-card"><img src="${esc(definition.image)}" alt="" /><div><small>${esc(definition.rarity)} · ${esc(definition.slot)}</small><strong>${esc(definition.name)}</strong></div><p>${esc(monsterItemEffectText(definition))}</p><div class="action-row"><button class="primary-button" type="button" data-action="monster-equip" data-item-instance="${esc(entry.instanceId)}" ${equippedElsewhere ? "disabled" : ""}>${equippedElsewhere ? "Equipado em outro monstro" : "Equipar"}</button></div></article>`; }).join("") || `<div class="empty-state">Nenhum equipamento de monstro disponível.</div>`}</div></article></div>`;
+}
+
+function renderMonsterAbilities(monster) {
+  const abilities = monsterApi().abilitiesForSpecies(monster.speciesId);
+  const passives = monsterApi().passivesForSpecies(monster.speciesId);
+  const active = new Set(monster.equippedAbilityIds || []);
+  return `<div class="monster-panel-grid"><article class="monster-panel wide"><p class="eyebrow">Motor de combate</p><h3>Habilidades</h3><div class="monster-ability-list">${abilities.map((ability) => { const unlocked = monster.stars >= ability.unlockStar; const selected = active.has(ability.abilityId); return `<article class="monster-ability ${unlocked ? "" : "locked"}"><div class="monster-ability-head"><div><small>${ability.type === "ultimate" ? "Suprema" : "Ativa"} · ★${ability.unlockStar}</small><strong>${esc(ability.name)}</strong></div>${unlocked ? `<button class="ghost-button" type="button" data-action="monster-toggle-ability" data-ability-id="${esc(ability.abilityId)}" aria-pressed="${selected}">${selected ? "Equipada" : "Equipar"}</button>` : `<span class="tag">Bloqueada</span>`}</div><p>${esc(monsterApi().abilityDescription(ability))}</p></article>`; }).join("")}</div></article><article class="monster-panel wide"><p class="eyebrow">Gatilhos reais</p><h3>Passivas</h3><div class="monster-ability-list">${passives.map((passive) => `<article class="monster-ability ${monster.stars >= passive.unlockStar ? "" : "locked"}"><div class="monster-ability-head"><div><small>${esc(passive.trigger)} · ★${passive.unlockStar}</small><strong>${esc(passive.name)}</strong></div><span class="tag">${monster.stars >= passive.unlockStar ? "Ativa" : "Bloqueada"}</span></div><p>${esc(monsterApi().passiveDescription(passive))}</p></article>`).join("")}</div></article></div>`;
+}
+
+function renderMonsterCare(monster, character) {
+  const foods = monsterItemsForCharacter(character).filter((entry) => monsterInventoryDefinition(entry)?.category === "food");
+  return `<div class="monster-panel-grid"><article class="monster-panel wide"><p class="eyebrow">Cuidado sem punição offline</p><h3>Interações</h3><div class="monster-care-grid"><button class="ghost-button monster-care-button" type="button" data-action="monster-care" data-care="interact"><b>✦</b><strong>Interagir</strong><small>+7 vínculo</small></button><button class="ghost-button monster-care-button" type="button" data-action="monster-care" data-care="rest"><b>☾</b><strong>Descansar</strong><small>+28 energia</small></button><button class="ghost-button monster-care-button" type="button" data-action="monster-care" data-care="train" ${monster.energy < 15 ? "disabled" : ""}><b>⚔</b><strong>Treinar</strong><small>−15 energia · +XP</small></button></div></article><article class="monster-panel wide"><p class="eyebrow">Alimentação funcional</p><h3>Consumíveis disponíveis</h3><div class="monster-item-list">${foods.map((entry) => { const definition = monsterInventoryDefinition(entry); return `<article class="monster-item-card"><img src="${esc(definition.image)}" alt="" /><div><small>${esc(definition.rarity)} · ${entry.quantity} unidade(s)</small><strong>${esc(definition.name)}</strong></div><p>+${Number(definition.energy || 0)} energia · +${Number(definition.bond || 0)} vínculo.</p><div class="action-row"><button class="primary-button" type="button" data-action="monster-feed-item" data-item-instance="${esc(entry.instanceId)}">Oferecer alimento</button></div></article>`; }).join("") || `<div class="empty-state">Nenhum alimento disponível. Eles podem ser obtidos na Invocação ou na Alquimia.</div>`}</div></article><article class="monster-panel"><p class="eyebrow">Nome do vínculo</p><h3>Identidade individual</h3><form class="monster-name-form" data-form="monster-rename"><input type="hidden" name="instanceId" value="${esc(monster.instanceId)}" /><label><span>Nome personalizado</span><input name="customName" maxlength="28" value="${esc(monster.customName || "")}" placeholder="Nome opcional" /></label><button class="primary-button" type="submit">Salvar nome</button></form></article><article class="monster-panel"><p class="eyebrow">Estado</p><h3>${esc(monster.condition)}</h3><p>Energia ${monster.energy}% · Vínculo ${monster.bond}%.</p><p class="hint">O cuidado não diminui enquanto o jogador está offline. A recuperação futura será calculada por timestamp.</p></article></div>`;
+}
+
+function renderMonsterEvolution(monster, character) {
+  const api = monsterApi();
+  const resources = monsterResourcesForCharacter(character);
+  const req = api.ascensionRequirements(monster);
+  const check = api.canAscend(monster, resources, character.gold || 0);
+  const coreHave = req.maxed ? 0 : monsterResourceCount(resources, "core", req.coreId);
+  const fragmentHave = req.maxed ? 0 : monsterResourceCount(resources, "fragment", monster.speciesId);
+  const materialHave = req.maxed ? 0 : monsterResourceCount(resources, "material", req.materialId);
+  const books = monsterItemsForCharacter(character).filter((entry) => monsterInventoryDefinition(entry)?.category === "book");
+  return `<div class="monster-panel-grid"><article class="monster-panel wide"><p class="eyebrow">Desenvolvimento</p><h3>Livros de XP</h3><div class="monster-item-list">${books.map((entry) => { const definition = monsterInventoryDefinition(entry); return `<article class="monster-item-card"><img src="${esc(definition.image)}" alt="" /><div><small>${esc(definition.rarity)} · ${entry.quantity} unidade(s)</small><strong>${esc(definition.name)}</strong></div><p>Concede ${Number(definition.xp).toLocaleString("pt-BR")} XP e respeita o limite da estrela.</p><div class="action-row"><button class="primary-button" type="button" data-action="monster-use-book" data-item-instance="${esc(entry.instanceId)}" ${monster.level >= api.levelCapForStars(monster.stars) ? "disabled" : ""}>Usar livro</button></div></article>`; }).join("") || `<div class="empty-state">Nenhum livro de XP disponível.</div>`}</div></article><article class="monster-panel wide"><div class="monster-evolution-box"><div><p class="eyebrow">Ascensão estelar</p><h3>${req.maxed ? "Ascensão máxima alcançada" : `Elevar para ★${req.nextStars}`}</h3></div>${req.maxed ? `<p>Este monstro alcançou o limite de sete estrelas.</p>` : `<div class="monster-evolution-requirements"><div class="monster-requirement ${monster.level >= req.levelRequired ? "ready" : "missing"}"><small>Nível</small><strong>${monster.level}/${req.levelRequired}</strong></div><div class="monster-requirement ${coreHave >= req.coreCount ? "ready" : "missing"}"><small>${esc(monsterApi().itemById(req.coreId)?.name || req.coreId)}</small><strong>${coreHave}/${req.coreCount}</strong></div><div class="monster-requirement ${fragmentHave >= req.fragments ? "ready" : "missing"}"><small>Fragmentos da espécie</small><strong>${fragmentHave}/${req.fragments}</strong></div><div class="monster-requirement ${materialHave >= req.materialCount ? "ready" : "missing"}"><small>${esc(req.materialId)}</small><strong>${materialHave}/${req.materialCount}</strong></div><div class="monster-requirement ${(character.gold || 0) >= req.gold ? "ready" : "missing"}"><small>PO</small><strong>${character.gold || 0}/${req.gold}</strong></div></div><button class="primary-button intense" type="button" data-action="monster-ascend" ${check.ok ? "" : "disabled"}>Confirmar ascensão</button>`}</div></article></div>`;
+}
+
+function renderMonsterForms(monster) {
+  return `<div class="monster-panel-grid"><article class="monster-panel wide"><p class="eyebrow">Formas</p><h3>Normal e Shiny</h3><div class="monster-item-list"><article class="monster-item-card"><img src="${esc(monsterAsset(monster, "thumbnail"))}" alt="" /><div><small>Forma base</small><strong>${esc(monster.speciesName)}</strong></div><p>Forma original da espécie.</p><div class="action-row"><button class="ghost-button" type="button" data-action="monster-set-form" data-shiny="false" aria-pressed="${!monster.shiny}">Selecionar normal</button></div></article><article class="monster-item-card"><img class="shiny" style="filter:hue-rotate(115deg) saturate(1.45)" src="${esc(monsterAsset(monster, "thumbnail"))}" alt="" /><div><small>Forma rara</small><strong>Shiny</strong></div><p>Reutiliza os mesmos frames por troca de paleta, sem duplicar o atlas.</p><div class="action-row"><button class="ghost-button" type="button" data-action="monster-set-form" data-shiny="true" ${monster.shinyUnlocked ? "" : "disabled"} aria-pressed="${monster.shiny}">${monster.shinyUnlocked ? "Selecionar Shiny" : "Ainda não descoberta"}</button></div></article></div></article></div>`;
+}
+
+function renderMonsterTeams(monster, character) {
+  const monsters = monsterInstancesForCharacter(character);
+  const teams = character.monsterTeams || {};
+  const modes = [["active", "Equipe principal"], ["arena", "Arena"], ["dungeon", "Masmorra"], ["tower", "Tower Defense"]];
+  return `<div class="monster-panel-grid">${modes.map(([mode, label]) => { const ids = Array.isArray(teams[mode]) ? teams[mode] : []; return `<article class="monster-panel"><p class="eyebrow">${esc(mode)}</p><h3>${esc(label)}</h3><div class="monster-roster-list">${monsters.map((entry) => `<button class="monster-roster-card ${ids.includes(entry.instanceId) ? "active" : ""}" type="button" data-action="monster-team-toggle" data-team-mode="${esc(mode)}" data-monster-id="${esc(entry.instanceId)}" aria-pressed="${ids.includes(entry.instanceId)}"><img src="${esc(monsterAsset(entry, "thumbnail"))}" alt="" /><span><strong>${esc(monsterDisplayName(entry))}</strong><small>${ids.includes(entry.instanceId) ? "Na equipe" : "Fora da equipe"}</small></span></button>`).join("")}</div><p class="hint">Máximo de 3 monstros por equipe.</p></article>`; }).join("")}</div>`;
+}
+
+function renderMonsterHistory(monster) {
+  return `<article class="monster-panel wide"><p class="eyebrow">Registro individual</p><h3>Histórico</h3><div class="monster-history">${(monster.history || []).slice().reverse().slice(0, 20).map((entry) => `<div class="monster-history-entry"><span>◆</span><div><strong>${esc(entry.type || "Registro")}</strong><p>${esc(entry.detail || "")}</p></div><small>${esc(tsText(entry.createdAt))}</small></div>`).join("") || `<div class="empty-state">Nenhum evento permanente registrado.</div>`}</div></article>`;
+}
+
+function renderMonsterBestiary(character) {
+  const owned = new Set(monsterInstancesForCharacter(character).map((entry) => entry.speciesId));
+  return `<article class="monster-panel wide"><p class="eyebrow">25 espécies</p><h3>Bestiário de Millennium</h3><div class="monster-bestiary-grid">${monsterApi().species.map((definition) => { const discovered = owned.has(definition.speciesId); const sample = { speciesId: definition.speciesId }; return `<article class="monster-bestiary-entry ${discovered ? "" : "locked"}"><img src="${esc(monsterAsset(sample, "thumbnail"))}" alt="" loading="lazy" /><strong>${discovered ? esc(definition.name) : "Espécie não descoberta"}</strong><small>${esc(definition.rarity)}</small></article>`; }).join("")}</div></article>`;
+}
+
+function renderMonsterInventory(character) {
+  const api = monsterApi();
+  const inventory = monsterItemsForCharacter(character);
+  const resources = monsterResourcesForCharacter(character);
+  const filters = [["all", "Tudo"], ["equipment", "Equipamentos"], ["book", "Livros"], ["food", "Consumíveis"], ["core", "Núcleos"], ["material", "Materiais"], ["fragment", "Fragmentos"]];
+  const selectedFilter = state.monsterInventoryFilter || "all";
+  const itemEntries = inventory.map((entry) => ({ type: api.itemById(entry.itemId)?.category || "unknown", entry, definition: api.itemById(entry.itemId), quantity: Math.max(1, Number(entry.quantity || 1)) })).filter((entry) => entry.definition);
+  const coreEntries = Object.entries(resources.cores || {}).filter(([, amount]) => Number(amount || 0) > 0).map(([id, amount]) => ({ type: "core", entry: { itemId: id }, definition: api.itemById(id), quantity: Number(amount || 0) })).filter((entry) => entry.definition);
+  const materialEntries = Object.entries(resources.materials || {}).filter(([, amount]) => Number(amount || 0) > 0).map(([id, amount]) => ({ type: "material", entry: { resourceId: id }, definition: api.resourceById(id) || { name: id, rarity: "Comum", image: "assets/monster-items/material-awakening.webp", purpose: "Material de progressão", routes: [] }, quantity: Number(amount || 0) }));
+  const fragmentEntries = Object.entries(resources.fragments || {}).filter(([, amount]) => Number(amount || 0) > 0).map(([speciesId, amount]) => { const species = api.speciesForId(speciesId); return { type: "fragment", entry: { speciesId }, definition: { name: `Fragmentos · ${species?.name || speciesId}`, rarity: species?.rarity || "Comum", image: species ? api.assetBundleForSpecies(speciesId).thumbnail : "assets/monsters/placeholder-monster.svg", purpose: "Usado na ascensão desta espécie.", routes: ["Duplicatas", "Masmorra"] }, quantity: Number(amount || 0) }; });
+  const allEntries = [...itemEntries, ...coreEntries, ...materialEntries, ...fragmentEntries];
+  const shown = selectedFilter === "all" ? allEntries : allEntries.filter((entry) => entry.type === selectedFilter || (selectedFilter === "food" && entry.type === "consumable"));
+  return `<div class="monster-panel-grid monster-inventory-tab"><article class="monster-panel wide"><div class="panel-heading"><div><p class="eyebrow">Inventário exclusivo</p><h3>Itens e recursos dos Monstros Vinculados</h3></div><span class="tag">${allEntries.length} tipo(s)</span></div><div class="monster-inventory-filters">${filters.map(([id, label]) => `<button class="ghost-button ${selectedFilter === id ? "active" : ""}" type="button" data-action="monster-inventory-filter" data-filter="${esc(id)}" aria-pressed="${selectedFilter === id}">${esc(label)}</button>`).join("")}</div><div class="monster-inventory-catalog" style="margin-top:1rem">${shown.map(({ type, definition, quantity }) => { const effect = definition.effects?.length ? definition.effects.map(api.effectDescription).join("; ") : definition.xp ? `Concede ${Number(definition.xp).toLocaleString("pt-BR")} XP.` : definition.energy ? `Recupera ${definition.energy} energia e concede ${definition.bond || 0} vínculo.` : definition.purpose || "Recurso de progressão."; const routes = definition.origin || definition.routes || []; return `<article class="monster-inventory-entry ${monsterRarityClass(definition.rarity)}"><img src="${esc(definition.image || "assets/monsters/placeholder-monster.svg")}" alt="" loading="lazy" /><div><small>${esc(definition.rarity || "Comum")} · ${esc(type)}</small><strong>${esc(definition.name)}</strong></div><span class="tag">×${quantity}</span><p>${esc(effect)}</p>${routes.length ? `<div class="monster-route-list">${routes.map((route) => `<span>${esc(route)}</span>`).join("")}</div>` : ""}</article>`; }).join("") || `<div class="empty-state">Nenhum recurso neste filtro.</div>`}</div></article></div>`;
+}
+
+function renderMonsterTab(monster, calculation, character) {
+  if (state.monsterTab === "inventory") return renderMonsterInventory(character);
+  if (state.monsterTab === "equipment") return renderMonsterEquipment(monster, calculation, character);
+  if (state.monsterTab === "abilities") return renderMonsterAbilities(monster);
+  if (state.monsterTab === "care") return renderMonsterCare(monster, character);
+  if (state.monsterTab === "evolution") return renderMonsterEvolution(monster, character);
+  if (state.monsterTab === "forms") return renderMonsterForms(monster);
+  if (state.monsterTab === "teams") return renderMonsterTeams(monster, character);
+  if (state.monsterTab === "history") return renderMonsterHistory(monster);
+  if (state.monsterTab === "bestiary") return renderMonsterBestiary(character);
+  return renderMonsterSummary(monster, calculation, character);
+}
+
+function renderMonsters() {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const legacyCount = monsterLegacySources(character).length;
+  const nativeCount = Array.isArray(character.monsterInstances) ? character.monsterInstances.length : 0;
+  const selected = selectedMonsterInstance(character);
+  const tabs = [["summary", "Resumo"], ["inventory", "Inventário"], ["equipment", "Equipamentos"], ["abilities", "Habilidades"], ["care", "Cuidado"], ["evolution", "Evolução"], ["forms", "Formas"], ["teams", "Equipes"], ["history", "Histórico"], ["bestiary", "Bestiário"]];
+  if (!selected) {
+    return `<div class="monster-view"><article class="panel"><p class="eyebrow">Monstros Vinculados</p><h2>Nenhum vínculo ativo</h2><p>Invoque um monstro ou converta os registros legados quando existirem.</p><div class="action-row"><button class="primary-button" type="button" data-nav="gacha">Abrir Invocação</button></div></article></div>`;
+  }
+  const calculation = monsterApi().calculateMonsterStats(selected, monsterItemsForCharacter(character), { mode: "general" });
+  return `<div class="monster-view">${legacyCount && !nativeCount ? `<div class="monster-legacy-banner"><div><strong>${legacyCount} registro(s) legado(s) detectado(s)</strong><p>A conversão preserva propriedade, estrelas e skins antigas. Ela só será gravada quando você confirmar.</p></div><button class="primary-button" type="button" data-action="monster-migrate-legacy">Converter agora</button></div>` : ""}<div class="monster-command-grid">${renderMonsterRoster(monsters, selected)}<section class="monster-stage">${renderMonsterHero(selected, calculation)}<div class="monster-tablist" role="tablist" aria-label="Seções dos Monstros Vinculados">${tabs.map(([id, label]) => `<button class="tab ${state.monsterTab === id ? "active" : ""}" type="button" role="tab" aria-selected="${state.monsterTab === id}" data-action="monster-tab" data-tab="${id}">${label}</button>`).join("")}</div>${renderMonsterTab(selected, calculation, character)}</section></div></div>`;
+}
+
+async function persistMonsterPatch(patch, successMessage) {
+  if (state.monsterOperationInProgress) return;
+  state.monsterOperationInProgress = true;
+  try {
+    await updateCharacter(state.user.uid, patch);
+    if (successMessage) toast(successMessage);
+  } finally {
+    state.monsterOperationInProgress = false;
+  }
+}
+
+async function migrateLegacyMonsters() {
+  const character = currentCharacter();
+  if ((character.monsterInstances || []).length) { toast("A coleção já utiliza o sistema novo."); return; }
+  const sources = monsterLegacySources(character);
+  if (!sources.length) { toast("Nenhum registro legado encontrado."); return; }
+  const monsters = sources.map((entry) => ({ ...monsterApi().normalizeMonsterInstance(entry), migrationStatus: "migrated", history: [monsterHistoryEntry("Migração", "Convertido do sistema legado com propriedade e estrelas preservadas.")] }));
+  const resources = monsterResourcesForCharacter(character);
+  monsters.forEach((entry) => { resources.fragments[entry.speciesId] = Number(resources.fragments[entry.speciesId] || 0) + Number(entry.migrationCredits?.speciesFragments || 0); });
+  state.selectedMonsterId = monsters[0]?.instanceId || "";
+  await persistMonsterPatch({ monsterInstances: monsters, monsterResources: resources, monsterSchemaVersion: 1 }, `${monsters.length} monstro(s) convertido(s) com segurança.`);
+}
+
+async function renameMonster(form) {
+  const values = formValues(form);
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = monsters.find((entry) => entry.instanceId === values.instanceId);
+  if (!monster) throw new Error("Monstro não encontrado.");
+  const next = { ...monster, customName: String(values.customName || "").trim().slice(0, 28), history: [...(monster.history || []), monsterHistoryEntry("Identidade", `Nome alterado para ${String(values.customName || monster.speciesName).trim() || monster.speciesName}.`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterSchemaVersion: 1 }, "Nome do vínculo salvo.");
+}
+
+async function toggleMonsterShiny(forceValue = null) {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  if (!monster?.shinyUnlocked) { toast("A forma Shiny ainda não foi descoberta."); return; }
+  const shiny = forceValue === null ? !monster.shiny : Boolean(forceValue);
+  const next = { ...monster, shiny, history: [...(monster.history || []), monsterHistoryEntry("Forma", shiny ? "Forma Shiny ativada." : "Forma normal ativada.")] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next) }, shiny ? "Forma Shiny ativada." : "Forma normal ativada.");
+}
+
+async function equipMonsterItem(itemInstanceId) {
+  const character = currentCharacter();
+  const inventory = monsterItemsForCharacter(character);
+  const item = inventory.find((entry) => entry.instanceId === itemInstanceId);
+  const definition = monsterInventoryDefinition(item);
+  if (!item || definition?.category !== "equipment") throw new Error("Equipamento inválido.");
+  let monsters = monsterInstancesForCharacter(character).map((entry) => ({ ...entry, equipment: (entry.equipment || []).filter((equip) => equip.itemInstanceId !== itemInstanceId) }));
+  const monster = monsters.find((entry) => entry.instanceId === state.selectedMonsterId) || monsters[0];
+  const next = { ...monster, equipment: [...(monster.equipment || []).filter((equip) => equip.slot !== definition.slot), { slot: definition.slot, itemInstanceId, itemId: definition.itemId }], history: [...(monster.history || []), monsterHistoryEntry("Equipamento", `${definition.name} equipado em ${definition.slot}.`)] };
+  monsters = replaceMonsterInstance(monsters, next);
+  await persistMonsterPatch({ monsterInstances: monsters }, `${definition.name} equipado e aplicado aos atributos.`);
+}
+
+async function unequipMonsterSlot(slot) {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const equipped = (monster.equipment || []).find((entry) => entry.slot === slot);
+  const next = { ...monster, equipment: (monster.equipment || []).filter((entry) => entry.slot !== slot), history: [...(monster.history || []), monsterHistoryEntry("Equipamento", `${monsterApi().itemById(equipped?.itemId)?.name || slot} removido.`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next) }, "Equipamento removido; atributos recalculados.");
+}
+
+function consumeMonsterInventoryItem(inventory, instanceId, amount = 1) {
+  return inventory.flatMap((entry) => {
+    if (entry.instanceId !== instanceId) return [entry];
+    const quantity = Math.max(0, Number(entry.quantity || 1) - amount);
+    return quantity > 0 ? [{ ...entry, quantity }] : [];
+  });
+}
+
+async function useMonsterBook(itemInstanceId) {
+  const character = currentCharacter();
+  const inventory = monsterItemsForCharacter(character);
+  const item = inventory.find((entry) => entry.instanceId === itemInstanceId);
+  const definition = monsterInventoryDefinition(item);
+  if (!item || definition?.category !== "book") throw new Error("Livro de XP inválido.");
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const result = monsterApi().applyXp(monster, definition.xp);
+  if (result.blocked) { toast("O monstro está no limite da estrela. Faça a ascensão antes de usar o livro."); return; }
+  const next = { ...result.monster, bankedXp: Number(monster.bankedXp || 0) + Number(result.overflowXp || 0), history: [...(monster.history || []), monsterHistoryEntry("Experiência", `${definition.name}: +${result.appliedXp} XP, ${result.levelsGained} nível(is).`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterInventory: consumeMonsterInventoryItem(inventory, itemInstanceId, 1) }, `${definition.name} aplicado: +${result.appliedXp} XP.`);
+}
+
+async function careForMonster(action) {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const result = monsterApi().applyCareAction(monster, action);
+  if (!result.ok) { toast(result.message || "A ação não pôde ser concluída."); return; }
+  let inventory = monsterItemsForCharacter(character);
+  if (result.consumedItemId) {
+    const item = inventory.find((entry) => entry.itemId === result.consumedItemId && Number(entry.quantity || 1) > 0);
+    if (!item) { toast("Você não possui o consumível necessário."); return; }
+    inventory = consumeMonsterInventoryItem(inventory, item.instanceId, 1);
+  }
+  const next = { ...result.monster, lastCareAt: new Date().toISOString(), history: [...(monster.history || []), monsterHistoryEntry("Cuidado", result.message)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterInventory: inventory }, result.message);
+}
+
+async function feedMonsterItem(itemInstanceId) {
+  const character = currentCharacter();
+  const inventory = monsterItemsForCharacter(character);
+  const item = inventory.find((entry) => entry.instanceId === itemInstanceId);
+  const definition = monsterInventoryDefinition(item);
+  if (!item || definition?.category !== "food") throw new Error("Alimento de monstro inválido.");
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const result = monsterApi().applyFoodItem(monster, definition.itemId);
+  if (!result.ok) { toast(result.message || "O alimento não pôde ser utilizado."); return; }
+  const next = { ...result.monster, history: [...(monster.history || []), monsterHistoryEntry("Alimentação", result.message)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterInventory: consumeMonsterInventoryItem(inventory, itemInstanceId, 1) }, result.message);
+}
+
+async function ascendSelectedMonster() {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const result = monsterApi().ascendMonster(monster, monsterResourcesForCharacter(character), character.gold || 0);
+  if (!result.ok) { toast("Requisitos de ascensão incompletos."); return; }
+  const next = { ...result.monster, history: [...(monster.history || []), monsterHistoryEntry("Ascensão", `Ascendeu para ${result.monster.stars} estrelas.`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterResources: result.resources, gold: result.gold }, `Ascensão concluída: ★${next.stars}.`);
+}
+
+async function toggleMonsterAbility(abilityId) {
+  const character = currentCharacter();
+  const monsters = monsterInstancesForCharacter(character);
+  const monster = selectedMonsterInstance(character);
+  const ability = monsterApi().abilityRegistry[abilityId];
+  if (!ability || monster.stars < ability.unlockStar) return;
+  let equipped = [...new Set(monster.equippedAbilityIds || [])];
+  if (equipped.includes(abilityId)) {
+    if (equipped.length <= 1) { toast("Mantenha ao menos uma habilidade equipada."); return; }
+    equipped = equipped.filter((id) => id !== abilityId);
+  } else {
+    if (equipped.length >= 3) equipped.shift();
+    equipped.push(abilityId);
+  }
+  const next = { ...monster, equippedAbilityIds: equipped, history: [...(monster.history || []), monsterHistoryEntry("Habilidades", `${ability.name} ${equipped.includes(abilityId) ? "equipada" : "removida"}.`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next) }, "Conjunto de habilidades atualizado.");
+}
+
+async function toggleMonsterTeam(mode, instanceId) {
+  const character = currentCharacter();
+  const teams = { ...(character.monsterTeams || {}) };
+  let ids = Array.isArray(teams[mode]) ? [...teams[mode]] : [];
+  if (ids.includes(instanceId)) ids = ids.filter((id) => id !== instanceId);
+  else {
+    if (ids.length >= 3) { toast("Cada equipe pode ter no máximo três monstros."); return; }
+    ids.push(instanceId);
+  }
+  teams[mode] = ids;
+  await persistMonsterPatch({ monsterTeams: teams }, "Equipe atualizada.");
+}
+
+
 const VIEW_RENDERERS = {
   "player-home": renderPlayerHome,
   profile: renderProfile,
@@ -8591,6 +10391,7 @@ const VIEW_RENDERERS = {
   professions: renderProfessionCatalog,
   roulette: renderRoulette,
   gacha: renderGacha,
+  monsters: renderMonsters,
   minigames: renderMinigames,
   inventory: renderInventory,
   grimoire: renderGrimoire,
@@ -8626,24 +10427,45 @@ function placeholderAvatar() {
 async function handleLogin(form) {
   const values = formValues(form);
   if (!state.firebaseReady) {
+    setAuthNote("Firebase não carregou. Use o modo demo local.", "danger");
     toast("Firebase não carregou. Use o modo demo.");
     return;
   }
-  await state.auth.signInWithEmailAndPassword(values.email, values.password);
+  setAuthNote("A Interface está verificando seu registro.", "neutral");
+  await state.auth.signInWithEmailAndPassword(String(values.email || "").trim(), values.password);
 }
 
 async function handleRegister() {
   if (!state.firebaseReady) {
+    setAuthNote("Firebase não carregou. A criação de conta real está indisponível nesta sessão.", "danger");
     toast("Firebase não carregou. Use o modo demo.");
     return;
   }
   const form = document.querySelector('[data-form="login"]');
   const values = formValues(form);
   if (!values.email || !values.password) {
+    setAuthNote("Informe email e uma senha de pelo menos seis caracteres para criar a conta.", "danger");
     toast("Informe email e senha para criar conta.");
     return;
   }
-  await state.auth.createUserWithEmailAndPassword(values.email, values.password);
+  setAuthNote("Criando seu registro sem alterar o fluxo original do Firebase Auth.", "neutral");
+  await state.auth.createUserWithEmailAndPassword(String(values.email).trim(), values.password);
+}
+
+async function handlePasswordRecovery() {
+  if (!state.firebaseReady) {
+    setAuthNote("Firebase Auth não carregou. A recuperação de senha está indisponível nesta sessão.", "danger");
+    return;
+  }
+  const form = document.querySelector('[data-form="login"]');
+  const email = String(formValues(form).email || "").trim();
+  if (!email) {
+    setAuthNote("Informe o email do registro antes de solicitar a recuperação.", "danger");
+    form?.querySelector('[name="email"]')?.focus();
+    return;
+  }
+  await state.auth.sendPasswordResetEmail(email);
+  setAuthNote(`O Oráculo enviou as instruções de recuperação para ${email}.`, "success");
 }
 
 async function saveLegacyCharacter(form) {
@@ -8741,6 +10563,16 @@ async function syncPublicProfileProjection(character = currentCharacter(), lore 
   state.diagnostics.writes += 1;
 }
 
+function monsterPowerForRankingProjection(character = currentCharacter()) {
+  const api = monsterApi();
+  const native = Array.isArray(character.monsterInstances) ? character.monsterInstances : [];
+  if (!native.length || !api?.calculateMonsterStats) return petPowerForPrestige(character);
+  const inventory = monsterItemsForCharacter(character);
+  return native
+    .map((entry) => api.normalizeMonsterInstance(entry))
+    .reduce((sum, monster) => sum + Math.max(0, Number(api.calculateMonsterStats(monster, inventory).totalPower || 0)), 0);
+}
+
 function rankingProjection(character = currentCharacter()) {
   const level = Math.max(1, Number(character.level || 1), levelFromXp(character.xp || 0));
   const vault = character.gachaVault || [];
@@ -8785,8 +10617,8 @@ function rankingProjection(character = currentCharacter()) {
       return [mode, best];
     })),
     views: periodCounts(views, "viewedAt"),
-    petCount: vault.filter((item) => item?.kind === "pet").length,
-    petPower: petPowerForPrestige(character),
+    petCount: monsterInstancesForCharacter(character).length,
+    petPower: monsterPowerForRankingProjection(character),
     developmentPoints: ATTRIBUTES.reduce((sum, attribute) => sum + Math.max(0, Number(character.development?.[attribute.key] || 0)), 0),
     itemCount: inventory.length,
     passXp: Math.max(0, Number(character.seasonPassXp || 0)),
@@ -9380,18 +11212,14 @@ async function toggleEquip(instanceId) {
   await updateCharacter(state.user.uid, { inventory });
 }
 
-async function invokeGacha(type = "pets", qty = 1) {
+async function invokeGacha(type = "monsters", qty = 1) {
+  const api = monsterApi();
   const character = currentCharacter();
-  const kind = type === "items" ? "items" : "pets";
   const amount = Math.max(1, Math.min(10, Number(qty || 1)));
-  const cost = gachaCost(kind, amount);
+  const cost = gachaCost("monsters", amount);
   if (state.rolling) return;
   if (Number(character.millenniumCoins || 0) < cost) {
     toast("Millennium Coins insuficientes para esta invocação.");
-    return;
-  }
-  if (!gachaPool(kind).length) {
-    toast("O Oráculo ainda não publicou recompensas para este banner.");
     return;
   }
   state.rolling = true;
@@ -9400,69 +11228,36 @@ async function invokeGacha(type = "pets", qty = 1) {
   playSound("rolling");
   try {
     await delay(amount >= 10 ? 1100 : 780);
-    if (!state.demo && !MILLENNIUM_SPARK_MODE) {
-      const trusted = await callTrustedOperation("gacha", { kind, qty: amount });
-      const results = Array.isArray(trusted?.results) ? trusted.results : [];
-      if (!results.length) throw new Error("O servidor não retornou recompensas válidas.");
-      state.lastGachaResults = results;
-      render();
-      openGachaReveal(results, kind);
-      return;
-    }
-    const results = [];
-    for (let index = 0; index < amount; index += 1) {
-      const rarity = pickGachaRarity(kind);
-      const source = pickGachaReward(kind, rarity.name);
-      if (source) results.push(buildGachaInstance(source, kind));
-    }
-    if (!results.length) throw new Error("O pool não retornou recompensas válidas.");
-    const history = [
-      ...(character.gachaHistory || []),
-      ...results.map((item) => ({
-        id: item.instanceId,
-        kind: item.kind,
-        name: item.name,
-        rarity: item.rarity,
-        shiny: item.shiny,
-        stars: item.stars,
-        createdAt: new Date().toISOString(),
-      })),
-    ].slice(-120);
-    const pets = results.filter((item) => item.kind === "pet");
-    const invokedItems = results
-      .filter((item) => item.kind === "item")
-      .map((item) => ({
-        ...item,
-        categoryId: item.categoryId || "especial",
-        source: "Invocacao dimensional",
-        status: undefined,
-        activityId: undefined,
-      }));
+    const seed = `${state.user?.uid || "local"}:${Date.now()}:${(character.monsterGachaHistory || []).length}:${amount}`;
+    const invocation = api.rollMonsterInvocation({
+      quantity: amount,
+      seed,
+      pity: Number(character.monsterGachaPity?.rareMonster || 0),
+      pityMax: Number(state.settings.pityMax || character.monsterGachaPity?.max || api.monsterPityMax || 30),
+    });
+    const owned = new Set(monsterInstancesForCharacter(character).map((entry) => entry.speciesId));
+    const results = invocation.rewards.map((reward) => {
+      const duplicate = reward.category === "monster" && owned.has(reward.speciesId);
+      if (reward.category === "monster" && !duplicate) owned.add(reward.speciesId);
+      return { ...reward, duplicate };
+    });
+    const applied = api.applyInvocationRewards(character, { ...invocation, rewards: results }, { cost });
+    if (!applied.ok) throw new Error(applied.reason || "A economia recusou a invocação.");
 
-    // Persist first. The reveal is only shown after Firestore confirms the operation.
-    await updateCharacter(state.user.uid, {
-      millenniumCoins: Number(character.millenniumCoins || 0) - cost,
-      gachaVault: [...(character.gachaVault || []), ...pets],
-      inventory: [...(character.inventory || []), ...invokedItems],
-      gachaHistory: history,
-    }, { securityAction: `gacha-${kind}-${amount}x` });
-
+    await updateCharacter(state.user.uid, applied.patch, { securityAction: `monster-gacha-${amount}x` });
     state.lastGachaResults = results;
-    const rare = results.find((item) => rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny);
-    if (rare) {
-      announceRareReward(state.user.uid, rare.name, rare.rarity, rare.kind === "pet" ? "pet invocado" : "item invocado").catch(() => {});
-    }
+    const rare = results.find((item) => item.category === "monster" && (rarityScore(item.rarity) >= rarityScore("Mítico") || item.shiny));
+    if (rare) announceRareReward(state.user.uid, rare.name, rare.rarity, "Monstro Vinculado").catch(() => {});
     render();
-    openGachaReveal(results, kind);
+    openGachaReveal(results, "monsters", applied.summary);
   } catch (error) {
     state.lastGachaResults = [];
     state.diagnostics.lastGachaError = String(error?.code || error?.message || "erro desconhecido").slice(0, 300);
-    console.error("Falha na invocação dimensional:", error);
+    console.error("Falha na Invocação dos Monstros:", error);
     playSound("fail");
     if (error?.code === "millennium/security-quarantine") toast(error.message);
-    else if (error?.code === "permission-denied" || String(error?.message || "").toLowerCase().includes("permission")) {
-      toast("O Firestore recusou a invocação. Nenhuma moeda foi consumida e nenhum prêmio foi entregue. Publique as regras da Sentinela e tente novamente.");
-    } else toast(`A invocação não foi concluída. Seu saldo permanece preservado. ${firebaseErrorMessage(error)}`);
+    else if (error?.code === "permission-denied" || String(error?.message || "").toLowerCase().includes("permission")) toast("O Firestore recusou a invocação. Nenhuma moeda foi consumida e nenhum prêmio foi entregue.");
+    else toast(`A invocação não foi concluída. Seu saldo permanece preservado. ${firebaseErrorMessage(error)}`);
   } finally {
     state.rolling = false;
     if (document.querySelector("#modal")?.hidden !== false) render();
@@ -9477,41 +11272,13 @@ function gachaRevealSound(item) {
   return "common";
 }
 
-function openGachaReveal(results, kind) {
-  const rarest = [...results].sort((a, b) => instancePower(b) - instancePower(a))[0];
+function openGachaReveal(results, kind = "monsters", summary = {}) {
+  const rarest = [...results].sort((a, b) => rarityScore(b.rarity) - rarityScore(a.rarity))[0];
   const isGreat = rarest && (rarityScore(rarest.rarity) >= rarityScore("Mítico") || rarest.shiny);
-  const title = isGreat ? "O portal respondeu." : "O portal deixou ecos.";
-  $("#modalContent").innerHTML = `
-    <section class="gacha-reveal ${isGreat ? "great-reveal" : ""}">
-      <div class="gacha-reveal-sky" aria-hidden="true"></div>
-      <p class="eyebrow">${kind === "items" ? "Relíquias invocadas" : "Companheiros invocados"}</p>
-      <h2>${title}</h2>
-      <p class="gacha-reveal-copy">Companheiros seguem para o cofre. Rel\u00edquias seguem direto para seu invent\u00e1rio.</p>
-      <div class="gacha-reveal-results ${results.length > 1 ? "tenfold" : ""}">
-        ${results.map((item, index) => `
-          <article class="gacha-reveal-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}" data-reveal-index="${index}">
-            <div class="gacha-card-veil"></div>
-            <div class="gacha-reveal-art">${(item.imageUrl || (item.kind === "pet" ? petImageFor(item) : "")) ? `<img src="${esc(item.imageUrl || petImageFor(item))}" alt="${esc(item.name)}" />` : `<span>${esc((item.name || "M").slice(0, 1))}</span>`}</div>
-            <small>${esc(item.rarity)}${item.shiny ? " · Radiante" : ""}</small>
-            <strong>${esc(item.name)}</strong>
-            <p>${"★".repeat(Number(item.stars || 1))} · Poder ${instancePower(item)}</p>
-          </article>
-        `).join("")}
-      </div>
-      <div class="gacha-reveal-footer">
-        <span>${isGreat ? "Uma presença rara atravessou a interface." : kind === "items" ? "O inventário principal foi atualizado." : "O cofre dimensional foi atualizado."}</span>
-        <button class="primary-button intense" type="button" data-action="close-modal">Continuar</button>
-      </div>
-    </section>
-  `;
+  $("#modalContent").innerHTML = `<section class="gacha-reveal ${isGreat ? "great-reveal" : ""}"><div class="gacha-reveal-sky" aria-hidden="true"></div><p class="eyebrow">Invocação dos Monstros</p><h2>${isGreat ? "O portal respondeu com força." : "O vínculo deixou novos ecos."}</h2><p class="gacha-reveal-copy">Monstros novos entram no bestiário. Duplicatas viram fragmentos. Itens e recursos seguem para o inventário exclusivo.</p><div class="gacha-reveal-results ${results.length > 1 ? "tenfold" : ""}">${results.map((item, index) => { const image = item.image || (item.category === "monster" ? monsterApi().assetBundleForSpecies(item.speciesId).thumbnail : ""); return `<article class="gacha-reveal-card ${rarityClass(item.rarity)} ${item.shiny ? "shiny" : ""}" data-reveal-index="${index}"><div class="gacha-card-veil"></div><div class="gacha-reveal-art">${image ? `<img src="${esc(image)}" alt="${esc(item.name)}" />` : `<span>${esc((item.name || "M").slice(0, 1))}</span>`}</div><small>${esc(item.rarity)} · ${esc(item.category)}${item.forced ? " · garantia" : ""}</small><strong>${esc(item.name)}</strong><p>${esc(item.duplicate ? `Duplicata convertida · ${monsterApi().duplicateFragments[item.rarity] || 10} fragmentos` : monsterInvocationResultDescription(item))}</p></article>`; }).join("")}</div><div class="monster-economy-summary" style="margin-top:1rem"><div><small>Novas espécies</small><strong>${Number(summary.newMonsters || 0)}</strong></div><div><small>Duplicatas</small><strong>${Number(summary.duplicates || 0)}</strong></div><div><small>Fragmentos</small><strong>${Number(summary.fragments || 0)}</strong></div><div><small>Itens</small><strong>${Number(summary.items || 0)}</strong></div><div><small>PO</small><strong>+${Number(summary.gold || 0)}</strong></div><div><small>MC devolvidas</small><strong>+${Number(summary.coins || 0)}</strong></div></div><div class="gacha-reveal-footer"><span>A operação foi persistida em um único patch econômico antes desta revelação.</span><button class="primary-button intense" type="button" data-action="close-modal">Continuar</button></div></section>`;
   $("#modal").hidden = false;
   (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
-  state.gachaRevealTimers = results.map((item, index) => window.setTimeout(() => {
-    const card = document.querySelector(`[data-reveal-index="${index}"]`);
-    if (!card) return;
-    card.classList.add("revealed");
-    playSound(gachaRevealSound(item));
-  }, 280 + index * (results.length > 1 ? 240 : 0)));
+  state.gachaRevealTimers = results.map((item, index) => window.setTimeout(() => { const card = document.querySelector(`[data-reveal-index="${index}"]`); if (!card) return; card.classList.add("revealed"); playSound(gachaRevealSound(item)); }, 220 + index * (results.length > 1 ? 150 : 0)));
 }
 
 async function toggleVaultEquip(instanceId) {
@@ -9744,6 +11511,9 @@ function stopActiveAimGame(reason = "cancelled") {
     window.clearTimeout(timer);
     window.clearInterval(timer);
   });
+  if (session.frame) window.cancelAnimationFrame(session.frame);
+  if (session.keyHandler) window.removeEventListener("keydown", session.keyHandler);
+  if (session.resizeHandler) window.removeEventListener("resize", session.resizeHandler);
   if (session.lifecycle?.can?.("cancelled")) session.lifecycle.transition("cancelled", reason);
   state.activeAimSession = null;
 }
@@ -9826,6 +11596,7 @@ async function applyMinigameReward(mode, difficultyId, score = 0, extraPatch = {
       ...(character.minigameHistory || []),
     ].slice(0, 30),
     ...extraPatch,
+    ...minigameEventAttemptPatch(mode, character),
   });
   if (reward.rareDrop) await announceRareReward(state.user.uid, "Fragmento do Herói Quebrado", "Celestial", "drop secreto");
   toast(`${reward.passed ? "Desafio concluído" : "Falha parcial"} · Nível ${stage} · Rank ${reward.grade}: ${reward.loot.join(" · ")}${reward.unlockedNext ? ` · Nível ${stage + 1} liberado` : ""}`);
@@ -9837,6 +11608,7 @@ function stopActiveSealRitual(reason = "cancelled") {
   if (!session) return;
   session.finished = true;
   (session.timers || []).forEach((timer) => window.clearTimeout(timer));
+  if (session.keyHandler) window.removeEventListener("keydown", session.keyHandler);
   if (session.lifecycle?.can?.("cancelled")) session.lifecycle.transition("cancelled", reason);
   state.activeSealSession = null;
 }
@@ -9844,22 +11616,77 @@ function stopActiveSealRitual(reason = "cancelled") {
 function refreshSealProgress(session) {
   const progress = document.querySelector("[data-seal-progress]");
   if (progress) progress.innerHTML = session.sequence.map((_, index) => `<i class="${index < session.input.length ? "done" : ""}"></i>`).join("");
+  const rounds = document.querySelector("[data-seal-rounds]");
+  if (rounds) rounds.innerHTML = Array.from({ length: session.maxRounds }, (_, index) => `<i class="${index < session.round - 1 ? "done" : ""}"></i>`).join("");
+  const corruption = document.querySelector("[data-seal-corruption]");
+  if (corruption) {
+    corruption.style.setProperty("--corruption", `${Math.min(100, session.corruption)}%`);
+    corruption.setAttribute("aria-valuenow", String(Math.min(100, session.corruption)));
+  }
   const status = document.querySelector("[data-seal-status]");
-  if (status) status.textContent = session.phase === "showing" ? "Observe os sigilos." : `Repita o padrão · ${session.input.length}/${session.sequence.length}`;
+  if (status) status.textContent = session.phase === "showing"
+    ? `Rodada ${session.round}/${session.maxRounds} · observe os sigilos.`
+    : `Rodada ${session.round}/${session.maxRounds} · ${session.input.length}/${session.sequence.length} símbolos · corrupção ${session.corruption}%`;
+}
+
+
+function presentSealRound(session) {
+  if (!session || session.finished) return;
+  session.phase = "showing";
+  session.input = [];
+  session.sequence = WORLD.sealSequence(`${session.id}:round:${session.round}`, session.config.baseLength + session.round - 1);
+  refreshSealProgress(session);
+  document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = true; button.classList.remove("active"); });
+  session.sequence.forEach((symbol, index) => {
+    const on = window.setTimeout(() => {
+      if (session.finished) return;
+      const button = [...document.querySelectorAll("[data-seal-symbol]")].find((entry) => entry.dataset.sealSymbol === symbol);
+      button?.classList.add("active");
+      playSound("common");
+    }, 450 + index * 560);
+    const off = window.setTimeout(() => {
+      document.querySelectorAll("[data-seal-symbol]").forEach((button) => button.classList.remove("active"));
+      if (index === session.sequence.length - 1 && !session.finished) {
+        session.phase = "input";
+        if (session.lifecycle?.can?.("running")) session.lifecycle.transition("running", "sequence-hidden");
+        document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = false; });
+        refreshSealProgress(session);
+      }
+    }, 800 + index * 560);
+    session.timers.push(on, off);
+  });
 }
 
 async function resolveSealRitual(session, success) {
   if (!session || session.finished) return;
   session.finished = true;
-  if (session.lifecycle?.can?.("resolving")) session.lifecycle.transition("resolving", success ? "pattern-complete" : "pattern-failed");
-  const score = success ? Math.round(session.sequence.length * 1150 * session.difficulty.multiplier) : Math.round(session.input.length * 240);
+  if (session.lifecycle?.can?.("resolving")) session.lifecycle.transition("resolving", success ? "ritual-complete" : "corruption-complete");
+  const symbolsResolved = Number(session.totalSymbols || 0);
+  const baseScore = symbolsResolved * 980 + Math.max(0, 100 - session.corruption) * 32;
+  const score = Math.round(baseScore * session.difficulty.multiplier * session.config.scoreMultiplier);
   try {
     const reward = await applyMinigameReward("seals", session.difficulty.id, score, {
-      lastSealRun: { id: session.id, score, sequenceLength: session.sequence.length, success, createdAt: new Date().toISOString() },
+      lastSealRun: {
+        id: session.id,
+        score,
+        rounds: session.round - (success ? 0 : 1),
+        corruption: session.corruption,
+        success,
+        eventNames: session.config.eventNames,
+        createdAt: new Date().toISOString(),
+      },
     }, session.id, session.level);
     if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
     state.activeSealSession = null;
-    showMinigameResult({ mode: "Ritual dos Selos", difficulty: session.difficulty, score, reward, detail: success ? "Sequência reconstruída" : "O selo se rompeu antes do fim" });
+    showMinigameResult({
+      mode: "Ritual dos Selos",
+      difficulty: session.difficulty,
+      score,
+      reward,
+      detail: success
+        ? `${session.maxRounds} círculos selados · corrupção final ${session.corruption}%`
+        : `O altar foi consumido com ${session.corruption}% de corrupção`,
+    });
   } catch (error) {
     if (session.lifecycle?.can?.("failed")) session.lifecycle.transition("failed", error?.message || "reward-error");
     state.activeSealSession = null;
@@ -9871,61 +11698,87 @@ function handleSealInput(symbol) {
   const session = state.activeSealSession;
   if (!session || session.finished || session.phase !== "input") return;
   const expected = session.sequence[session.input.length];
-  session.input.push(symbol);
   const button = [...document.querySelectorAll("[data-seal-symbol]")].find((entry) => entry.dataset.sealSymbol === symbol);
   button?.classList.add("active");
-  window.setTimeout(() => button?.classList.remove("active"), 160);
-  playSound(symbol === expected ? "common" : "fail");
-  refreshSealProgress(session);
+  window.setTimeout(() => button?.classList.remove("active"), 180);
   if (symbol !== expected) {
-    resolveSealRitual(session, false).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+    session.corruption = Math.min(100, session.corruption + session.config.corruptionPerError);
+    session.input = [];
+    playSound("fail");
+    refreshSealProgress(session);
+    if (session.corruption >= 100) {
+      resolveSealRitual(session, false).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+      return;
+    }
+    session.phase = "showing";
+    const retry = window.setTimeout(() => presentSealRound(session), 700);
+    session.timers.push(retry);
     return;
   }
-  if (session.input.length === session.sequence.length) resolveSealRitual(session, true).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+  session.input.push(symbol);
+  session.totalSymbols += 1;
+  playSound("common");
+  refreshSealProgress(session);
+  if (session.input.length !== session.sequence.length) return;
+  session.round += 1;
+  if (session.round > session.maxRounds) {
+    resolveSealRitual(session, true).catch((error) => toast(error?.message || "Não foi possível resolver o ritual."));
+    return;
+  }
+  session.phase = "showing";
+  const nextRound = window.setTimeout(() => presentSealRound(session), 650);
+  session.timers.push(nextRound);
 }
 
 function startSealRitual(difficultyId) {
+  if (!canStartMinigameEvent("seals")) return;
   const difficulty = difficultyById(difficultyId);
   const level = FOUNDATIONS.clampLevel(state.minigameLevel);
   if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "seals", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
-  if (currentGachaEnergy() < difficulty.cost) {
-    toast("Energia insuficiente para o Ritual dos Selos.");
-    return;
-  }
+  if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para o Ritual dos Selos.");
   stopActiveSealRitual("new-run");
-  const length = (({ noob: 3, facil: 4, medio: 5, hard: 6, pesadelo: 7, "god-slayer": 8 })[difficulty.id] || 4) + (level - 1) * 2;
   const id = `seals:${state.user?.uid || "demo"}:${cryptoRandom()}`;
-  const sequence = WORLD.sealSequence(id, length);
+  const config = VIVID.createSealConfig(id, difficulty, level, state.settings.minigameEvents || []);
   const symbols = ["◇", "△", "✦", "◈", "⌁", "✥"];
-  const session = { id, difficulty, level, sequence, input: [], phase: "showing", timers: [], finished: false, lifecycle: POLISH.createLifecycle("preparing") };
+  const session = {
+    id,
+    difficulty,
+    level,
+    config,
+    sequence: [],
+    input: [],
+    round: 1,
+    maxRounds: config.rounds,
+    corruption: 0,
+    totalSymbols: 0,
+    phase: "showing",
+    timers: [],
+    finished: false,
+    lifecycle: POLISH.createLifecycle("preparing"),
+  };
   state.activeSealSession = session;
   beginTrustedMinigame(session, "seals").catch((error) => { session.serverRunError = error; });
   $("#modalContent").innerHTML = `
-    <section class="seal-session" aria-labelledby="seal-title">
-      <div class="aim-session-head"><div><p class="eyebrow">Ritual dos Selos · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="seal-title">Memorize a ordem.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
-      <p class="seal-status" data-seal-status role="status" aria-live="polite">Observe os sigilos.</p>
-      <div class="seal-progress" data-seal-progress>${sequence.map(() => "<i></i>").join("")}</div>
-      <div class="seal-board" role="group" aria-label="Sigilos do ritual">${symbols.map((symbol, index) => `<button class="seal-button" type="button" data-action="seal-input" data-seal-symbol="${esc(symbol)}" aria-label="Sigilo ${index + 1}">${esc(symbol)}</button>`).join("")}</div>
+    <section class="seal-session vivid-session" aria-labelledby="seal-title">
+      <div class="vivid-game-head"><div><p class="eyebrow">Ritual dos Selos · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="seal-title">Feche os círculos antes que a corrupção alcance o altar.</h2>${config.eventNames.length ? `<p class="vivid-event-note">Evento: ${esc(config.eventNames.join(" · "))}</p>` : ""}</div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <p class="seal-status" data-seal-status role="status" aria-live="polite"></p>
+      <div class="seal-rounds" data-seal-rounds aria-label="Rodadas"></div>
+      <div class="seal-corruption"><small>Corrupção</small><div class="seal-corruption-track" data-seal-corruption role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
+      <div class="seal-altar">
+        <div class="seal-progress" data-seal-progress></div>
+        <div class="seal-board vivid-seals" role="group" aria-label="Sigilos do ritual">${symbols.map((symbol, index) => `<button class="seal-button" type="button" data-action="seal-input" data-seal-symbol="${esc(symbol)}" aria-label="Sigilo ${index + 1}, tecla ${index + 1}">${esc(symbol)}</button>`).join("")}</div>
+      </div>
+      <p class="hint">Use toque, clique ou as teclas 1–6. Um erro aumenta a corrupção e repete a rodada.</p>
     </section>`;
   $("#modal").hidden = false;
   focusModal();
-  document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = true; });
-  sequence.forEach((symbol, index) => {
-    const on = window.setTimeout(() => {
-      const button = [...document.querySelectorAll("[data-seal-symbol]")].find((entry) => entry.dataset.sealSymbol === symbol);
-      button?.classList.add("active"); playSound("common");
-    }, 500 + index * 620);
-    const off = window.setTimeout(() => {
-      document.querySelectorAll("[data-seal-symbol]").forEach((button) => button.classList.remove("active"));
-      if (index === sequence.length - 1 && !session.finished) {
-        session.phase = "input";
-        if (session.lifecycle?.can?.("running")) session.lifecycle.transition("running", "sequence-hidden");
-        document.querySelectorAll("[data-seal-symbol]").forEach((button) => { button.disabled = false; });
-        refreshSealProgress(session);
-      }
-    }, 900 + index * 620);
-    session.timers.push(on, off);
-  });
+  session.keyHandler = (event) => {
+    if (event.repeat || session.finished) return;
+    const index = Number(event.key) - 1;
+    if (index >= 0 && index < symbols.length) handleSealInput(symbols[index]);
+  };
+  window.addEventListener("keydown", session.keyHandler);
+  presentSealRound(session);
 }
 
 function stopActiveCartography(reason = "cancelled") {
@@ -9933,74 +11786,139 @@ function stopActiveCartography(reason = "cancelled") {
   if (!session) return;
   session.finished = true;
   if (session.timer) window.clearInterval(session.timer);
+  if (session.keyHandler) window.removeEventListener("keydown", session.keyHandler);
   state.activeCartographySession = null;
 }
 
 function renderCartographyBoard(session) {
   const host = document.querySelector("[data-cartography-board]");
   if (!host || !session) return;
-  const size = session.size;
-  host.style.setProperty("--map-size", size);
-  host.innerHTML = session.board.map((tile, index) => {
-    if (!tile) return `<button class="map-tile empty" type="button" tabindex="-1" aria-hidden="true"></button>`;
-    const source = tile - 1;
-    const x = size === 1 ? 0 : ((source % size) / (size - 1)) * 100;
-    const y = size === 1 ? 0 : (Math.floor(source / size) / (size - 1)) * 100;
-    return `<button class="map-tile" type="button" data-action="cartography-move" data-index="${index}" style="--tile-x:${x}%;--tile-y:${y}%" aria-label="Mover peça ${tile}">${tile}</button>`;
+  host.style.setProperty("--map-size", session.size);
+  host.innerHTML = session.cells.map((cell) => {
+    const isPlayer = cell.x === session.player.x && cell.y === session.player.y;
+    const isExit = cell.x === session.exit.x && cell.y === session.exit.y;
+    const visible = cell.discovered || isPlayer;
+    const classes = ["cartography-cell", visible ? cell.type : "fog", cell.collected ? "collected" : "", isPlayer ? "player" : "", isExit ? "exit" : ""].filter(Boolean).join(" ");
+    const glyph = !visible ? "" : isExit ? "⌂" : cell.type === "wall" ? "▦" : cell.type === "trap" ? "⚠" : cell.type === "relic" && !cell.collected ? "✦" : "·";
+    return `<div class="${classes}" aria-label="${visible ? `${cell.type}${isExit ? ", saída" : ""}` : "Área coberta pela névoa"}">${glyph}</div>`;
   }).join("");
   const status = document.querySelector("[data-cartography-status]");
-  if (status) status.textContent = `${session.moves} movimentos · ${session.remaining}s restantes`;
+  if (status) status.textContent = `${session.moves} movimentos · ${session.relics}/${session.relicTarget} relíquias · ${session.damage} ferimentos · ${session.remaining}s`;
+  const log = document.querySelector("[data-cartography-log]");
+  if (log) log.textContent = session.message || "Explore a névoa, recupere as relíquias e alcance a saída.";
 }
 
 async function resolveCartography(session, solved) {
   if (!session || session.finished) return;
   session.finished = true;
   if (session.timer) window.clearInterval(session.timer);
-  const score = solved ? Math.max(500, Math.round(9800 * session.difficulty.multiplier + session.remaining * 40 - session.moves * 25)) : Math.max(100, session.moves * 35);
+  if (session.keyHandler) window.removeEventListener("keydown", session.keyHandler);
+  const base = session.relics * 1800 + session.remaining * 42 - session.moves * 18 - session.damage * 650 + (solved ? 5200 : 0);
+  const score = Math.max(100, Math.round(base * session.difficulty.multiplier * session.scoreMultiplier));
   try {
     const reward = await applyMinigameReward("cartography", session.difficulty.id, score, {
-      lastCartographyRun: { id: session.id, mapName: session.mapName, moves: session.moves, solved, score, createdAt: new Date().toISOString() },
+      lastCartographyRun: {
+        id: session.id,
+        mapName: session.mapName,
+        moves: session.moves,
+        relics: session.relics,
+        damage: session.damage,
+        solved,
+        score,
+        eventNames: session.eventNames,
+        createdAt: new Date().toISOString(),
+      },
     }, session.id, session.level);
     state.activeCartographySession = null;
-    showMinigameResult({ mode: "Cartografia Perdida", difficulty: session.difficulty, score, reward, detail: solved ? `${session.mapName} foi reconstruído em ${session.moves} movimentos` : "O mapa permaneceu incompleto" });
+    showMinigameResult({
+      mode: "Cartografia Perdida",
+      difficulty: session.difficulty,
+      score,
+      reward,
+      detail: solved
+        ? `${session.mapName}: saída encontrada com ${session.relics} relíquia(s) e ${session.damage} ferimento(s)`
+        : `A névoa fechou o mapa após ${session.moves} movimentos`,
+    });
   } catch (error) {
     state.activeCartographySession = null;
     throw error;
   }
 }
 
-function handleCartographyMove(index) {
+function handleCartographyMove(direction) {
   const session = state.activeCartographySession;
   if (!session || session.finished) return;
-  const next = ECHOES.cartographyMove(session.board, Number(index));
-  if (next.join(",") === session.board.join(",")) return;
-  session.board = next;
-  session.moves += 1;
-  playSound("common");
+  const result = VIVID.moveCartography(session, String(direction || ""));
+  if (!result.moved) {
+    session.message = result.blocked ? "Uma ruína bloqueia esse caminho." : "Não é possível avançar nessa direção.";
+    renderCartographyBoard(session);
+    playSound("fail");
+    return;
+  }
+  session.message = result.event === "relic"
+    ? "Uma Relíquia Cartográfica foi recuperada."
+    : result.event === "trap"
+      ? "Uma armadilha atravessou a expedição."
+      : result.reachedExit && session.relics < session.relicTarget
+        ? `A saída foi localizada, mas faltam ${session.relicTarget - session.relics} relíquia(s).`
+        : "A névoa recua ao redor do explorador.";
+  playSound(result.event === "relic" ? "rare" : result.event === "trap" ? "fail" : "common");
   renderCartographyBoard(session);
-  if (ECHOES.cartographySolved(session.board)) resolveCartography(session, true).catch((error) => toast(error?.message || "Não foi possível registrar o mapa."));
+  if (result.complete) resolveCartography(session, true).catch((error) => toast(error?.message || "Não foi possível registrar o mapa."));
 }
 
 function startCartography(difficultyId) {
+  if (!canStartMinigameEvent("cartography")) return;
   const difficulty = difficultyById(difficultyId);
   const level = FOUNDATIONS.clampLevel(state.minigameLevel);
   if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "cartography", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Cartografia Perdida.");
   stopActiveCartography("new-run");
-  const size = level >= 3 || ["hard", "pesadelo", "god-slayer"].includes(difficulty.id) ? 4 : 3;
   const maps = state.content.towerMaps || [];
-  const selected = maps[Math.floor(Math.random() * Math.max(1, maps.length))] || { name: "Cruzamento das Cortinas", imageUrl: SEASON_ART.maps["cruzamento-das-cortinas"] };
   const id = `cartography:${state.user?.uid || "demo"}:${cryptoRandom()}`;
-  const baseTime = size === 4 ? 150 : 120;
-  const session = { id, difficulty, level, size, board: ECHOES.cartographyBoard(`${id}:${level}`, size), mapName: selected.name, imageUrl: towerMapImageFor(selected), moves: 0, remaining: Math.max(55, baseTime - (level - 1) * 25), timer: 0, finished: false };
+  const selected = maps[VIVID.hashSeed ? VIVID.hashSeed(id) % Math.max(1, maps.length) : 0] || { name: "Cruzamento das Cortinas" };
+  const session = {
+    id,
+    difficulty,
+    level,
+    mapName: selected.name,
+    ...VIVID.createCartographyExpedition(id, difficulty, level, state.settings.minigameEvents || []),
+    timer: 0,
+    finished: false,
+    message: "Explore a névoa, recupere as relíquias e alcance a saída.",
+  };
   state.activeCartographySession = session;
   beginTrustedMinigame(session, "cartography").catch((error) => { session.serverRunError = error; });
-  $("#modalContent").innerHTML = `<section class="cartography-session"><div class="aim-session-head"><div><p class="eyebrow">Cartografia Perdida · ${esc(difficulty.name)} · Nível ${level}</p><h2>${esc(session.mapName)}</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><p data-cartography-status role="status"></p><div class="cartography-board" data-cartography-board style="--map-art:url('${esc(session.imageUrl)}')"></div><p class="hint">Toque numa peça ao lado do espaço vazio para movê-la.</p></section>`;
+  $("#modalContent").innerHTML = `
+    <section class="cartography-session vivid-session">
+      <div class="vivid-game-head"><div><p class="eyebrow">Cartografia Perdida · ${esc(difficulty.name)} · Nível ${level}</p><h2>${esc(session.mapName)}</h2>${session.eventNames.length ? `<p class="vivid-event-note">Evento: ${esc(session.eventNames.join(" · "))}</p>` : ""}</div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <p data-cartography-status role="status" aria-live="polite"></p>
+      <div class="cartography-expedition">
+        <div class="cartography-map" data-cartography-board aria-label="Mapa de exploração"></div>
+        <aside class="cartography-side">
+          <div class="cartography-log" data-cartography-log></div>
+          <div class="cartography-dpad" aria-label="Direções">
+            <button class="ghost-button up" type="button" data-action="cartography-move" data-direction="up" aria-label="Mover para cima">▲</button>
+            <button class="ghost-button left" type="button" data-action="cartography-move" data-direction="left" aria-label="Mover para esquerda">◀</button>
+            <button class="ghost-button down" type="button" data-action="cartography-move" data-direction="down" aria-label="Mover para baixo">▼</button>
+            <button class="ghost-button right" type="button" data-action="cartography-move" data-direction="right" aria-label="Mover para direita">▶</button>
+          </div>
+          <p class="hint">Teclas WASD e setas também funcionam. Recupere relíquias antes de sair.</p>
+        </aside>
+      </div>
+    </section>`;
   $("#modal").hidden = false;
   focusModal();
+  session.keyHandler = (event) => {
+    const direction = ({ ArrowUp: "up", w: "up", W: "up", ArrowDown: "down", s: "down", S: "down", ArrowLeft: "left", a: "left", A: "left", ArrowRight: "right", d: "right", D: "right" })[event.key];
+    if (!direction || session.finished) return;
+    event.preventDefault();
+    handleCartographyMove(direction);
+  };
+  window.addEventListener("keydown", session.keyHandler);
   renderCartographyBoard(session);
   session.timer = window.setInterval(() => {
-    if (session.finished) return;
+    if (session.finished || session.runtimePaused || document.hidden) return;
     session.remaining -= 1;
     renderCartographyBoard(session);
     if (session.remaining <= 0) resolveCartography(session, false).catch((error) => toast(error?.message || "Não foi possível registrar o mapa."));
@@ -10008,29 +11926,59 @@ function startCartography(difficultyId) {
 }
 
 function stopActiveAlchemy() {
-  if (state.activeAlchemySession) state.activeAlchemySession.finished = true;
+  const session = state.activeAlchemySession;
+  if (!session) return;
+  session.finished = true;
   state.activeAlchemySession = null;
 }
 
 function refreshAlchemySelection(session) {
+  if (!session) return;
+  const byId = Object.fromEntries(session.ingredients.map((item) => [item.id, item]));
   const host = document.querySelector("[data-alchemy-selection]");
-  if (!host || !session) return;
-  const byId = Object.fromEntries(session.challenge.ingredients.map((item) => [item.id, item]));
-  host.innerHTML = session.selection.map((id, index) => `<span>${index + 1}. ${esc(byId[id]?.name || id)}</span>`).join("") || `<span class="muted-text">Nenhum ingrediente escolhido.</span>`;
-  document.querySelectorAll("[data-alchemy-id]").forEach((button) => { button.disabled = session.selection.includes(button.dataset.alchemyId); });
+  if (host) host.innerHTML = session.selection.map((id, index) => `<span>${index + 1}. ${esc(byId[id]?.name || id)}</span>`).join("") || `<span class="muted-text">Escolha a ordem dos ingredientes.</span>`;
+  document.querySelectorAll("[data-alchemy-id]").forEach((button) => { button.disabled = session.selection.includes(button.dataset.alchemyId) || session.finished; });
+  const heat = document.querySelector("[data-alchemy-heat]");
+  const stability = document.querySelector("[data-alchemy-stability]");
+  const essence = document.querySelector("[data-alchemy-essence]");
+  if (heat) { heat.style.setProperty("--gauge", `${session.heat}%`); heat.closest(".alchemy-gauge")?.querySelector("b")?.replaceChildren(document.createTextNode(`${Math.round(session.heat)}°`)); }
+  if (stability) { stability.style.setProperty("--gauge", `${session.stability}%`); stability.closest(".alchemy-gauge")?.querySelector("b")?.replaceChildren(document.createTextNode(`${Math.round(session.stability)}%`)); }
+  if (essence) { essence.style.setProperty("--gauge", `${Math.min(100, session.essence * 6)}%`); essence.closest(".alchemy-gauge")?.querySelector("b")?.replaceChildren(document.createTextNode(String(session.essence))); }
 }
 
 async function resolveAlchemy(session) {
-  if (!session || session.finished || session.selection.length !== session.challenge.recipe.length) return;
+  if (!session || session.finished) return;
+  if (session.selection.length !== session.recipe.length) return toast("Adicione todos os ingredientes antes de selar a mistura.");
   session.finished = true;
-  const result = ECHOES.evaluateAlchemy(session.selection, session.challenge.recipe);
+  const result = VIVID.evaluateAlchemyLab(session);
   const score = Math.round(result.score * session.difficulty.multiplier);
+  const lab = document.querySelector(".alchemy-lab");
+  lab?.classList.add(result.passed ? "success" : "exploded");
   try {
     const reward = await applyMinigameReward("alchemy", session.difficulty.id, score, {
-      lastAlchemyRun: { id: session.id, correct: result.correct, total: result.total, passed: result.passed, score, createdAt: new Date().toISOString() },
+      lastAlchemyRun: {
+        id: session.id,
+        correct: result.correct,
+        total: result.total,
+        passed: result.passed,
+        heat: session.heat,
+        targetHeat: session.targetHeat,
+        stability: session.stability,
+        score,
+        eventNames: session.eventNames,
+        createdAt: new Date().toISOString(),
+      },
     }, session.id, session.level);
     state.activeAlchemySession = null;
-    showMinigameResult({ mode: "Alquimia Instável", difficulty: session.difficulty, score, reward, detail: result.passed ? "A mistura permaneceu estável" : `${result.correct}/${result.total} posições corretas` });
+    window.setTimeout(() => showMinigameResult({
+      mode: "Alquimia Instável",
+      difficulty: session.difficulty,
+      score,
+      reward,
+      detail: result.passed
+        ? `Reação estável · ${Math.round(session.heat)}° · estabilidade ${Math.round(session.stability)}%`
+        : `${result.correct}/${result.total} posições corretas · distância térmica ${Math.round(result.heatDistance)}°`,
+    }), 420);
   } catch (error) {
     state.activeAlchemySession = null;
     throw error;
@@ -10040,171 +11988,357 @@ async function resolveAlchemy(session) {
 function handleAlchemyIngredient(id) {
   const session = state.activeAlchemySession;
   if (!session || session.finished || session.selection.includes(id)) return;
-  session.selection.push(id);
+  VIVID.addAlchemyIngredient(session, id);
   playSound("common");
   refreshAlchemySelection(session);
-  if (session.selection.length === session.challenge.recipe.length) resolveAlchemy(session).catch((error) => toast(error?.message || "Não foi possível registrar a mistura."));
 }
 
 function resetAlchemySelection() {
   const session = state.activeAlchemySession;
   if (!session || session.finished) return;
   session.selection = [];
+  session.heat = 35;
+  session.stability = 50;
+  session.essence = 0;
+  refreshAlchemySelection(session);
+}
+
+
+function adjustAlchemyHeat(delta) {
+  const session = state.activeAlchemySession;
+  if (!session || session.finished) return;
+  VIVID.adjustAlchemyHeat(session, Number(delta || 0));
+  playSound("common");
   refreshAlchemySelection(session);
 }
 
 function startAlchemy(difficultyId) {
+  if (!canStartMinigameEvent("alchemy")) return;
   const difficulty = difficultyById(difficultyId);
   const level = FOUNDATIONS.clampLevel(state.minigameLevel);
   if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "alchemy", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
   if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para Alquimia Instável.");
   stopActiveAlchemy();
   const id = `alchemy:${state.user?.uid || "demo"}:${cryptoRandom()}`;
-  const challenge = ECHOES.alchemyChallenge(id, level);
-  const session = { id, difficulty, level, challenge, selection: [], finished: false };
+  const labData = VIVID.createAlchemyLab(id, difficulty, level, state.settings.minigameEvents || []);
+  const session = { id, difficulty, level, ...labData, finished: false };
   state.activeAlchemySession = session;
   beginTrustedMinigame(session, "alchemy").catch((error) => { session.serverRunError = error; });
-  $("#modalContent").innerHTML = `<section class="alchemy-session"><div class="aim-session-head"><div><p class="eyebrow">Alquimia Instável · ${esc(difficulty.name)} · Nível ${level}</p><h2>Leia antes de misturar.</h2></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div><ol class="alchemy-clues">${challenge.clues.map((clue) => `<li>${esc(clue)}</li>`).join("")}</ol><div class="alchemy-ingredients">${challenge.ingredients.map((ingredient) => `<button class="ghost-button alchemy-ingredient" type="button" data-action="alchemy-ingredient" data-alchemy-id="${ingredient.id}"><strong>${esc(ingredient.name)}</strong><small>Calor ${ingredient.heat} · Essência ${ingredient.essence} · Toxicidade ${ingredient.toxicity} · Estabilidade ${ingredient.stability}</small></button>`).join("")}</div><div class="alchemy-selection" data-alchemy-selection></div><button class="link-button" type="button" data-action="alchemy-reset">Limpar ordem</button></section>`;
+  $("#modalContent").innerHTML = `
+    <section class="alchemy-session vivid-session">
+      <div class="vivid-game-head"><div><p class="eyebrow">Alquimia Instável · ${esc(difficulty.name)} · Nível ${level}</p><h2>Controle a reação, não apenas a ordem.</h2>${session.eventNames.length ? `<p class="vivid-event-note">Evento: ${esc(session.eventNames.join(" · "))}</p>` : ""}</div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="alchemy-lab">
+        <div class="alchemy-cauldron-stage" data-alchemy-drop tabindex="0" aria-label="Área do caldeirão. Solte ingredientes aqui ou use os botões da bancada.">
+          <div class="alchemy-cauldron" aria-label="Caldeirão alquímico"><i class="alchemy-bubble b1"></i><i class="alchemy-bubble b2"></i><i class="alchemy-bubble b3"></i></div>
+          <div class="alchemy-gauges">
+            <div class="alchemy-gauge"><span>Calor</span><div class="alchemy-gauge-track" data-alchemy-heat style="--gauge:${session.heat}%"><i></i></div><b>${session.heat}°</b></div>
+            <div class="alchemy-gauge"><span>Estabilidade</span><div class="alchemy-gauge-track" data-alchemy-stability style="--gauge:${session.stability}%"><i></i></div><b>${session.stability}%</b></div>
+            <div class="alchemy-gauge"><span>Essência</span><div class="alchemy-gauge-track" data-alchemy-essence style="--gauge:0%"><i></i></div><b>0</b></div>
+          </div>
+        </div>
+        <div class="alchemy-workbench">
+          <ol class="alchemy-clues">${session.clues.map((clue) => `<li>${esc(clue)}</li>`).join("")}</ol>
+          <div class="alchemy-ingredients vivid">${session.ingredients.map((ingredient) => `<button class="ghost-button alchemy-ingredient-card" type="button" draggable="true" data-action="alchemy-ingredient" data-alchemy-id="${esc(ingredient.id)}"><b>${esc(ingredient.glyph)}</b><span><strong>${esc(ingredient.name)}</strong><small>Calor ${ingredient.heat > 0 ? "+" : ""}${ingredient.heat} · estabilidade ${ingredient.stability > 0 ? "+" : ""}${ingredient.stability}</small></span></button>`).join("")}</div>
+          <div class="alchemy-order" data-alchemy-selection aria-live="polite"></div>
+          <div class="alchemy-heat-controls"><button class="ghost-button" type="button" data-action="alchemy-heat" data-delta="-5">Reduzir 5°</button><button class="ghost-button" type="button" data-action="alchemy-heat" data-delta="5">Aumentar 5°</button><button class="link-button" type="button" data-action="alchemy-reset">Recomeçar</button><button class="primary-button intense" type="button" data-action="alchemy-brew">Selar mistura</button></div>
+        </div>
+      </div>
+    </section>`;
   $("#modal").hidden = false;
   focusModal();
+  document.querySelectorAll("[data-alchemy-id]").forEach((button) => button.addEventListener("dragstart", (event) => {
+    event.dataTransfer?.setData("text/plain", button.dataset.alchemyId || "");
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+  }));
+  const dropZone = document.querySelector("[data-alchemy-drop]");
+  dropZone?.addEventListener("dragover", (event) => { event.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone?.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone?.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropZone.classList.remove("drag-over");
+    const ingredientId = event.dataTransfer?.getData("text/plain");
+    if (ingredientId) handleAlchemyIngredient(ingredientId);
+  });
   refreshAlchemySelection(session);
 }
 
 function startAimGame(difficultyId) {
+  if (!canStartMinigameEvent("aim")) return;
   const difficulty = difficultyById(difficultyId);
   const level = FOUNDATIONS.clampLevel(state.minigameLevel);
   if (!FOUNDATIONS.isMinigameLevelUnlocked(currentCharacter(), "aim", difficulty.id, level)) return toast(`Conclua o nível ${level - 1} deste jogo primeiro.`);
-  if (currentGachaEnergy() < difficulty.cost) {
-    toast("Energia insuficiente para a Prova da Mira.");
-    return;
-  }
+  if (currentGachaEnergy() < difficulty.cost) return toast("Energia insuficiente para a Prova da Mira.");
   stopActiveAimGame("new-run");
-  const seconds = (difficulty.id === "god-slayer" ? 42 : 38) - (level - 1) * 5;
-  let score = 0;
-  let remaining = seconds;
-  let streak = 0;
-  let bestStreak = 0;
-  let misses = 0;
+  const id = `aim:${state.user?.uid || "demo"}:${cryptoRandom()}`;
+  const config = VIVID.createAimConfig(id, difficulty, level, state.settings.minigameEvents || []);
   const session = {
-    id: `aim:${state.user?.uid || "demo"}:${cryptoRandom()}`,
-    timers: [],
-    finished: false,
+    id,
+    config,
     difficulty,
     level,
+    score: 0,
+    remaining: config.seconds,
+    combo: 0,
+    bestCombo: 0,
+    misses: 0,
+    shots: 0,
+    hits: 0,
+    ammo: config.magazine,
+    reloading: false,
+    targets: [],
+    spawnCount: 0,
+    aimX: .5,
+    aimY: .5,
+    timers: [],
+    frame: 0,
+    finished: false,
+    lastFrame: performance.now(),
     lifecycle: POLISH.createLifecycle("preparing"),
   };
-  session.lifecycle.transition("running", "arena-ready");
+  session.lifecycle.transition("running", "range-ready");
   state.activeAimSession = session;
   beginTrustedMinigame(session, "aim").catch((error) => { session.serverRunError = error; });
   $("#modalContent").innerHTML = `
-    <section class="aim-session difficulty-${esc(difficulty.id)}" aria-labelledby="aim-title">
-      <div class="aim-session-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="aim-title">O portal atira de volta.</h2><p class="sr-only" id="aim-instructions">Use toque, clique ou Tab e Enter para atingir os alvos. Evite os alvos marcados com X.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
-      <div class="aim-hud" role="status" aria-live="polite" aria-atomic="true"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${seconds}s</span></div>
-      <div class="aim-arena" data-aim-arena role="group" aria-describedby="aim-instructions" aria-label="Arena de mira"></div>
-      <div class="aim-legend" aria-label="Legenda"><span><b>•</b> eco</span><span><b>✦</b> raro</span><span><b>⌁</b> tempo</span>${difficulty.id !== "noob" ? '<span class="danger"><b>×</b> armadilha</span>' : ""}</div>
-    </section>
-  `;
+    <section class="aim-session vivid-session aim-fps-shell difficulty-${esc(difficulty.id)}" aria-labelledby="aim-title">
+      <div class="vivid-game-head"><div><p class="eyebrow">Prova da Mira · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="aim-title">Estande de precisão em primeira pessoa.</h2>${config.eventNames.length ? `<p class="vivid-event-note">Evento: ${esc(config.eventNames.join(" · "))}</p>` : ""}<p class="sr-only" id="aim-instructions">Mova a mira com mouse ou toque. Clique ou use Espaço para disparar. Use R para recarregar.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="aim-fps-hud" role="status" aria-live="polite"><span data-aim-score>0 pontos</span><span data-aim-combo>Combo 0</span><span data-aim-misses>Erros 0</span><span data-aim-time>${config.seconds}s</span><span data-aim-ammo>${config.magazine}/${config.magazine}</span><span data-aim-accuracy>Precisão 0%</span></div>
+      <div class="aim-fps-stage" data-aim-stage aria-describedby="aim-instructions"><canvas data-aim-canvas></canvas><div class="aim-fps-crosshair" data-aim-crosshair aria-hidden="true"><i></i></div></div>
+      <div class="aim-fps-controls"><button class="primary-button intense aim-fire-button" type="button" data-aim-fire>Disparar</button><button class="ghost-button" type="button" data-aim-reload>Recarregar</button><span class="hint">Mouse/toque · Espaço dispara · R recarrega · Esc pausa saindo</span></div>
+    </section>`;
   $("#modal").hidden = false;
   focusModal();
-  const arena = $("[data-aim-arena]");
-  const scoreEl = $("[data-aim-score]");
-  const comboEl = $("[data-aim-combo]");
-  const missesEl = $("[data-aim-misses]");
-  const timeEl = $("[data-aim-time]");
-  const refreshHud = () => {
-    scoreEl.textContent = `${Math.max(0, score)} pontos`;
-    comboEl.textContent = `Combo ${streak}`;
-    missesEl.textContent = `Erros ${misses}`;
-    timeEl.textContent = `${remaining}s`;
+
+  const stage = document.querySelector("[data-aim-stage]");
+  const canvas = document.querySelector("[data-aim-canvas]");
+  const context = canvas.getContext("2d");
+  const crosshair = document.querySelector("[data-aim-crosshair]");
+  const scoreEl = document.querySelector("[data-aim-score]");
+  const comboEl = document.querySelector("[data-aim-combo]");
+  const missesEl = document.querySelector("[data-aim-misses]");
+  const timeEl = document.querySelector("[data-aim-time]");
+  const ammoEl = document.querySelector("[data-aim-ammo]");
+  const accuracyEl = document.querySelector("[data-aim-accuracy]");
+
+  const resize = () => {
+    const rect = stage.getBoundingClientRect();
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(320, Math.round(rect.width * ratio));
+    canvas.height = Math.max(360, Math.round(rect.height * ratio));
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
   };
+  session.resizeHandler = resize;
+  window.addEventListener("resize", resize);
+  resize();
+
+  const refreshHud = () => {
+    scoreEl.textContent = `${Math.max(0, session.score)} pontos`;
+    comboEl.textContent = `Combo ${session.combo}`;
+    missesEl.textContent = `Erros ${session.misses}`;
+    timeEl.textContent = `${session.remaining}s`;
+    ammoEl.textContent = session.reloading ? "Recarregando…" : `${session.ammo}/${config.magazine}`;
+    accuracyEl.textContent = `Precisão ${session.shots ? Math.round(session.hits / session.shots * 100) : 0}%`;
+  };
+
+  const spawnTarget = () => {
+    if (session.finished || session.runtimePaused || document.hidden || session.targets.length >= config.maxTargets) return;
+    const random = VIVID.randomFromSeed ? VIVID.randomFromSeed(`${id}:spawn:${session.spawnCount++}`) : Math.random;
+    const roll = random();
+    const type = roll < .1 && difficulty.id !== "noob" ? "trap" : roll < .23 ? "rare" : roll < .34 ? "time" : "normal";
+    session.targets.push({
+      id: `target-${cryptoRandom()}`,
+      x: random() * 1.7 - .85,
+      y: random() * .72 - .32,
+      z: .95 + random() * .22,
+      drift: (random() - .5) * config.drift,
+      type,
+      bornAt: performance.now(),
+      life: config.targetLifeMs * (.82 + random() * .4),
+    });
+  };
+
+  const reload = () => {
+    if (session.finished || session.reloading || session.ammo === config.magazine) return;
+    session.reloading = true;
+    stage.classList.add("reloading");
+    refreshHud();
+    const timer = window.setTimeout(() => {
+      if (session.finished) return;
+      session.ammo = config.magazine;
+      session.reloading = false;
+      stage.classList.remove("reloading");
+      refreshHud();
+      playSound("common");
+    }, config.reloadMs);
+    session.timers.push(timer);
+  };
+
   const finish = async () => {
     if (session.finished) return;
     session.finished = true;
-    session.timers.forEach((timerId) => {
-      window.clearTimeout(timerId);
-      window.clearInterval(timerId);
-    });
+    session.timers.forEach((timer) => { window.clearTimeout(timer); window.clearInterval(timer); });
+    if (session.frame) window.cancelAnimationFrame(session.frame);
+    if (session.keyHandler) window.removeEventListener("keydown", session.keyHandler);
+    if (session.resizeHandler) window.removeEventListener("resize", session.resizeHandler);
     if (session.lifecycle.can("resolving")) session.lifecycle.transition("resolving", "time-ended");
+    const finalScore = Math.max(0, Math.round(session.score * config.scoreMultiplier));
     try {
-      const reward = await applyMinigameReward("aim", difficulty.id, Math.max(0, score), {
-        lastAimRun: { id: session.id, score: Math.max(0, score), streak: bestStreak, misses, difficultyId: difficulty.id, createdAt: new Date().toISOString() },
+      const reward = await applyMinigameReward("aim", difficulty.id, finalScore, {
+        lastAimRun: {
+          id: session.id,
+          score: finalScore,
+          streak: session.bestCombo,
+          misses: session.misses,
+          shots: session.shots,
+          hits: session.hits,
+          accuracy: session.shots ? session.hits / session.shots : 0,
+          eventNames: config.eventNames,
+          difficultyId: difficulty.id,
+          createdAt: new Date().toISOString(),
+        },
       }, session.id, level);
       if (session.lifecycle.can("completed")) session.lifecycle.transition("completed", "reward-applied");
       state.activeAimSession = null;
-      showMinigameResult({ mode: "Prova da Mira", difficulty, score: Math.max(0, score), reward, detail: `${misses} erro(s) · Melhor combo ${bestStreak}` });
+      showMinigameResult({ mode: "Prova da Mira", difficulty, score: finalScore, reward, detail: `${session.hits}/${session.shots} acertos · precisão ${session.shots ? Math.round(session.hits / session.shots * 100) : 0}% · combo ${session.bestCombo}` });
     } catch (error) {
       if (session.lifecycle.can("failed")) session.lifecycle.transition("failed", error?.message || "reward-error");
       state.activeAimSession = null;
       throw error;
     }
   };
-  const breakCombo = (penalty = 0) => {
-    streak = 0;
-    misses += 1;
-    score = Math.max(0, score - penalty);
-    refreshHud();
-    playSound("fail");
-  };
-  arena.addEventListener("pointerdown", (event) => {
-    if (event.target === arena) breakCombo(Math.round(28 * difficulty.multiplier));
-  });
-  const addTarget = () => {
-    if (!arena || session.finished || session.lifecycle.state !== "running") return;
-    const roll = Math.random();
-    const dangerChance = difficulty.id === "noob" && level === 1 ? 0 : Math.min(0.3, 0.035 + difficulty.multiplier * 0.035 + (level - 1) * 0.04);
-    const type = roll < dangerChance ? "trap" : roll < dangerChance + 0.07 ? "freeze" : roll < dangerChance + 0.2 ? "rare" : "normal";
-    const target = document.createElement("button");
-    target.type = "button";
-    target.className = `aim-target ${type}`;
-    target.style.left = `${Math.random() * 82 + 4}%`;
-    target.style.top = `${Math.random() * 74 + 8}%`;
-    const size = Math.max(36, 54 - difficulty.multiplier * 2 - (type === "rare" ? 2 : 0) - (level - 1) * 4);
-    target.style.setProperty("--aim-size", `${size}px`);
-    target.style.setProperty("--aim-drift", `${Math.max(0.6, 2.6 - difficulty.multiplier * 0.22)}s`);
-    target.textContent = type === "freeze" ? "⌁" : type === "rare" ? "✦" : type === "trap" ? "×" : "•";
-    target.setAttribute("aria-label", type === "freeze" ? "Alvo de tempo" : type === "rare" ? "Alvo raro" : type === "trap" ? "Armadilha, não acertar" : "Alvo comum");
-    target.addEventListener("pointerdown", (event) => {
-      event.stopPropagation();
-      if (type === "trap") {
-        breakCombo(Math.round(120 * difficulty.multiplier));
-        target.remove();
-        return;
-      }
-      streak += 1;
-      bestStreak = Math.max(bestStreak, streak);
-      const streakBonus = Math.min(2.5, 1 + streak * 0.055);
-      if (type === "freeze") {
-        remaining = Math.min(seconds + 5, remaining + 3);
-        score += Math.round(100 * difficulty.multiplier * streakBonus);
+
+  const fire = () => {
+    if (session.finished || session.reloading) return;
+    if (session.ammo <= 0) { reload(); playSound("fail"); return; }
+    session.ammo -= 1;
+    session.shots += 1;
+    const rect = stage.getBoundingClientRect();
+    const hitX = session.aimX * rect.width;
+    const hitY = session.aimY * rect.height;
+    let best = null;
+    session.targets.forEach((target) => {
+      if (!target.screen) return;
+      const distance = Math.hypot(target.screen.x - hitX, target.screen.y - hitY);
+      if (distance <= target.screen.radius && (!best || distance < best.distance)) best = { target, distance };
+    });
+    if (!best) {
+      session.combo = 0;
+      session.misses += 1;
+      session.score = Math.max(0, session.score - Math.round(45 * difficulty.multiplier));
+      playSound("fail");
+    } else {
+      const target = best.target;
+      session.targets = session.targets.filter((item) => item.id !== target.id);
+      if (target.type === "trap") {
+        session.combo = 0;
+        session.misses += 1;
+        session.score = Math.max(0, session.score - Math.round(220 * difficulty.multiplier));
+        playSound("fail");
       } else {
-        score += Math.round((type === "rare" ? 250 : 78) * difficulty.multiplier * streakBonus);
+        session.hits += 1;
+        session.combo += 1;
+        session.bestCombo = Math.max(session.bestCombo, session.combo);
+        const comboBonus = Math.min(2.6, 1 + session.combo * .06);
+        if (target.type === "time") session.remaining = Math.min(config.seconds + 6, session.remaining + 3);
+        session.score += Math.round((target.type === "rare" ? 360 : target.type === "time" ? 180 : 105) * difficulty.multiplier * comboBonus / Math.max(.45, target.z));
+        playSound(target.type === "rare" ? "rare" : "common");
       }
-      refreshHud();
-      playSound(type === "rare" ? "rare" : "common");
-      target.remove();
-    }, { once: true });
-    arena.appendChild(target);
-    const life = Math.max(300, (type === "rare" ? 880 : type === "freeze" ? 780 : type === "trap" ? 1040 : 1320) - difficulty.multiplier * 110 - (level - 1) * 120);
-    const removeTimer = window.setTimeout(() => {
-      if (target.isConnected) {
-        if (type !== "trap") breakCombo(0);
-        target.remove();
-      }
-    }, life);
-    session.timers.push(removeTimer);
-  };
-  const timer = window.setInterval(() => {
-    if (session.finished || session.lifecycle.state !== "running") return;
-    remaining -= 1;
+      const flash = document.createElement("i");
+      flash.className = "aim-hit-flash";
+      flash.style.setProperty("--hit-x", `${session.aimX * 100}%`);
+      flash.style.setProperty("--hit-y", `${session.aimY * 100}%`);
+      stage.appendChild(flash);
+      window.setTimeout(() => flash.remove(), 260);
+    }
+    if (session.ammo <= 0) reload();
     refreshHud();
-    if (remaining <= 0) finish();
+  };
+
+  const moveAim = (event) => {
+    const rect = stage.getBoundingClientRect();
+    session.aimX = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    session.aimY = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+    crosshair.style.left = `${session.aimX * 100}%`;
+    crosshair.style.top = `${session.aimY * 100}%`;
+  };
+  stage.addEventListener("pointermove", moveAim);
+  stage.addEventListener("pointerdown", (event) => { moveAim(event); fire(); });
+  document.querySelector("[data-aim-fire]")?.addEventListener("click", fire);
+  document.querySelector("[data-aim-reload]")?.addEventListener("click", reload);
+  session.keyHandler = (event) => {
+    if (event.code === "Space") { event.preventDefault(); fire(); }
+    if (event.key.toLowerCase() === "r") reload();
+  };
+  window.addEventListener("keydown", session.keyHandler);
+
+  const draw = (now) => {
+    if (session.finished) return;
+    if (session.runtimePaused || document.hidden) { session.frame = 0; return; }
+    const dt = Math.min(.05, (now - session.lastFrame) / 1000);
+    session.lastFrame = now;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    context.clearRect(0, 0, width, height);
+    const horizon = height * .48;
+    const gradient = context.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "#07101e");
+    gradient.addColorStop(.5, "#101527");
+    gradient.addColorStop(.51, "#211724");
+    gradient.addColorStop(1, "#09080d");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = "rgba(216,181,91,.12)";
+    context.lineWidth = 1;
+    for (let i = -5; i <= 5; i += 1) {
+      context.beginPath();
+      context.moveTo(width / 2, horizon);
+      context.lineTo(width / 2 + i * width * .22, height);
+      context.stroke();
+    }
+    for (let row = 1; row <= 6; row += 1) {
+      const y = horizon + (height - horizon) * (row / 6) ** 1.7;
+      context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke();
+    }
+    session.targets = session.targets.filter((target) => {
+      target.z -= dt * (.12 + difficulty.multiplier * .018);
+      target.x += target.drift * dt;
+      const age = now - target.bornAt;
+      if (target.z <= .08 || age > target.life) {
+        if (target.type !== "trap") { session.combo = 0; session.misses += 1; }
+        return false;
+      }
+      const scale = 1 / Math.max(.18, target.z);
+      const x = width / 2 + target.x * width * .28 * scale;
+      const y = horizon - target.y * height * .45 * scale + (1 - target.z) * height * .12;
+      const radius = Math.max(13, Math.min(54, 19 * scale));
+      target.screen = { x, y, radius };
+      context.save();
+      context.translate(x, y);
+      context.fillStyle = target.type === "trap" ? "#a13b4c" : target.type === "rare" ? "#f2cc62" : target.type === "time" ? "#6bc4d1" : "#d9d4c5";
+      context.strokeStyle = target.type === "trap" ? "#ff9ba8" : "#fff0a9";
+      context.lineWidth = 3;
+      context.beginPath(); context.arc(0, 0, radius, 0, Math.PI * 2); context.fill(); context.stroke();
+      context.fillStyle = "#16121a";
+      context.font = `700 ${Math.max(16, radius * .7)}px system-ui`;
+      context.textAlign = "center"; context.textBaseline = "middle";
+      context.fillText(target.type === "trap" ? "×" : target.type === "rare" ? "✦" : target.type === "time" ? "⌁" : "•", 0, 1);
+      context.restore();
+      return true;
+    });
+    session.frame = window.requestAnimationFrame(draw);
+  };
+
+  session.drawFrame = draw;
+  const spawn = window.setInterval(spawnTarget, config.spawnMs);
+  const timer = window.setInterval(() => {
+    if (session.finished || session.runtimePaused || document.hidden) return;
+    session.remaining -= 1;
+    refreshHud();
+    if (session.remaining <= 0) finish().catch((error) => toast(error?.message || "Não foi possível registrar a Prova da Mira."));
   }, 1000);
-  // Spawn immediately on real mobile browsers. Waiting for the first interval left
-  // some devices with an apparently empty arena while misses accumulated.
-  addTarget();
-  const firstWave = window.setTimeout(addTarget, 140);
-  const spawn = window.setInterval(addTarget, Math.max(150, 720 - difficulty.multiplier * 76 - (level - 1) * 90));
-  session.timers.push(timer, firstWave, spawn);
+  session.timers.push(spawn, timer);
+  for (let i = 0; i < 3; i += 1) spawnTarget();
+  refreshHud();
+  session.frame = window.requestAnimationFrame(draw);
 }
 
 function showMinigameResult({ mode, difficulty, score, reward, detail = "" }) {
@@ -10507,6 +12641,7 @@ function prepareTowerArt(session) {
 async function startTowerDefense(form) {
   const values = formValues(form);
   const character = currentCharacter();
+  if (!canStartMinigameEvent("tower", character)) return;
   const level = FOUNDATIONS.clampLevel(values.stageLevel || state.minigameLevel);
   const deckIds = [values.towerPet1, values.towerPet2, values.towerPet3, values.towerPet4].filter(Boolean);
   const uniqueDeckIds = [...new Set(deckIds)];
@@ -10514,7 +12649,8 @@ async function startTowerDefense(form) {
     toast("Cada torre precisa ser um companheiro diferente. Troque a cópia repetida antes de iniciar.");
     return;
   }
-  const pets = uniqueDeckIds.map((id) => (character.gachaVault || []).find((item) => item.instanceId === id && item.kind === "pet")).filter(Boolean);
+  const availableTowerMonsters = freePetsForActivity(character);
+  const pets = uniqueDeckIds.map((id) => availableTowerMonsters.find((item) => item.instanceId === id)).filter(Boolean);
   if (!pets.length || pets.some((pet) => petBusy(pet))) {
     toast("Escolha pelo menos um pet livre para a partida.");
     return;
@@ -10538,16 +12674,17 @@ async function startTowerDefense(form) {
     kills: 0, escaped: 0, enemies: [], spawning: false, running: false, looping: false, paused: false,
     waveTargetCount: 0, waveSpawned: 0, waveStartKills: 0, waveStartEscaped: 0,
     finished: false, lastFrame: performance.now(), animationFrame: null, spawnTimers: [], flash: 0,
-    logicalWidth: 760, logicalHeight: 420, dpr: Math.min(2, Math.max(1, Number(window.devicePixelRatio || 1))),
+    logicalWidth: 760, logicalHeight: 420, dpr: Math.min(Number(PERF_RUNTIME.profile?.().maxCanvasDpr || 2), Math.max(1, Number(window.devicePixelRatio || 1))),
+    eventModifier: activeModeEventModifier("tower"),
   };
   state.activeTowerSession = session;
   beginTrustedMinigame(session, "tower").catch((error) => { session.serverRunError = error; });
   $("#modalContent").innerHTML = `
     <section class="tower-session" aria-labelledby="tower-title">
-      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="tower-title">${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p></div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
+      <div class="tower-session-head"><div><p class="eyebrow">Tower Defense · ${esc(difficulty.name)} · Nível ${level}</p><h2 id="tower-title">${esc(map.name || "Território sem nome")}</h2><p>${esc(map.enemyFaction || "Ecos hostis")} seguem rotas próprias deste território. Entre ondas, selecione um companheiro e toque numa runa vazia para reposicioná-lo.</p>${session.eventModifier.events.length ? `<p class="vivid-event-note">Evento: ${esc(session.eventModifier.events.map((event) => event.name).join(" · "))}</p>` : ""}</div><button class="aim-exit" type="button" data-action="close-modal">Sair</button></div>
       <canvas class="tower-canvas" data-tower-canvas width="760" height="420" role="img" aria-label="Mapa jogável do Tower Defense. Use os botões de companheiro e os controles abaixo para jogar."></canvas>
       <div class="tower-hud" data-tower-hud role="status" aria-live="polite"></div>
-      <div class="tower-deck" data-tower-deck aria-label="Companheiros da defesa">${pets.map((entry, index) => `<button class="tower-deck-pet ${index === 0 ? "active" : ""}" type="button" data-action="tower-select-pet" data-tower-index="${index}" aria-pressed="${index === 0}">${petImageFor(entry) ? `<img src="${esc(petImageFor(entry))}" alt="" loading="lazy" />` : ""}<span>${esc(entry.name)}</span><small>★${Number(entry.stars || 1)}</small></button>`).join("")}</div>
+      <div class="tower-deck" data-tower-deck aria-label="Companheiros da defesa">${pets.map((entry, index) => `<button class="tower-deck-pet ${index === 0 ? "active" : ""}" type="button" data-action="tower-select-pet" data-tower-index="${index}" aria-pressed="${index === 0}">${petImageFor(entry) ? `<img src="${esc(petImageFor(entry, { thumbnail: true }))}" alt="" ${mediaAttrs("pet-thumbnail")} />` : ""}<span>${esc(entry.name)}</span><small>★${Number(entry.stars || 1)}</small></button>`).join("")}</div>
       <div class="tower-controls">
         <button class="primary-button intense" type="button" data-action="tower-start-wave">Iniciar defesa</button>
         <button class="ghost-button" type="button" data-action="tower-toggle-pause" aria-pressed="false">Pausar</button>
@@ -10586,7 +12723,7 @@ function stopActiveTowerDefense(reason = "cancelled") {
 function resizeTowerCanvas(session) {
   if (!session?.canvas || !session?.ctx) return;
   const { canvas, ctx } = session;
-  const dpr = Math.min(2, Math.max(1, Number(window.devicePixelRatio || 1)));
+  const dpr = Math.min(Number(PERF_RUNTIME.profile?.().maxCanvasDpr || 2), Math.max(1, Number(window.devicePixelRatio || 1)));
   session.dpr = dpr;
   canvas.width = Math.round(session.logicalWidth * dpr);
   canvas.height = Math.round(session.logicalHeight * dpr);
@@ -10894,6 +13031,7 @@ function startTowerWave() {
 
 function runTowerFrame(session) {
   if (!session || session.finished) return;
+  if (session.runtimePaused || document.hidden) { session.animationFrame = null; return; }
   if (session.paused) {
     session.lastFrame = performance.now();
     drawTowerDefense(session);
@@ -10993,10 +13131,10 @@ async function finishTowerDefense(session, victory) {
   if (session.resizeHandler) window.removeEventListener("resize", session.resizeHandler);
   if (session.lifecycle?.can?.("resolving")) session.lifecycle.transition("resolving", victory ? "victory" : "defeat");
   const towerUpgrades = (session.towers || []).reduce((sum, tower) => sum + Number(tower.upgrade || 0), 0);
-  const score = Math.round((session.kills * 110 + session.wave * 240 + session.lives * 180 + towerUpgrades * 150) * session.difficulty.multiplier);
+  const score = Math.round((session.kills * 110 + session.wave * 240 + session.lives * 180 + towerUpgrades * 150) * session.difficulty.multiplier * Number(session.eventModifier?.scoreMultiplier || 1));
   try {
     const reward = await applyMinigameReward("tower", session.difficulty.id, score, {
-      lastTowerRun: { id: session.id, mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, createdAt: new Date().toISOString() },
+      lastTowerRun: { id: session.id, mapId: session.map.id || "", score, kills: session.kills, waves: session.wave, lives: session.lives, victory, eventNames: session.eventModifier?.events?.map((event) => event.name) || [], createdAt: new Date().toISOString() },
     }, session.id, session.level);
     if (session.lifecycle?.can?.("completed")) session.lifecycle.transition("completed", "reward-applied");
     state.activeTowerSession = null;
@@ -11888,7 +14026,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.3.3",
+    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.4",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -12247,45 +14385,26 @@ function openUserProfile(uid) {
   }
   const isPrivate = character.profilePublic === false;
   const totals = isPrivate ? null : getTotals(character);
-  const race = getRace(character.raceId);
-  const klass = getClass(character.classId);
-  const affinity = getAffinity(character.affinityId);
   const friendship = areFriends(state.user.uid, uid);
   const pending = pendingFriendRequestWith(uid);
+  const socialActions = `
+    ${friendship ? `<span class="tag">Amigo</span>` : pending ? `<span class="tag">Pedido enviado</span>` : `<button class="primary-button" type="button" data-action="send-friend-request" data-user-id="${esc(uid)}">Adicionar amigo</button>`}
+    <button class="ghost-button" type="button" data-action="select-direct-user" data-user-id="${esc(uid)}">Mensagem direta</button>
+  `;
   recordProfileView(uid);
   $("#modalContent").innerHTML = `
-    <article class="public-profile-card">
-    ${renderProfileBanner(character)}
-    <div class="profile-grid">
-      ${renderProfileAvatar(character, { rarity: activeTitle(character)?.rarity || "Comum", online: isUserOnline(state.users.find((user) => user.id === uid) || {}), showStatus: true })}
-      <div class="profile-identity">
-        <p class="eyebrow">${esc(getUserName(uid))}</p>
-        <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
-        <p>${isPrivate ? "Perfil privado" : `${esc(race?.name)} · ${esc(klass?.name)} · ${esc(affinity?.name || "Sem afinidade")}`}</p>
-        ${isPrivate ? "" : `<p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>`}
-        <div class="tag-row">
-          ${activeTitle(character) ? `<span class="tag">${esc(activeTitle(character).name)}</span>` : `<span class="tag">Sem título</span>`}
+    <div class="public-hero-profile">
+      ${renderProfileProtagonist(character, { playerName: getUserName(uid), online: isUserOnline(state.users.find((user) => user.id === uid) || {}), privateProfile: isPrivate, actions: socialActions, compact: true })}
+      ${isPrivate ? `<div class="empty-state profile-private-state"><span class="empty-state__icon" aria-hidden="true">◇</span><h3>Ficha protegida</h3><p>Avatar, nome, título e ações sociais permanecem visíveis. Atributos, itens, história e vínculos estão ocultos.</p></div>` : `
+        <div class="public-profile-data-grid">
+          <article class="panel profile-data-panel">${renderProfileRadar(totals, `public-${uid}`)}</article>
+          <article class="panel profile-data-panel">${renderProfileEquipment(character, { limit: 4, idPrefix: `public-${uid}` })}</article>
+          <article class="panel profile-data-panel">${renderProfileCompanions(character, { limit: 3, idPrefix: `public-${uid}` })}</article>
+          <article class="panel profile-data-panel">${renderProfileAchievementsSummary(character, { limit: 3, idPrefix: `public-${uid}` })}</article>
+          <article class="panel profile-data-panel public-profile-chronicle">${renderProfileChronicle(character, { limit: 4, idPrefix: `public-${uid}` })}</article>
         </div>
-        <div class="token-row">${renderTokens(character.tokens || [])}</div>
-        <div class="action-row" style="margin-top:14px">
-          ${friendship ? `<span class="tag">Amigo</span>` : pending ? `<span class="tag">Pedido enviado</span>` : `<button class="primary-button" type="button" data-action="send-friend-request" data-user-id="${esc(uid)}">Adicionar amigo</button>`}
-          <button class="ghost-button" type="button" data-action="select-direct-user" data-user-id="${esc(uid)}">Mensagem direta</button>
-        </div>
-      </div>
+      `}
     </div>
-    </article>
-    ${isPrivate ? `<div class="empty-state">Este player deixou detalhes, itens, história e atributos privados.</div>` : `
-      <div class="stat-grid" style="margin-top:16px">
-        ${renderStat("Nível", character.level || levelFromXp(character.xp || 0))}
-        ${renderStat("Prestígio", prestigeFor(character))}
-        ${renderStat("PV máx.", totals.hpMax)}
-        ${renderStat("PP máx.", totals.ppMax)}
-      </div>
-      <div class="grid" style="margin-top:16px">
-        <article class="panel span-6"><p class="eyebrow">Pets</p><div class="list">${renderPets(character.pets || [])}</div></article>
-        <article class="panel span-6"><p class="eyebrow">Itens</p><div class="inventory-grid">${renderInventoryItems((character.inventory || []).slice(0, 6), false)}</div></article>
-      </div>
-    `}
   `;
   $("#modal").hidden = false;
 }
@@ -12357,31 +14476,20 @@ async function copyProfileCard() {
 
 function openProfilePreview() {
   const character = currentCharacter();
-  const title = activeTitle(character);
-  const race = getRace(character.raceId);
-  const klass = getClass(character.classId);
-  const affinity = getAffinity(character.affinityId);
-  const totals = getTotals(character);
+  const isPrivate = character.profilePublic === false;
+  const totals = isPrivate ? null : getTotals(character);
   $("#modalContent").innerHTML = `
     <p class="eyebrow">Prévia pública</p>
     <h2>Como sua presença aparece na Interface</h2>
-    <article class="profile-preview-card ${character.profilePublic ? "public" : "private"}">
-      ${renderProfileBanner(character)}
-      <div class="profile-grid">
-        ${renderProfileAvatar(character, { rarity: title?.rarity || "Comum", online: isUserOnline(state.profile || {}) })}
-        <div class="profile-identity">
-          <p class="eyebrow">${isUserOnline(state.profile || {}) ? "Online" : "Offline"} · ${esc(state.profile?.displayName || "Player")}</p>
-          <h2>${esc(character.characterName || "Personagem sem nome")}</h2>
-          <strong class="profile-title-line ${rarityClass(title?.rarity || "Comum")}">${esc(title?.name || "Sem título equipado")}</strong>
-          <p>${esc(race?.name || "Raça não definida")} · ${esc(klass?.name || "Classe não definida")} · ${esc(affinity?.name || "Sem afinidade")}</p>
-          <div class="token-row">${renderTokens(character.tokens || [])}</div>
+    <div class="public-hero-profile profile-preview-modern">
+      ${renderProfileProtagonist(character, { playerName: state.profile?.displayName || "Player", online: isUserOnline(state.profile || {}), privateProfile: isPrivate, compact: true })}
+      ${isPrivate ? `<div class="empty-state profile-private-state"><span class="empty-state__icon" aria-hidden="true">◇</span><p>Outros jogadores verão somente sua identidade, título, retrato e os controles sociais.</p></div>` : `
+        <div class="public-profile-data-grid preview-grid">
+          <article class="panel profile-data-panel">${renderProfileRadar(totals, "preview-profile")}</article>
+          <article class="panel profile-data-panel">${renderProfileEquipment(character, { limit: 3, idPrefix: "preview-profile" })}</article>
         </div>
-      </div>
-      ${character.profilePublic ? `
-        <p class="profile-description">${esc(character.characterDescription || "Sem descrição pública ainda.")}</p>
-        <div class="profile-mini-stats">${renderStat("Nível", character.level || levelFromXp(character.xp || 0))}${renderStat("Prestígio", prestigeFor(character))}${renderStat("PV", totals.hpMax)}${renderStat("PP", totals.ppMax)}</div>
-      ` : `<div class="empty-state">Os outros players veem avatar, nome, título, tokens e os botões sociais. Os detalhes da ficha continuam ocultos.</div>`}
-    </article>
+      `}
+    </div>
   `;
   $("#modal").hidden = false;
 }
@@ -13172,6 +15280,7 @@ async function adminAddItem(form) {
 }
 
 async function adminRemoveItem(uid, instanceId) {
+  if (!window.confirm("Remover este item do inventário do jogador? A operação será registrada na ficha atual.")) return;
   const character = getCharacterFor(uid);
   const inventory = (character.inventory || []).filter((item) => (item.instanceId || item.id) !== instanceId);
   await updateCharacter(uid, { inventory });
@@ -13214,6 +15323,7 @@ async function adminHealVaultPet(uid, instanceId) {
 }
 
 async function adminRemoveVaultItem(uid, instanceId) {
+  if (!window.confirm("Remover este registro do cofre e encerrar qualquer atividade vinculada?")) return;
   const character = getCharacterFor(uid);
   const gachaVault = (character.gachaVault || []).filter((item) => item.instanceId !== instanceId);
   const activeActivities = (character.activeActivities || []).filter((activity) => activity.petId !== instanceId);
@@ -13222,6 +15332,7 @@ async function adminRemoveVaultItem(uid, instanceId) {
 }
 
 async function adminClearActivity(uid, activityId) {
+  if (!window.confirm("Liberar o pet e encerrar esta atividade administrativa?")) return;
   const character = getCharacterFor(uid);
   const activity = (character.activeActivities || []).find((entry) => entry.id === activityId);
   if (!activity) return;
@@ -14098,15 +16209,25 @@ function modalFocusableElements() {
 function focusModal() {
   const modal = $("#modal");
   if (!modal || modal.hidden) return;
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
+  const modalCard = modal.querySelector(".modal-card");
+  normalizeRenderedImages(modal);
+  normalizeRenderedAccessibility(modal);
+  modal.setAttribute("aria-hidden", "false");
+  modalCard?.setAttribute("role", "dialog");
+  modalCard?.setAttribute("aria-modal", "true");
   const title = modal.querySelector("h1, h2, h3");
   if (title) {
     if (!title.id) title.id = `modal-title-${cryptoRandom().slice(0, 8)}`;
-    modal.setAttribute("aria-labelledby", title.id);
+    modalCard?.setAttribute("aria-labelledby", title.id);
+  } else {
+    modalCard?.setAttribute("aria-label", "Janela da Interface do Oráculo");
   }
+  const appShell = $("#appShell");
+  const authScreen = $("#authScreen");
+  if (appShell && !appShell.hidden) appShell.inert = true;
+  if (authScreen && !authScreen.hidden) authScreen.inert = true;
   const focusable = modalFocusableElements();
-  (focusable[0] || modal.querySelector(".modal-card"))?.focus?.({ preventScroll: true });
+  (focusable[0] || modalCard)?.focus?.({ preventScroll: true });
 }
 
 function trapModalFocus(event) {
@@ -14184,6 +16305,8 @@ function openReportModal() {
 }
 
 function closeModal() {
+  skipMonsterBattleAnimation();
+  state.activeMonsterBattle = null;
   stopActiveAimGame("modal-closed");
   stopActiveSealRitual("modal-closed");
   stopActiveCartography("modal-closed");
@@ -14192,8 +16315,17 @@ function closeModal() {
   (state.gachaRevealTimers || []).forEach((timer) => window.clearTimeout(timer));
   state.gachaRevealTimers = [];
   const modal = $("#modal");
+  const modalCard = modal.querySelector(".modal-card");
   modal.hidden = true;
-  modal.removeAttribute("aria-labelledby");
+  modal.setAttribute("aria-hidden", "true");
+  modalCard?.removeAttribute("role");
+  modalCard?.removeAttribute("aria-modal");
+  modalCard?.removeAttribute("aria-labelledby");
+  modalCard?.removeAttribute("aria-label");
+  const appShell = $("#appShell");
+  const authScreen = $("#authScreen");
+  if (appShell) appShell.inert = false;
+  if (authScreen) authScreen.inert = false;
   $("#modalContent").innerHTML = "";
   const returnFocus = state.modalReturnFocus;
   const returnFocusMeta = returnFocus ? {
@@ -14236,6 +16368,11 @@ function syncTowerDeckOptions(form) {
 
 function wireEvents() {
   document.addEventListener("keydown", (event) => {
+    if (state.awakeningCeremonyOpen) {
+      if (event.key === "Escape") { event.preventDefault(); closeAwakeningCeremony(); return; }
+      trapAwakeningCeremonyFocus(event);
+      if (event.key === "Tab") return;
+    }
     if (event.key === "Escape" && !$("#modal")?.hidden) {
       event.preventDefault();
       closeModal();
@@ -14317,10 +16454,17 @@ function wireEvents() {
           document.body.scrollTop = 0;
         };
         resetViewScroll();
-        window.requestAnimationFrame(resetViewScroll);
+        window.requestAnimationFrame(() => {
+          resetViewScroll();
+          $("#mainContent")?.focus?.({ preventScroll: true });
+        });
         window.setTimeout(resetViewScroll, 80);
       }
       if (action === "register") await handleRegister();
+      if (action === "recover-password") await handlePasswordRecovery();
+      if (action === "open-awakening-ceremony") openAwakeningCeremony({ force: true });
+      if (action === "close-awakening-ceremony") closeAwakeningCeremony();
+      if (action === "awakening-open-onboarding") { closeAwakeningCeremony({ resumeOnboarding: false }); openOnboarding(0); }
       if (action === "apply-update") applyAvailableUpdate();
       if (action === "dismiss-update") $("#updateNotice").hidden = true;
       if (action === "toggle-music") await toggleAmbientMusic();
@@ -14337,6 +16481,7 @@ function wireEvents() {
         showAuth();
       }
       if (action === "open-report") openReportModal();
+      if (action === "open-security-center") window.MILLENNIUM_SECURITY_363?.open?.();
       if (action === "catalog-details") openCatalogDetails(button.dataset.catalogType, button.dataset.catalogId);
       if (action === "open-more-nav") openMoreNav();
       if (action === "close-modal") closeModal();
@@ -14406,15 +16551,20 @@ function wireEvents() {
       if (action === "start-seal-ritual") startSealRitual(button.dataset.difficulty || state.minigameDifficulty);
       if (action === "seal-input") handleSealInput(button.dataset.sealSymbol || "");
       if (action === "start-cartography") startCartography(button.dataset.difficulty || state.minigameDifficulty);
-      if (action === "cartography-move") handleCartographyMove(button.dataset.index);
+      if (action === "cartography-move") handleCartographyMove(button.dataset.direction || button.dataset.index);
       if (action === "start-alchemy") startAlchemy(button.dataset.difficulty || state.minigameDifficulty);
       if (action === "alchemy-ingredient") handleAlchemyIngredient(button.dataset.alchemyId || "");
       if (action === "alchemy-reset") resetAlchemySelection();
+      if (action === "alchemy-heat") adjustAlchemyHeat(button.dataset.delta);
+      if (action === "alchemy-brew") resolveAlchemy(state.activeAlchemySession).catch((error) => toast(error?.message || "Não foi possível registrar a mistura."));
+      if (action === "delete-minigame-event") await deleteAdminMinigameEvent(button.dataset.eventId);
       if (action === "preview-season-theme") openSeasonThemePreview(button.closest("form"));
       if (action === "load-season-theme-preset") loadSeasonThemePreset(button.closest("form"));
       if (action === "choose-season-theme") chooseSeasonTheme(button.dataset.themeId);
-      if (action === "gacha-odds") openGachaOdds(button.dataset.kind || state.gachaTab);
-      if (action === "gacha-pool") openGachaPool(button.dataset.kind || state.gachaTab);
+      if (action === "gacha-odds") openMonsterGachaOdds();
+      if (action === "monster-gacha-odds") openMonsterGachaOdds();
+      if (action === "monster-gacha-pool") openMonsterGachaPool();
+      if (action === "gacha-pool") openMonsterGachaPool();
       if (action === "tower-start-wave") startTowerWave();
       if (action === "tower-toggle-pause") toggleTowerPause();
       if (action === "tower-select-pet") selectTowerPet(Number(button.dataset.towerIndex || 0));
@@ -14438,6 +16588,20 @@ function wireEvents() {
         state.chatTab = button.dataset.tab === "direct" ? "direct" : "global";
         render();
       }
+      if (action === "monster-select") { state.selectedMonsterId = button.dataset.monsterId || ""; render(); }
+      if (action === "monster-tab") { state.monsterTab = button.dataset.tab || "summary"; render(); }
+      if (action === "monster-inventory-filter") { state.monsterInventoryFilter = button.dataset.filter || "all"; render(); }
+      if (action === "monster-migrate-legacy") await migrateLegacyMonsters();
+      if (action === "monster-toggle-shiny") await toggleMonsterShiny();
+      if (action === "monster-set-form") await toggleMonsterShiny(button.dataset.shiny === "true");
+      if (action === "monster-equip") await equipMonsterItem(button.dataset.itemInstance);
+      if (action === "monster-unequip") await unequipMonsterSlot(button.dataset.slot);
+      if (action === "monster-use-book") await useMonsterBook(button.dataset.itemInstance);
+      if (action === "monster-care") await careForMonster(button.dataset.care);
+      if (action === "monster-feed-item") await feedMonsterItem(button.dataset.itemInstance);
+      if (action === "monster-ascend") await ascendSelectedMonster();
+      if (action === "monster-toggle-ability") await toggleMonsterAbility(button.dataset.abilityId);
+      if (action === "monster-team-toggle") await toggleMonsterTeam(button.dataset.teamMode, button.dataset.monsterId);
       if (action === "claim-gift") await claimPendingGift();
       if (action === "toggle-equip") await toggleEquip(button.dataset.itemInstance);
       if (action === "start-mission") await startMission(button.dataset.missionId);
@@ -14602,12 +16766,21 @@ function wireEvents() {
         await navigator.clipboard?.writeText(button.dataset.copyValue || "").catch(() => {});
         toast("Valor copiado.");
       }
+      if (action === "monster-mode-tab") { state.monsterModeTab = button.dataset.tab || "dungeon"; render(); }
+      if (action === "monster-dungeon-start") await startMonsterDungeon(Number(button.dataset.phase || 1));
+      if (action === "monster-arena-save-defense") await saveMonsterArenaDefense();
+      if (action === "monster-arena-challenge") await challengeMonsterArena(Number(button.dataset.opponentIndex || 0));
+      if (action === "monster-world-boss-start") await startMonsterWorldBoss();
+      if (action === "monster-arena-shop-buy") await buyArenaOffer(button.dataset.offerId || "");
+      if (action === "monster-battle-skip") skipMonsterBattleAnimation();
       if (action === "accept-creation-proposal") await respondCreationProposal(button.dataset.requestId, "accepted");
       if (action === "contest-creation-proposal") await respondCreationProposal(button.dataset.requestId, "contested");
     } catch (error) {
-      handleFirebaseOperationError(error, `formulario:${type || "desconhecido"}`);
+      handleFirebaseOperationError(error, `acao:${action || "desconhecida"}`);
       console.error(error);
-      toast(firebaseErrorMessage(error));
+      const message = firebaseErrorMessage(error);
+      if (["register", "recover-password"].includes(action)) setAuthNote(message, "danger");
+      toast(message);
     }
   });
 
@@ -14696,6 +16869,7 @@ function wireEvents() {
     event.preventDefault();
     if (form.dataset.submitting === "true") return;
     form.dataset.submitting = "true";
+    form.setAttribute("aria-busy", "true");
     const submitControls = [...form.querySelectorAll('button[type="submit"], input[type="submit"]')];
     submitControls.forEach((control) => { control.disabled = true; });
 
@@ -14710,6 +16884,7 @@ function wireEvents() {
       if (type === "global-chat") await sendGlobalChat(form);
       if (type === "private-chat") await sendPrivateChat(form);
       if (type === "diary-entry") await saveDiaryEntry(form);
+      if (type === "monster-rename") await renameMonster(form);
       if (type === "pet-hunt") await startPetHunt(form);
       if (type === "player-listing") await publishPlayerListing(form);
       if (type === "auction-bid") await placeAuctionBid(form);
@@ -14812,6 +16987,7 @@ function wireEvents() {
       if (type === "admin-mail") await sendAdminMail(form);
       if (type === "review-request") await reviewProgressRequest(form);
       if (type === "admin-ops") await saveAdminOps(form);
+      if (type === "admin-minigame-event") await saveAdminMinigameEvent(form);
       if (type === "admin-settings") {
         const v = formValues(form);
         const themeId = v.seasonTheme || "eclipse";
@@ -14894,9 +17070,12 @@ function wireEvents() {
       }
     } catch (error) {
       console.error(error);
-      toast(firebaseErrorMessage(error));
+      const message = firebaseErrorMessage(error);
+      if (form.dataset.form === "login") setAuthNote(message, "danger");
+      toast(message);
     } finally {
       form.dataset.submitting = "false";
+      form.setAttribute("aria-busy", "false");
       submitControls.forEach((control) => { if (control.isConnected) control.disabled = false; });
     }
   });
@@ -14910,6 +17089,10 @@ try {
   // The site still works when browser storage is unavailable.
 }
 wireEvents();
+PERF_RUNTIME.applyProfile?.();
+PERF_RUNTIME.prepareImages?.(document);
+syncDocumentVisibility();
+document.addEventListener("visibilitychange", syncDocumentVisibility, { passive: true });
 startGachaRotationTicker();
 state.imageFallbackCleanup = POLISH.installImageFallback(document);
 updateBuildBadge();

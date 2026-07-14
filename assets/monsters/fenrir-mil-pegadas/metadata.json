@@ -1,0 +1,40 @@
+{
+  "version": "3.6.4",
+  "speciesId": "fenrir-mil-pegadas",
+  "name": "Fenrir das Mil Pegadas",
+  "pixelScale": 4,
+  "assets": {
+    "thumbnail": "thumbnail.webp",
+    "portrait": "portrait.webp",
+    "idle": "idle.webp",
+    "battleAtlas": "battle-atlas.webp",
+    "battleAtlasMeta": "battle-atlas.json",
+    "towerSprite": "tower-sprite.webp"
+  },
+  "normalPalette": [
+    [
+      58,
+      118,
+      66
+    ],
+    [
+      169,
+      210,
+      102
+    ]
+  ],
+  "shinyPalette": [
+    [
+      169,
+      210,
+      102
+    ],
+    [
+      128,
+      163,
+      156
+    ]
+  ],
+  "loading": "on-demand",
+  "firebaseReads": 0
+}

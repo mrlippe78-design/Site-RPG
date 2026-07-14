@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" shape-rendering="crispEdges">
+<rect width="640" height="360" fill="#09080d"/><circle cx="320" cy="190" r="140" fill="#171020" stroke="#d8b45d" stroke-width="6"/><circle cx="320" cy="190" r="102" fill="none" stroke="#76529c" stroke-width="4" stroke-dasharray="12 10"/>
+<g fill="#f1d17c" font-family="serif" font-size="44" text-anchor="middle"><text x="320" y="74">✦</text><text x="452" y="201">◇</text><text x="320" y="330">△</text><text x="188" y="201">◈</text></g>
+<circle cx="320" cy="190" r="34" fill="#5d2d69" stroke="#f1d17c" stroke-width="5"/>
+</svg>
