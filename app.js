@@ -7,13 +7,7 @@ const firebaseConfig = {
   appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
 };
 
-const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.7.0", commit: "dev", cacheName: "millennium-shell-v3.7.0" };
-const M370 = window.MILLENNIUM_370 || {
-  renderJourney: () => `<section class="panel"><h2>Minha Jornada</h2><p>O módulo 3.7.0 não pôde ser carregado.</p></section>`,
-  renderWorldMap: () => `<section class="panel"><h2>Mapa Mundial</h2><p>O módulo 3.7.0 não pôde ser carregado.</p></section>`,
-  enhanceRoute: () => {}, handlesAction: () => false, handleAction: async () => {}, handlesForm: () => false,
-  handleForm: async () => {}, onInput: () => {}, onChange: () => {},
-};
+const MILLENNIUM_BUILD = window.MILLENNIUM_BUILD_INFO || { version: "3.6.4", commit: "dev", cacheName: "millennium-shell-v3.6.4" };
 // Spark não oferece Cloud Functions. Todas as operações desta edição usam
 // Firestore/Auth e são limitadas pelas regras publicadas junto do site.
 const MILLENNIUM_SPARK_MODE = true;
@@ -180,15 +174,15 @@ const SEASON_ART = {
 };
 
 const TOWER_ENEMY_ART = Object.freeze({
-  crossroads: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-01.webp", elite: "assets/mundo-vivo-370/bosses/boss-01.webp" }),
-  split: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-02.webp", elite: "assets/mundo-vivo-370/bosses/boss-02.webp" }),
-  bridges: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-05.webp", elite: "assets/mundo-vivo-370/bosses/boss-03.webp" }),
-  ring: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-09.webp", elite: "assets/mundo-vivo-370/bosses/boss-04.webp" }),
-  portals: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-13.webp", elite: "assets/mundo-vivo-370/bosses/boss-05.webp" }),
-  citadel: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-17.webp", elite: "assets/mundo-vivo-370/bosses/boss-06.webp" }),
-  marsh: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-21.webp", elite: "assets/mundo-vivo-370/bosses/boss-07.webp" }),
-  rails: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-25.webp", elite: "assets/mundo-vivo-370/bosses/boss-08.webp" }),
-  mirror: Object.freeze({ normal: "assets/mundo-vivo-370/monsters/monster-29.webp", elite: "assets/mundo-vivo-370/bosses/boss-10.webp" }),
+  crossroads: Object.freeze({ normal: "assets/tower-defense/enemies/crossroad-crawler.webp", elite: "assets/tower-defense/enemies/crossroad-brute-elite.webp" }),
+  split: Object.freeze({ normal: "assets/tower-defense/enemies/crossroad-crawler.webp", elite: "assets/tower-defense/enemies/crossroad-brute-elite.webp" }),
+  bridges: Object.freeze({ normal: "assets/tower-defense/enemies/golden-leaf-wisp.webp", elite: "assets/tower-defense/enemies/autumn-sentinel-elite.webp" }),
+  ring: Object.freeze({ normal: "assets/tower-defense/enemies/arena-shellback.webp", elite: "assets/tower-defense/enemies/seven-orb-colossus-elite.webp" }),
+  portals: Object.freeze({ normal: "assets/tower-defense/enemies/blade-guild-runner.webp", elite: "assets/tower-defense/enemies/blade-portal-assassin-elite.webp" }),
+  citadel: Object.freeze({ normal: "assets/tower-defense/enemies/crimson-citadel-imp.webp", elite: "assets/tower-defense/enemies/broken-throne-tyrant.webp" }),
+  marsh: Object.freeze({ normal: "assets/tower-defense/enemies/marsh-bell-slug.webp", elite: "assets/tower-defense/enemies/drowned-bell-monarch.webp" }),
+  rails: Object.freeze({ normal: "assets/tower-defense/enemies/rust-rail-drone.webp", elite: "assets/tower-defense/enemies/rust-locomotive-beast.webp" }),
+  mirror: Object.freeze({ normal: "assets/tower-defense/enemies/mirror-shade.webp", elite: "assets/tower-defense/enemies/black-mirror-sovereign.webp" }),
 });
 
 const FIREBASE_SCRIPTS = [
@@ -229,7 +223,7 @@ const PRESENCE_CHECK_MS = 60 * 1000;
 const PRESENCE_LEASE_TTL_MS = 2 * 60 * 1000;
 const PRESENCE_ONLINE_WINDOW_MS = 20 * 60 * 1000;
 const ORACLE_LABEL = "Oráculo";
-const AWAKENING_CEREMONY_VERSION = "3.7.0";
+const AWAKENING_CEREMONY_VERSION = "3.6.4";
 const CHAT_EMOJIS = ["🔥", "✨", "⚔️", "🛡️", "💰", "👑", "✅", "❌"];
 const ATTRIBUTES = [
   { key: "for", label: "Força", short: "FOR" },
@@ -474,11 +468,11 @@ const DEFAULT_CONTENT = {
     { id: "passe-premium-sazonal", name: "Passe Premium", shop: "Fragmentos do Despertar", cost: 2000, rarity: "Lendário", type: "Passe", description: "Liberação alternativa por esforço extremo nos minigames." },
   ],
   towerMaps: [
-    { id: "cruzamento-das-cortinas", name: "Cruzamento das Cortinas", theme: "Cidade selada", lanes: 3, slots: 6, routeType: "crossroads", enemyFaction: "Vultos da Cortina", enemyTrait: "split", difficulty: "Médio", imageUrl: "assets/mundo-vivo-370/maps/map-01.webp", description: "Três ruas fechadas por energia ritual. Os Vultos se dividem quando a cortina rasga." },
-    { id: "aldeia-das-folhas-douradas", name: "Aldeia das Folhas Douradas", theme: "Vila ninja", lanes: 4, slots: 5, routeType: "bridges", enemyFaction: "Caçadores da Bruma", enemyTrait: "fast", difficulty: "Fácil", imageUrl: "assets/mundo-vivo-370/maps/map-02.webp", description: "Telhados e pontes estreitas. Caçadores velozes forçam uma defesa de alcance." },
-    { id: "arena-das-sete-esferas", name: "Arena das Sete Esferas", theme: "Torneio celestial", lanes: 2, slots: 4, routeType: "ring", enemyFaction: "Gladiadores Vazios", enemyTrait: "armored", difficulty: "Hard", imageUrl: "assets/mundo-vivo-370/maps/map-03.webp", description: "Uma rota circular para inimigos blindados e chefes de impacto brutal." },
-    { id: "sociedade-das-laminas", name: "Sociedade das Lâminas", theme: "Distrito espiritual", lanes: 5, slots: 7, routeType: "portals", enemyFaction: "Ecos Espirituais", enemyTrait: "phase", difficulty: "Pesadelo", imageUrl: "assets/mundo-vivo-370/maps/map-04.webp", description: "Pontes e portais deslocam inimigos espirituais por caminhos imprevisíveis." },
-    { id: "reino-do-pecado-partido", name: "Reino do Pecado Partido", theme: "Castelo amaldiçoado", lanes: 3, slots: 6, routeType: "citadel", enemyFaction: "Juramentados Partidos", enemyTrait: "boss", difficulty: "God Slayer", imageUrl: "assets/mundo-vivo-370/maps/map-05.webp", description: "Um castelo vertical cujos juramentados chamam um chefe a cada onda." },
+    { id: "cruzamento-das-cortinas", name: "Cruzamento das Cortinas", theme: "Cidade selada", lanes: 3, slots: 6, routeType: "crossroads", enemyFaction: "Vultos da Cortina", enemyTrait: "split", difficulty: "Médio", imageUrl: SEASON_ART.maps["cruzamento-das-cortinas"], description: "Três ruas fechadas por energia ritual. Os Vultos se dividem quando a cortina rasga." },
+    { id: "aldeia-das-folhas-douradas", name: "Aldeia das Folhas Douradas", theme: "Vila ninja", lanes: 4, slots: 5, routeType: "bridges", enemyFaction: "Caçadores da Bruma", enemyTrait: "fast", difficulty: "Fácil", imageUrl: SEASON_ART.maps["aldeia-das-folhas-douradas"], description: "Telhados e pontes estreitas. Caçadores velozes forçam uma defesa de alcance." },
+    { id: "arena-das-sete-esferas", name: "Arena das Sete Esferas", theme: "Torneio celestial", lanes: 2, slots: 4, routeType: "ring", enemyFaction: "Gladiadores Vazios", enemyTrait: "armored", difficulty: "Hard", imageUrl: SEASON_ART.maps["arena-das-sete-esferas"], description: "Uma rota circular para inimigos blindados e chefes de impacto brutal." },
+    { id: "sociedade-das-laminas", name: "Sociedade das Lâminas", theme: "Distrito espiritual", lanes: 5, slots: 7, routeType: "portals", enemyFaction: "Ecos Espirituais", enemyTrait: "phase", difficulty: "Pesadelo", imageUrl: SEASON_ART.maps["sociedade-das-laminas"], description: "Pontes e portais deslocam inimigos espirituais por caminhos imprevisíveis." },
+    { id: "reino-do-pecado-partido", name: "Reino do Pecado Partido", theme: "Castelo amaldiçoado", lanes: 3, slots: 6, routeType: "citadel", enemyFaction: "Juramentados Partidos", enemyTrait: "boss", difficulty: "God Slayer", imageUrl: SEASON_ART.maps["reino-do-pecado-partido"], description: "Um castelo vertical cujos juramentados chamam um chefe a cada onda." },
   ],
   gachaBanners: [
     {
@@ -672,7 +666,6 @@ function defaultContentState() {
 
 const PLAYER_NAVIGATION = [
     { id: "player-home", label: "Início", icon: "⌂" },
-    { id: "journey", label: "Minha Jornada", icon: "✦" },
     { id: "profile", label: "Perfil", icon: "◈" },
     { id: "character", label: "Personagem", icon: "✎" },
     { id: "character-life", label: "Dar Vida", icon: "✧" },
@@ -684,7 +677,6 @@ const PLAYER_NAVIGATION = [
     { id: "inventory", label: "Inventário", icon: "◎" },
     { id: "grimoire", label: "Grimório", icon: "✧" },
     { id: "codex", label: "Codex", icon: "✥" },
-    { id: "world-map", label: "Mapa Mundial", icon: "⌖" },
     { id: "cultures", label: "Culturas", icon: "◉" },
     { id: "professions", label: "Ofícios", icon: "⚒" },
     { id: "help", label: "Guia", icon: "?" },
@@ -721,7 +713,6 @@ const NAVS = {
 
 const VIEW_TITLES = {
   "player-home": "Centro do Despertar",
-  journey: "Minha Jornada",
   profile: "Identidade do Herói",
   character: "Ficha do personagem",
   "character-life": "Dar Vida",
@@ -733,7 +724,6 @@ const VIEW_TITLES = {
   inventory: "Inventário e dinheiro",
   grimoire: "Grimório e títulos",
   codex: "Codex do mundo",
-  "world-map": "Mapa Mundial",
   cultures: "Culturas de Millennium",
   professions: "Ofícios e conhecimentos",
   help: "Guia, regras e tutorial",
@@ -967,8 +957,8 @@ function dataEconomyEnabled() {
 
 const NAV_GROUPS = {
   player: [
-    { label: "Obrigatório", ids: ["character", "journey", "roulette", "missions", "chat"] },
-    { label: "Recomendado", ids: ["character-life", "creations", "world-map", "guild", "cultures", "professions"] },
+    { label: "Obrigatório", ids: ["character", "roulette", "missions", "chat"] },
+    { label: "Recomendado", ids: ["character-life", "creations", "guild", "cultures", "professions"] },
     { label: "Opcional", ids: ["player-home", "profile", "codex", "help", "gacha", "inventory", "grimoire", "market", "pass", "ranking", "hall", "diary"] },
     { label: "Lazer", ids: ["minigames"] },
     { label: "Suporte", ids: ["reports"] },
@@ -977,8 +967,8 @@ const NAV_GROUPS = {
     { label: "Núcleo de decisão", ids: ["admin-home", "admin-users", "admin-requests", "admin-reports"] },
     { label: "Registros do mundo", ids: ["admin-content", "admin-rewards", "admin-economy", "admin-mail"] },
     { label: "Observação e crise", ids: ["admin-ops", "admin-chat", "admin-missions", "admin-settings"] },
-    { label: "Jogador · Obrigatório", ids: ["character", "journey", "roulette", "missions", "chat"] },
-    { label: "Jogador · Recomendado", ids: ["character-life", "creations", "world-map", "guild", "cultures", "professions"] },
+    { label: "Jogador · Obrigatório", ids: ["character", "roulette", "missions", "chat"] },
+    { label: "Jogador · Recomendado", ids: ["character-life", "creations", "guild", "cultures", "professions"] },
     { label: "Jogador · Opcional", ids: ["player-home", "profile", "codex", "help", "gacha", "inventory", "grimoire", "market", "pass", "ranking", "hall", "diary"] },
     { label: "Jogador · Lazer", ids: ["minigames"] },
     { label: "Jogador · Suporte", ids: ["reports"] },
@@ -1844,7 +1834,6 @@ function defaultCharacter(uid, displayName = "") {
     minigameStats: {},
     minigameProgress: {},
     minigameHistory: [],
-    minigameRecords: {},
     minigameCompletionKeys: [],
     huntCompletionKeys: [],
     huntHistory: [],
@@ -1854,26 +1843,12 @@ function defaultCharacter(uid, displayName = "") {
     activeMissions: [],
     premiumPassUnlocked: false,
     seasonPassXp: 0,
-    seasonTokens: 0,
     passMissionClaims: [],
     rollHistory: [],
     titles: [],
     tokens: [],
     pets: [],
     inventory: [],
-    reforgeMaterials: 0,
-    operationReceipts: [],
-    masteries: {},
-    discoveredRegionIds: [],
-    discoveredLocationIds: [],
-    discoveredNpcIds: [],
-    discoveredBestiaryIds: [],
-    defeatedWantedIds: [],
-    defeatedBossIds: [],
-    completedMissionIds: [],
-    completedArcIds: [],
-    activeMascotId: "",
-    schemaVersion: 370,
     power: { name: "", description: "" },
     powers: [],
     powerSlots: 1,
@@ -3251,7 +3226,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.7.0 Mundo Vivo.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.4 Aurora.",
     "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
     "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
     "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
@@ -3824,7 +3799,7 @@ function activateRouteSubscriptions(view = state.view) {
     }, (query) => query.where("participants", "array-contains", state.user.uid).orderBy("createdAt", "desc").limit(30), "legacy-direct-messages");
   }
 
-  if (["player-home", "journey", "missions", "guild", "creations", "pass", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
+  if (["player-home", "missions", "guild", "creations", "pass", "admin-home", "admin-requests", "admin-ops"].includes(view)) subscribeOwnRequests();
 
   if (view === "character-life") {
     routeDocument(`characters/${state.user.uid}/lore`, "main", (lore) => {
@@ -4509,7 +4484,7 @@ function renderSecondaryModuleFrame(view, content) {
           <p class="eyebrow">${esc(module.eyebrow)}</p>
           <h2>${esc(module.title)}</h2>
           <p>${esc(module.description)}</p>
-          <div class="secondary-module-context-row">${mapContext}<span class="secondary-module-context"><i aria-hidden="true">✦</i>Interface 3.7.0</span></div>
+          <div class="secondary-module-context-row">${mapContext}<span class="secondary-module-context"><i aria-hidden="true">✦</i>Interface 3.6.4</span></div>
         </div>
         <div class="secondary-module-ledger" aria-label="Resumo do módulo">
           ${stats.map(([label, value]) => `<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join("")}
@@ -4614,9 +4589,6 @@ function render() {
     ? renderOracleFrame(state.view, viewContent)
     : viewContent;
   STABILITY.replaceHtmlIfChanged($("#viewHost"), oracleFramed);
-  M370.enhanceRoute(state.view, $("#viewHost"), m370Context());
-  const trainingHint = $("#viewHost")?.querySelector('[data-care="train"] small');
-  if (trainingHint) trainingHint.textContent = "−15 energia · fortalece o próximo Livro";
   normalizeRenderedImages($("#viewHost"));
   normalizeRenderedAccessibility($("#viewHost"));
   announceCurrentRoute();
@@ -9015,7 +8987,7 @@ function renderOracleFrame(view, content) {
         <p class="eyebrow">${esc(details.eyebrow)}</p>
         <h2>${esc(details.title)}</h2>
         <p>${esc(details.description)}</p>
-        <div class="oracle-command-status"><span class="oracle-status-dot" aria-hidden="true"></span><strong>Interface 3.7.0</strong><span>${state.demo ? "Ambiente demonstrativo" : "Sessão administrativa"}</span></div>
+        <div class="oracle-command-status"><span class="oracle-status-dot" aria-hidden="true"></span><strong>Interface 3.6.4</strong><span>${state.demo ? "Ambiente demonstrativo" : "Sessão administrativa"}</span></div>
       </div>
       <div class="oracle-eye-constellation" aria-hidden="true"><span class="oracle-orbit orbit-a"></span><span class="oracle-orbit orbit-b"></span><span class="oracle-eye-core">◉</span><i></i><b></b></div>
       <div class="oracle-metric-grid" aria-label="Métricas desta área">${metrics.map(([label, value]) => `<article class="oracle-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></article>`).join("")}</div>
@@ -10451,12 +10423,10 @@ async function useMonsterBook(itemInstanceId) {
   if (!item || definition?.category !== "book") throw new Error("Livro de XP inválido.");
   const monsters = monsterInstancesForCharacter(character);
   const monster = selectedMonsterInstance(character);
-  const trainingBonus = Math.max(0, Math.min(0.25, Number(monster.nextBookXpBonus || 0)));
-  const effectiveXp = Math.round(Number(definition.xp || 0) * (1 + trainingBonus));
-  const result = monsterApi().applyXp(monster, effectiveXp);
+  const result = monsterApi().applyXp(monster, definition.xp);
   if (result.blocked) { toast("O monstro está no limite da estrela. Faça a ascensão antes de usar o livro."); return; }
-  const next = { ...result.monster, nextBookXpBonus: 0, bankedXp: Number(monster.bankedXp || 0) + Number(result.overflowXp || 0), history: [...(monster.history || []), monsterHistoryEntry("Experiência", `${definition.name}: +${result.appliedXp} XP${trainingBonus ? ` com bônus de treino de ${Math.round(trainingBonus * 100)}%` : ""}, ${result.levelsGained} nível(is).`)] };
-  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterInventory: consumeMonsterInventoryItem(inventory, itemInstanceId, 1) }, `${definition.name} aplicado: +${result.appliedXp} XP${trainingBonus ? " com bônus de treino" : ""}.`);
+  const next = { ...result.monster, bankedXp: Number(monster.bankedXp || 0) + Number(result.overflowXp || 0), history: [...(monster.history || []), monsterHistoryEntry("Experiência", `${definition.name}: +${result.appliedXp} XP, ${result.levelsGained} nível(is).`)] };
+  await persistMonsterPatch({ monsterInstances: replaceMonsterInstance(monsters, next), monsterInventory: consumeMonsterInventoryItem(inventory, itemInstanceId, 1) }, `${definition.name} aplicado: +${result.appliedXp} XP.`);
 }
 
 async function careForMonster(action) {
@@ -10530,126 +10500,9 @@ async function toggleMonsterTeam(mode, instanceId) {
   await persistMonsterPatch({ monsterTeams: teams }, "Equipe atualizada.");
 }
 
-function m370Context() {
-  const character = currentCharacter();
-  return {
-    userId: state.user?.uid || "",
-    role: state.role,
-    character: { ...character, passLevel: seasonPassLevel(character) },
-    profile: state.profile || {},
-    progressRequests: state.progressRequests || [],
-    settings: state.settings || {},
-    users: state.users || [],
-    content: state.content || {},
-  };
-}
-
-function renderJourney370() {
-  return M370.renderJourney(m370Context());
-}
-
-function renderWorldMap370() {
-  return M370.renderWorldMap(m370Context());
-}
-
-function openM370Modal(html) {
-  const modal = $("#modal");
-  const content = $("#modalContent");
-  if (!modal || !content) return;
-  content.innerHTML = html;
-  modal.hidden = false;
-  modal.setAttribute("aria-hidden", "false");
-}
-
-function applyLocalCharacter370(next) {
-  const uid = state.user?.uid;
-  if (!uid || !next) return;
-  const merged = { ...getCharacterFor(uid), ...next, id: uid, ownerId: uid };
-  state.characters = state.characters.filter((entry) => entry.ownerId !== uid && entry.id !== uid).concat(merged);
-  state.character = merged;
-}
-
-async function commitCharacterOperation370(receiptId, mutation) {
-  const uid = state.user?.uid;
-  if (!uid) throw new Error("Entre na conta antes de concluir esta operação.");
-  const current = currentCharacter();
-  const currentReceipts = Array.isArray(current.operationReceipts) ? current.operationReceipts : [];
-  if (currentReceipts.some((entry) => entry.id === receiptId)) return current;
-
-  const patch = mutation(current);
-  const receipt = { id: receiptId, createdAt: new Date().toISOString(), schemaVersion: 370 };
-  await updateCharacter(uid, {
-    ...patch,
-    operationReceipts: [...currentReceipts, receipt].slice(-80),
-    schemaVersion: 370,
-  }, { securityAction: receiptId.split(":")[0].slice(0, 80) });
-  render();
-  return currentCharacter();
-}
-
-function m370Bridge() {
-  return {
-    context: m370Context,
-    render,
-    toast,
-    openModal: openM370Modal,
-    updateCharacter: (patch) => updateCharacter(state.user.uid, patch),
-    addProgressRequest: (payload) => addDoc("progressRequests", {
-      ...payload,
-      uid: state.user.uid,
-      ownerId: state.user.uid,
-      xp: Math.max(0, Math.min(5000, Number(payload.xp || 0))),
-      partyIds: Array.isArray(payload.partyIds) ? payload.partyIds.slice(0, 4) : [],
-      playerName: state.profile?.displayName || "Player",
-      characterName: currentCharacter().characterName || "Personagem",
-      submittedAt: new Date().toISOString(),
-    }),
-    writeDocument: (collection, id, payload) => writeDoc(collection, id, payload),
-    commitMinigameResult: (result) => {
-      const receiptId = `minigame:${result.mode}:${result.completedAt}`;
-      return commitCharacterOperation370(receiptId, (character) => {
-        const records = { ...(character.minigameRecords || {}) };
-        const previous = records[result.mode] || {};
-        records[result.mode] = Number(result.score || 0) >= Number(previous.score || 0) ? { ...result } : previous;
-        const history = [...(character.minigameHistory || []), { ...result, receiptId }].slice(-40);
-        return { minigameRecords: records, minigameHistory: history };
-      });
-    },
-    consumeSeasonCatchUp: () => {
-      const character = currentCharacter();
-      const level = seasonPassLevel(character);
-      const cost = Math.max(1, Math.ceil(level / 10));
-      const season = Number(state.settings.seasonNumber || 1);
-      const receiptId = `pass-catchup:${season}:${level}`;
-      return commitCharacterOperation370(receiptId, (source) => {
-        if (Number(source.seasonTokens || 0) < cost) throw new Error(`São necessários ${cost} Token(s) de Temporada.`);
-        return { seasonTokens: Number(source.seasonTokens || 0) - cost, seasonPassXp: Number(source.seasonPassXp || 0) + 250 };
-      });
-    },
-    applyReforge: (preview) => {
-      const receiptId = `reforge:${preview.itemId}:${preview.seed}`;
-      return commitCharacterOperation370(receiptId, (source) => {
-        const field = Array.isArray(source.inventory) ? "inventory" : "items";
-        const inventory = Array.isArray(source[field]) ? source[field] : [];
-        const target = inventory.find((entry) => (entry.instanceId || entry.id) === preview.itemId);
-        if (!target) throw new Error("O item da prévia não está mais no inventário.");
-        if (Number(source.gold || 0) < Number(preview.cost || 0)) throw new Error("PO insuficiente para esta Reforja.");
-        if (Number(source.reforgeMaterials || 0) < Number(preview.materialCost || 0)) throw new Error("Materiais de Reforja insuficientes.");
-        const updated = inventory.map((entry) => entry === target ? {
-          ...entry,
-          secondaryAttributes: { ...(entry.secondaryAttributes || {}), [preview.attribute]: Number(preview.value || 0) },
-          reforgedAt: new Date().toISOString(),
-        } : entry);
-        return { [field]: updated, gold: Number(source.gold || 0) - Number(preview.cost || 0), reforgeMaterials: Number(source.reforgeMaterials || 0) - Number(preview.materialCost || 0) };
-      });
-    },
-  };
-}
-
 
 const VIEW_RENDERERS = {
   "player-home": renderPlayerHome,
-  journey: renderJourney370,
   profile: renderProfile,
   character: renderCharacterForm,
   "character-life": renderCharacterLife,
@@ -10663,7 +10516,6 @@ const VIEW_RENDERERS = {
   inventory: renderInventory,
   grimoire: renderGrimoire,
   codex: renderCodex,
-  "world-map": renderWorldMap370,
   help: renderHelpCenter,
   market: renderMarket,
   pass: renderSeasonPassView,
@@ -13443,11 +13295,7 @@ async function finishTowerDefense(session, victory) {
 
 function passRewardPatch(character, rewardText, tier) {
   const reward = String(rewardText || "Recompensa do passe");
-  const patch = {
-    seasonTokens: Number(character.seasonTokens || 0) + 1,
-    reforgeMaterials: Number(character.reforgeMaterials || 0) + (Number(tier?.tier || 0) % 5 === 0 ? 1 : 0),
-    schemaVersion: 370,
-  };
+  const patch = {};
   const gold = Number(reward.match(/(\d+)\s*PO/i)?.[1] || 0);
   const essences = Number(reward.match(/(\d+)\s*ess[eê]ncias?/i)?.[1] || 0);
   const awakening = Number(reward.match(/Fragmentos do Despertar\s*x?(\d+)/i)?.[1] || 0);
@@ -14325,7 +14173,7 @@ function canSendChat() {
 
 function reportRuntimeContext() {
   return {
-    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.7.0",
+    build: window.MILLENNIUM_BUILD_INFO?.version || document.querySelector('meta[name="millennium-build"]')?.content || "3.6.4",
     route: state.view,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     userAgent: navigator.userAgent,
@@ -16759,7 +16607,6 @@ function wireEvents() {
         });
         window.setTimeout(resetViewScroll, 80);
       }
-      if (M370.handlesAction(action)) await M370.handleAction(action, button.dataset, m370Bridge());
       if (action === "register") await handleRegister();
       if (action === "recover-password") await handlePasswordRecovery();
       if (action === "open-awakening-ceremony") openAwakeningCeremony({ force: true });
@@ -17085,8 +16932,6 @@ function wireEvents() {
   });
 
   document.addEventListener("change", (event) => {
-    M370.onChange(event, m370Bridge());
-    if (event.target.matches("[data-m370-map-filter]")) return;
     if (event.target.matches("input[type='file'][data-media-field]")) {
       previewMediaInput(event.target).catch((error) => toast(firebaseErrorMessage(error)));
       return;
@@ -17138,7 +16983,6 @@ function wireEvents() {
   });
 
   document.addEventListener("input", (event) => {
-    M370.onInput(event);
     if (event.target.dataset.cropControl) {
       updateCropPreview(event.target.closest("form"), event.target.dataset.cropControl);
     }
@@ -17179,7 +17023,6 @@ function wireEvents() {
     try {
       const type = form.dataset.form;
       await resolveFormMedia(form, mediaFolderForForm(type));
-      if (M370.handlesForm(type)) await M370.handleForm(type, form, m370Bridge());
       if (type === "login") await handleLogin(form);
       if (type === "terms-accept") await acceptTerms();
       if (type === "character") await saveCharacter(form);

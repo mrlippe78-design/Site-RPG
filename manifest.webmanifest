@@ -1,8 +1,8 @@
 {
   "name": "Millennium RPG",
   "short_name": "Millennium",
-  "id": "./?build=3.7.0",
-  "version": "3.7.0",
+  "id": "./?build=3.6.4",
+  "version": "3.6.4",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#090B10",

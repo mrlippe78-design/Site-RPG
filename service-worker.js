@@ -1,6 +1,6 @@
-const MILLENNIUM_BUILD = "3.7.0";
-const PIXEL_ART_REVISION = "mundo-vivo-pixel-art-1";
-const UI_PATCH_REVISION = "mundo-vivo-ui-1";
+const MILLENNIUM_BUILD = "3.6.4";
+const PIXEL_ART_REVISION = "pixel-art-2";
+const UI_PATCH_REVISION = "firebase-ui-6";
 const CACHE_PREFIX = "millennium-";
 const SHELL_CACHE = `millennium-shell-v${MILLENNIUM_BUILD}-${UI_PATCH_REVISION}`;
 // A revisão separada força a troca do cache de imagens sem alterar a versão
@@ -69,10 +69,7 @@ const REQUIRED_SHELL = [
   `./css/monster-economy.css?v=${MILLENNIUM_BUILD}`,
   `./css/monster-modes.css?v=${MILLENNIUM_BUILD}`,
   `./css/minigames-vivid.css?v=${MILLENNIUM_BUILD}`,
-  `./css/millennium-3.7.0.css?v=${MILLENNIUM_BUILD}`,
   `./content-v3.js?v=${MILLENNIUM_BUILD}`,
-  `./millennium-3.7.0-data.js?v=${MILLENNIUM_BUILD}`,
-  `./millennium-3.7.0.js?v=${MILLENNIUM_BUILD}`,
   `./app.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-security.js?v=${MILLENNIUM_BUILD}`,
   "./manifest.webmanifest",
@@ -88,10 +85,6 @@ const ON_DEMAND_ASSETS = Object.freeze([
   "./assets/awakening/sigilo-primeiro-despertar.svg",
   "./assets/monsters/monster-species-3.6.4.json",
   "./assets/monsters/placeholder-monster.svg",
-  "./assets/mundo-vivo-370/atlas-monstros-chefes-370.webp",
-  "./assets/mundo-vivo-370/atlas-mascotes-370.webp",
-  "./assets/mundo-vivo-370/atlas-mapas-td-370.webp",
-  "./assets/mundo-vivo-370/atlas-itens-370.webp",
   "./assets/placeholders/banner-16x9.svg",
   "./assets/placeholders/portrait-4x5.svg",
   "./assets/placeholders/pet-card-3x4.svg",

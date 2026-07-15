@@ -35,14 +35,14 @@
   }
 
   const DUNGEON_PHASES = Object.freeze([
-    { id: "dungeon-01", phase: 1, name: "Mandíbula da Cripta", element: "Cinzas", role: "Ataque", speciesId: "sapo-cinzas", image: "assets/mundo-vivo-370/bosses/boss-01.webp", power: 0.82, rounds: 15, rewardTier: 1, materialId: "essence-awakening", material: 3 },
-    { id: "dungeon-02", phase: 2, name: "Sentinela do Musgo Negro", element: "Natureza", role: "Defesa", speciesId: "javali-musgo", image: "assets/mundo-vivo-370/bosses/boss-02.webp", power: 1.05, rounds: 16, rewardTier: 1, materialId: "essence-defense", material: 3 },
-    { id: "dungeon-03", phase: 3, name: "Sino Faminto", element: "Som", role: "Controle", speciesId: "urso-sineiro", image: "assets/mundo-vivo-370/bosses/boss-03.webp", power: 1.28, rounds: 17, rewardTier: 2, materialId: "seal-resonance", material: 3 },
-    { id: "dungeon-04", phase: 4, name: "Hidra das Águas Mortas", element: "Veneno", role: "Debuff", speciesId: "hidra-pantano", image: "assets/mundo-vivo-370/bosses/boss-04.webp", power: 1.58, rounds: 18, rewardTier: 2, materialId: "alchemy-catalyst", material: 2 },
-    { id: "dungeon-05", phase: 5, name: "Dragão da Forja Afundada", element: "Metal", role: "Ataque", speciesId: "dragao-oficina", image: "assets/mundo-vivo-370/bosses/boss-05.webp", power: 1.92, rounds: 19, rewardTier: 3, materialId: "essence-ascendant", material: 2 },
-    { id: "dungeon-06", phase: 6, name: "Fenrir do Portão Partido", element: "Eclipse", role: "Assassino", speciesId: "fenrir-mil-pegadas", image: "assets/mundo-vivo-370/bosses/boss-06.webp", power: 2.34, rounds: 20, rewardTier: 3, materialId: "boss-core-dust", material: 1 },
-    { id: "dungeon-07", phase: 7, name: "Leviatã do Vidro Negro", element: "Vazio", role: "Controle", speciesId: "leviata-vidro-negro", image: "assets/mundo-vivo-370/bosses/boss-07.webp", power: 2.82, rounds: 21, rewardTier: 4, materialId: "boss-core-dust", material: 2 },
-    { id: "dungeon-08", phase: 8, name: "Devorador do Último Eclipse", element: "Eclipse", role: "Ataque", speciesId: "devorador-ultimo-eclipse", image: "assets/mundo-vivo-370/bosses/boss-08.webp", power: 3.45, rounds: 22, rewardTier: 5, materialId: "boss-core-dust", material: 3 },
+    { id: "dungeon-01", phase: 1, name: "Mandíbula da Cripta", element: "Cinzas", role: "Ataque", speciesId: "sapo-cinzas", image: "assets/bosses/dungeon-01-rato-rei.webp", power: 0.82, rounds: 15, rewardTier: 1, materialId: "essence-awakening", material: 3 },
+    { id: "dungeon-02", phase: 2, name: "Sentinela do Musgo Negro", element: "Natureza", role: "Defesa", speciesId: "javali-musgo", image: "assets/bosses/dungeon-02-corvo-ponte.webp", power: 1.05, rounds: 16, rewardTier: 1, materialId: "essence-defense", material: 3 },
+    { id: "dungeon-03", phase: 3, name: "Sino Faminto", element: "Som", role: "Controle", speciesId: "urso-sineiro", image: "assets/bosses/dungeon-03-sino-faminto.webp", power: 1.28, rounds: 17, rewardTier: 2, materialId: "seal-resonance", material: 3 },
+    { id: "dungeon-04", phase: 4, name: "Hidra das Águas Mortas", element: "Veneno", role: "Debuff", speciesId: "hidra-pantano", image: "assets/bosses/dungeon-04-hidra-aguas-mortas.webp", power: 1.58, rounds: 18, rewardTier: 2, materialId: "alchemy-catalyst", material: 2 },
+    { id: "dungeon-05", phase: 5, name: "Dragão da Forja Afundada", element: "Metal", role: "Ataque", speciesId: "dragao-oficina", image: "assets/bosses/dungeon-05-dragao-forja.webp", power: 1.92, rounds: 19, rewardTier: 3, materialId: "essence-ascendant", material: 2 },
+    { id: "dungeon-06", phase: 6, name: "Fenrir do Portão Partido", element: "Eclipse", role: "Assassino", speciesId: "fenrir-mil-pegadas", image: "assets/bosses/dungeon-06-fenrir-portao.webp", power: 2.34, rounds: 20, rewardTier: 3, materialId: "boss-core-dust", material: 1 },
+    { id: "dungeon-07", phase: 7, name: "Leviatã do Vidro Negro", element: "Vazio", role: "Controle", speciesId: "leviata-vidro-negro", image: "assets/bosses/dungeon-07-leviata-vidro-negro.webp", power: 2.82, rounds: 21, rewardTier: 4, materialId: "boss-core-dust", material: 2 },
+    { id: "dungeon-08", phase: 8, name: "Devorador do Último Eclipse", element: "Eclipse", role: "Ataque", speciesId: "devorador-ultimo-eclipse", image: "assets/bosses/dungeon-08-devorador-eclipse.webp", power: 3.45, rounds: 22, rewardTier: 5, materialId: "boss-core-dust", material: 3 },
   ]);
 
   const WORLD_BOSS = Object.freeze({
@@ -51,7 +51,7 @@
     element: "Vazio",
     speciesId: "devorador-ultimo-eclipse",
     maxRounds: 18,
-    image: "assets/mundo-vivo-370/bosses/boss-10.webp",
+    image: "assets/bosses/world-aurora-devourer.webp",
     modifiers: { hp: 18, attack: 0.28, defense: 0.92 },
   });
 

@@ -42,7 +42,7 @@
     { itemId: "xp-book-ancestral", name: "Tomo Ancestral", category: "book", rarity: "Lendário", image: "assets/monster-items/xp-book-ancestral.webp", xp: 14000 },
     { itemId: "ration-essence", name: "Ração de Essência", category: "food", rarity: "Comum", image: "assets/monster-items/ration-essence.webp", energy: 24, bond: 5 },
     ...RARITY_ORDER.map((rarity) => ({ itemId: `core-${slug(rarity)}`, name: `Núcleo ${rarity}`, category: "core", rarity, image: `assets/monster-items/core-${slug(rarity)}.webp` })),
-  ].map((entry, index) => ({ ...entry, image: `assets/mundo-vivo-370/items/item-${String(index + 1).padStart(2, "0")}.webp` })));
+  ]);
   const itemByIdMap = new Map(itemCatalog.map((item) => [item.itemId, item]));
 
 
@@ -80,12 +80,11 @@
 
   function assetBundleForSpecies(speciesId) {
     const id = String(speciesId || "rato-brasa");
-    const speciesIndex = Math.max(0, base.species.findIndex((entry) => entry.speciesId === id));
-    const sprite = `assets/mundo-vivo-370/monsters/monster-${String(speciesIndex + 1).padStart(2, "0")}.webp`;
+    const root = `assets/monsters/${id}`;
     return Object.freeze({
-      thumbnail: sprite, portrait: sprite, idle: sprite,
-      battleAtlas: sprite, battleAtlasMeta: "",
-      towerSprite: sprite, metadata: "",
+      thumbnail: `${root}/thumbnail.webp`, portrait: `${root}/portrait.webp`, idle: `${root}/idle.webp`,
+      battleAtlas: `${root}/battle-atlas.webp`, battleAtlasMeta: `${root}/battle-atlas.json`,
+      towerSprite: `${root}/tower-sprite.webp`, metadata: `${root}/metadata.json`,
     });
   }
 
@@ -345,10 +344,7 @@
     else if (action === "train") {
       if (next.energy < 15) return { ok: false, monster, reason: "energy", message: "Energia insuficiente para treinar." };
       next.energy = clamp(next.energy - 15, 0, 100); next.bond = clamp(next.bond + 2, 0, 100);
-      next.nextBookXpBonus = clamp(Number(next.nextBookXpBonus || 0) + 0.05, 0, 0.25);
-      next.lastTrainingAt = new Date().toISOString();
-      result.xp = 0;
-      result.message = `Treino concluído: o próximo Livro de XP recebeu +${Math.round(next.nextBookXpBonus * 100)}% de eficiência.`;
+      const xpResult = applyXp(next, 90 + rarityIndex(next.rarity) * 10); Object.assign(next, xpResult.monster); result.xp = xpResult.appliedXp; result.message = `Treino concluído: +${xpResult.appliedXp} XP.`;
     } else return { ok: false, monster, reason: "unknown-action", message: "Ação de cuidado desconhecida." };
     return { ok: true, monster: next, ...result };
   }
