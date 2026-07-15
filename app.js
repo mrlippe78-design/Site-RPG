@@ -4391,6 +4391,10 @@ async function pruneMessages(collection, messages, predicate = () => true) {
 }
 
 async function updateCharacter(uid, patch, options = {}) {
+  if (!state.demo && window.MILLENNIUM_SECURITY_364?.ensureReady) {
+    const securityReady = await window.MILLENNIUM_SECURITY_364.ensureReady();
+    if (!securityReady) throw new Error("A camada de integridade do Firebase não foi inicializada. Atualize a página antes de repetir a operação.");
+  }
   await writeDoc("characters", uid, { ...patch, ownerId: uid }, options);
   const merged = { ...getCharacterFor(uid), ...patch, ownerId: uid };
   if (uid === state.user?.uid) state.character = merged;
@@ -11160,7 +11164,7 @@ async function rollAffinity(qty = 1) {
       patch.affinityId = chosenResult.affinity.id;
       patch.affinitySnapshot = { ...chosenResult.affinity, categoryName: chosenResult.category?.name || "", rarity: chosenResult.category?.rarity || "" };
     }
-    await updateCharacter(state.user.uid, patch);
+    await updateCharacter(state.user.uid, patch, { securityAction: `affinity-gacha-${amount}x` });
 
     if (chosenResult && isRareReward(chosenResult.category?.rarity)) {
       playSound("rare");

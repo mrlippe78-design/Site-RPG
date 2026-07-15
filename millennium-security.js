@@ -1,6 +1,7 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4-r3";
+  const FIRESTORE_CONTRACT = "3.6.4-r3-gacha-sync";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -1137,7 +1138,17 @@
     }, 50);
   }
 
-  window.MILLENNIUM_SECURITY_363 = Object.freeze({
+  async function ensureReady() {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (runtime.installed || installWriteGuard()) return true;
+      await new Promise((resolve) => window.setTimeout(resolve, 25));
+    }
+    return runtime.installed;
+  }
+
+  const securityApi = Object.freeze({
+    contractVersion: FIRESTORE_CONTRACT,
+    ensureReady,
     open: openSecurityCenter,
     close: closeSecurityCenter,
     snapshotState,
@@ -1145,6 +1156,9 @@
     analyzeMutation,
     bootstrapOrVerifySnapshot,
   });
+
+  window.MILLENNIUM_SECURITY_364 = securityApi;
+  window.MILLENNIUM_SECURITY_363 = securityApi;
 
   initialize();
 }());
