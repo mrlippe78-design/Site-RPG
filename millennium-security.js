@@ -9,7 +9,12 @@
     "minigameCompletionKeys", "minigameProgress", "minigameStats", "minigameHistory",
     "lastAimRun", "lastTowerRun", "lastSealRun", "lastCartographyRun",
     "lastAlchemyRun", "seasonPassXp", "passMissionClaims", "passClaims",
-    "premiumPassUnlocked", "marketHistory", "tokens", "titles",
+    "premiumPassUnlocked", "marketHistory", "tokens", "titles", "pets", "shopHistory",
+    "minigameEventAttempts", "monsterSchemaVersion", "monsterInstances", "monsterInventory",
+    "monsterResources", "monsterTeams", "monsterEconomyVersion", "monsterGachaPity",
+    "monsterGachaHistory", "monsterFirstTenClaimed", "monsterDungeon", "monsterDungeonHistory",
+    "monsterArena", "monsterArenaHistory", "arenaDefenseSnapshot", "arenaFragments",
+    "arenaShopPurchases", "arenaShopHistory", "monsterWorldBoss", "monsterWorldBossHistory",
   ]);
   const RESTORABLE_FIELDS = [...SENSITIVE_FIELDS];
   const SUMMARY_FIELDS = Object.freeze([
@@ -136,6 +141,10 @@
     result.vaultCount = Array.isArray(character.gachaVault) ? character.gachaVault.length : 0;
     result.tokenCount = Array.isArray(character.tokens) ? character.tokens.length : 0;
     result.titleCount = Array.isArray(character.titles) ? character.titles.length : 0;
+    result.petCount = Array.isArray(character.pets) ? character.pets.length : 0;
+    result.monsterCount = Array.isArray(character.monsterInstances) ? character.monsterInstances.length : 0;
+    result.monsterInventoryCount = Array.isArray(character.monsterInventory) ? character.monsterInventory.length : 0;
+    result.arenaFragments = numeric(character.arenaFragments);
     result.premiumPass = character.premiumPassUnlocked === true;
     return result;
   }
@@ -173,6 +182,9 @@
     if (Object.prototype.hasOwnProperty.call(patch, "premiumPassUnlocked")) return "premium-pass";
     if (Object.prototype.hasOwnProperty.call(patch, "gachaHistory") || Object.prototype.hasOwnProperty.call(patch, "pityCounter")) return "gacha";
     if (Object.prototype.hasOwnProperty.call(patch, "minigameHistory")) return "minigame-reward";
+    if (Object.prototype.hasOwnProperty.call(patch, "monsterInstances") || Object.prototype.hasOwnProperty.call(patch, "monsterInventory")) return "monster-operation";
+    if (Object.prototype.hasOwnProperty.call(patch, "arenaFragments")) return "monster-arena";
+    if (Object.prototype.hasOwnProperty.call(patch, "shopHistory")) return "fragment-shop";
     if (Object.prototype.hasOwnProperty.call(patch, "huntHistory")) return "hunt-reward";
     if (Object.prototype.hasOwnProperty.call(patch, "marketHistory")) return "market-operation";
     if (Object.prototype.hasOwnProperty.call(patch, "seasonPassXp")) return "pass-progress";
