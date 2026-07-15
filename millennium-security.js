@@ -18,14 +18,16 @@
   ]);
   const RESTORABLE_FIELDS = [...SENSITIVE_FIELDS];
   const SUMMARY_FIELDS = Object.freeze([
-    ["gold", "gold"],
-    ["millenniumCoins", "coins"],
-    ["affinityAttempts", "attempts"],
-    ["gachaEnergy", "energy"],
-    ["pityCounter", "pity"],
-    ["totalRolls", "rolls"],
-    ["totalRares", "rares"],
-    ["seasonPassXp", "passXp"],
+    ["gold", "gold", 0],
+    ["millenniumCoins", "coins", 0],
+    ["affinityAttempts", "attempts", 0],
+    // Fichas anteriores ao sistema de energia nao possuem o campo. O restante
+    // do site e as regras sempre trataram essa ausencia como a carga cheia.
+    ["gachaEnergy", "energy", 30],
+    ["pityCounter", "pity", 0],
+    ["totalRolls", "rolls", 0],
+    ["totalRares", "rares", 0],
+    ["seasonPassXp", "passXp", 0],
   ]);
   const runtime = {
     installed: false,
@@ -136,7 +138,9 @@
 
   function summary(character = {}) {
     const result = {};
-    SUMMARY_FIELDS.forEach(([source, target]) => { result[target] = numeric(character[source]); });
+    SUMMARY_FIELDS.forEach(([source, target, fallback]) => {
+      result[target] = numeric(character[source] ?? fallback);
+    });
     result.inventoryCount = Array.isArray(character.inventory) ? character.inventory.length : 0;
     result.vaultCount = Array.isArray(character.gachaVault) ? character.gachaVault.length : 0;
     result.tokenCount = Array.isArray(character.tokens) ? character.tokens.length : 0;
