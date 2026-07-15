@@ -1273,3 +1273,23 @@ body[data-interface-scope="oracle"] .nav-item[aria-current="page"] {
     background: Highlight;
   }
 }
+
+/* 3.6.4: limita o controle de musica ao proprio botao. Regras antigas
+   definiam top e bottom ao mesmo tempo e criavam uma faixa invisivel clicavel. */
+.music-control {
+  bottom: auto;
+  block-size: 2.75rem;
+  align-items: center;
+  pointer-events: none;
+}
+
+.music-control > .music-float,
+.music-control > .music-volume {
+  pointer-events: auto;
+}
+
+@media (max-width: 45rem) {
+  .music-control {
+    block-size: 2.375rem;
+  }
+}

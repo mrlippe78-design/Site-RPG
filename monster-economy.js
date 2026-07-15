@@ -277,9 +277,12 @@
     const coinsBefore = Math.max(0, Number(character.millenniumCoins || 0));
     if (coinsBefore < cost) return { ok: false, reason: "insufficient-coins", patch: {}, summary: null };
 
-    const monsters = (Array.isArray(character.monsterInstances) && character.monsterInstances.length
-      ? character.monsterInstances
-      : [...(character.gachaVault || []).filter((entry) => entry.kind === "pet"), ...(character.pets || [])])
+    const nativeMonsters = Array.isArray(character.monsterInstances) ? character.monsterInstances : [];
+    const legacyMonsters = [...(character.gachaVault || []).filter((entry) => entry.kind === "pet"), ...(character.pets || [])]
+      .map((entry) => base.normalizeMonsterInstance(entry))
+      .filter((entry, index, list) => list.findIndex((candidate) => candidate.speciesId === entry.speciesId) === index)
+      .slice(0, 25);
+    const monsters = (nativeMonsters.length ? nativeMonsters : legacyMonsters)
       .map((entry) => base.normalizeMonsterInstance(entry));
     const inventory = Array.isArray(character.monsterInventory) ? clone(character.monsterInventory) : [];
     const resources = {
@@ -370,7 +373,7 @@
       monsterFirstTenClaimed: Boolean(character.monsterFirstTenClaimed || invocation.quantity === 10),
       gold: Math.max(0, Number(character.gold || 0)) + summary.gold,
       millenniumCoins: coinsBefore - cost + summary.coins,
-      gachaHistory: [...(character.gachaHistory || []), ...legacyHistoryEntries].slice(-160),
+      gachaHistory: [...(character.gachaHistory || []), ...legacyHistoryEntries].slice(-120),
     };
 
     return { ok: true, patch, summary, receipt: historyEntry };
