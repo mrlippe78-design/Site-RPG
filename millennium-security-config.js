@@ -1,6 +1,6 @@
 (function configureMillenniumSecurity() {
   window.MILLENNIUM_SECURITY_CONFIG = Object.freeze({
-    version: "3.7.0",
+    version: "3.6.4",
     appCheckSiteKey: "6LeEalItAAAAAOGgpv7wJCA_yajxeHciF_5tIAbi",
     appCheckEnabled: false,
     appCheckProvider: "recaptcha-enterprise",

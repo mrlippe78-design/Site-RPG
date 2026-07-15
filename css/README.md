@@ -1,6 +1,6 @@
-# Design System — Millennium 3.7.0
+# Design System — Millennium 3.6.4
 
-A pasta `css/` preserva a base 3.6.4 e recebe a camada isolada `millennium-3.7.0.css` como extensão canônica do Mundo Vivo.
+A pasta `css/` é a camada visual canônica da versão 3.6.4.
 
 ## Ordem
 

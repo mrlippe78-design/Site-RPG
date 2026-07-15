@@ -1,6 +1,6 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.7.0";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -15,7 +15,6 @@
     "monsterGachaHistory", "monsterFirstTenClaimed", "monsterDungeon", "monsterDungeonHistory",
     "monsterArena", "monsterArenaHistory", "arenaDefenseSnapshot", "arenaFragments",
     "arenaShopPurchases", "arenaShopHistory", "monsterWorldBoss", "monsterWorldBossHistory",
-    "minigameRecords", "seasonTokens", "reforgeMaterials", "operationReceipts", "schemaVersion",
   ]);
   const RESTORABLE_FIELDS = [...SENSITIVE_FIELDS];
   const SUMMARY_FIELDS = Object.freeze([
@@ -352,17 +351,8 @@
           return { blocked: true, quarantined: true, until: quarantineUntil, incidentId: userData.lastSecurityIncidentId || "" };
         }
 
-        const effectiveData = cloneForFirestore(data);
-        if (Array.isArray(effectiveData.operationReceipts)) {
-          const previousReceipts = Array.isArray(beforeCharacter.operationReceipts) ? beforeCharacter.operationReceipts : [];
-          const previousIds = new Set(previousReceipts.map((entry) => String(entry?.id || "")).filter(Boolean));
-          const novelReceipts = effectiveData.operationReceipts.filter((entry) => entry?.id && !previousIds.has(String(entry.id)));
-          if (!novelReceipts.length) return { blocked: false, duplicate: true };
-          effectiveData.operationReceipts = [...previousReceipts, ...novelReceipts].slice(-80);
-        }
-
-        const afterCharacter = { ...beforeCharacter, ...effectiveData, ownerId: beforeCharacter.ownerId || id };
-        const analysis = analyzeMutation(beforeCharacter, afterCharacter, effectiveData, action);
+        const afterCharacter = { ...beforeCharacter, ...cloneForFirestore(data), ownerId: beforeCharacter.ownerId || id };
+        const analysis = analyzeMutation(beforeCharacter, afterCharacter, data, action);
         if (analysis.blocked) {
           const strike = Math.max(0, Number(userData.securityStrikeCount || 0)) + 1;
           const restriction = restrictionPatch({ incidentId, analysis, strike });
@@ -386,7 +376,7 @@
         const changes = delta(beforeSummary, afterSummary);
         const state = snapshotState(afterCharacter);
         const securityPatch = {
-          ...effectiveData,
+          ...cloneForFirestore(data),
           economyRevision: afterRevision,
           lastEconomyReceiptId: receiptId,
           lastEconomyAction: String(action).slice(0, 80),
@@ -424,7 +414,6 @@
     }
 
     if (transactionResult.fallback) return runtime.originalWriteDoc(collection, id, data, options);
-    if (transactionResult.duplicate) return undefined;
     if (transactionResult.quarantined) {
       openSecurityCenter();
       const until = new Date(transactionResult.until).toLocaleString("pt-BR");

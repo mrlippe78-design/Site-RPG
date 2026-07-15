@@ -1,7 +1,7 @@
 (function registerMillenniumPerformanceRuntime364(global) {
   "use strict";
 
-  const BUILD = "3.7.0";
+  const BUILD = "3.6.4";
   const loadedAssets = new Set();
   const pendingAssets = new Map();
   const queue = [];

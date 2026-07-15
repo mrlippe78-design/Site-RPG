@@ -1,6 +1,6 @@
-# Millennium 3.7.0 — Mundo Vivo
+# Millennium 3.6.4 — Sentinela do Oráculo
 
-A versão 3.7.0 amplia a camada de integridade para Jornada, sessões, minigames, Passe, Reforja e monstros, preservando a edição Firebase Spark e documentos legados.
+A versão 3.6.4 atualiza a camada de integridade da Sentinela para os campos atuais de monstros, eventos e loja, preservando a edição Firebase Spark e sem excluir ficha, inventário, pets ou histórico.
 
 ## O que foi implementado
 
@@ -49,7 +49,7 @@ Não coloque chaves privadas, secrets ou credenciais administrativas nesse arqui
 No pacote Firebase, execute no Windows:
 
 ```text
-ATUALIZAR_FIREBASE_3_7_0_SEGURANCA.bat
+ATUALIZAR_FIREBASE_3_6_4_SEGURANCA.bat
 ```
 
 O script publica somente as regras e os índices do Firestore. Não instala Cloud Functions e não apaga documentos.
