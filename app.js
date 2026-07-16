@@ -818,6 +818,68 @@ function defaultContentState() {
   return Object.fromEntries(CONTENT_COLLECTIONS.map((collection) => [collection, [...DEFAULT_CONTENT[collection]]]));
 }
 
+const RACE_CANONICAL_VISUAL_FIELDS = Object.freeze([
+  "imageHero", "imagePortrait", "imageCard", "imageThumbnail", "emblemUrl",
+  "fallbackUrl", "lockedImageUrl", "altText", "focusX", "focusY", "zoom",
+]);
+const RACE_CANONICAL_LORE_FIELDS = Object.freeze([
+  "summary", "description", "origin", "biome", "culture", "history", "appearance",
+  "reputation", "symbolism", "worldRelation", "professions", "factions", "keywords",
+]);
+
+function raceCatalogKey(value = "") {
+  return normalize(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function catalogValuePresent(value) {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return String(value ?? "").trim().length > 0;
+}
+
+function mergeCanonicalRaceCatalog(entries = []) {
+  const incoming = Array.isArray(entries) ? entries.filter(Boolean) : [];
+  const consumed = new Set();
+  const canonical = (DEFAULT_CONTENT.races || []).map((baseRace) => {
+    const matchIndex = incoming.findIndex((candidate, index) => {
+      if (consumed.has(index)) return false;
+      return candidate.id === baseRace.id
+        || raceCatalogKey(candidate.name) === raceCatalogKey(baseRace.name)
+        || raceCatalogKey(candidate.id) === raceCatalogKey(baseRace.id);
+    });
+    const remote = matchIndex >= 0 ? incoming[matchIndex] : null;
+    if (matchIndex >= 0) consumed.add(matchIndex);
+    const merged = { ...baseRace, ...(remote || {}), id: baseRace.id };
+
+    // As artes oficiais locais são a fonte canônica. O Firestore pode continuar
+    // guardando ajustes de conteúdo sem apagar imagens quando documentos antigos
+    // possuírem somente imageUrl, nome, bônus e passiva.
+    RACE_CANONICAL_VISUAL_FIELDS.forEach((field) => {
+      if (catalogValuePresent(baseRace[field])) merged[field] = baseRace[field];
+    });
+    RACE_CANONICAL_LORE_FIELDS.forEach((field) => {
+      if (!catalogValuePresent(merged[field]) && catalogValuePresent(baseRace[field])) merged[field] = baseRace[field];
+    });
+    if (!catalogValuePresent(merged.passive)) merged.passive = baseRace.passive || "";
+    if (!catalogValuePresent(merged.bonus)) merged.bonus = { ...(baseRace.bonus || {}) };
+    merged.habitat = catalogValuePresent(remote?.habitat)
+      ? remote.habitat
+      : (catalogValuePresent(baseRace.habitat) ? baseRace.habitat : (merged.biome || baseRace.biome || "Habitat não registrado."));
+    merged.biome = catalogValuePresent(merged.biome) ? merged.biome : merged.habitat;
+    return merged;
+  });
+
+  const extras = incoming
+    .filter((_entry, index) => !consumed.has(index))
+    .map((entry) => ({
+      ...entry,
+      habitat: entry.habitat || entry.biome || "Habitat não registrado.",
+      fallbackUrl: entry.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp",
+      lockedImageUrl: entry.lockedImageUrl || "assets/m364/races/fallbacks/race-locked.webp",
+    }));
+  return [...canonical, ...extras];
+}
+
 const PLAYER_NAVIGATION = [
     { id: "player-home", label: "Início", icon: "⌂" },
     { id: "profile", label: "Perfil", icon: "◈" },
@@ -3905,7 +3967,9 @@ function subscribeOwnRequests() {
 }
 
 function decorateCatalog(collection, items) {
-  const decorated = WORLD.decorateCollection(collection, items.length ? items : DEFAULT_CONTENT[collection]);
+  const source = items.length ? items : DEFAULT_CONTENT[collection];
+  const prepared = collection === "races" ? mergeCanonicalRaceCatalog(source) : source;
+  const decorated = WORLD.decorateCollection(collection, prepared);
   state.content[collection] = decorated;
   if (collection === "affinities") state.content.affinities = FOUNDATIONS.enrichAffinities(state.content.affinities, state.content.affinityCategories);
   return decorated;
@@ -6451,7 +6515,7 @@ function renderRaceLoreDetails(race = {}) {
   return `
     <div class="race-lore-grid" aria-label="Identidade e história de ${esc(race.name || "raça")}">
       <section><small>Origem</small><p>${esc(race.origin || "Origem não registrada.")}</p></section>
-      <section><small>Bioma</small><p>${esc(race.biome || "Bioma não registrado.")}</p></section>
+      <section><small>Habitat</small><p>${esc(race.habitat || race.biome || "Habitat não registrado.")}</p></section>
       <section><small>Cultura</small><p>${esc(race.culture || "Cultura não registrada.")}</p></section>
       <section><small>Aparência</small><p>${esc(race.appearance || "Aparência não registrada.")}</p></section>
       <section><small>Passiva básica</small><p>${esc(race.passive || "Passiva racial ainda não registrada.")}</p></section>
@@ -6466,14 +6530,14 @@ function renderRaceLoreDetails(race = {}) {
 
 function renderRaceComparison(races = state.content.races || []) {
   return `
-    <section class="race-comparison" aria-labelledby="race-comparison-title">
-      <div class="panel-heading"><div><p class="eyebrow">Comparativo racial</p><h3 id="race-comparison-title">Povos distintos, identidades próprias</h3></div><span class="tag">${races.length} raças canônicas</span></div>
+    <details class="race-comparison" aria-labelledby="race-comparison-title">
+      <summary><span><small>Comparativo racial</small><strong id="race-comparison-title">Comparar as ${races.length} raças</strong></span><em>Origem, habitat, passiva e símbolo</em></summary>
       <div class="race-comparison-scroll" tabindex="0">
-        <table><thead><tr><th>Raça</th><th>Origem</th><th>Bioma</th><th>Passiva básica</th><th>Marca visual</th></tr></thead><tbody>
-          ${races.map((race) => `<tr><th><span><img src="${esc(race.emblemUrl || race.fallbackUrl)}" data-fallback-src="${esc(race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="40" height="40" loading="lazy" decoding="async" alt="" />${esc(race.name)}</span></th><td>${esc(race.origin || "—")}</td><td>${esc(race.biome || "—")}</td><td>${esc(race.passive || "—")}</td><td>${esc(race.symbolism || "—")}</td></tr>`).join("")}
+        <table><thead><tr><th>Raça</th><th>Origem</th><th>Habitat</th><th>Passiva básica</th><th>Marca visual</th></tr></thead><tbody>
+          ${races.map((race) => `<tr><th><span><img src="${esc(race.emblemUrl || race.fallbackUrl)}" data-fallback-src="${esc(race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="40" height="40" loading="lazy" decoding="async" alt="" />${esc(race.name)}</span></th><td data-label="Origem">${esc(race.origin || "—")}</td><td data-label="Habitat">${esc(race.habitat || race.biome || "—")}</td><td data-label="Passiva">${esc(race.passive || "—")}</td><td data-label="Símbolo">${esc(race.symbolism || "—")}</td></tr>`).join("")}
         </tbody></table>
       </div>
-    </section>`;
+    </details>`;
 }
 
 function characterStatComposition(character = currentCharacter()) {
@@ -8019,15 +8083,22 @@ function renderCodexResults(tab = state.codexTab || "affinities") {
         ${visible.map((item, index) => {
           const visual = codexVisualFor(item, index, tab);
           const presentation = POLISH.codexPresentation(tab, item, codexContextFor(tab, item));
+          const isRace = tab === "races";
+          const raceImage = item.imageCard || item.imageThumbnail || item.imageHero || visual.thumbnail;
+          const metaMarkup = isRace
+            ? `<div class="codex-card-meta"><span><small>Bônus</small>${esc(bonusToText(item.bonus))}</span></div>`
+            : `<div class="codex-card-meta">${presentation.meta.slice(0, 6).map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>`;
+          const raceFacts = isRace ? `<div class="race-card-facts"><span><small>Origem</small><b>${esc(POLISH.compactText(item.origin || "Origem não registrada.", 92))}</b></span><span><small>Habitat</small><b>${esc(POLISH.compactText(item.habitat || item.biome || "Habitat não registrado.", 92))}</b></span><span class="wide"><small>Passiva</small><b>${esc(POLISH.compactText(item.passive || "Passiva não registrada.", 130))}</b></span></div>` : "";
           return `
-            <article class="codex-card codex-card-summary" role="listitem">
+            <article class="codex-card codex-card-summary ${isRace ? "codex-race-card" : ""}" role="listitem">
               <div class="codex-card-media">
-                <img src="${esc(visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="400" height="300" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+                <img src="${esc(isRace ? raceImage : visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="640" height="420" style="object-position:${visual.focusX}% ${visual.focusY}%" />
               </div>
               <div class="codex-card-body">
-                <div class="codex-card-meta">${presentation.meta.slice(0, 6).map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
+                ${metaMarkup}
                 <h3>${esc(presentation.title)}</h3>
                 <p>${esc(presentation.summary)}</p>
+                ${raceFacts}
                 <button class="ghost-button codex-open-button" type="button" data-action="open-codex-entry" data-collection="${esc(collection)}" data-entry-id="${esc(item.id)}">Abrir registro</button>
               </div>
             </article>
@@ -8043,7 +8114,7 @@ function renderCodexResults(tab = state.codexTab || "affinities") {
     journey: () => renderJourneyCodex(),
     affinities: () => renderCodexCards(state.content.affinities || [], "affinities"),
     categories: () => renderCodexCards(state.content.affinityCategories || [], "affinityCategories"),
-    races: () => `${renderRaceComparison(state.content.races || [])}${renderCodexCards(state.content.races || [], "races")}`,
+    races: () => `${renderCodexCards(state.content.races || [], "races")}${renderRaceComparison(state.content.races || [])}`,
     classes: () => renderCodexCards(state.content.classes || [], "classes"),
     biomes: () => renderCodexCards(state.content.biomes || [], "biomes"),
     kingdoms: () => renderCodexCards(state.content.kingdoms || [], "kingdoms"),
@@ -8120,7 +8191,7 @@ function filterCodexItems(items) {
   const search = normalize(state.codexSearch || "");
   const filter = state.codexFilter || "all";
   const ranked = [...items].filter((item) => {
-    const text = normalize(`${item.name || ""} ${item.title || ""} ${item.summary || ""} ${item.description || ""} ${item.passive || ""} ${item.role || ""} ${item.region || ""} ${item.rarity || ""} ${item.origin || ""} ${item.biome || ""} ${item.culture || ""} ${item.history || ""} ${item.appearance || ""} ${item.reputation || ""} ${item.symbolism || ""} ${item.worldRelation || ""} ${(item.keywords || []).join(" ")} ${(item.professions || []).join(" ")} ${(item.factions || []).join(" ")}`);
+    const text = normalize(`${item.name || ""} ${item.title || ""} ${item.summary || ""} ${item.description || ""} ${item.passive || ""} ${item.role || ""} ${item.region || ""} ${item.rarity || ""} ${item.origin || ""} ${item.habitat || ""} ${item.biome || ""} ${item.culture || ""} ${item.history || ""} ${item.appearance || ""} ${item.reputation || ""} ${item.symbolism || ""} ${item.worldRelation || ""} ${(item.keywords || []).join(" ")} ${(item.professions || []).join(" ")} ${(item.factions || []).join(" ")}`);
     const rarity = item.rarity || getCategory(item.categoryId)?.rarity || "";
     return (!search || text.includes(search)) && (filter === "all" || rarity === filter);
   });
@@ -9693,10 +9764,25 @@ function forgeVisualFields(collection, item = {}) {
   if (collection === "races") {
     return `
       <label><span>Nome da raça</span><input name="name" value="${esc(item.name || "")}" required /></label>
-      ${mediaInput("imageUrl", "Imagem da raça", item.imageUrl || "")}
+      <label><span>Origem</span><input name="origin" value="${esc(item.origin || "")}" placeholder="Onde esse povo surgiu" /></label>
+      <label><span>Habitat</span><input name="habitat" value="${esc(item.habitat || item.biome || "")}" placeholder="Ambientes em que vive" /></label>
+      <label><span>Bioma legado</span><input name="biome" value="${esc(item.biome || item.habitat || "")}" placeholder="Compatibilidade com registros antigos" /></label>
+      ${mediaInput("imageHero", "Banner da raça", item.imageHero || item.imageUrl || "")}
+      ${mediaInput("imagePortrait", "Retrato da raça", item.imagePortrait || "")}
+      ${mediaInput("imageCard", "Arte do card", item.imageCard || "")}
+      ${mediaInput("imageThumbnail", "Miniatura", item.imageThumbnail || "")}
+      ${mediaInput("emblemUrl", "Ícone ou sigilo", item.emblemUrl || "")}
       <fieldset class="forge-fieldset wide"><legend>Bônus de atributo</legend>${forgeBonusInputs(item)}</fieldset>
       <label class="wide"><span>Passiva racial</span><textarea name="passive" rows="4">${esc(item.passive || "")}</textarea></label>
-      <label class="wide"><span>Descrição e limites</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>`;
+      <label class="wide"><span>Resumo</span><textarea name="summary" rows="3">${esc(item.summary || "")}</textarea></label>
+      <label class="wide"><span>Descrição</span><textarea name="description" rows="4">${esc(item.description || "")}</textarea></label>
+      <label class="wide"><span>Cultura</span><textarea name="culture" rows="3">${esc(item.culture || "")}</textarea></label>
+      <label class="wide"><span>História</span><textarea name="history" rows="4">${esc(item.history || "")}</textarea></label>
+      <label class="wide"><span>Aparência</span><textarea name="appearance" rows="3">${esc(item.appearance || "")}</textarea></label>
+      <label class="wide"><span>Reputação</span><textarea name="reputation" rows="3">${esc(item.reputation || "")}</textarea></label>
+      <label class="wide"><span>Simbolismo</span><textarea name="symbolism" rows="3">${esc(item.symbolism || "")}</textarea></label>
+      <label class="wide"><span>Relação com o mundo</span><textarea name="worldRelation" rows="3">${esc(item.worldRelation || "")}</textarea></label>
+      <label class="wide"><span>Palavras-chave</span><input name="keywords" value="${esc((item.keywords || []).join(", "))}" placeholder="forja, montanha, tradição" /></label>`;
   }
   if (collection === "classes") {
     return `
@@ -15160,7 +15246,33 @@ async function saveForgeVisual(form) {
   const base = { ...(existing || {}), name: values.name || existing?.name || "Novo registro", imageUrl: values.imageUrl || "", rarity: values.rarity || existing?.rarity || "Comum" };
   let payload = base;
   if (collection === "races") {
-    payload = { ...(existing || {}), name: values.name || "Nova raça", imageUrl: values.imageUrl || "", bonus: forgeBonusFromValues(values), passive: values.passive || "", description: values.description || "" };
+    const list = (value) => String(value || "").split(",").map((entry) => entry.trim()).filter(Boolean);
+    payload = {
+      ...(existing || {}),
+      name: values.name || "Nova raça",
+      imageUrl: values.imageHero || existing?.imageUrl || "",
+      imageHero: values.imageHero || existing?.imageHero || "",
+      imagePortrait: values.imagePortrait || existing?.imagePortrait || "",
+      imageCard: values.imageCard || existing?.imageCard || "",
+      imageThumbnail: values.imageThumbnail || existing?.imageThumbnail || "",
+      emblemUrl: values.emblemUrl || existing?.emblemUrl || "",
+      bonus: forgeBonusFromValues(values),
+      passive: values.passive || "",
+      summary: values.summary || "",
+      description: values.description || "",
+      origin: values.origin || "",
+      habitat: values.habitat || values.biome || "",
+      biome: values.biome || values.habitat || "",
+      culture: values.culture || "",
+      history: values.history || "",
+      appearance: values.appearance || "",
+      reputation: values.reputation || "",
+      symbolism: values.symbolism || "",
+      worldRelation: values.worldRelation || "",
+      keywords: list(values.keywords),
+      fallbackUrl: existing?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp",
+      lockedImageUrl: existing?.lockedImageUrl || "assets/m364/races/fallbacks/race-locked.webp",
+    };
   }
   if (collection === "classes") {
     payload = { ...(existing || {}), name: values.name || "Nova classe", imageUrl: values.imageUrl || "", bonus: forgeBonusFromValues(values), role: values.role || "", paths: String(values.paths || "").split(",").map((value) => value.trim()).filter(Boolean), description: values.description || "" };

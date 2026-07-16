@@ -123,7 +123,7 @@
       add(tab === "classes" ? "Função" : "Passiva", tab === "classes" ? item.role : item.passive);
       if (tab === "races") {
         add("Origem", item.origin);
-        add("Bioma", item.biome);
+        add("Habitat", item.habitat || item.biome);
         add("Símbolo", item.symbolism);
       }
     } else if (tab === "bestiary") {
