@@ -1,7 +1,7 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4-r3";
-  const FIRESTORE_CONTRACT = "3.6.4-r3-gacha-sync";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4-r3.1";
+  const FIRESTORE_CONTRACT = "3.6.4-r3.1-gacha-sync";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -64,6 +64,26 @@
 
   function db() {
     return window.firebase?.firestore ? firebase.firestore() : null;
+  }
+
+  function firestoreGuard() {
+    return window.MILLENNIUM_FIRESTORE_GUARD || null;
+  }
+
+  function firestorePaused() {
+    return Boolean(firestoreGuard()?.isPaused?.() || window.MILLENNIUM_FIRESTORE_CIRCUIT?.paused);
+  }
+
+  function isQuotaError(error = {}) {
+    const code = String(error?.code || error?.name || "").replace(/^firestore\//, "").toLowerCase();
+    const message = String(error?.message || "").toLowerCase();
+    return code === "resource-exhausted" || message.includes("quota exceeded") || message.includes("resource exhausted");
+  }
+
+  function reportFirestoreError(error, source) {
+    if (!isQuotaError(error)) return false;
+    firestoreGuard()?.trip?.(error, source);
+    return true;
   }
 
   function authUser() {
@@ -410,7 +430,9 @@
         return { blocked: false, receiptId, afterRevision };
       });
     } catch (error) {
-      await recordDeniedIncident({ action, data, error }).catch(() => {});
+      if (!reportFirestoreError(error, "security-owner-transaction")) {
+        await recordDeniedIncident({ action, data, error }).catch(() => {});
+      }
       throw error;
     }
 
@@ -456,7 +478,7 @@
 
   async function bootstrapOrVerifySnapshot(uid, providedCharacter = null, providedProfile = null) {
     const database = db();
-    if (!database || !uid || runtime.role === "admin") return;
+    if (!database || !uid || runtime.role === "admin" || firestorePaused()) return;
     if (runtime.snapshotVerifiedUid === uid) return;
     if (runtime.snapshotVerifyPromise) return runtime.snapshotVerifyPromise;
     const character = providedCharacter || runtime.character;
@@ -512,12 +534,15 @@
   }
 
   function scheduleSnapshotVerification() {
-    if (!runtime.user || runtime.role === "admin" || !runtime.profile || !runtime.character) return;
+    if (firestorePaused() || !runtime.user || runtime.role === "admin" || !runtime.profile || !runtime.character) return;
     if (runtime.snapshotVerifiedUid === runtime.user.uid || runtime.snapshotVerifyPromise) return;
     if (runtime.snapshotVerifyTimer) window.clearTimeout(runtime.snapshotVerifyTimer);
     runtime.snapshotVerifyTimer = window.setTimeout(() => {
       runtime.snapshotVerifyTimer = 0;
-      bootstrapOrVerifySnapshot(runtime.user.uid, runtime.character, runtime.profile).catch((error) => console.warn("Security snapshot:", error));
+      if (firestorePaused()) return;
+      bootstrapOrVerifySnapshot(runtime.user.uid, runtime.character, runtime.profile).catch((error) => {
+        if (!reportFirestoreError(error, "security-snapshot")) console.warn("Security snapshot:", error);
+      });
     }, 800);
   }
 
@@ -613,7 +638,7 @@
   async function recordDeniedIncident({ action, data, error }) {
     const database = db();
     const user = authUser();
-    if (!database || !user || runtime.role === "admin") return;
+    if (firestorePaused() || !database || !user || runtime.role === "admin") return;
     const code = String(error?.code || error?.message || "denied").slice(0, 160);
     if (!/permission|denied|failed-precondition|security/i.test(code)) return;
     const signature = `${action}:${code}`;
@@ -688,7 +713,7 @@
 
   function startAlertListener() {
     const database = db();
-    if (!database || !runtime.user || runtime.alertUnsub) {
+    if (firestorePaused() || !database || !runtime.user || runtime.alertUnsub) {
       updateAlertDot();
       return;
     }
@@ -698,9 +723,10 @@
     runtime.alertUnsub = query.onSnapshot((snapshot) => {
       runtime.pendingAlert = !snapshot.empty;
       updateAlertDot();
-    }, () => {
+    }, (error) => {
       runtime.pendingAlert = false;
       updateAlertDot();
+      if (reportFirestoreError(error, "security-alert-listener")) stopAlertListener();
     });
     window.MILLENNIUM_SECURITY_ACTIVE_LISTENERS = 1;
   }
@@ -1110,6 +1136,14 @@
   }
 
   function installObservers() {
+    window.addEventListener("millennium:firestore-paused", () => {
+      stopAlertListener();
+      if (runtime.snapshotVerifyTimer) window.clearTimeout(runtime.snapshotVerifyTimer);
+      runtime.snapshotVerifyTimer = 0;
+      runtime.snapshotVerifyPromise = null;
+      runtime.pendingAlert = false;
+      updateAlertDot();
+    });
     document.addEventListener("click", rememberIntent, true);
     document.addEventListener("submit", rememberForm, true);
     runtime.observer = new MutationObserver(() => {

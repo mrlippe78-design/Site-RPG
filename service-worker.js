@@ -1,6 +1,6 @@
-const MILLENNIUM_BUILD = "3.6.4-r3";
+const MILLENNIUM_BUILD = "3.6.4-r3.1";
 const PIXEL_ART_REVISION = "pixel-art-2";
-const UI_PATCH_REVISION = "firebase-gacha-sync-r3";
+const UI_PATCH_REVISION = "firebase-circuit-r3-1";
 const CACHE_PREFIX = "millennium-";
 const SHELL_CACHE = `millennium-shell-v${MILLENNIUM_BUILD}-${UI_PATCH_REVISION}`;
 // A revisão separada força a troca do cache de imagens sem alterar a versão
