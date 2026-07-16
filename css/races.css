@@ -472,3 +472,95 @@
     min-block-size: 2.25rem;
   }
 }
+
+
+/* Racefix 3 — personagens reais, origens/biomas vinculados e comparativo legível. */
+.codex-view[data-codex-active-tab="races"] .codex-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-media {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  background: #050910;
+}
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-media > img:first-child {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.codex-race-emblem {
+  position: absolute;
+  inset-inline-end: .75rem;
+  inset-block-end: .75rem;
+  inline-size: 3.4rem !important;
+  block-size: 3.4rem !important;
+  aspect-ratio: 1;
+  object-fit: cover !important;
+  border: 2px solid rgb(218 180 92 / .75);
+  border-radius: .75rem;
+  background: #050910;
+  box-shadow: 0 .4rem 1rem rgb(0 0 0 / .55);
+}
+.race-world-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-top: .35rem;
+}
+.race-world-links button {
+  max-inline-size: 100%;
+  padding: .2rem .42rem;
+  border: 1px solid color-mix(in srgb, var(--accent, #d7b35c) 42%, var(--line, #31435c));
+  border-radius: 999px;
+  background: rgb(8 15 25 / .72);
+  color: var(--ink, #f5f1e7);
+  font: inherit;
+  font-size: .7rem;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: normal;
+}
+.race-world-links button:hover,
+.race-world-links button:focus-visible { border-color: var(--accent, #d7b35c); color: var(--accent, #d7b35c); }
+.race-lore-note { margin-top: .55rem; color: var(--muted, #aab6c8); font-size: .85rem; }
+.race-comparison-race,
+.race-comparison-mark {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+.race-comparison-race > img {
+  flex: 0 0 auto;
+  inline-size: 4.5rem;
+  block-size: 3rem;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--accent, #d7b35c) 45%, var(--line, #31435c));
+  border-radius: .4rem;
+  image-rendering: pixelated;
+}
+.race-comparison-mark > img {
+  flex: 0 0 auto;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  object-fit: cover;
+  border-radius: .4rem;
+  image-rendering: pixelated;
+}
+.race-comparison td > strong { display: block; color: var(--ink, #f5f1e7); line-height: 1.35; }
+.race-comparison table { table-layout: fixed; inline-size: 100%; }
+.race-comparison th:nth-child(1) { inline-size: 12rem; }
+.race-comparison th:nth-child(2), .race-comparison th:nth-child(3) { inline-size: 17%; }
+.race-comparison th:nth-child(5) { inline-size: 18%; }
+
+@media (min-width: 80rem) {
+  .codex-view[data-codex-active-tab="races"] .codex-grid-compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 47.5rem) {
+  .codex-race-emblem { inline-size: 3rem !important; block-size: 3rem !important; }
+  .race-comparison table { table-layout: auto; }
+  .race-comparison-race > img { inline-size: 5rem; block-size: 3.35rem; }
+  .race-comparison-mark { align-items: flex-start; }
+  .race-comparison td .race-world-links { grid-column: 1 / -1; }
+}
