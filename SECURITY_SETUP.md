@@ -49,7 +49,7 @@ Não coloque chaves privadas, secrets ou credenciais administrativas nesse arqui
 No pacote Firebase, execute no Windows:
 
 ```text
-ATUALIZAR_FIREBASE_3_6_4_SEGURANCA.bat
+1_PUBLICAR_FIREBASE_3_6_4.bat
 ```
 
 O script publica somente as regras e os índices do Firestore. Não instala Cloud Functions e não apaga documentos.
