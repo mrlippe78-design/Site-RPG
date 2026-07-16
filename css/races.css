@@ -278,3 +278,197 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Hotfix visual R3.4 — catálogo racial legível e artes reais no mobile. */
+.codex-view[data-codex-active-tab="races"] .codex-grid-compact {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+
+.codex-view[data-codex-active-tab="races"] .codex-race-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--accent, #d7b35c) 35%, var(--line, #31435c));
+}
+
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-media {
+  min-height: 0;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+}
+
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-media img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-body {
+  padding: 1rem;
+  gap: .7rem;
+}
+
+.codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-body > p {
+  display: block;
+  overflow: visible;
+  color: var(--muted, #bdc7d6);
+}
+
+.race-card-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+}
+
+.race-card-facts > span {
+  min-width: 0;
+  display: grid;
+  gap: .2rem;
+  padding: .65rem;
+  border: 1px solid color-mix(in srgb, var(--line, #31435c) 68%, transparent);
+  border-radius: .65rem;
+  background: rgb(3 8 15 / .46);
+  text-transform: none;
+}
+
+.race-card-facts > .wide { grid-column: 1 / -1; }
+.race-card-facts small {
+  color: var(--accent, #d7b35c);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.race-card-facts b {
+  min-width: 0;
+  color: var(--ink, #f5f1e7);
+  font-family: inherit;
+  font-size: .88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.race-comparison > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.25rem;
+  cursor: pointer;
+  list-style: none;
+}
+.race-comparison > summary::-webkit-details-marker { display: none; }
+.race-comparison > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--accent, #d7b35c);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+.race-comparison[open] > summary::after { content: "−"; }
+.race-comparison > summary span { display: grid; gap: .15rem; }
+.race-comparison > summary small {
+  color: var(--accent, #d7b35c);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.race-comparison > summary strong { color: var(--ink, #f5f1e7); font-size: 1rem; }
+.race-comparison > summary em { color: var(--muted, #aab6c8); font-size: .8rem; font-style: normal; }
+.race-comparison[open] .race-comparison-scroll { margin-top: .85rem; }
+
+@media (max-width: 47.5rem) {
+  .codex-view[data-codex-active-tab="races"] .codex-grid-compact { grid-template-columns: 1fr; }
+  .codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-body { padding: .85rem; }
+  .codex-view[data-codex-active-tab="races"] .codex-race-card .codex-card-body h3 {
+    font-size: clamp(1.55rem, 8vw, 2rem);
+    overflow-wrap: normal;
+  }
+  .race-card-facts { grid-template-columns: 1fr; }
+  .race-card-facts > .wide { grid-column: auto; }
+  .race-comparison { padding: .8rem; }
+  .race-comparison > summary em { display: none; }
+  .race-comparison-scroll { overflow: visible; }
+  .race-comparison table { min-inline-size: 0; }
+  .race-comparison thead { display: none; }
+  .race-comparison tbody { display: grid; gap: .65rem; }
+  .race-comparison tr {
+    display: grid;
+    gap: .45rem;
+    padding: .75rem;
+    border: 1px solid color-mix(in srgb, var(--line, #31435c) 66%, transparent);
+    border-radius: .72rem;
+    background: rgb(3 8 15 / .48);
+  }
+  .race-comparison th,
+  .race-comparison td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .race-comparison th > span { white-space: normal; color: var(--ink, #f5f1e7); font-size: 1.05rem; }
+  .race-comparison td {
+    display: grid;
+    grid-template-columns: minmax(4.8rem, 6.4rem) minmax(0, 1fr);
+    gap: .55rem;
+    color: var(--muted, #bdc7d6);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .race-comparison td::before {
+    content: attr(data-label);
+    color: var(--accent, #d7b35c);
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+}
+
+
+/* Hotfix de shell observado no Android: a quarta ação de segurança não pode
+   quebrar a topbar em duas linhas, e o controle de música não deve cobrir o
+   cabeçalho contextual. Esta regra fica na última camada CSS da R3.4. */
+@media (max-width: 47.5rem) {
+  body:has(.app-shell:not([hidden])) .topbar .top-actions {
+    grid-template-columns: repeat(4, 2.5rem);
+    align-content: center;
+  }
+
+  body:has(.app-shell:not([hidden])) .topbar .top-actions > :where(.icon-button, .gold-pill) {
+    inline-size: 2.5rem;
+    min-inline-size: 2.5rem;
+    block-size: 2.5rem;
+    min-block-size: 2.5rem;
+  }
+
+  body:has(.app-shell:not([hidden])) .music-control {
+    inset-block-start: auto;
+    inset-inline-end: max(.75rem, env(safe-area-inset-right));
+    inset-block-end: calc(var(--layout-mobile-nav-height) + env(safe-area-inset-bottom) + .75rem);
+  }
+}
+
+@media (max-width: 22.5rem) {
+  body:has(.app-shell:not([hidden])) .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  body:has(.app-shell:not([hidden])) .topbar .top-actions {
+    grid-template-columns: repeat(4, 2.25rem);
+  }
+
+  body:has(.app-shell:not([hidden])) .topbar .top-actions > :where(.icon-button, .gold-pill) {
+    inline-size: 2.25rem;
+    min-inline-size: 2.25rem;
+    block-size: 2.25rem;
+    min-block-size: 2.25rem;
+  }
+}

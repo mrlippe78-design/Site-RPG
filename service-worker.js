@@ -1,6 +1,6 @@
 const MILLENNIUM_BUILD = "3.6.4-r3.4";
 const PIXEL_ART_REVISION = "pixel-art-races-2";
-const UI_PATCH_REVISION = "race-identity-r3-4-passives";
+const UI_PATCH_REVISION = "race-identity-r3-4-mobilefix-2";
 const CACHE_PREFIX = "millennium-";
 const SHELL_CACHE = `millennium-shell-v${MILLENNIUM_BUILD}-${UI_PATCH_REVISION}`;
 // A revisão separada força a troca do cache de imagens sem alterar a versão
@@ -35,7 +35,7 @@ const REQUIRED_SHELL = [
   `./millennium-core.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-journey.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-backend.js?v=${MILLENNIUM_BUILD}`,
-  `./millennium-polish.js?v=${MILLENNIUM_BUILD}`,
+  `./millennium-polish.js?v=${MILLENNIUM_BUILD}-racefix2`,
   `./styles.css?v=${MILLENNIUM_BUILD}`,
   `./overrides.css?v=${MILLENNIUM_BUILD}`,
   `./journey.css?v=${MILLENNIUM_BUILD}`,
@@ -70,9 +70,9 @@ const REQUIRED_SHELL = [
   `./css/monster-modes.css?v=${MILLENNIUM_BUILD}`,
   `./css/minigames-vivid.css?v=${MILLENNIUM_BUILD}`,
   `./css/r3-fixes.css?v=${MILLENNIUM_BUILD}`,
-  `./css/races.css?v=${MILLENNIUM_BUILD}-passivas`,
+  `./css/races.css?v=${MILLENNIUM_BUILD}-racefix2`,
   `./content-v3.js?v=${MILLENNIUM_BUILD}`,
-  `./app.js?v=${MILLENNIUM_BUILD}`,
+  `./app.js?v=${MILLENNIUM_BUILD}-racefix2`,
   `./millennium-security.js?v=${MILLENNIUM_BUILD}`,
   "./manifest.webmanifest",
   "./favicon.svg",
