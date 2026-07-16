@@ -1,7 +1,7 @@
 (function exposeMillenniumSecurity() {
   const CONFIG = window.MILLENNIUM_SECURITY_CONFIG || {};
-  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4-r3.2";
-  const FIRESTORE_CONTRACT = "3.6.4-r3.2-gacha-sync";
+  const BUILD = window.MILLENNIUM_BUILD_INFO?.version || CONFIG.version || "3.6.4-r3.3";
+  const FIRESTORE_CONTRACT = "3.6.4-r3.3-general-fixes";
   const SENSITIVE_FIELDS = new Set([
     "gold", "millenniumCoins", "affinityAttempts", "pityCounter", "totalRolls",
     "totalRares", "prestige", "rollHistory", "affinityId", "affinitySnapshot",
@@ -693,8 +693,8 @@
     return true;
   }
 
-  function roleFromProfile(profile = {}) {
-    return profile.role === "admin" ? "admin" : "player";
+  function roleFromProfile(profile = {}, adminProfileExists = false) {
+    return adminProfileExists || profile.role === "admin" ? "admin" : "player";
   }
 
   function stopAlertListener() {
@@ -739,7 +739,7 @@
       if (!runtime.user || detail.uid !== runtime.user.uid) return;
       const previousRole = runtime.role;
       runtime.profile = detail.profile || null;
-      runtime.role = detail.role === "admin" ? "admin" : roleFromProfile(runtime.profile || {});
+      runtime.role = detail.role === "admin" ? "admin" : roleFromProfile(runtime.profile || {}, detail.adminProfileExists === true);
       injectSecurityShell();
       if (previousRole !== runtime.role) {
         stopAlertListener();

@@ -1,0 +1,360 @@
+/* Millennium 3.6.4-r3.3 — correções gerais de compatibilidade, mobile e desempenho. */
+
+/* A roleta nunca pode ficar centralizada fora da viewport. A faixa rola internamente. */
+.roulette-stage {
+  width: 100%;
+  min-width: 0;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+.roulette-stage > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.affinity-contract-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(96px, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 18px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: thin;
+}
+
+.affinity-contract-strip span {
+  position: relative;
+  min-width: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px 9px 14px;
+  border: 1px solid rgba(222, 202, 158, .14);
+  background: rgba(0, 0, 0, .2);
+  scroll-snap-align: start;
+}
+
+.affinity-contract-strip span::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--affinity-color);
+}
+
+.affinity-contract-strip small {
+  color: #aaa08c;
+  font-size: 12px;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.affinity-contract-strip b {
+  color: #efe1bc;
+  font-size: 13px;
+}
+
+/* Fichas do Oráculo são divididas em áreas para não renderizar milhares de nós de uma vez. */
+.admin-user-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 2px 0 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: thin;
+}
+
+.admin-user-tabs > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* Configurações administrativas continuam em um único formulário, mas por grupos legíveis. */
+.settings-accordion-form {
+  gap: 10px;
+}
+
+.settings-section {
+  border: 1px solid rgba(216, 180, 93, .18);
+  border-radius: 12px;
+  background: rgba(4, 8, 13, .36);
+  overflow: clip;
+}
+
+.settings-section > summary {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+  color: var(--text-main, #efe7d3);
+  font-weight: 700;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.settings-section[open] > summary {
+  border-bottom: 1px solid rgba(216, 180, 93, .14);
+  background: rgba(216, 180, 93, .045);
+}
+
+.settings-section-body {
+  padding: 14px;
+}
+
+.settings-section-danger {
+  border-color: rgba(213, 88, 88, .28);
+}
+
+.settings-save-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Navegações horizontais recebem rolagem previsível e uma borda visual de continuidade. */
+:is(.tabs, .support-tabs, .creation-tabs, .codex-tabs, .pass-tabs, .market-tabs,
+    .gacha-kind-tabs, .chat-mode-switch, .difficulty-tabs, .level-tabs,
+    .monster-inventory-filters, .registration-stepper, .admin-user-tabs) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: thin;
+}
+
+:is(.tabs, .support-tabs, .creation-tabs, .codex-tabs, .pass-tabs, .market-tabs,
+    .gacha-kind-tabs, .chat-mode-switch, .difficulty-tabs, .level-tabs,
+    .monster-inventory-filters, .admin-user-tabs) > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* Paginação adicionada a Passe e catálogos administrativos. */
+.pass-pager,
+.content-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.pass-page-summary,
+.content-page-summary {
+  color: var(--text-muted, #aaa08c);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Evita custo de layout antecipado em listas extensas fora da área visível. */
+:is(.pass-tier, .content-card, .admin-vault-row, .item-row, .theme-library-card) {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 120px;
+}
+
+@media (max-width: 760px) {
+  .affinity-contract-strip {
+    grid-template-columns: repeat(5, minmax(116px, 1fr));
+    padding: 0 2px 8px;
+  }
+
+  /* Texto funcional não deve cair abaixo do limite legível em celular. */
+  .app-shell small,
+  .app-shell .hint,
+  .app-shell .eyebrow,
+  .app-shell .message-delivery {
+    font-size: 12px;
+    line-height: 1.38;
+  }
+
+  /* Alvos principais de interação respeitam aproximadamente 44 px. */
+  .app-shell :is(button, summary, select),
+  .app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+  .app-shell textarea {
+    min-height: 44px;
+  }
+
+  .app-shell input[type="color"] {
+    min-height: 44px;
+  }
+
+  .tabs,
+  .support-tabs,
+  .creation-tabs,
+  .codex-tabs,
+  .pass-tabs,
+  .market-tabs,
+  .gacha-kind-tabs,
+  .difficulty-tabs,
+  .level-tabs,
+  .monster-inventory-filters,
+  .admin-user-tabs {
+    flex-wrap: nowrap;
+    padding-bottom: 7px;
+  }
+
+  .settings-section-body {
+    padding: 12px;
+  }
+
+  .admin-user-tabs {
+    margin-inline: -2px;
+  }
+}
+
+/* Ajustes de legibilidade para componentes com seletores legados mais específicos. */
+.app-shell .home-identity-tags span,
+.app-shell .home-hero-ledger span,
+.app-shell .home-season-card > p:not(.eyebrow),
+.app-shell .home-season-meta,
+.app-shell .home-season-meta span,
+.app-shell .home-season-meta strong,
+.app-shell .roulette-core small,
+.app-shell .roulette-actions button small,
+.app-shell .affinity-rarity {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app-shell .pass-claim-button,
+.app-shell .theme-advanced > summary {
+  min-height: 40px;
+}
+
+.market-load-more {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+
+.market-load-more button {
+  min-width: min(100%, 260px);
+}
+
+/* Últimos ajustes de legibilidade encontrados na auditoria mobile. */
+.app-shell .home-season-link,
+.app-shell .home-season-link span,
+.app-shell .compact-stat-grid span,
+.app-shell .stat-grid > div > span {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* Módulos administrativos pesados permanecem acessíveis, mas recolhidos. */
+.settings-module-collapse {
+  display: block;
+  overflow: clip;
+}
+
+.settings-module-collapse > summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-module-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-module-collapse > summary::after {
+  content: "＋";
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.settings-module-collapse[open] > summary::after {
+  transform: rotate(45deg);
+}
+
+.settings-module-collapse > summary > span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-module-collapse > summary small,
+.settings-module-collapse > summary strong {
+  display: block;
+}
+
+.settings-module-collapse > summary strong {
+  overflow-wrap: anywhere;
+}
+
+.settings-module-collapse-body,
+.oracle-minigames-collapse-body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+@media (max-width: 760px) {
+  .settings-module-collapse > summary {
+    min-height: 48px;
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .settings-module-collapse > summary .tag {
+    max-width: 42%;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .settings-module-collapse-body,
+  .oracle-minigames-collapse-body {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .oracle-metric span {
+    font-size: 12px;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .stat-composition-toggle span small,
+  .app-shell .stat-composition-static span small {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+}
+
+/* Resíduos encontrados na varredura de todas as rotas do player. */
+.app-shell .chat-mode-switch button small,
+.app-shell .fragment-wallet span {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.app-shell .emoji-bar button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.app-shell .origin-completion-form details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  cursor: pointer;
+}

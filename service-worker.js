@@ -1,6 +1,6 @@
-const MILLENNIUM_BUILD = "3.6.4-r3.2";
+const MILLENNIUM_BUILD = "3.6.4-r3.3";
 const PIXEL_ART_REVISION = "pixel-art-2";
-const UI_PATCH_REVISION = "new-player-bootstrap-r3-2";
+const UI_PATCH_REVISION = "general-fixes-r3-3";
 const CACHE_PREFIX = "millennium-";
 const SHELL_CACHE = `millennium-shell-v${MILLENNIUM_BUILD}-${UI_PATCH_REVISION}`;
 // A revisão separada força a troca do cache de imagens sem alterar a versão
@@ -69,6 +69,7 @@ const REQUIRED_SHELL = [
   `./css/monster-economy.css?v=${MILLENNIUM_BUILD}`,
   `./css/monster-modes.css?v=${MILLENNIUM_BUILD}`,
   `./css/minigames-vivid.css?v=${MILLENNIUM_BUILD}`,
+  `./css/r3-fixes.css?v=${MILLENNIUM_BUILD}`,
   `./content-v3.js?v=${MILLENNIUM_BUILD}`,
   `./app.js?v=${MILLENNIUM_BUILD}`,
   `./millennium-security.js?v=${MILLENNIUM_BUILD}`,

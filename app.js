@@ -775,11 +775,15 @@ const state = {
   functions: null,
   user: null,
   profile: null,
+  adminProfileExists: false,
   role: "player",
   view: "player-home",
   selectedUserId: "",
+  adminUserSection: "overview",
   selectedPrivateUserId: "",
   contentTab: "race",
+  contentPages: {},
+  passPage: null,
   codexTab: "world",
   codexSearch: "",
   cultureSearch: "",
@@ -800,6 +804,7 @@ const state = {
   marketSearch: "",
   marketRarity: "all",
   marketCategory: "all",
+  marketVisibleCount: 12,
   rankingTab: "prestige",
   rankingRange: "season",
   expandedAttribute: "for",
@@ -878,6 +883,7 @@ const state = {
   idleTimer: null,
   lastActivityAt: Date.now(),
   sessionAnnounced: false,
+  sessionAnnouncementPending: false,
   catalogLoaded: new Set(),
   catalogPromises: new Map(),
   routeOnceCache: new Map(),
@@ -1431,6 +1437,7 @@ async function registerMillenniumServiceWorker() {
   if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
   try {
     const registration = await navigator.serviceWorker.register(`service-worker.js?v=${MILLENNIUM_BUILD.version}`);
+    if (!registration) return;
     state.serviceWorkerRegistration = registration;
     if (registration.waiting && navigator.serviceWorker.controller) showUpdateNotice(registration.waiting);
     registration.addEventListener("updatefound", () => {
@@ -1690,6 +1697,29 @@ function sortByTier(items) {
 
 function normalize(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function initialDisplayName(user = {}) {
+  const authName = String(user.displayName || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+  const emailPrefix = String(user.email || "").split("@")[0].replace(/[._-]+/g, " ").replace(/\s+/g, " ").trim();
+  const candidate = authName || emailPrefix || "Player";
+  return candidate.slice(0, 60);
+}
+
+function resolvedClientRole(profile = state.profile) {
+  return state.adminProfileExists || profile?.role === "admin" ? "admin" : "player";
+}
+
+async function detectLegacyAdminProfile(uid, profile = {}) {
+  if (!uid || profile?.role === "admin" || !state.db) return false;
+  try {
+    const snapshot = await state.db.collection("admins").doc(uid).get();
+    return snapshot.exists;
+  } catch (error) {
+    if (isFirestoreQuotaError(error)) throw error;
+    console.warn("Não foi possível confirmar o perfil administrativo legado:", error);
+    return false;
+  }
 }
 
 function bonusToText(bonus = {}) {
@@ -3249,7 +3279,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Para contas novas, publique também a correção Firebase r3.2; atualizar apenas o GitHub não altera as regras.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Para contas novas, publique também a correção Firebase r3.3; atualizar apenas o GitHub não altera as regras.",
     "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
     "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
     "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
@@ -3438,6 +3468,9 @@ async function initFirebase() {
     if (!user) {
       state.user = null;
       state.profile = null;
+      state.adminProfileExists = false;
+      state.sessionAnnounced = false;
+      state.sessionAnnouncementPending = false;
       showAuth();
       return;
     }
@@ -3462,6 +3495,7 @@ async function initFirebase() {
 }
 
 async function ensureUserProfile(user) {
+  state.adminProfileExists = false;
   const queueRef = state.db.collection("accountDeletionQueue").doc(user.uid);
   let queueSnap = null;
   try {
@@ -3488,13 +3522,14 @@ async function ensureUserProfile(user) {
 
   if (snap.exists) {
     state.profile = { id: user.uid, accountStatus: "active", ...snap.data() };
+    state.adminProfileExists = await detectLegacyAdminProfile(user.uid, state.profile);
     return;
   }
 
   const profile = {
     id: user.uid,
     email: user.email,
-    displayName: user.email?.split("@")[0] || "Player",
+    displayName: initialDisplayName(user),
     role: "player",
     dataEconomy: true,
     accountStatus: "active",
@@ -3504,6 +3539,7 @@ async function ensureUserProfile(user) {
   };
   await ref.set(profile, { merge: true });
   state.profile = profile;
+  state.adminProfileExists = await detectLegacyAdminProfile(user.uid, profile);
   await createInitialCharacterDocument(user.uid, profile.displayName);
 }
 
@@ -4097,6 +4133,7 @@ function profileRenderKey(profile = {}) {
   return JSON.stringify({
     displayName: profile.displayName || "",
     role: profile.role || "player",
+    legacyAdmin: state.adminProfileExists,
     accountStatus: profile.accountStatus || profile.status || "active",
     suspendedUntil: timeValue(profile.suspendedUntil || profile.bannedUntil),
     restrictionReason: profile.restrictionReason || profile.moderationReason || "",
@@ -4163,6 +4200,21 @@ function subscribeCore() {
     scheduleRender({ critical: true, preserveFocus: true, preserveScroll: true, reason: "account-deletion-queue" });
   });
 
+  if (state.adminProfileExists) {
+    subscribeDoc("admins", state.user.uid, (adminProfile) => {
+      const previousRole = state.role;
+      state.adminProfileExists = Boolean(adminProfile);
+      state.role = resolvedClientRole(state.profile);
+      window.dispatchEvent(new CustomEvent("millennium:profile", { detail: { uid: state.user.uid, profile: state.profile, role: state.role, adminProfileExists: state.adminProfileExists } }));
+      if (previousRole !== state.role) {
+        clearRouteSubscriptions();
+        if (!NAVS[state.role].some((item) => item.id === state.view)) state.view = NAVS[state.role][0].id;
+        if (!accountIsRestricted(state.profile)) activateRouteSubscriptions(state.view);
+        scheduleRender({ critical: true, preserveFocus: true, preserveScroll: true, reason: "legacy-admin-role-change" });
+      }
+    });
+  }
+
   subscribeDoc("users", state.user.uid, (profile) => {
     const previousRole = state.role;
     const previousBlocked = accountIsRestricted(state.profile);
@@ -4177,8 +4229,8 @@ function subscribeCore() {
         restrictionReason: "Os dados desta conta foram removidos. A exclusão da credencial está pendente no Firebase Authentication.",
       };
     }
-    state.role = state.profile?.role === "admin" ? "admin" : "player";
-    window.dispatchEvent(new CustomEvent("millennium:profile", { detail: { uid: state.user.uid, profile: state.profile, role: state.role } }));
+    state.role = resolvedClientRole(state.profile);
+    window.dispatchEvent(new CustomEvent("millennium:profile", { detail: { uid: state.user.uid, profile: state.profile, role: state.role, adminProfileExists: state.adminProfileExists } }));
     const blocked = accountIsRestricted(state.profile);
     if (!NAVS[state.role].some((item) => item.id === state.view)) state.view = NAVS[state.role][0].id;
     if (previousRole !== state.role) {
@@ -4464,24 +4516,61 @@ async function addGlobalMessage(data) {
 }
 
 async function announceSessionEntry() {
-  if (state.sessionAnnounced || !state.user || state.demo) return;
-  state.sessionAnnounced = true;
+  if (state.sessionAnnounced || state.sessionAnnouncementPending || !state.user || state.demo || !state.db || state.firestorePaused) return;
+  state.sessionAnnouncementPending = true;
+  const now = Date.now();
   let localLastAnnouncedAt = 0;
   try { localLastAnnouncedAt = Number(localStorage.getItem(`millennium:join-announced:${state.user.uid}`) || 0); } catch { /* no-op */ }
-  const lastAnnouncedAt = Math.max(timeValue(state.profile?.lastAnnouncedAt), localLastAnnouncedAt);
-  if (lastAnnouncedAt && Date.now() - lastAnnouncedAt < JOIN_ANNOUNCE_COOLDOWN_MS) return;
+  const localCooldownActive = localLastAnnouncedAt && now - localLastAnnouncedAt < JOIN_ANNOUNCE_COOLDOWN_MS;
+  if (localCooldownActive && timeValue(state.profile?.lastAnnouncedAt) >= localLastAnnouncedAt) {
+    state.sessionAnnounced = true;
+    state.sessionAnnouncementPending = false;
+    return;
+  }
+
   const character = currentCharacter();
   const title = activeTitle(character);
   const name = displayNameWithTitle(state.user.uid, state.profile?.displayName || state.user.email);
-  await addGlobalMessage({
+  const textMessage = state.role === "admin"
+    ? `ALERTA: ${ORACLE_LABEL} ${name} entrou na interface.`
+    : `${name}${title ? ` (${title.name})` : ""} entrou no servidor.`;
+  const profileRef = state.db.collection("users").doc(state.user.uid);
+  const messageRef = state.db.collection("globalMessages").doc();
+  const timestamp = nowValue();
+  const payload = {
     senderId: state.user.uid,
     senderName: state.profile?.displayName || "Player",
     type: "global",
-    text: state.role === "admin"
-      ? `ALERTA: ${ORACLE_LABEL} ${name} entrou na interface.`
-      : `${name}${title ? ` (${title.name})` : ""} entrou no servidor.`,
-  }).catch(() => {});
-  try { localStorage.setItem(`millennium:join-announced:${state.user.uid}`, String(Date.now())); } catch { /* no-op */ }
+    text: textMessage,
+    targetId: "",
+    targetName: "",
+    rarity: "",
+    createdAt: timestamp,
+  };
+
+  try {
+    const announced = await state.db.runTransaction(async (transaction) => {
+      const profileSnapshot = await transaction.get(profileRef);
+      const remoteLastAnnouncedAt = timeValue(profileSnapshot.data()?.lastAnnouncedAt);
+      if (remoteLastAnnouncedAt && Date.now() - remoteLastAnnouncedAt < JOIN_ANNOUNCE_COOLDOWN_MS) return false;
+      transaction.set(profileRef, { lastAnnouncedAt: timestamp, updatedAt: timestamp }, { merge: true });
+      transaction.set(messageRef, payload);
+      return true;
+    });
+    state.sessionAnnounced = true;
+    if (announced) {
+      state.diagnostics.writes += 2;
+      state.profile = { ...(state.profile || {}), lastAnnouncedAt: new Date(now).toISOString() };
+      try { localStorage.setItem(`millennium:join-announced:${state.user.uid}`, String(now)); } catch { /* no-op */ }
+      const pruneSource = [...state.globalMessages, { ...payload, id: messageRef.id, createdAt: new Date(now).toISOString() }];
+      pruneMessages("globalMessages", pruneSource).catch(() => {});
+    }
+  } catch (error) {
+    handleFirebaseOperationError(error, "anuncio-de-entrada");
+    console.warn("Anúncio de entrada adiado:", error);
+  } finally {
+    state.sessionAnnouncementPending = false;
+  }
 }
 
 async function announceRareReward(uid, rewardName, rarity, type = "prêmio") {
@@ -7043,9 +7132,9 @@ function renderMinigameEventStrip() {
 function renderAdminMinigameEvents() {
   const events = minigameEvents();
   return `
-    <article class="panel span-12">
-      <div class="panel-heading"><div><p class="eyebrow">Eventos dos minigames</p><h3>Publicação sem editar código</h3></div><span class="tag">${events.length} configurado(s)</span></div>
-      <div class="oracle-minigame-events">
+    <details class="panel span-12 settings-module-collapse">
+      <summary><span><small>Eventos dos minigames</small><strong>Publicação sem editar código</strong></span><span class="tag">${events.length} configurado(s)</span></summary>
+      <div class="oracle-minigames-collapse-body"><div class="oracle-minigame-events">
         <form class="form-stack" data-form="admin-minigame-event">
           <label><span>Nome</span><input name="name" maxlength="100" required /></label>
           <label><span>Minigame</span><select name="mode">${[["aim","Prova da Mira"],["seals","Ritual dos Selos"],["cartography","Cartografia"],["alchemy","Alquimia"],["dungeon","Masmorra"],["arena","Arena"],["boss","Boss Mundial"],["tower","Tower Defense"]].map(([id,label]) => `<option value="${id}">${label}</option>`).join("")}</select></label>
@@ -7064,8 +7153,8 @@ function renderAdminMinigameEvents() {
           <button class="primary-button" type="submit">Salvar evento</button>
         </form>
         <div class="oracle-event-list">${events.map((event) => `<article class="oracle-event-card"><header><div><small>${esc(event.mode)} · ${esc(event.status)}</small><strong>${esc(event.name)}</strong></div><button class="icon-button" type="button" data-action="delete-minigame-event" data-event-id="${esc(event.id)}" aria-label="Excluir evento">×</button></header><p>${esc(event.description)}</p><small>${esc(event.reward)} · score ×${Number(event.scoreMultiplier || 1).toLocaleString("pt-BR")}</small></article>`).join("") || `<div class="empty-state">Nenhum evento configurado. Eventos não usam polling e são carregados somente ao abrir o módulo.</div>`}</div>
-      </div>
-    </article>`;
+      </div></div>
+    </details>`;
 }
 
 async function saveAdminMinigameEvent(form) {
@@ -7979,16 +8068,19 @@ function renderMarket() {
   const marketCategories = [...new Set((state.content.marketListings || []).map((item) => item.categoryId).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
   const filteredMarket = filteredMarketListings();
+  const marketVisibleCount = Math.max(12, Number(state.marketVisibleCount || 12));
+  const visibleMarket = filteredMarket.slice(0, marketVisibleCount);
   const cards = {
     market: () => `
       <section class="market-catalog-tools">
-        <div><p class="eyebrow">Catálogo oficial</p><h3>Equipamento para cada caminho</h3><p data-market-result-count>${filteredMarket.length} de ${(state.content.marketListings || []).length} item(ns)</p></div>
+        <div><p class="eyebrow">Catálogo oficial</p><h3>Equipamento para cada caminho</h3><p data-market-result-count>Mostrando ${visibleMarket.length} de ${filteredMarket.length} resultado(s) · ${(state.content.marketListings || []).length} no catálogo</p></div>
         <label><span>Buscar</span><input id="marketSearch" name="marketSearch" data-action="market-search" data-focus-key="market-search" autocomplete="off" spellcheck="false" placeholder="Arma, poção, viagem..." value="${esc(state.marketSearch || "")}" /></label>
         <label><span>Raridade</span><select data-action="market-rarity"><option value="all">Todas</option>${RARITIES.map((rarity) => `<option value="${esc(rarity)}" ${state.marketRarity === rarity ? "selected" : ""}>${esc(rarity)}</option>`).join("")}</select></label>
         <label><span>Categoria</span><select data-action="market-category"><option value="all">Todas</option>${marketCategories.map((id) => `<option value="${esc(id)}" ${state.marketCategory === id ? "selected" : ""}>${esc((state.content.itemCategories || []).find((category) => category.id === id)?.name || id)}</option>`).join("")}</select></label>
       </section>
       <div class="market-search-results" data-search-results="market" aria-live="polite">
-        ${marketCards(filteredMarket, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO")}
+        ${marketCards(visibleMarket, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO")}
+        ${visibleMarket.length < filteredMarket.length ? `<div class="market-load-more"><button class="ghost-button" type="button" data-action="market-load-more">Mostrar mais ${Math.min(12, filteredMarket.length - visibleMarket.length)} itens</button></div>` : ""}
       </div>
     `,
     bazaar: () => renderPlayerBazaar(character),
@@ -8073,8 +8165,9 @@ function updateMarketSearchResults() {
   if (!results) return;
   const filtered = filteredMarketListings();
   const count = document.querySelector("[data-market-result-count]");
-  if (count) count.textContent = `${filtered.length} de ${(state.content.marketListings || []).length} item(ns)`;
-  STABILITY.replaceHtmlIfChanged(results, marketCards(filtered, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO"));
+  const visible = filtered.slice(0, Math.max(12, Number(state.marketVisibleCount || 12)));
+  if (count) count.textContent = `Mostrando ${visible.length} de ${filtered.length} resultado(s) · ${(state.content.marketListings || []).length} no catálogo`;
+  STABILITY.replaceHtmlIfChanged(results, `${marketCards(visible, (item) => `${Number(item.price || 0)} PO · ${item.description || ""}`, "PO")}${visible.length < filtered.length ? `<div class="market-load-more"><button class="ghost-button" type="button" data-action="market-load-more">Mostrar mais ${Math.min(12, filtered.length - visible.length)} itens</button></div>` : ""}`);
   normalizeRenderedImages(results);
 }
 
@@ -8117,6 +8210,7 @@ function setPartialSearchValue(action, value) {
   const controller = SEARCH_CONTROLLERS[action];
   if (!controller) return false;
   state[controller.stateKey] = String(value ?? "");
+  if (action === "market-search") state.marketVisibleCount = 12;
   return true;
 }
 
@@ -8302,8 +8396,16 @@ function renderSeasonPass() {
   const level = seasonPassLevel(character);
   const hasPremium = character.premiumPassUnlocked === true;
   const claims = { free: Array.isArray(character.passClaims?.free) ? character.passClaims.free : [], premium: Array.isArray(character.passClaims?.premium) ? character.passClaims.premium : [] };
-  const passTiers = (state.content.seasonPass || []).length ? state.content.seasonPass : DEFAULT_CONTENT.seasonPass;
+  const passTiers = sortByTier((state.content.seasonPass || []).length ? state.content.seasonPass : DEFAULT_CONTENT.seasonPass);
   const canRequest = !hasPremium && Number(character.gold || 0) >= 1000;
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(passTiers.length / pageSize));
+  const suggestedPage = Math.max(0, Math.min(pageCount - 1, Math.floor((Math.max(1, level) - 1) / pageSize)));
+  const currentPage = Number.isInteger(state.passPage) ? Math.max(0, Math.min(pageCount - 1, state.passPage)) : suggestedPage;
+  state.passPage = currentPage;
+  const visibleTiers = passTiers.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const pageStart = visibleTiers[0]?.tier || 0;
+  const pageEnd = visibleTiers.at(-1)?.tier || 0;
   return `
     <div class="season-pass-board">
       <div class="pass-header">
@@ -8317,8 +8419,9 @@ function renderSeasonPass() {
           ${hasPremium ? "" : `<button class="primary-button" type="button" data-action="request-premium-pass" ${canRequest ? "" : "disabled"}>Desbloquear Premium</button>`}
         </div>
       </div>
+      <div class="pass-page-summary"><span>Níveis ${pageStart}–${pageEnd}</span><small>${passTiers.length} níveis no total · página ${currentPage + 1}/${pageCount}</small></div>
       <div class="pass-track">
-        ${sortByTier(passTiers).map((item) => {
+        ${visibleTiers.map((item) => {
           const reached = level >= Number(item.tier || 0);
           const freeClaimed = (claims.free || []).includes(item.id);
           const premiumClaimed = (claims.premium || []).includes(item.id);
@@ -8340,6 +8443,7 @@ function renderSeasonPass() {
           `;
         }).join("") || `<div class="empty-state">Nenhum passe publicado.</div>`}
       </div>
+      ${pageCount > 1 ? `<nav class="content-pager pass-pager" aria-label="Páginas do passe"><button class="ghost-button" type="button" data-action="pass-page" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>← Anteriores</button><span>Página ${currentPage + 1} de ${pageCount}</span><button class="ghost-button" type="button" data-action="pass-page" data-page="${currentPage + 1}" ${currentPage >= pageCount - 1 ? "disabled" : ""}>Próximos →</button></nav>` : ""}
     </div>
   `;
 }
@@ -9171,6 +9275,7 @@ function renderAdminUsers() {
   const draft = state.adminUserDraft?.uid === selectedId ? state.adminUserDraft.values : null;
   const selectedStatus = normalizedAccountStatus(selectedUser || {});
   const affinityOptions = `<option value="">Sem afinidade</option>${optionList(state.content.affinities, draftValue(draft, "affinityId", character?.affinityId || ""))}`;
+  const adminSection = state.adminUserSection || "overview";
   return `
     <div class="grid">
       <article class="panel span-4">
@@ -9194,7 +9299,10 @@ function renderAdminUsers() {
             </div>
             <span class="tag">${esc(selectedUser.role || "player")}</span>
           </div>
-          <form class="form-grid" data-form="admin-user-edit">
+          <nav class="admin-user-tabs" aria-label="Áreas da ficha administrativa">
+            ${[["overview", "Resumo"], ["progression", "Progressão"], ["account", "Conta"], ["inventory", "Inventário"], ["vault", "Cofre"]].map(([id, label]) => `<button class="tab ${adminSection === id ? "active" : ""}" type="button" data-action="admin-user-section" data-section="${id}" aria-pressed="${adminSection === id}">${label}</button>`).join("")}
+          </nav>
+          ${adminSection === "overview" ? `<form class="form-grid" data-form="admin-user-edit">
             <input type="hidden" name="uid" value="${esc(selectedId)}" />
             <label><span>Nome exibido</span><input name="displayName" value="${esc(draftValue(draft, "displayName", selectedUser.displayName || ""))}" /></label>
             <label><span>Papel</span><select name="role"><option value="player" ${draftValue(draft, "role", selectedUser.role) !== "admin" ? "selected" : ""}>Player</option><option value="admin" ${draftValue(draft, "role", selectedUser.role) === "admin" ? "selected" : ""}>Oráculo</option></select></label>
@@ -9212,8 +9320,8 @@ function renderAdminUsers() {
             <label><span>Afinidade</span><select name="affinityId">${affinityOptions}</select></label>
             <label><span>Perfil público</span><select name="profilePublic"><option value="true" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "true" ? "selected" : ""}>Público</option><option value="false" ${draftValue(draft, "profilePublic", String(character.profilePublic !== false)) === "false" ? "selected" : ""}>Privado</option></select></label>
             <button class="primary-button wide" type="submit">Salvar alterações do player</button>
-          </form>
-          <section class="panel admin-progression-console" style="margin-top:18px">
+          </form>` : ""}
+          ${adminSection === "progression" ? `<section class="panel admin-progression-console" style="margin-top:18px">
             <div class="panel-heading"><div><p class="eyebrow">Evolução e correção</p><h3>Nível ${progressionFor(character).level} · ${progressionFor(character).progressXp}/${progressionFor(character).requiredXp} XP · ${Number(character.freePoints || 0)} ponto(s) livre(s)</h3></div><span class="tag">Auditoria obrigatória</span></div>
             <div class="action-row"><span class="tag">Redistribuição: ${esc(FOUNDATIONS.attributeRedistributionEligibility(character).used ? "concluída" : FOUNDATIONS.attributeRedistributionEligibility(character).eligible ? "disponível" : "não liberada")}</span><button class="ghost-button" type="button" data-action="release-attribute-redistribution" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || FOUNDATIONS.attributeRedistributionEligibility(character).used ? "disabled" : ""}>Liberar redistribuição única</button></div>
             <form class="form-grid" data-form="admin-progression-correction">
@@ -9230,8 +9338,8 @@ function renderAdminUsers() {
               <label class="wide"><span>Motivo obrigatório</span><textarea name="reason" rows="4" maxlength="500" required placeholder="Explique a correção, a origem do XP ou a devolução de pontos."></textarea></label>
               <button class="primary-button wide" type="submit" ${selectedUser.role === "admin" || selectedId === state.user?.uid ? "disabled" : ""}>Aplicar correção auditada</button>
             </form>
-          </section>
-          <section class="account-management-grid ${state.adminOperationInProgress ? "operation-busy" : ""}" aria-label="Gestão administrativa da conta">
+          </section>` : ""}
+          ${adminSection === "account" ? `<section class="account-management-grid ${state.adminOperationInProgress ? "operation-busy" : ""}" aria-label="Gestão administrativa da conta">
             <article class="account-management-card management">
               <p class="eyebrow">Gestão da ficha</p>
               <h3>Resetar ficha</h3>
@@ -9254,10 +9362,10 @@ function renderAdminUsers() {
               <p>Remove os dados do Firestore. Para liberar o e-mail, a credencial ainda precisa ser apagada manualmente no Firebase Authentication.</p>
               <div class="action-row"><button class="delete-account-button" type="button" data-action="admin-delete-account" data-user-id="${esc(selectedId)}" ${selectedUser.role === "admin" || selectedId === state.user?.uid || state.adminOperationInProgress ? "disabled" : ""}>⚠ Excluir conta definitivamente</button></div>
             </article>
-          </section>
-          <section class="panel admin-stat-composition" style="margin-top:18px"><div class="panel-heading"><div><p class="eyebrow">Mesma leitura do player</p><h3>Composição oficial dos atributos</h3></div><span class="tag">Fonte única</span></div>${characterStatComposition(character)}</section>
-          <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>
-           <div class="grid" style="margin-top:18px">
+          </section>` : ""}
+          ${adminSection === "overview" ? `<section class="panel admin-stat-composition" style="margin-top:18px"><div class="panel-heading"><div><p class="eyebrow">Mesma leitura do player</p><h3>Composição oficial dos atributos</h3></div><span class="tag">Fonte única</span></div>${characterStatComposition(character)}</section>
+          <div class="admin-attribute-diagnostic" style="margin-top:18px">${renderAttributeDiagnostic(character)}</div>` : ""}
+          ${adminSection === "inventory" ? `<div class="grid" style="margin-top:18px">
             <div class="panel span-6">
               <p class="eyebrow">Adicionar item</p>
               <form class="form-stack" data-form="admin-add-item">
@@ -9278,8 +9386,8 @@ function renderAdminUsers() {
                 `).join("") || `<div class="empty-state">Sem itens.</div>`}
               </div>
              </div>
-           </div>
-           <div class="grid admin-vault-grid" style="margin-top:18px">
+           </div>` : ""}
+           ${adminSection === "vault" ? `<div class="grid admin-vault-grid" style="margin-top:18px">
              <div class="panel span-7">
                <div class="panel-heading"><div><p class="eyebrow">Cofre dimensional</p><h3>Pets, itens e cosméticos invocados</h3></div><span class="tag">${(character.gachaVault || []).length} registro(s)</span></div>
                <div class="admin-vault-list">
@@ -9303,7 +9411,7 @@ function renderAdminUsers() {
                  ${(character.gachaVault || []).filter((item) => item.status === "Ferido" || item.status === "Morto").map((item) => `<div class="item-row"><span>${esc(item.status)}</span><strong>${esc(item.name)}</strong><p>${item.status === "Morto" ? "Pet precisa de recuperação antes de voltar ao cofre." : "Pet ferido não pode entrar em uma incursão."}</p><button class="primary-button" type="button" data-action="admin-vault-heal" data-user-id="${esc(selectedId)}" data-instance-id="${esc(item.instanceId)}">Restaurar</button></div>`).join("")}
                </div>
              </div>
-           </div>
+           </div>` : ""}
          ` : `<div class="empty-state">Selecione um usuário.</div>`}
       </article>
     </div>
@@ -9796,15 +9904,25 @@ function contentForm(formName, title, fields) {
 
 function contentCards(items, detail, collection = "") {
   if (!items.length) return `<div class="empty-state">Nada cadastrado.</div>`;
-  return sortByName(items).map((item) => `
+  const sorted = sortByName(items);
+  const pageSize = 12;
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const pageKey = collection || "generic";
+  const requestedPage = Number(state.contentPages?.[pageKey] || 0);
+  const page = Math.max(0, Math.min(pageCount - 1, Number.isFinite(requestedPage) ? requestedPage : 0));
+  state.contentPages[pageKey] = page;
+  const visible = sorted.slice(page * pageSize, (page + 1) * pageSize);
+  const cards = visible.map((item) => `
     <div class="content-card">
       ${item.imageUrl ? `<img class="content-image" src="${esc(item.imageUrl)}" alt="${esc(item.name || item.title || item.id)}" ${mediaAttrs("thumbnail")} />` : ""}
       <span>${esc(item.id)}</span>
       <h3>${esc(item.name || item.title || item.id)}</h3>
       <p>${esc(detail(item))}</p>
-      ${collection ? `<div class="action-row"><button class="ghost-button" type="button" data-action="edit-content" data-collection="${esc(collection)}" data-id="${esc(item.id)}">Editar</button><button class="danger-button" type="button" data-action="delete-content" data-collection="${esc(collection)}" data-id="${esc(item.id)}">Excluir</button></div>` : ""}
+      ${collection ? `<div class="action-row"><button class="ghost-button" type="button" data-action="edit-content" data-collection="${esc(collection)}" data-id="${esc(item.id)}" aria-label="Editar ${esc(item.name || item.title || item.id)}">Editar</button><button class="danger-button" type="button" data-action="delete-content" data-collection="${esc(collection)}" data-id="${esc(item.id)}" aria-label="Excluir ${esc(item.name || item.title || item.id)}">Excluir</button></div>` : ""}
     </div>
   `).join("");
+  const pager = pageCount > 1 ? `<nav class="content-pager" aria-label="Paginação de ${esc(collection || "conteúdo")}"><button class="ghost-button" type="button" data-action="content-page" data-collection="${esc(pageKey)}" data-page="${page - 1}" ${page === 0 ? "disabled" : ""}>← Anteriores</button><span>${page + 1}/${pageCount} · ${sorted.length} registros</span><button class="ghost-button" type="button" data-action="content-page" data-collection="${esc(pageKey)}" data-page="${page + 1}" ${page >= pageCount - 1 ? "disabled" : ""}>Próximos →</button></nav>` : "";
+  return `${cards}${pager}`;
 }
 
 function renderAdminRewards() {
@@ -10007,7 +10125,8 @@ function renderAdminSettings() {
       <article class="panel span-7 settings-control-panel">
         <p class="eyebrow">Configuração global</p>
         <h3>Temporada, tema e aviso</h3>
-        <form class="form-stack" data-form="admin-settings">
+        <form class="form-stack settings-accordion-form" data-form="admin-settings">
+          <details class="settings-section" open><summary>Temporada e regras gerais</summary><div class="form-stack settings-section-body">
           <label><span>Nome da temporada</span><input name="seasonName" value="${esc(state.settings.seasonName || "")}" /></label>
           <label><span>Número da temporada</span><input name="seasonNumber" type="number" value="${Number(state.settings.seasonNumber || 1)}" /></label>
           <label><span>Essências padrão da roleta</span><input name="defaultAffinityAttempts" type="number" min="1" value="${Number(state.settings.defaultAffinityAttempts || 3)}" /></label>
@@ -10017,6 +10136,8 @@ function renderAdminSettings() {
             <option value="true" ${state.settings.soundEnabled !== false ? "selected" : ""}>Ativados</option>
             <option value="false" ${state.settings.soundEnabled === false ? "selected" : ""}>Desativados</option>
           </select></label>
+          </div></details>
+          <details class="settings-section"><summary>Roleta e evento ativo</summary><div class="form-stack settings-section-body">
           <label><span>Evento de roleta</span><select name="eventActive">
             <option value="false" ${!state.settings.eventActive ? "selected" : ""}>Desativado</option>
             <option value="true" ${state.settings.eventActive ? "selected" : ""}>Ativado</option>
@@ -10024,6 +10145,8 @@ function renderAdminSettings() {
           <label><span>Nome do evento</span><input name="eventName" value="${esc(state.settings.eventName || "")}" /></label>
           <label><span>Categoria rate-up</span><select name="bannerRateUp"><option value="">Sem rate-up</option>${optionList(state.content.affinityCategories, state.settings.bannerRateUp || "")}</select></label>
           <label><span>Chance do rate-up</span><input name="rareRateUpChance" type="number" min="0" max="1" step="0.01" value="${Number(state.settings.rareRateUpChance ?? 0.3)}" /></label>
+          </div></details>
+          <details class="settings-section"><summary>Tema visual e mídia</summary><div class="form-stack settings-section-body">
           <label><span>Pacote visual</span><select name="seasonTheme">${ECHOES.themes.map((item) => `<option value="${item.id}" ${state.settings.seasonTheme === item.id ? "selected" : ""}>${esc(item.name)} · ${esc(item.description)}</option>`).join("")}</select></label>
           <div class="theme-status-row">
             <label><span>Estado</span><select name="seasonThemeState">${[["draft","Rascunho"],["preview","Pré-visualização"],["scheduled","Agendado"],["active","Ativo"],["archived","Arquivado"]].map(([id,label]) => `<option value="${id}" ${state.settings.seasonThemeState === id ? "selected" : ""}>${label}</option>`).join("")}</select></label>
@@ -10043,16 +10166,22 @@ function renderAdminSettings() {
               <label><span>Sons das raridades</span><input name="seasonThemeRaritySounds" value="${esc(theme.music.rarity)}" /></label><label><span>Destaque da Home</span><input name="seasonThemeHomeHighlight" value="${esc(theme.homeHighlight)}" /></label>
             </div>
           </details>
-          <div class="split-actions"><button class="ghost-button" type="button" data-action="load-season-theme-preset">Carregar pacote selecionado</button><button class="ghost-button" type="button" data-action="preview-season-theme">Pré-visualizar celular e computador</button><button class="primary-button" type="submit">Salvar e publicar mudanças</button></div>
+          <div class="split-actions"><button class="ghost-button" type="button" data-action="load-season-theme-preset">Carregar pacote selecionado</button><button class="ghost-button" type="button" data-action="preview-season-theme">Pré-visualizar celular e computador</button></div>
+          </div></details>
+          <details class="settings-section"><summary>Acesso narrativo e aviso global</summary><div class="form-stack settings-section-body">
           <label><span>Juramentos de facção</span><select name="factionsUnlocked"><option value="false" ${!state.settings.factionsUnlocked ? "selected" : ""}>Bloqueados até a abertura narrativa</option><option value="true" ${state.settings.factionsUnlocked ? "selected" : ""}>Liberados para players</option></select></label>
           <label><span>Aviso global</span><textarea name="globalNotice" rows="5">${esc(state.settings.globalNotice || "")}</textarea></label>
+          </div></details>
+          <details class="settings-section settings-section-danger"><summary>Atualização emergencial</summary><div class="form-stack settings-section-body">
           <fieldset class="emergency-update-config"><legend>Atualização emergencial</legend><label><span>Título</span><input name="emergencyTitle" maxlength="120" value="${esc(state.settings.emergencyTitle || "Atualização emergencial")}" /></label><label><span>Mensagem aos jogadores</span><textarea name="emergencyMessage" rows="3" maxlength="600">${esc(state.settings.emergencyMessage || "")}</textarea></label><div class="theme-status-row"><label><span>Ação</span><select name="emergencyAction"><option value="reload" ${state.settings.emergencyAction !== "signout" && state.settings.emergencyAction !== "maintenance" ? "selected" : ""}>Recarregar preservando rascunhos</option><option value="maintenance" ${state.settings.emergencyAction === "maintenance" ? "selected" : ""}>Entrar em manutenção</option><option value="signout" ${state.settings.emergencyAction === "signout" ? "selected" : ""}>Encerrar sessões</option></select></label><label><span>Contagem regressiva</span><input name="emergencyCountdown" type="number" min="0" max="30" value="${Number(state.settings.emergencyCountdown ?? 5)}" /></label></div></fieldset>
+          </div></details>
+          <button class="primary-button settings-save-button" type="submit">Salvar e publicar mudanças</button>
         </form>
       </article>
-      <article class="panel span-12 theme-library-panel"><div class="panel-heading"><div><p class="eyebrow">Biblioteca de temas</p><h3>Pacotes preservados separadamente</h3></div><span class="tag">${ECHOES.themes.length} pacotes</span></div><div class="theme-library-grid">${ECHOES.themes.map((item) => { const saved = state.settings.themePackages?.[item.id]; return `<button type="button" class="theme-library-card ${state.settings.seasonTheme === item.id ? "active" : ""}" data-action="choose-season-theme" data-theme-id="${esc(item.id)}"><i style="--theme-card-color:${esc(saved?.palette?.primary || item.palette.primary)}"></i><strong>${esc(saved?.name || item.name)}</strong><small>${state.settings.seasonTheme === item.id ? esc(state.settings.seasonThemeState || "ativo") : saved ? "Personalizado e salvo" : "Preset original"}</small></button>`; }).join("")}</div></article>
-      <article class="panel span-5 settings-category-panel">
-        <p class="eyebrow">Pesos da roleta</p>
-        <h3>Categorias de afinidade · 100%</h3>
+      <details class="panel span-12 theme-library-panel settings-module-collapse"><summary><span><small>Biblioteca de temas</small><strong>Pacotes preservados separadamente</strong></span><span class="tag">${ECHOES.themes.length} pacotes</span></summary><div class="settings-module-collapse-body"><div class="theme-library-grid">${ECHOES.themes.map((item) => { const saved = state.settings.themePackages?.[item.id]; return `<button type="button" class="theme-library-card ${state.settings.seasonTheme === item.id ? "active" : ""}" data-action="choose-season-theme" data-theme-id="${esc(item.id)}"><i style="--theme-card-color:${esc(saved?.palette?.primary || item.palette.primary)}"></i><strong>${esc(saved?.name || item.name)}</strong><small>${state.settings.seasonTheme === item.id ? esc(state.settings.seasonThemeState || "ativo") : saved ? "Personalizado e salvo" : "Preset original"}</small></button>`; }).join("")}</div></div></details>
+      <details class="panel span-5 settings-category-panel settings-module-collapse">
+        <summary><span><small>Pesos da roleta</small><strong>Categorias de afinidade · 100%</strong></span></summary>
+        <div class="settings-module-collapse-body">
         <p class="hint">O peso total canônico precisa permanecer em 100. Raridade mede risco e estranheza, não vitória automática.</p>
         <div class="list">
           ${sortByName(state.content.affinityCategories).map((cat) => `
@@ -10062,7 +10191,8 @@ function renderAdminSettings() {
             </div>
           `).join("")}
         </div>
-      </article>
+        </div>
+      </details>
       ${renderAdminMinigameEvents()}
       <article class="panel span-12 panic-panel">
         <div>
@@ -16799,6 +16929,11 @@ function wireEvents() {
       if (action === "request-premium-pass") await requestPremiumPass();
       if (action === "claim-pass-reward") await claimPassReward(button.dataset.tierId, button.dataset.track);
       if (action === "claim-pass-mission") await claimPassMission(button.dataset.missionId);
+      if (action === "pass-page") {
+        state.passPage = Math.max(0, Number(button.dataset.page || 0));
+        render();
+        window.requestAnimationFrame(() => document.querySelector(".season-pass-board")?.scrollIntoView({ block: "start" }));
+      }
       if (action === "equip-title") await equipTitle(button.dataset.titleId);
       if (action === "chat-mode") {
         state.chatTab = button.dataset.tab === "direct" ? "direct" : "global";
@@ -16854,11 +16989,17 @@ function wireEvents() {
       }
       if (action === "select-user") {
         state.selectedUserId = button.dataset.userId;
+        state.adminUserSection = "overview";
         render();
       }
       if (action === "open-admin-user") {
         state.selectedUserId = button.dataset.userId;
+        state.adminUserSection = "overview";
         state.view = "admin-users";
+        render();
+      }
+      if (action === "admin-user-section") {
+        state.adminUserSection = button.dataset.section || "overview";
         render();
       }
       if (action === "admin-remove-item") await adminRemoveItem(button.dataset.userId, button.dataset.itemInstance);
@@ -16867,6 +17008,11 @@ function wireEvents() {
       if (action === "admin-vault-heal") await adminHealVaultPet(button.dataset.userId, button.dataset.instanceId);
       if (action === "admin-vault-remove") await adminRemoveVaultItem(button.dataset.userId, button.dataset.instanceId);
       if (action === "admin-clear-activity") await adminClearActivity(button.dataset.userId, button.dataset.activityId);
+      if (action === "content-page") {
+        const collection = button.dataset.collection || "generic";
+        state.contentPages[collection] = Math.max(0, Number(button.dataset.page || 0));
+        render();
+      }
       if (action === "content-tab") {
         state.contentTab = button.dataset.tab;
         if (state.view === "admin-content") {
@@ -16885,6 +17031,11 @@ function wireEvents() {
       }
       if (action === "market-tab") {
         state.marketTab = button.dataset.tab;
+        if (state.marketTab === "market") state.marketVisibleCount = 12;
+        render();
+      }
+      if (action === "market-load-more") {
+        state.marketVisibleCount = Math.max(12, Number(state.marketVisibleCount || 12)) + 12;
         render();
       }
       if (action === "ranking-tab") {
@@ -17033,10 +17184,12 @@ function wireEvents() {
     }
     if (event.target.dataset.action === "market-rarity") {
       state.marketRarity = event.target.value;
+      state.marketVisibleCount = 12;
       render();
     }
     if (event.target.dataset.action === "market-category") {
       state.marketCategory = event.target.value;
+      state.marketVisibleCount = 12;
       render();
     }
     const form = event.target.closest("form");
