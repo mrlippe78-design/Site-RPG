@@ -3249,7 +3249,7 @@ function firebaseErrorMessage(error) {
     "auth/operation-not-allowed": "Ative Email/Senha em Firebase Authentication > Sign-in method.",
     "auth/unauthorized-domain": "Domínio não autorizado no Firebase. Adicione 127.0.0.1 e localhost em Authentication > Settings > Authorized domains.",
     "auth/network-request-failed": "Não consegui conectar ao Firebase agora. Verifique internet, bloqueios do navegador ou tente recarregar.",
-    "permission-denied": "A operação foi bloqueada pelo Firestore. Confirme que o site e as regras estão na versão 3.6.4 Aurora.",
+    "permission-denied": "A operação foi bloqueada pelo Firestore. Para contas novas, publique também a correção Firebase r3.2; atualizar apenas o GitHub não altera as regras.",
     "failed-precondition": "O Firestore precisa de um índice ou configuração adicional. Publique firestore.indexes.json e recarregue o site.",
     "unavailable": "O Firebase está temporariamente indisponível. Nenhuma alteração foi confirmada; tente novamente.",
     "deadline-exceeded": "A conexão demorou além do limite. Confira a internet e tente novamente sem repetir vários cliques.",
@@ -3503,8 +3503,15 @@ async function ensureUserProfile(user) {
     createdAt: nowValue(),
   };
   await ref.set(profile, { merge: true });
-  await state.db.collection("characters").doc(user.uid).set(defaultCharacter(user.uid, profile.displayName), { merge: true });
   state.profile = profile;
+  await createInitialCharacterDocument(user.uid, profile.displayName);
+}
+
+async function createInitialCharacterDocument(uid, displayName = "") {
+  assertFirestoreAvailable();
+  const ref = state.db.collection("characters").doc(uid);
+  await ref.set(defaultCharacter(uid, displayName), { merge: true });
+  state.diagnostics.writes += 1;
 }
 
 async function seedDefaultsIfNeeded() {
@@ -4118,7 +4125,13 @@ function startCharacterSubscription() {
         scheduleRender({ critical: true, preserveFocus: true, preserveScroll: true, reason: "character-removed-restricted" });
         return;
       }
-      await state.db.collection("characters").doc(state.user.uid).set(defaultCharacter(state.user.uid, state.profile?.displayName), { merge: true });
+      try {
+        await createInitialCharacterDocument(state.user.uid, state.profile?.displayName || "");
+      } catch (error) {
+        handleFirebaseOperationError(error, "criacao-da-ficha-inicial");
+        console.error("Falha ao criar a ficha inicial do novo player:", error);
+        toast(firebaseErrorMessage(error));
+      }
       return;
     }
     state.character = character;
