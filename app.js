@@ -951,6 +951,14 @@ const state = {
   updateDraftRouteApplied: false,
 };
 
+const FIRESTORE_CIRCUIT = window.MILLENNIUM_FIRESTORE_CIRCUIT || {
+  paused: false,
+  pausedAt: 0,
+  reason: "",
+  source: "",
+};
+window.MILLENNIUM_FIRESTORE_CIRCUIT = FIRESTORE_CIRCUIT;
+
 function dataEconomyEnabled() {
   return state.profile?.dataEconomy !== false;
 }
@@ -3185,19 +3193,27 @@ function isFirestoreQuotaError(error = {}) {
 
 function pauseFirestoreForSession(error, source = "firebase") {
   if (!isFirestoreQuotaError(error)) return false;
+  const firstPause = !state.firestorePaused;
   state.firestorePaused = true;
-  state.firestorePausedAt = Date.now();
+  state.firestorePausedAt = state.firestorePausedAt || Date.now();
   state.firestorePauseReason = `${source}: ${String(error?.code || error?.message || "resource-exhausted")}`.slice(0, 300);
   state.diagnostics.lastSyncError = state.firestorePauseReason;
+  FIRESTORE_CIRCUIT.paused = true;
+  FIRESTORE_CIRCUIT.pausedAt = state.firestorePausedAt;
+  FIRESTORE_CIRCUIT.reason = state.firestorePauseReason;
+  FIRESTORE_CIRCUIT.source = source;
 
   if (!state.firestoreQuotaNoticeShown) {
     state.firestoreQuotaNoticeShown = true;
     toast("A cota diária gratuita do Firestore foi esgotada. O site pausou novas sincronizações nesta sessão para não repetir chamadas. Aguarde a renovação da cota e recarregue a página.");
   }
 
-  window.setTimeout(() => {
-    if (state.firestorePaused) cleanupListeners();
-  }, 0);
+  if (firstPause) {
+    cleanupListeners();
+    window.dispatchEvent(new CustomEvent("millennium:firestore-paused", {
+      detail: { source, reason: state.firestorePauseReason, pausedAt: state.firestorePausedAt },
+    }));
+  }
   return true;
 }
 
@@ -3212,6 +3228,13 @@ function handleFirebaseOperationError(error, source = "firebase") {
   pauseFirestoreForSession(error, source);
   return error;
 }
+
+window.MILLENNIUM_FIRESTORE_GUARD = Object.freeze({
+  isPaused: () => state.firestorePaused,
+  trip: (error, source = "external") => pauseFirestoreForSession(error, source),
+  assert: () => assertFirestoreAvailable(),
+  snapshot: () => ({ ...FIRESTORE_CIRCUIT }),
+});
 
 function firebaseErrorMessage(error) {
   const code = error?.code || "";
@@ -3440,7 +3463,12 @@ async function initFirebase() {
 
 async function ensureUserProfile(user) {
   const queueRef = state.db.collection("accountDeletionQueue").doc(user.uid);
-  const queueSnap = await queueRef.get().catch(() => null);
+  let queueSnap = null;
+  try {
+    queueSnap = await queueRef.get();
+  } catch (error) {
+    if (isFirestoreQuotaError(error)) throw error;
+  }
   if (queueSnap?.exists && queueSnap.data()?.status === "awaiting-auth-delete") {
     state.accountDeletionQueue = { id: user.uid, ...queueSnap.data() };
     state.profile = {
@@ -3521,6 +3549,7 @@ function subscribeDoc(path, id, cb) {
 }
 
 function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsubs) {
+  if (state.firestorePaused) return () => {};
   const base = state.db.collection(path);
   const query = queryBuilder ? queryBuilder(base) : base;
   let initialized = false;
@@ -3550,6 +3579,7 @@ function subscribeCollection(path, cb, queryBuilder = null, bucket = state.unsub
   );
   bucket.push(unsub);
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length;
+  return unsub;
 }
 
 function clearRouteSubscriptions() {
@@ -3563,6 +3593,7 @@ function clearRouteSubscriptions() {
 }
 
 function routeCollection(path, cb, queryBuilder = null, name = path) {
+  if (state.firestorePaused) return;
   const useEconomySnapshot = dataEconomyEnabled()
     && !["globalMessages", "conversations", "directMessages", "guildMessages"].includes(path);
   if (useEconomySnapshot) {
@@ -14020,6 +14051,7 @@ function closePrivateConversationListener() {
 }
 
 async function subscribeConversationMessages(conversationId, targetId) {
+  if (state.firestorePaused) return;
   closePrivateConversationListener();
   state.conversationMessages = [];
   state.conversationOldestDoc = null;
@@ -14029,13 +14061,20 @@ async function subscribeConversationMessages(conversationId, targetId) {
     return;
   }
   const conversationRef = state.db.collection("conversations").doc(conversationId);
-  const conversationSnapshot = await conversationRef.get().catch(() => null);
+  let conversationSnapshot = null;
+  try {
+    conversationSnapshot = await conversationRef.get();
+  } catch (error) {
+    handleFirebaseOperationError(error, "conversa-direta");
+    if (state.firestorePaused) return;
+  }
   state.diagnostics.documentsRead += conversationSnapshot?.exists ? 1 : 0;
   if (!conversationSnapshot?.exists) {
     syncPrivateMessages();
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
     return;
   }
+  if (state.firestorePaused) return;
   const query = conversationRef.collection("messages").orderBy("createdAt", "desc").limit(30);
   state.privateUnsub = query.onSnapshot((snapshot) => {
     state.diagnostics.documentsRead += snapshot.size;
@@ -14048,8 +14087,11 @@ async function subscribeConversationMessages(conversationId, targetId) {
     syncPrivateMessages();
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true, reason: "direct-message-snapshot" });
   }, (error) => {
+    handleFirebaseOperationError(error, "listener:conversa-direta");
     console.error(error);
-    state.privateChatError = "Não foi possível carregar esta conversa. Confirme as regras e os índices do Firestore.";
+    state.privateChatError = state.firestorePaused
+      ? "A sincronização foi pausada porque a cota do Firestore se esgotou."
+      : "Não foi possível carregar esta conversa. Confirme as regras e os índices do Firestore.";
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
   });
   state.diagnostics.listenerCount = state.unsubs.length + state.routeUnsubs.length + 1;
@@ -14073,7 +14115,7 @@ function subscribePrivateChat(targetId) {
 }
 
 async function loadOlderDirectMessages() {
-  if (state.demo || !state.db || !state.activeConversationId || !state.conversationOldestDoc || state.conversationLoading) return;
+  if (state.firestorePaused || state.demo || !state.db || !state.activeConversationId || !state.conversationOldestDoc || state.conversationLoading) return;
   state.conversationLoading = true;
   scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
   try {
@@ -14085,6 +14127,9 @@ async function loadOlderDirectMessages() {
     state.conversationOldestDoc = snapshot.docs.at(-1) || state.conversationOldestDoc;
     state.conversationHasMore = snapshot.size === 30;
     syncPrivateMessages();
+  } catch (error) {
+    handleFirebaseOperationError(error, "historico-conversa-direta");
+    if (!state.firestorePaused) throw error;
   } finally {
     state.conversationLoading = false;
     scheduleRender({ route: state.view, preserveFocus: true, preserveScroll: true });
@@ -14092,6 +14137,7 @@ async function loadOlderDirectMessages() {
 }
 
 async function persistPrivateMessage(message) {
+  assertFirestoreAvailable();
   const conversationId = message.conversationId;
   const knownConversation = state.conversations.some((conversation) => conversation.id === conversationId);
   const conversationRef = state.db.collection("conversations").doc(conversationId);
@@ -14140,7 +14186,13 @@ async function sendPrivateChat(form, retryMessage = null) {
       writeDemo("conversations", message.conversationId, { participantIds: message.participants, lastMessage: message.text, lastMessageAt: new Date().toISOString(), lastSenderId: message.senderId });
       state.optimisticMessages = state.optimisticMessages.filter((item) => item.clientId !== clientId);
     } else {
-      const existing = await state.db.collection("conversations").doc(message.conversationId).collection("messages").doc(clientId).get().catch(() => null);
+      let existing = null;
+      try {
+        existing = await state.db.collection("conversations").doc(message.conversationId).collection("messages").doc(clientId).get();
+      } catch (error) {
+        handleFirebaseOperationError(error, "verificacao-mensagem-direta");
+        throw error;
+      }
       if (!existing?.exists) await persistPrivateMessage(message);
       else state.diagnostics.documentsRead += 1;
       if (!state.privateUnsub) await subscribeConversationMessages(message.conversationId, targetId);

@@ -1,4 +1,4 @@
-(function bootstrapMillenniumSecurity() {
+(async function bootstrapMillenniumSecurity() {
   const firebaseConfig = {
     apiKey: "AIzaSyAyCR1Hod1kFemfLkXlPme88ihbRFlXhaM",
     authDomain: "sorteioafinidade.firebaseapp.com",
@@ -8,6 +8,26 @@
     appId: "1:338718810770:web:7c0cc44fbf70df30b27c4b",
   };
   const config = window.MILLENNIUM_SECURITY_CONFIG || {};
+  const APP_CHECK_SDK = "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js";
+
+  function loadAppCheckSdk() {
+    if (firebase.appCheck?.ReCaptchaEnterpriseProvider) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const existing = [...document.scripts].find((script) => script.src === APP_CHECK_SDK);
+      if (existing) {
+        existing.addEventListener("load", () => resolve(Boolean(firebase.appCheck?.ReCaptchaEnterpriseProvider)), { once: true });
+        existing.addEventListener("error", () => resolve(false), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = APP_CHECK_SDK;
+      script.async = true;
+      script.onload = () => resolve(Boolean(firebase.appCheck?.ReCaptchaEnterpriseProvider));
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+  }
+
   const state = {
     configured: Boolean(String(config.appCheckSiteKey || "").trim()),
     enabled: false,
@@ -37,9 +57,12 @@
       return;
     }
     if (!firebase.appCheck?.ReCaptchaEnterpriseProvider) {
-      state.reason = "app-check-sdk-unavailable";
-      window.MILLENNIUM_APP_CHECK_STATE = Object.freeze(state);
-      return;
+      const loaded = await loadAppCheckSdk();
+      if (!loaded) {
+        state.reason = "app-check-sdk-unavailable";
+        window.MILLENNIUM_APP_CHECK_STATE = Object.freeze(state);
+        return;
+      }
     }
 
     const appCheck = firebase.appCheck();
