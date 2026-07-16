@@ -807,6 +807,30 @@ const CULTURE_RACE_RELATIONS = Object.freeze({
   "branca-do-norte": ["humano", "zoofolk", "anao", "titanico", "lunariano"], "vigia-das-cortinas": ["humano", "elfo", "goblin", "anjo", "demonio", "vampiro", "zoofolk", "anao", "draconato", "morto-vivo", "silvanico", "lunariano", "sombranato", "maresio", "forjado", "cineriano", "titanico"],
 });
 DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry, commonRaces: [...(CULTURE_RACE_RELATIONS[entry.id] || entry.commonRaces || [])] }));
+const RACE_WORLD_LINKS = Object.freeze({
+  humano: { originKingdomIds: ["aurevia", "sem-reino"], originRegionIds: ["porto-millennium", "sul-vitrificado", "norte-branco"], biomeIds: ["floresta-viva", "deserto-de-vidro", "abismo-frio"] },
+  elfo: { originKingdomIds: ["noctheryn"], originRegionIds: ["ruinas-de-kael"], biomeIds: ["floresta-viva"] },
+  goblin: { originKingdomIds: ["aurevia", "sem-reino"], originRegionIds: ["porto-millennium", "sul-vitrificado"], biomeIds: ["deserto-de-vidro"] },
+  anjo: { originKingdomIds: ["aurevia"], originRegionIds: ["porto-millennium"], biomeIds: ["abismo-frio"] },
+  demonio: { originKingdomIds: ["sem-reino"], originRegionIds: ["sul-vitrificado"], biomeIds: ["deserto-de-vidro"] },
+  vampiro: { originKingdomIds: ["noctheryn"], originRegionIds: ["ruinas-de-kael"], biomeIds: ["abismo-frio"] },
+  zoofolk: { originKingdomIds: ["sem-reino"], originRegionIds: ["norte-branco"], biomeIds: ["floresta-viva", "abismo-frio"] },
+  anao: { originKingdomIds: ["sem-reino"], originRegionIds: ["norte-branco"], biomeIds: ["abismo-frio"] },
+  draconato: { originKingdomIds: ["sem-reino"], originRegionIds: ["sul-vitrificado"], biomeIds: ["deserto-de-vidro"] },
+  "morto-vivo": { originKingdomIds: ["noctheryn"], originRegionIds: ["ruinas-de-kael"], biomeIds: ["abismo-frio"] },
+  silvanico: { originKingdomIds: ["sem-reino"], originRegionIds: ["ruinas-de-kael"], biomeIds: ["floresta-viva"] },
+  lunariano: { originKingdomIds: ["noctheryn"], originRegionIds: ["ruinas-de-kael", "norte-branco"], biomeIds: ["abismo-frio"] },
+  sombranato: { originKingdomIds: ["noctheryn"], originRegionIds: ["ruinas-de-kael", "cortinas"], biomeIds: ["abismo-frio"] },
+  maresio: { originKingdomIds: ["aurevia"], originRegionIds: ["porto-millennium"], biomeIds: ["floresta-viva"] },
+  forjado: { originKingdomIds: ["aurevia", "sem-reino"], originRegionIds: ["porto-millennium", "sul-vitrificado"], biomeIds: ["deserto-de-vidro"] },
+  cineriano: { originKingdomIds: ["sem-reino"], originRegionIds: ["sul-vitrificado"], biomeIds: ["deserto-de-vidro"] },
+  titanico: { originKingdomIds: ["sem-reino"], originRegionIds: ["norte-branco"], biomeIds: ["abismo-frio"] },
+});
+DEFAULT_CONTENT.races = DEFAULT_CONTENT.races.map((race) => ({
+  ...race,
+  habitat: race.habitat || race.biome || "Habitat não registrado.",
+  ...(RACE_WORLD_LINKS[race.id] || {}),
+}));
 DEFAULT_CONTENT.professions = STATIC_CATALOGS_31.professions.map((entry) => ({
   ...entry,
   commonRaces: DEFAULT_CONTENT.races.filter((race) => (race.professions || []).includes(entry.id)).map((race) => race.id),
@@ -826,15 +850,18 @@ const RACE_CANONICAL_LORE_FIELDS = Object.freeze([
   "summary", "description", "origin", "biome", "culture", "history", "appearance",
   "reputation", "symbolism", "worldRelation", "professions", "factions", "keywords",
 ]);
+const RACE_CANONICAL_LINK_FIELDS = Object.freeze(["originKingdomIds", "originRegionIds", "biomeIds"]);
 
 function raceCatalogKey(value = "") {
   return normalize(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function catalogValuePresent(value) {
-  if (Array.isArray(value)) return value.length > 0;
+  if (Array.isArray(value)) return value.some((entry) => catalogValuePresent(entry));
   if (value && typeof value === "object") return Object.keys(value).length > 0;
-  return String(value ?? "").trim().length > 0;
+  const normalized = normalize(String(value ?? "").trim());
+  if (!normalized) return false;
+  return !new Set(["-", "--", "—", "n/a", "na", "nenhum", "nao informado", "nao registrada", "nao registrado", "origem nao registrada", "habitat nao registrado", "bioma nao registrado"]).has(normalized);
 }
 
 function mergeCanonicalRaceCatalog(entries = []) {
@@ -860,12 +887,16 @@ function mergeCanonicalRaceCatalog(entries = []) {
     RACE_CANONICAL_LORE_FIELDS.forEach((field) => {
       if (!catalogValuePresent(merged[field]) && catalogValuePresent(baseRace[field])) merged[field] = baseRace[field];
     });
+    RACE_CANONICAL_LINK_FIELDS.forEach((field) => {
+      merged[field] = catalogValuePresent(remote?.[field]) ? [...remote[field]] : [...(baseRace[field] || [])];
+    });
     if (!catalogValuePresent(merged.passive)) merged.passive = baseRace.passive || "";
     if (!catalogValuePresent(merged.bonus)) merged.bonus = { ...(baseRace.bonus || {}) };
+    merged.origin = catalogValuePresent(remote?.origin) ? remote.origin : (baseRace.origin || "Origem não registrada.");
     merged.habitat = catalogValuePresent(remote?.habitat)
       ? remote.habitat
-      : (catalogValuePresent(baseRace.habitat) ? baseRace.habitat : (merged.biome || baseRace.biome || "Habitat não registrado."));
-    merged.biome = catalogValuePresent(merged.biome) ? merged.biome : merged.habitat;
+      : (catalogValuePresent(remote?.biome) ? remote.biome : (baseRace.habitat || baseRace.biome || "Habitat não registrado."));
+    merged.biome = catalogValuePresent(remote?.biome) ? remote.biome : (baseRace.biome || merged.habitat);
     return merged;
   });
 
@@ -6509,13 +6540,51 @@ function renderRaceChoiceGrid(selectedId = "", locked = false) {
     </fieldset>`;
 }
 
+function canonicalRaceFor(value = {}) {
+  const key = raceCatalogKey(value.id || value.name || "");
+  return (DEFAULT_CONTENT.races || []).find((entry) => raceCatalogKey(entry.id) === key || raceCatalogKey(entry.name) === key) || value;
+}
+
+function raceAssetFor(race = {}, variant = "card") {
+  const canonical = canonicalRaceFor(race);
+  const fields = { hero: "imageHero", portrait: "imagePortrait", card: "imageCard", thumbnail: "imageThumbnail", emblem: "emblemUrl" };
+  const field = fields[variant] || fields.card;
+  return canonical[field] || race[field] || canonical.imageCard || canonical.imagePortrait || canonical.imageHero || canonical.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp";
+}
+
+function raceWorldEntries(race = {}, type = "origin") {
+  const canonical = canonicalRaceFor(race);
+  const source = { ...canonical, ...race };
+  if (type === "biome") {
+    const ids = source.biomeIds || canonical.biomeIds || [];
+    return ids.map((id) => (state.content.biomes || DEFAULT_CONTENT.biomes || []).find((entry) => entry.id === id)).filter(Boolean).map((entry) => ({ ...entry, collection: "biomes" }));
+  }
+  const kingdoms = (source.originKingdomIds || canonical.originKingdomIds || []).map((id) => (state.content.kingdoms || DEFAULT_CONTENT.kingdoms || []).find((entry) => entry.id === id)).filter(Boolean).map((entry) => ({ ...entry, collection: "kingdoms" }));
+  const regions = (source.originRegionIds || canonical.originRegionIds || []).map((id) => (state.content.regions || DEFAULT_CONTENT.regions || []).find((entry) => entry.id === id)).filter(Boolean).map((entry) => ({ ...entry, collection: "regions" }));
+  return [...kingdoms, ...regions];
+}
+
+function raceWorldLabel(race = {}, type = "origin") {
+  const linked = raceWorldEntries(race, type);
+  if (linked.length) return linked.map((entry) => entry.name).join(" · ");
+  return type === "biome"
+    ? (catalogValuePresent(race.biome) ? race.biome : race.habitat || "Bioma não registrado.")
+    : (catalogValuePresent(race.origin) ? race.origin : "Origem não registrada.");
+}
+
+function renderRaceWorldLinks(race = {}, type = "origin") {
+  const entries = raceWorldEntries(race, type);
+  if (!entries.length) return "";
+  return `<span class="race-world-links">${entries.map((entry) => `<button type="button" data-action="open-codex-entry" data-collection="${esc(entry.collection)}" data-entry-id="${esc(entry.id)}">${esc(entry.name)}</button>`).join("")}</span>`;
+}
+
 function renderRaceLoreDetails(race = {}) {
   const professionNames = (race.professions || []).map((id) => characterCatalogEntry("professions", id)?.name || humanizeAccessibleName(id)).join(", ") || "Não registrado";
   const factionNames = (race.factions || []).map((id) => state.content.reputationFactions?.find((entry) => entry.id === id)?.name || humanizeAccessibleName(id)).join(", ") || "Não registrado";
   return `
     <div class="race-lore-grid" aria-label="Identidade e história de ${esc(race.name || "raça")}">
-      <section><small>Origem</small><p>${esc(race.origin || "Origem não registrada.")}</p></section>
-      <section><small>Habitat</small><p>${esc(race.habitat || race.biome || "Habitat não registrado.")}</p></section>
+      <section><small>Origem vinculada</small><p>${esc(raceWorldLabel(race, "origin"))}</p>${renderRaceWorldLinks(race, "origin")}<p class="race-lore-note">${esc(race.origin || "Origem não registrada.")}</p></section>
+      <section><small>Bioma vinculado</small><p>${esc(raceWorldLabel(race, "biome"))}</p>${renderRaceWorldLinks(race, "biome")}<p class="race-lore-note">${esc(race.habitat || race.biome || "Habitat não registrado.")}</p></section>
       <section><small>Cultura</small><p>${esc(race.culture || "Cultura não registrada.")}</p></section>
       <section><small>Aparência</small><p>${esc(race.appearance || "Aparência não registrada.")}</p></section>
       <section><small>Passiva básica</small><p>${esc(race.passive || "Passiva racial ainda não registrada.")}</p></section>
@@ -6530,11 +6599,14 @@ function renderRaceLoreDetails(race = {}) {
 
 function renderRaceComparison(races = state.content.races || []) {
   return `
-    <details class="race-comparison" aria-labelledby="race-comparison-title">
-      <summary><span><small>Comparativo racial</small><strong id="race-comparison-title">Comparar as ${races.length} raças</strong></span><em>Origem, habitat, passiva e símbolo</em></summary>
+    <details class="race-comparison" aria-labelledby="race-comparison-title" open>
+      <summary><span><small>Comparativo racial</small><strong id="race-comparison-title">Comparar as ${races.length} raças</strong></span><em>Personagem, origem, bioma, passiva e marca</em></summary>
       <div class="race-comparison-scroll" tabindex="0">
-        <table><thead><tr><th>Raça</th><th>Origem</th><th>Habitat</th><th>Passiva básica</th><th>Marca visual</th></tr></thead><tbody>
-          ${races.map((race) => `<tr><th><span><img src="${esc(race.emblemUrl || race.fallbackUrl)}" data-fallback-src="${esc(race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="40" height="40" loading="lazy" decoding="async" alt="" />${esc(race.name)}</span></th><td data-label="Origem">${esc(race.origin || "—")}</td><td data-label="Habitat">${esc(race.habitat || race.biome || "—")}</td><td data-label="Passiva">${esc(race.passive || "—")}</td><td data-label="Símbolo">${esc(race.symbolism || "—")}</td></tr>`).join("")}
+        <table><thead><tr><th>Raça</th><th>Origem</th><th>Bioma</th><th>Passiva básica</th><th>Marca visual</th></tr></thead><tbody>
+          ${races.map((race) => {
+            const fallback = race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp";
+            return `<tr data-race-id="${esc(race.id)}"><th><span class="race-comparison-race"><img src="${esc(raceAssetFor(race, "thumbnail"))}" data-fallback-src="${esc(fallback)}" width="72" height="48" loading="lazy" decoding="async" alt="${esc(race.altText || `Representante ${race.name}`)}" /><b>${esc(race.name)}</b></span></th><td data-label="Origem"><strong>${esc(raceWorldLabel(race, "origin"))}</strong>${renderRaceWorldLinks(race, "origin")}</td><td data-label="Bioma"><strong>${esc(raceWorldLabel(race, "biome"))}</strong>${renderRaceWorldLinks(race, "biome")}</td><td data-label="Passiva">${esc(race.passive || "—")}</td><td data-label="Marca"><span class="race-comparison-mark"><img src="${esc(raceAssetFor(race, "emblem"))}" data-fallback-src="${esc(fallback)}" width="44" height="44" loading="lazy" decoding="async" alt="" /><span>${esc(race.symbolism || "Marca não registrada")}</span></span></td></tr>`;
+          }).join("")}
         </tbody></table>
       </div>
     </details>`;
@@ -8084,15 +8156,16 @@ function renderCodexResults(tab = state.codexTab || "affinities") {
           const visual = codexVisualFor(item, index, tab);
           const presentation = POLISH.codexPresentation(tab, item, codexContextFor(tab, item));
           const isRace = tab === "races";
-          const raceImage = item.imageCard || item.imageThumbnail || item.imageHero || visual.thumbnail;
+          const raceImage = isRace ? raceAssetFor(item, "card") : visual.thumbnail;
           const metaMarkup = isRace
             ? `<div class="codex-card-meta"><span><small>Bônus</small>${esc(bonusToText(item.bonus))}</span></div>`
             : `<div class="codex-card-meta">${presentation.meta.slice(0, 6).map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>`;
-          const raceFacts = isRace ? `<div class="race-card-facts"><span><small>Origem</small><b>${esc(POLISH.compactText(item.origin || "Origem não registrada.", 92))}</b></span><span><small>Habitat</small><b>${esc(POLISH.compactText(item.habitat || item.biome || "Habitat não registrado.", 92))}</b></span><span class="wide"><small>Passiva</small><b>${esc(POLISH.compactText(item.passive || "Passiva não registrada.", 130))}</b></span></div>` : "";
+          const raceFacts = isRace ? `<div class="race-card-facts"><span><small>Origem</small><b>${esc(POLISH.compactText(raceWorldLabel(item, "origin"), 100))}</b>${renderRaceWorldLinks(item, "origin")}</span><span><small>Bioma</small><b>${esc(POLISH.compactText(raceWorldLabel(item, "biome"), 100))}</b>${renderRaceWorldLinks(item, "biome")}</span><span class="wide"><small>Passiva</small><b>${esc(POLISH.compactText(item.passive || "Passiva não registrada.", 150))}</b></span></div>` : "";
           return `
             <article class="codex-card codex-card-summary ${isRace ? "codex-race-card" : ""}" role="listitem">
               <div class="codex-card-media">
-                <img src="${esc(isRace ? raceImage : visual.thumbnail)}" data-fallback-src="${esc(visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(visual.alt)}" loading="lazy" decoding="async" width="640" height="420" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+                <img src="${esc(raceImage)}" data-fallback-src="${esc(item.fallbackUrl || visual.fallback)}" data-visual-kind="${esc(codexKindForTab(tab))}" data-visual-id="${esc(item.id || presentation.title)}" alt="${esc(item.altText || visual.alt)}" loading="lazy" decoding="async" width="640" height="420" style="object-position:${visual.focusX}% ${visual.focusY}%" />
+                ${isRace ? `<img class="codex-race-emblem" src="${esc(raceAssetFor(item, "emblem"))}" data-fallback-src="${esc(item.fallbackUrl || visual.fallback)}" width="54" height="54" loading="lazy" decoding="async" alt="" />` : ""}
               </div>
               <div class="codex-card-body">
                 ${metaMarkup}
@@ -9767,6 +9840,9 @@ function forgeVisualFields(collection, item = {}) {
       <label><span>Origem</span><input name="origin" value="${esc(item.origin || "")}" placeholder="Onde esse povo surgiu" /></label>
       <label><span>Habitat</span><input name="habitat" value="${esc(item.habitat || item.biome || "")}" placeholder="Ambientes em que vive" /></label>
       <label><span>Bioma legado</span><input name="biome" value="${esc(item.biome || item.habitat || "")}" placeholder="Compatibilidade com registros antigos" /></label>
+      <label class="wide"><span>Reinos de origem vinculados</span><input name="originKingdomIds" value="${esc((item.originKingdomIds || []).join(", "))}" placeholder="aurevia, noctheryn, sem-reino" /><small>IDs existentes na aba Reinos.</small></label>
+      <label class="wide"><span>Regiões de origem vinculadas</span><input name="originRegionIds" value="${esc((item.originRegionIds || []).join(", "))}" placeholder="porto-millennium, ruinas-de-kael" /><small>IDs existentes na aba Regiões.</small></label>
+      <label class="wide"><span>Biomas vinculados</span><input name="biomeIds" value="${esc((item.biomeIds || []).join(", "))}" placeholder="floresta-viva, deserto-de-vidro" /><small>IDs existentes na aba Biomas.</small></label>
       ${mediaInput("imageHero", "Banner da raça", item.imageHero || item.imageUrl || "")}
       ${mediaInput("imagePortrait", "Retrato da raça", item.imagePortrait || "")}
       ${mediaInput("imageCard", "Arte do card", item.imageCard || "")}
@@ -15263,6 +15339,9 @@ async function saveForgeVisual(form) {
       origin: values.origin || "",
       habitat: values.habitat || values.biome || "",
       biome: values.biome || values.habitat || "",
+      originKingdomIds: list(values.originKingdomIds),
+      originRegionIds: list(values.originRegionIds),
+      biomeIds: list(values.biomeIds),
       culture: values.culture || "",
       history: values.history || "",
       appearance: values.appearance || "",

@@ -9,11 +9,31 @@
   "technicalFallback": "assets/m364/races/fallbacks/race-missing.webp",
   "lockedFallback": "assets/m364/races/fallbacks/race-locked.webp",
   "assetPolicy": {
-    "banner": { "width": 768, "height": 512, "folder": "banners" },
-    "portrait": { "width": 512, "height": 640, "folder": "portraits" },
-    "card": { "width": 384, "height": 256, "folder": "cards" },
-    "thumbnail": { "width": 192, "height": 128, "folder": "cards" },
-    "icon": { "width": 256, "height": 256, "folder": "icons" },
+    "banner": {
+      "width": 768,
+      "height": 512,
+      "folder": "banners"
+    },
+    "portrait": {
+      "width": 512,
+      "height": 640,
+      "folder": "portraits"
+    },
+    "card": {
+      "width": 384,
+      "height": 256,
+      "folder": "cards"
+    },
+    "thumbnail": {
+      "width": 192,
+      "height": 128,
+      "folder": "cards"
+    },
+    "icon": {
+      "width": 256,
+      "height": 256,
+      "folder": "icons"
+    },
     "format": "webp",
     "rendering": "pixelated",
     "loading": "lazy-except-active-hero"
@@ -31,15 +51,39 @@
       "basicPassive": "Adaptabilidade: após observar um método, reconhece um padrão e reduz uma desvantagem específica. Não copia poderes.",
       "reputation": "Adaptáveis e confiáveis, por vezes vistos como ambiciosos",
       "symbolism": "Rosa dos caminhos dentro de círculo aberto",
-      "professions": ["explorador", "mensageiro", "guarda", "mercador"],
-      "factions": ["liga-sem-reino", "vigias-primeira-janela", "conselho-dourado"],
+      "professions": [
+        "explorador",
+        "mensageiro",
+        "guarda",
+        "mercador"
+      ],
+      "factions": [
+        "liga-sem-reino",
+        "vigias-primeira-janela",
+        "conselho-dourado"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/humano.webp",
         "portrait": "assets/m364/races/portraits/humano.webp",
         "card": "assets/m364/races/cards/humano.webp",
         "thumbnail": "assets/m364/races/cards/humano-thumbnail.webp",
         "icon": "assets/m364/races/icons/humano.webp"
-      }
+      },
+      "originKingdomIds": [
+        "aurevia",
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "porto-millennium",
+        "sul-vitrificado",
+        "norte-branco"
+      ],
+      "biomeIds": [
+        "floresta-viva",
+        "deserto-de-vidro",
+        "abismo-frio"
+      ],
+      "habitat": "Encruzilhadas, cidades e fronteiras"
     },
     {
       "id": "elfo",
@@ -53,15 +97,34 @@
       "basicPassive": "Sentidos Aguçados: percebe detalhes, rastros e trajetórias com foco, visão ou tempo de observação.",
       "reputation": "Observadores respeitados e aliados cautelosos",
       "symbolism": "Semente de vidro lunar abraçada por arco crescente e folhas de prata",
-      "professions": ["herbalista", "cartografo", "cacador", "historiador"],
-      "factions": ["vigias-primeira-janela", "coroa-velada", "irmandade-cinzas"],
+      "professions": [
+        "herbalista",
+        "cartografo",
+        "cacador",
+        "historiador"
+      ],
+      "factions": [
+        "vigias-primeira-janela",
+        "coroa-velada",
+        "irmandade-cinzas"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/elfo.webp",
         "portrait": "assets/m364/races/portraits/elfo.webp",
         "card": "assets/m364/races/cards/elfo.webp",
         "thumbnail": "assets/m364/races/cards/elfo-thumbnail.webp",
         "icon": "assets/m364/races/icons/elfo.webp"
-      }
+      },
+      "originKingdomIds": [
+        "noctheryn"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael"
+      ],
+      "biomeIds": [
+        "floresta-viva"
+      ],
+      "habitat": "Florestas antigas, vales enevoados e ruínas de vidro lunar"
     },
     {
       "id": "goblin",
@@ -75,15 +138,36 @@
       "basicPassive": "Improvisador Nato: cria solução provisória com material disponível; toda improvisação recebe desgaste ou risco.",
       "reputation": "Inventores indispensáveis e suspeitos diante de qualquer máquina sem dono",
       "symbolism": "Chave e gancho cruzados dentro de engrenagem irregular",
-      "professions": ["ferreiro", "alquimista", "mineiro", "construtor"],
-      "factions": ["liga-sem-reino", "conselho-dourado", "irmandade-cinzas"],
+      "professions": [
+        "ferreiro",
+        "alquimista",
+        "mineiro",
+        "construtor"
+      ],
+      "factions": [
+        "liga-sem-reino",
+        "conselho-dourado",
+        "irmandade-cinzas"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/goblin.webp",
         "portrait": "assets/m364/races/portraits/goblin.webp",
         "card": "assets/m364/races/cards/goblin.webp",
         "thumbnail": "assets/m364/races/cards/goblin-thumbnail.webp",
         "icon": "assets/m364/races/icons/goblin.webp"
-      }
+      },
+      "originKingdomIds": [
+        "aurevia",
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "porto-millennium",
+        "sul-vitrificado"
+      ],
+      "biomeIds": [
+        "deserto-de-vidro"
+      ],
+      "habitat": "Ruínas mecânicas, ferrovias, minas e cidades densas"
     },
     {
       "id": "anjo",
@@ -97,15 +181,34 @@
       "basicPassive": "Aura Divina: escolhe um juramento; proteção e cura são estáveis enquanto o voto é respeitado.",
       "reputation": "Protetores poderosos ligados a antigas ordens celestes",
       "symbolism": "Halo partido sobre lança entre uma pena clara e outra cinzenta",
-      "professions": ["guarda", "medico", "sacerdote", "mensageiro"],
-      "factions": ["vigias-primeira-janela", "coroa-velada", "conselho-dourado"],
+      "professions": [
+        "guarda",
+        "medico",
+        "sacerdote",
+        "mensageiro"
+      ],
+      "factions": [
+        "vigias-primeira-janela",
+        "coroa-velada",
+        "conselho-dourado"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/anjo.webp",
         "portrait": "assets/m364/races/portraits/anjo.webp",
         "card": "assets/m364/races/cards/anjo.webp",
         "thumbnail": "assets/m364/races/cards/anjo-thumbnail.webp",
         "icon": "assets/m364/races/icons/anjo.webp"
-      }
+      },
+      "originKingdomIds": [
+        "aurevia"
+      ],
+      "originRegionIds": [
+        "porto-millennium"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Altitudes, ruínas celestes e planaltos de tempestade"
     },
     {
       "id": "demonio",
@@ -119,15 +222,34 @@
       "basicPassive": "Fúria Infernal: eleva a intensidade de uma ação ao aceitar consequência proporcional antes do uso.",
       "reputation": "Temidos por sua força e julgados pelo passado de servidão bélica",
       "symbolism": "Chifres de obsidiana envolvendo brasa acorrentada e elo rompido",
-      "professions": ["ferreiro", "mineiro", "guarda", "cacador-de-reliquias"],
-      "factions": ["liga-sem-reino", "coroa-velada", "filhos-do-vazio"],
+      "professions": [
+        "ferreiro",
+        "mineiro",
+        "guarda",
+        "cacador-de-reliquias"
+      ],
+      "factions": [
+        "liga-sem-reino",
+        "coroa-velada",
+        "filhos-do-vazio"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/demonio.webp",
         "portrait": "assets/m364/races/portraits/demonio.webp",
         "card": "assets/m364/races/cards/demonio.webp",
         "thumbnail": "assets/m364/races/cards/demonio-thumbnail.webp",
         "icon": "assets/m364/races/icons/demonio.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "sul-vitrificado"
+      ],
+      "biomeIds": [
+        "deserto-de-vidro"
+      ],
+      "habitat": "Basalto, cinza, forjas profundas e cidadelas em ruína"
     },
     {
       "id": "vampiro",
@@ -141,15 +263,34 @@
       "basicPassive": "Vampirismo: alimentação consentida ou autorizada recupera essência gradualmente e revela ecos emocionais.",
       "reputation": "Diplomatas eficientes cuja ética é medida pelo controle da fome",
       "symbolism": "Frasco rubro entre luas de prata, presas e espinho de rosa negra",
-      "professions": ["medico", "investigador", "mercador", "funerario"],
-      "factions": ["coroa-velada", "conselho-dourado", "filhos-do-vazio"],
+      "professions": [
+        "medico",
+        "investigador",
+        "mercador",
+        "funerario"
+      ],
+      "factions": [
+        "coroa-velada",
+        "conselho-dourado",
+        "filhos-do-vazio"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/vampiro.webp",
         "portrait": "assets/m364/races/portraits/vampiro.webp",
         "card": "assets/m364/races/cards/vampiro.webp",
         "thumbnail": "assets/m364/races/cards/vampiro-thumbnail.webp",
         "icon": "assets/m364/races/icons/vampiro.webp"
-      }
+      },
+      "originKingdomIds": [
+        "noctheryn"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Cidades chuvosas, canais escuros, criptas e florestas sem sol"
     },
     {
       "id": "zoofolk",
@@ -163,15 +304,35 @@
       "basicPassive": "Instinto Bestial: escolhe um traço animal registrado, sem receber todas as capacidades da espécie.",
       "reputation": "Guias incomparáveis frequentemente confundidos com monstros por estrangeiros",
       "symbolism": "Pegada angular ligada a sino de pântano e juncos cruzados",
-      "professions": ["cacador", "herbalista", "explorador", "pescador"],
-      "factions": ["irmandade-cinzas", "liga-sem-reino", "vigias-primeira-janela"],
+      "professions": [
+        "cacador",
+        "herbalista",
+        "explorador",
+        "pescador"
+      ],
+      "factions": [
+        "irmandade-cinzas",
+        "liga-sem-reino",
+        "vigias-primeira-janela"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/zoofolk.webp",
         "portrait": "assets/m364/races/portraits/zoofolk.webp",
         "card": "assets/m364/races/cards/zoofolk.webp",
         "thumbnail": "assets/m364/races/cards/zoofolk-thumbnail.webp",
         "icon": "assets/m364/races/icons/zoofolk.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "norte-branco"
+      ],
+      "biomeIds": [
+        "floresta-viva",
+        "abismo-frio"
+      ],
+      "habitat": "Florestas, pântanos, montanhas e territórios de migração"
     },
     {
       "id": "anao",
@@ -185,15 +346,34 @@
       "basicPassive": "Sangue da Forja: mantém estabilidade sob calor, peso, vibração ou trabalho prolongado.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Martelo erguido dentro de uma montanha circular",
-      "professions": ["ferreiro","mineiro","construtor","historiador"],
-      "factions": ["conselho-dourado","coroa-velada","irmandade-cinzas"],
+      "professions": [
+        "ferreiro",
+        "mineiro",
+        "construtor",
+        "historiador"
+      ],
+      "factions": [
+        "conselho-dourado",
+        "coroa-velada",
+        "irmandade-cinzas"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/anao.webp",
         "portrait": "assets/m364/races/portraits/anao.webp",
         "card": "assets/m364/races/cards/anao.webp",
         "thumbnail": "assets/m364/races/cards/anao-thumbnail.webp",
         "icon": "assets/m364/races/icons/anao.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "norte-branco"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Montanhas, minas profundas e vales geotérmicos"
     },
     {
       "id": "draconato",
@@ -207,15 +387,34 @@
       "basicPassive": "Presa Dracônica: escolhe sopro limitado, escamas, sentidos térmicos ou presença predatória.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Garra em chama dentro de um ovo partido",
-      "professions": ["guarda","cacador","explorador","ferreiro"],
-      "factions": ["irmandade-cinzas","vigias-primeira-janela","liga-sem-reino"],
+      "professions": [
+        "guarda",
+        "cacador",
+        "explorador",
+        "ferreiro"
+      ],
+      "factions": [
+        "irmandade-cinzas",
+        "vigias-primeira-janela",
+        "liga-sem-reino"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/draconato.webp",
         "portrait": "assets/m364/races/portraits/draconato.webp",
         "card": "assets/m364/races/cards/draconato.webp",
         "thumbnail": "assets/m364/races/cards/draconato-thumbnail.webp",
         "icon": "assets/m364/races/icons/draconato.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "sul-vitrificado"
+      ],
+      "biomeIds": [
+        "deserto-de-vidro"
+      ],
+      "habitat": "Desfiladeiros vulcânicos e planaltos secos"
     },
     {
       "id": "morto-vivo",
@@ -229,15 +428,34 @@
       "basicPassive": "Memória Fúnebre: não respira e resiste a fadiga comum, mas depende de âncora de identidade.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Lanterna acesa sob uma coroa craniana aberta",
-      "professions": ["funerario","historiador","investigador","sacerdote"],
-      "factions": ["coroa-velada","vigias-primeira-janela","filhos-do-vazio"],
+      "professions": [
+        "funerario",
+        "historiador",
+        "investigador",
+        "sacerdote"
+      ],
+      "factions": [
+        "coroa-velada",
+        "vigias-primeira-janela",
+        "filhos-do-vazio"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/morto-vivo.webp",
         "portrait": "assets/m364/races/portraits/morto-vivo.webp",
         "card": "assets/m364/races/cards/morto-vivo.webp",
         "thumbnail": "assets/m364/races/cards/morto-vivo-thumbnail.webp",
         "icon": "assets/m364/races/icons/morto-vivo.webp"
-      }
+      },
+      "originKingdomIds": [
+        "noctheryn"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Criptas, bibliotecas fúnebres e cidades noturnas"
     },
     {
       "id": "silvanico",
@@ -251,15 +469,34 @@
       "basicPassive": "Canto Verde: percebe estados simples de plantas e desequilíbrios naturais próximos.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Broto duplo sobre espiral de anéis de crescimento",
-      "professions": ["herbalista","medico","explorador","agricultor"],
-      "factions": ["irmandade-cinzas","vigias-primeira-janela","liga-sem-reino"],
+      "professions": [
+        "herbalista",
+        "medico",
+        "explorador",
+        "agricultor"
+      ],
+      "factions": [
+        "irmandade-cinzas",
+        "vigias-primeira-janela",
+        "liga-sem-reino"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/silvanico.webp",
         "portrait": "assets/m364/races/portraits/silvanico.webp",
         "card": "assets/m364/races/cards/silvanico.webp",
         "thumbnail": "assets/m364/races/cards/silvanico-thumbnail.webp",
         "icon": "assets/m364/races/icons/silvanico.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael"
+      ],
+      "biomeIds": [
+        "floresta-viva"
+      ],
+      "habitat": "Florestas antigas e ruínas tomadas por raízes"
     },
     {
       "id": "lunariano",
@@ -273,15 +510,35 @@
       "basicPassive": "Maré Onírica: recorda sonhos e padrões emocionais em locais marcados por lua ou água.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Crescente sobre onda dupla e olho de sonho",
-      "professions": ["cartografo","sacerdote","pescador","investigador"],
-      "factions": ["vigias-primeira-janela","coroa-velada","conselho-dourado"],
+      "professions": [
+        "cartografo",
+        "sacerdote",
+        "pescador",
+        "investigador"
+      ],
+      "factions": [
+        "vigias-primeira-janela",
+        "coroa-velada",
+        "conselho-dourado"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/lunariano.webp",
         "portrait": "assets/m364/races/portraits/lunariano.webp",
         "card": "assets/m364/races/cards/lunariano.webp",
         "thumbnail": "assets/m364/races/cards/lunariano-thumbnail.webp",
         "icon": "assets/m364/races/icons/lunariano.webp"
-      }
+      },
+      "originKingdomIds": [
+        "noctheryn"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael",
+        "norte-branco"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Costas frias, ilhas e lagos"
     },
     {
       "id": "sombranato",
@@ -295,15 +552,35 @@
       "basicPassive": "Véu da Penumbra: reduz presença visual e sonora na sombra enquanto se move com cautela.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Meia-máscara entre duas lâminas de sombra",
-      "professions": ["mensageiro","investigador","ladrao","explorador"],
-      "factions": ["liga-sem-reino","coroa-velada","filhos-do-vazio"],
+      "professions": [
+        "mensageiro",
+        "investigador",
+        "ladrao",
+        "explorador"
+      ],
+      "factions": [
+        "liga-sem-reino",
+        "coroa-velada",
+        "filhos-do-vazio"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/sombranato.webp",
         "portrait": "assets/m364/races/portraits/sombranato.webp",
         "card": "assets/m364/races/cards/sombranato.webp",
         "thumbnail": "assets/m364/races/cards/sombranato-thumbnail.webp",
         "icon": "assets/m364/races/icons/sombranato.webp"
-      }
+      },
+      "originKingdomIds": [
+        "noctheryn"
+      ],
+      "originRegionIds": [
+        "ruinas-de-kael",
+        "cortinas"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Cidades noturnas e florestas de luz baixa"
     },
     {
       "id": "maresio",
@@ -317,15 +594,34 @@
       "basicPassive": "Pulmão de Duas Águas: respira em água e ar e percebe correntes; seca exige hidratação.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Onda dupla envolvendo guelra aberta",
-      "professions": ["pescador","navegador","medico","mercador"],
-      "factions": ["conselho-dourado","liga-sem-reino","vigias-primeira-janela"],
+      "professions": [
+        "pescador",
+        "navegador",
+        "medico",
+        "mercador"
+      ],
+      "factions": [
+        "conselho-dourado",
+        "liga-sem-reino",
+        "vigias-primeira-janela"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/maresio.webp",
         "portrait": "assets/m364/races/portraits/maresio.webp",
         "card": "assets/m364/races/cards/maresio.webp",
         "thumbnail": "assets/m364/races/cards/maresio-thumbnail.webp",
         "icon": "assets/m364/races/icons/maresio.webp"
-      }
+      },
+      "originKingdomIds": [
+        "aurevia"
+      ],
+      "originRegionIds": [
+        "porto-millennium"
+      ],
+      "biomeIds": [
+        "floresta-viva"
+      ],
+      "habitat": "Recifes, mangues e cavernas marinhas"
     },
     {
       "id": "forjado",
@@ -339,15 +635,36 @@
       "basicPassive": "Núcleo Vinculado: resiste a venenos orgânicos e pode ser reparado, mas exige manutenção.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Diamante-núcleo dentro de engrenagem aberta",
-      "professions": ["construtor","ferreiro","investigador","guarda"],
-      "factions": ["liga-sem-reino","conselho-dourado","vigias-primeira-janela"],
+      "professions": [
+        "construtor",
+        "ferreiro",
+        "investigador",
+        "guarda"
+      ],
+      "factions": [
+        "liga-sem-reino",
+        "conselho-dourado",
+        "vigias-primeira-janela"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/forjado.webp",
         "portrait": "assets/m364/races/portraits/forjado.webp",
         "card": "assets/m364/races/cards/forjado.webp",
         "thumbnail": "assets/m364/races/cards/forjado-thumbnail.webp",
         "icon": "assets/m364/races/icons/forjado.webp"
-      }
+      },
+      "originKingdomIds": [
+        "aurevia",
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "porto-millennium",
+        "sul-vitrificado"
+      ],
+      "biomeIds": [
+        "deserto-de-vidro"
+      ],
+      "habitat": "Forjas e ruínas mecânicas"
     },
     {
       "id": "cineriano",
@@ -361,15 +678,34 @@
       "basicPassive": "Pulso de Cinza: tolera fumaça e reconhece combustão; água e vento dispersam seus vestígios.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Brasa central envolvida por três espirais de cinza",
-      "professions": ["investigador","ferreiro","funerario","explorador"],
-      "factions": ["irmandade-cinzas","liga-sem-reino","filhos-do-vazio"],
+      "professions": [
+        "investigador",
+        "ferreiro",
+        "funerario",
+        "explorador"
+      ],
+      "factions": [
+        "irmandade-cinzas",
+        "liga-sem-reino",
+        "filhos-do-vazio"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/cineriano.webp",
         "portrait": "assets/m364/races/portraits/cineriano.webp",
         "card": "assets/m364/races/cards/cineriano.webp",
         "thumbnail": "assets/m364/races/cards/cineriano-thumbnail.webp",
         "icon": "assets/m364/races/icons/cineriano.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "sul-vitrificado"
+      ],
+      "biomeIds": [
+        "deserto-de-vidro"
+      ],
+      "habitat": "Ruínas incendiadas e planícies vulcânicas"
     },
     {
       "id": "titanico",
@@ -383,22 +719,60 @@
       "basicPassive": "Corpo de Monumento: sustenta peso e impacto, mas perde furtividade e sofre em espaços estreitos.",
       "reputation": "Identidade e relações registradas no catálogo JavaScript",
       "symbolism": "Monólito erguido entre dois arcos de peso",
-      "professions": ["construtor","mineiro","guarda","explorador"],
-      "factions": ["coroa-velada","irmandade-cinzas","liga-sem-reino"],
+      "professions": [
+        "construtor",
+        "mineiro",
+        "guarda",
+        "explorador"
+      ],
+      "factions": [
+        "coroa-velada",
+        "irmandade-cinzas",
+        "liga-sem-reino"
+      ],
       "assets": {
         "banner": "assets/m364/races/banners/titanico.webp",
         "portrait": "assets/m364/races/portraits/titanico.webp",
         "card": "assets/m364/races/cards/titanico.webp",
         "thumbnail": "assets/m364/races/cards/titanico-thumbnail.webp",
         "icon": "assets/m364/races/icons/titanico.webp"
-      }
+      },
+      "originKingdomIds": [
+        "sem-reino"
+      ],
+      "originRegionIds": [
+        "norte-branco"
+      ],
+      "biomeIds": [
+        "abismo-frio"
+      ],
+      "habitat": "Montanhas altas e ruínas colossais"
     }
   ],
   "preserved": [],
-  "redesigned": ["humano", "elfo", "goblin", "anjo", "demonio", "vampiro", "zoofolk", "anao", "draconato", "morto-vivo", "silvanico", "lunariano", "sombranato", "maresio", "forjado", "cineriano", "titanico"],
+  "redesigned": [
+    "humano",
+    "elfo",
+    "goblin",
+    "anjo",
+    "demonio",
+    "vampiro",
+    "zoofolk",
+    "anao",
+    "draconato",
+    "morto-vivo",
+    "silvanico",
+    "lunariano",
+    "sombranato",
+    "maresio",
+    "forjado",
+    "cineriano",
+    "titanico"
+  ],
   "removedPlaceholders": [
     "runtime SVG fallback previously used by all seventeen races in character creation",
     "runtime SVG fallback previously used by all seventeen races in Codex cards",
     "letter-only race seal previously used by profile"
-  ]
+  ],
+  "integrationRevision": "racefix3-worldlinks"
 }
