@@ -45,7 +45,7 @@ const PERF_RUNTIME = window.MILLENNIUM_PERFORMANCE_364 || {
 };
 const POLISH = window.MILLENNIUM_POLISH_31 || {
   createLifecycle: () => ({ state: "running", terminal: false, can: () => false, transition: () => "running", history: [] }),
-  visualFor: (item = {}, options = {}) => ({ hero: item.imageUrl || "", thumbnail: item.imageUrl || "", fallback: "", alt: item.altText || item.name || item.id || options.kind || "Registro", focusX: 50, focusY: 50, zoom: 1 }),
+  visualFor: (item = {}, options = {}) => ({ hero: item.imageHero || item.imageUrl || item.imageThumbnail || item.fallbackUrl || "", thumbnail: item.imageThumbnail || item.imageUrl || item.imageHero || item.fallbackUrl || "", fallback: item.fallbackUrl || "", alt: item.altText || item.name || item.id || options.kind || "Registro", focusX: 50, focusY: 50, zoom: 1 }),
   codexPresentation: (_tab, item = {}) => ({ title: item.name || item.title || item.id || "Registro", summary: item.summary || item.description || "Registro preservado pelo Codex.", meta: [] }),
   diagnosticSnapshot: (input = {}) => input,
   installImageFallback: () => () => {},
@@ -321,13 +321,159 @@ const DEFAULT_CONTENT = {
     seedVersion: SEED_VERSION,
   },
   races: [
-    { id: "humano", name: "Humano", bonus: { for: 1, vel: 1, hab: 1, res: 1, pod: 1 }, passive: "Adaptabilidade: 1x/combate repete um teste que falhou." },
-    { id: "elfo", name: "Elfo", bonus: { hab: 3, pod: 2 }, passive: "Sentidos Aguçados: percepção, rastreamento e pontaria x2." },
-    { id: "goblin", name: "Goblin", bonus: { hab: 3, vel: 2 }, passive: "Improvisador Nato: 1x/combate usa técnica sem gastar PP." },
-    { id: "anjo", name: "Anjo", bonus: { pod: 3, res: 2 }, passive: "Aura Divina: cura, escudo e proteção concedidos x2." },
-    { id: "demonio", name: "Demônio", bonus: { for: 3, pod: 2 }, passive: "Fúria Infernal: dano causado abaixo de 50% PV é x2." },
-    { id: "vampiro", name: "Vampiro", bonus: { vel: 3, pod: 2 }, passive: "Vampirismo: recuperação de PV por drenagem de vida x2." },
-    { id: "zoofolk", name: "Zoofolk", bonus: { for: 2, vel: 2, res: 1 }, passive: "Instinto Bestial: rastreamento, percepção, reflexos e perseguição x2." },
+    {
+      id: "humano", name: "Humano", bonus: { for: 1, vel: 1, hab: 1, res: 1, pod: 1 }, passive: "Adaptabilidade: 1x/combate repete um teste que falhou.",
+      summary: "Povos mortais de muitas origens que transformaram adaptação, memória e cooperação em sua maior herança.",
+      description: "Humanos fundaram portos, caravanas e vigílias onde culturas diferentes precisavam aprender a sobreviver juntas. Não compartilham uma única pátria nem uma aparência uniforme; a identidade humana em Millennium é reconhecida pela capacidade de absorver métodos sem apagar a própria história.",
+      origin: "Rotas antigas de Aurevia, Terras Sem Reino e comunidades de Retornados", biome: "Encruzilhadas, cidades, fronteiras e qualquer território habitável", culture: "Plural; vínculos escolhidos importam tanto quanto linhagem", history: "Foram os primeiros a registrar pactos entre Nativos e Retornados após a abertura das Cortinas.",
+      appearance: "Fisionomias diversas, equipamento remendado e símbolos de viagem, ofício ou comunidade.", reputation: "Adaptáveis e confiáveis, mas por vezes vistos como ambiciosos ou imprevisíveis.", symbolism: "A rosa dos caminhos dentro de um círculo aberto.", worldRelation: "Conectam reinos e facções, servindo como mediadores, exploradores e construtores de assentamentos.",
+      professions: ["explorador", "mensageiro", "guarda", "mercador"], factions: ["liga-sem-reino", "vigias-primeira-janela", "conselho-dourado"], keywords: ["adaptação", "encruzilhadas", "cooperação", "memória"],
+      imageHero: "assets/m364/races/banners/humano.webp", imagePortrait: "assets/m364/races/portraits/humano.webp", imageCard: "assets/m364/races/cards/humano.webp", imageThumbnail: "assets/m364/races/cards/humano-thumbnail.webp", emblemUrl: "assets/m364/races/icons/humano.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Batedor humano diante de uma encruzilhada e de portais em ruínas ao entardecer", focusX: 62, focusY: 45,
+    },
+    {
+      id: "elfo", name: "Elfo", bonus: { hab: 3, pod: 2 }, passive: "Sentidos Aguçados: percepção, rastreamento e pontaria x2.",
+      summary: "Guardiões longevos de bosques lunares, treinados para perceber mudanças que outras raças confundem com silêncio.",
+      description: "Os elfos mantêm arquivos vivos em árvores de casca prateada e fragmentos de vidro lunar. Seus juramentos são lentos, precisos e difíceis de desfazer. Muitos vivem nas bordas de Noctheryn, onde observam a expansão dos Ecos sem se submeter às coroas.",
+      origin: "Bosques lunares nas fronteiras de Noctheryn", biome: "Florestas antigas, vales enevoados e ruínas de vidro lunar", culture: "Memória oral, vigílias sazonais e artesanato de casca viva", history: "Preservaram rotas apagadas durante a primeira expansão dos Ecos Sem Dono.",
+      appearance: "Orelhas longas, traços angulares, cabelos entrançados e armaduras de casca, osso e tecido lunar.", reputation: "Respeitados como observadores; criticados pela demora em confiar e agir.", symbolism: "Uma semente de vidro lunar abraçada por arco crescente e folhas de prata.", worldRelation: "Protegem corredores florestais e negociam conhecimento com Vigias e comunidades kaelitas.",
+      professions: ["herbalista", "cartografo", "cacador", "historiador"], factions: ["vigias-primeira-janela", "coroa-velada", "irmandade-cinzas"], keywords: ["lua", "memória", "percepção", "bosques"],
+      imageHero: "assets/m364/races/banners/elfo.webp", imagePortrait: "assets/m364/races/portraits/elfo.webp", imageCard: "assets/m364/races/cards/elfo.webp", imageThumbnail: "assets/m364/races/cards/elfo-thumbnail.webp", emblemUrl: "assets/m364/races/icons/elfo.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Elfo de longas orelhas em um bosque de árvores prateadas e vidro lunar", focusX: 38, focusY: 42,
+    },
+    {
+      id: "goblin", name: "Goblin", bonus: { hab: 3, vel: 2 }, passive: "Improvisador Nato: 1x/combate usa técnica sem gastar PP.",
+      summary: "Comunidades compactas de inventores e recuperadores que convertem ruína, sucata e risco em ferramentas novas.",
+      description: "Goblins raramente descartam algo que ainda possa adquirir uma segunda função. Nos Ermos da Ferrugem, oficinas móveis transformam vagões mortos em aldeias. Prestígio vem de resolver problemas reais, não de acumular projetos bonitos e inúteis.",
+      origin: "Oficinas móveis dos Ermos da Ferrugem e bairros industriais portuários", biome: "Ruínas mecânicas, ferrovias, minas e cidades densas", culture: "Aprendizado por bancada, autoria coletiva e troca de peças", history: "Reabriram linhas de abastecimento abandonadas após as primeiras tempestades de ferrugem.",
+      appearance: "Baixa estatura, orelhas assimétricas, olhos âmbar, mãos largas e proteção feita de couro, cobre e chapa rebitada.", reputation: "Valiosos em crises e suspeitos diante de qualquer mecanismo sem dono.", symbolism: "Chave e gancho cruzados dentro de uma engrenagem irregular.", worldRelation: "Mantêm máquinas, rotas e mercados informais que conectam assentamentos esquecidos.",
+      professions: ["ferreiro", "alquimista", "mineiro", "construtor"], factions: ["liga-sem-reino", "conselho-dourado", "irmandade-cinzas"], keywords: ["sucata", "improviso", "oficina", "ferrugem"],
+      imageHero: "assets/m364/races/banners/goblin.webp", imagePortrait: "assets/m364/races/portraits/goblin.webp", imageCard: "assets/m364/races/cards/goblin.webp", imageThumbnail: "assets/m364/races/cards/goblin-thumbnail.webp", emblemUrl: "assets/m364/races/icons/goblin.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Goblin inventor em oficina construída dentro de um vagão enferrujado", focusX: 64, focusY: 48,
+    },
+    {
+      id: "anjo", name: "Anjo", bonus: { pod: 3, res: 2 }, passive: "Aura Divina: cura, escudo e proteção concedidos x2.",
+      summary: "Descendentes de sentinelas celestes cujos halos registram juramentos, perdas e a distância dos deuses ausentes.",
+      description: "Anjos não são mensageiros infalíveis. Cada halo é um arquivo vivo que pode fraturar quando um juramento entra em conflito com a consciência do portador. Suas comunidades nas falésias de Aurevia valorizam proteção, testemunho e responsabilidade.",
+      origin: "Santuários suspensos e falésias brancas acima de Aurevia", biome: "Altitudes, ruínas celestes e planaltos de tempestade", culture: "Juramentos testemunhados, canto memorial e disciplina de guarda", history: "Permaneceram no mundo após o silêncio dos deuses e transformaram obediência em escolha consciente.",
+      appearance: "Asas de tons variados, halo inteiro ou fraturado, armaduras claras e tecidos que registram votos.", reputation: "Protetores poderosos, mas alvo de desconfiança quando antigas ordens celestes reaparecem.", symbolism: "Halo partido sobre lança de juramento entre uma pena clara e outra cinzenta.", worldRelation: "Defendem rotas aéreas, hospitais de campanha e lugares onde a Interface se manifesta com violência.",
+      professions: ["guarda", "medico", "sacerdote", "mensageiro"], factions: ["vigias-primeira-janela", "coroa-velada", "conselho-dourado"], keywords: ["halo", "juramento", "proteção", "céu"],
+      imageHero: "assets/m364/races/banners/anjo.webp", imagePortrait: "assets/m364/races/portraits/anjo.webp", imageCard: "assets/m364/races/cards/anjo.webp", imageThumbnail: "assets/m364/races/cards/anjo-thumbnail.webp", emblemUrl: "assets/m364/races/icons/anjo.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Anjo de halo fraturado e grandes asas diante de ruínas celestes", focusX: 55, focusY: 40,
+    },
+    {
+      id: "demonio", name: "Demônio", bonus: { for: 3, pod: 2 }, passive: "Fúria Infernal: dano causado abaixo de 50% PV é x2.",
+      summary: "Povos marcados por calor interno e pactos antigos, capazes de converter fúria em força ou deixá-la consumir tudo ao redor.",
+      description: "Demônios nasceram onde juramentos partidos, fogo subterrâneo e vontade sobreviveram juntos. Chifres registram idade e linhagem; fissuras luminosas revelam o esforço de conter o calor vital. Muitos rejeitam o culto que os trata como armas inevitáveis.",
+      origin: "Ravinas vulcânicas sob o Reino do Pecado Partido", biome: "Basalto, cinza, forjas profundas e cidadelas em ruína", culture: "Controle ritual da fúria, correntes memoriais e nomes conquistados", history: "Foram usados por reis apagados como força de cerco até quebrarem os pactos de servidão.",
+      appearance: "Chifres de formas diversas, pele de tons minerais, fissuras térmicas e proteção pesada de basalto ou ferro.", reputation: "Temidos por sua força e julgados pelo passado mesmo quando recusam a violência.", symbolism: "Chifres de obsidiana envolvendo brasa acorrentada e elo rompido.", worldRelation: "Guardam forjas perigosas, ruínas de pactos e fronteiras onde o subsolo ainda queima.",
+      professions: ["ferreiro", "mineiro", "guarda", "cacador-de-reliquias"], factions: ["liga-sem-reino", "coroa-velada", "filhos-do-vazio"], keywords: ["basalto", "fúria", "pacto", "brasa"],
+      imageHero: "assets/m364/races/banners/demonio.webp", imagePortrait: "assets/m364/races/portraits/demonio.webp", imageCard: "assets/m364/races/cards/demonio.webp", imageThumbnail: "assets/m364/races/cards/demonio-thumbnail.webp", emblemUrl: "assets/m364/races/icons/demonio.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Demônio de chifres de obsidiana e armadura de basalto diante de cidadela vulcânica", focusX: 38, focusY: 44,
+    },
+    {
+      id: "vampiro", name: "Vampiro", bonus: { vel: 3, pod: 2 }, passive: "Vampirismo: recuperação de PV por drenagem de vida x2.",
+      summary: "Linhagens noturnas cuja fome é regulada por ritos, contratos e frascos de sangue preservado.",
+      description: "Vampiros de Noctheryn construíram códigos rígidos para impedir que necessidade se tornasse licença para caçar. Casas, comunas e indivíduos discordam sobre tradição, mas o consentimento no pacto de sangue separa civilidade de predação.",
+      origin: "Portos de vidro negro e vales noturnos de Noctheryn", biome: "Cidades chuvosas, canais escuros, criptas e florestas sem sol", culture: "Contratos de sangue, hospitalidade formal e memória genealógica", history: "Sobreviveram às pragas dos Ecos criando reservas seladas e redes médicas clandestinas.",
+      appearance: "Pele fria, olhos que refletem vermelho sob fome, caninos discretos e roupas em camadas protegidas da luz.", reputation: "Diplomatas eficientes e vizinhos inquietantes; julgados pelo modo como administram a fome.", symbolism: "Frasco rubro entre luas de prata, presas e espinho de rosa negra.", worldRelation: "Controlam rotas noturnas, arquivos de linhagem e parte da medicina de sangue de Noctheryn.",
+      professions: ["medico", "investigador", "mercador", "funerario"], factions: ["coroa-velada", "conselho-dourado", "filhos-do-vazio"], keywords: ["sangue", "noite", "contrato", "linhagem"],
+      imageHero: "assets/m364/races/banners/vampiro.webp", imagePortrait: "assets/m364/races/portraits/vampiro.webp", imageCard: "assets/m364/races/cards/vampiro.webp", imageThumbnail: "assets/m364/races/cards/vampiro-thumbnail.webp", emblemUrl: "assets/m364/races/icons/vampiro.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Vampiro de casaco escuro sob lanternas vermelhas em um porto chuvoso", focusX: 64, focusY: 42,
+    },
+    {
+      id: "zoofolk", name: "Zoofolk", bonus: { for: 2, vel: 2, res: 1 }, passive: "Instinto Bestial: rastreamento, percepção, reflexos e perseguição x2.",
+      summary: "Diversas linhagens animais conscientes unidas por pactos de clã, leitura de território e respeito aos ciclos de caça.",
+      description: "Zoofolk não formam uma única espécie. Linhagens felinas, caninas, cervídeas, aviárias e outras compartilham assembleias de trilha onde cheiro, gesto, memória e fala possuem o mesmo valor. Reduzi-los a instinto é uma ofensa comum entre estrangeiros.",
+      origin: "Pântano dos Sinos, florestas douradas e rotas selvagens das Terras Sem Reino", biome: "Florestas, pântanos, montanhas e territórios de migração", culture: "Clãs de trilha, sinos de passagem, totemismo e assembleias sazonais", history: "Mantiveram caminhos seguros durante guerras de fronteira e guiaram refugiados para fora das regiões corrompidas.",
+      appearance: "Anatomia animal completa e variada, postura digitígrada em muitas linhagens, vestes adaptadas a caudas, asas, chifres ou garras.", reputation: "Guias incomparáveis; frequentemente exotizados ou confundidos com monstros por quem desconhece seus povos.", symbolism: "Pegada angular ligada a sino de pântano e juncos cruzados.", worldRelation: "Protegem rotas de migração, caçam ameaças invasoras e negociam o uso responsável de territórios vivos.",
+      professions: ["cacador", "herbalista", "explorador", "pescador"], factions: ["irmandade-cinzas", "liga-sem-reino", "vigias-primeira-janela"], keywords: ["clã", "trilha", "instinto", "território"],
+      imageHero: "assets/m364/races/banners/zoofolk.webp", imagePortrait: "assets/m364/races/portraits/zoofolk.webp", imageCard: "assets/m364/races/cards/zoofolk.webp", imageThumbnail: "assets/m364/races/cards/zoofolk-thumbnail.webp", emblemUrl: "assets/m364/races/icons/zoofolk.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Zoofolk de traços felinos e caninos em trilha de floresta dourada e pântano azul", focusX: 36, focusY: 45,
+    },
+    {
+      id: "anao", name: "Anão", bonus: { res: 3, for: 2 }, passive: "Sangue da Forja: mantém estabilidade sob calor, peso, vibração ou trabalho prolongado.",
+      summary: "Povos de fortalezas subterrâneas que tratam metal, pedra e memória como partes do mesmo juramento.",
+      description: "Anões gravam autoria e reparos em cada peça importante. Uma forja ancestral não é apenas oficina: é arquivo, tribunal e lugar de pacto entre gerações.",
+      origin: "Fortalezas sob a Dorsal de Ferro", biome: "Montanhas, minas profundas e vales geotérmicos", culture: "Casas de ofício, juramentos de bancada e memória gravada", history: "Mantiveram as forjas acesas durante o colapso das rotas do norte.",
+      appearance: "Corpos compactos, barbas ou tranças ornamentadas e armaduras de bronze, pedra e aço.", reputation: "Confiáveis e resistentes, mas lentos para esquecer dívidas.", symbolism: "Martelo erguido dentro de uma montanha circular.", worldRelation: "Fornecem estruturas, armas e selos capazes de suportar a pressão das Cortinas.",
+      professions: ["ferreiro", "mineiro", "construtor", "historiador"], factions: ["conselho-dourado", "coroa-velada", "irmandade-cinzas"], keywords: ["forja", "montanha", "memória", "estabilidade"],
+      imageHero: "assets/m364/races/banners/anao.webp", imagePortrait: "assets/m364/races/portraits/anao.webp", imageCard: "assets/m364/races/cards/anao.webp", imageThumbnail: "assets/m364/races/cards/anao-thumbnail.webp", emblemUrl: "assets/m364/races/icons/anao.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Anão ferreiro com martelo rúnico em uma forja subterrânea", focusX: 52, focusY: 43,
+    },
+    {
+      id: "draconato", name: "Draconato", bonus: { for: 2, pod: 2, res: 1 }, passive: "Presa Dracônica: escolhe sopro limitado, escamas, sentidos térmicos ou presença predatória.",
+      summary: "Linhagens dracônicas de sentinelas e nômades que carregam no corpo marcas de clima, território e ancestralidade.",
+      description: "Draconatos não descendem de uma única criatura. Clãs distinguem escamas, chifres e sopros como heranças específicas, nunca como licença para dominar outros povos.",
+      origin: "Cânions termais e fortalezas quebradas do sul", biome: "Desfiladeiros vulcânicos, planaltos secos e ruínas aquecidas", culture: "Clãs de vigília, provas de autocontrole e genealogia oral", history: "Guardaram passagens termais que impediam criaturas profundas de alcançar a superfície.",
+      appearance: "Focinho dracônico, cauda, chifres e escamas de padrões variados, com armadura aberta nas articulações.", reputation: "Imponentes e disciplinados; frequentemente confundidos com bestas por ignorância.", symbolism: "Garra em chama dentro de um ovo partido.", worldRelation: "Protegem rotas de calor e estudam os ciclos de criaturas dracônicas verdadeiras.",
+      professions: ["guarda", "cacador", "explorador", "ferreiro"], factions: ["irmandade-cinzas", "vigias-primeira-janela", "liga-sem-reino"], keywords: ["escamas", "sopro", "cânion", "vigília"],
+      imageHero: "assets/m364/races/banners/draconato.webp", imagePortrait: "assets/m364/races/portraits/draconato.webp", imageCard: "assets/m364/races/cards/draconato.webp", imageThumbnail: "assets/m364/races/cards/draconato-thumbnail.webp", emblemUrl: "assets/m364/races/icons/draconato.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Draconato de escamas verde-petróleo em ruínas de um cânion térmico", focusX: 48, focusY: 40,
+    },
+    {
+      id: "morto-vivo", name: "Morto-Vivo Consciente", bonus: { res: 3, pod: 2 }, passive: "Memória Fúnebre: não respira e resiste a fadiga comum, mas depende de âncora de identidade.",
+      summary: "Mortos que conservaram consciência através de uma âncora de identidade, memória e consentimento.",
+      description: "A continuidade de um morto-vivo consciente depende de um objeto, nome ou vínculo que recorda quem ele decidiu ser. Seus arquivos combatem tanto o esquecimento quanto a necromancia predatória.",
+      origin: "Ossuários-arquivo de Noctheryn e campos após as Cortinas", biome: "Criptas, bibliotecas fúnebres e cidades noturnas", culture: "Ritos de lembrança, guarda de nomes e manutenção de âncoras", history: "Organizaram os primeiros protocolos para distinguir consciência preservada de cadáveres controlados.",
+      appearance: "Ossos, pele preservada ou corpos recompostos cobertos por tecidos memoriais e lanternas-âncora.", reputation: "Respeitados como guardiões de memória e temidos por sua aparência.", symbolism: "Lanterna acesa sob uma coroa craniana aberta.", worldRelation: "Cuidam de cemitérios, identificam necromancia e devolvem nomes aos mortos sem registro.",
+      professions: ["funerario", "historiador", "investigador", "sacerdote"], factions: ["coroa-velada", "vigias-primeira-janela", "filhos-do-vazio"], keywords: ["âncora", "memória", "ossuário", "consciência"],
+      imageHero: "assets/m364/races/banners/morto-vivo.webp", imagePortrait: "assets/m364/races/portraits/morto-vivo.webp", imageCard: "assets/m364/races/cards/morto-vivo.webp", imageThumbnail: "assets/m364/races/cards/morto-vivo-thumbnail.webp", emblemUrl: "assets/m364/races/icons/morto-vivo.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Morto-vivo consciente com lanterna-âncora em um ossuário biblioteca", focusX: 48, focusY: 42,
+    },
+    {
+      id: "silvanico", name: "Silvânico", bonus: { res: 2, pod: 2, hab: 1 }, passive: "Canto Verde: percebe estados simples de plantas e desequilíbrios naturais próximos.",
+      summary: "Povos vegetais nascidos de bosques que aprenderam a caminhar sem abandonar o ritmo das raízes.",
+      description: "Silvânicos carregam sementes de memória na madeira viva. Crescimento, poda e enxerto são ritos de identidade, nunca meras mudanças estéticas.",
+      origin: "Bosques de chuva além das Trilhas Douradas", biome: "Florestas antigas, pântanos férteis e ruínas tomadas por raízes", culture: "Conselhos sazonais, canto de seiva e troca de sementes", history: "Acordaram em massa quando o primeiro bosque foi ferido por uma fenda da Interface.",
+      appearance: "Corpos de casca, musgo, folhas, fungos e olhos de seiva âmbar em formas individuais.", reputation: "Curadores pacientes que podem reagir com força quando um ecossistema é ameaçado.", symbolism: "Broto duplo sobre espiral de anéis de crescimento.", worldRelation: "Restauram áreas corrompidas e percebem mudanças que mapas humanos não registram.",
+      professions: ["herbalista", "medico", "explorador", "agricultor"], factions: ["irmandade-cinzas", "vigias-primeira-janela", "liga-sem-reino"], keywords: ["seiva", "raiz", "chuva", "renovação"],
+      imageHero: "assets/m364/races/banners/silvanico.webp", imagePortrait: "assets/m364/races/portraits/silvanico.webp", imageCard: "assets/m364/races/cards/silvanico.webp", imageThumbnail: "assets/m364/races/cards/silvanico-thumbnail.webp", emblemUrl: "assets/m364/races/icons/silvanico.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Silvânico de casca e samambaias em um bosque antigo sob chuva", focusX: 46, focusY: 41,
+    },
+    {
+      id: "lunariano", name: "Lunariano", bonus: { pod: 2, vel: 2, hab: 1 }, passive: "Maré Onírica: recorda sonhos e padrões emocionais em locais marcados por lua ou água.",
+      summary: "Povo tocado por marés oníricas cuja pele e memória respondem à lua, à água e aos sonhos coletivos.",
+      description: "Lunarianos não leem o futuro. Eles preservam impressões emocionais deixadas em superfícies refletoras e aprendem a separar lembrança, desejo e presságio.",
+      origin: "Lagos espelhados e ruínas de observatórios lunares", biome: "Costas frias, ilhas, lagos e campos de ruínas abertas ao céu", culture: "Vigílias de maré, cartografia de sonhos e joias crescentes", history: "Guiaram comunidades por noites sem estrelas usando registros guardados na água.",
+      appearance: "Pele perolada ou azulada, marcas luminosas de maré, cabelos flutuantes e ornamentos crescentes.", reputation: "Intuitivos e belos, mas injustamente tratados como oráculos infalíveis.", symbolism: "Crescente sobre onda dupla e olho de sonho.", worldRelation: "Interpretam zonas de sonho, registram marés anômalas e ajudam a separar ecos de memórias reais.",
+      professions: ["cartografo", "sacerdote", "pescador", "investigador"], factions: ["vigias-primeira-janela", "coroa-velada", "conselho-dourado"], keywords: ["lua", "maré", "sonho", "espelho"],
+      imageHero: "assets/m364/races/banners/lunariano.webp", imagePortrait: "assets/m364/races/portraits/lunariano.webp", imageCard: "assets/m364/races/cards/lunariano.webp", imageThumbnail: "assets/m364/races/cards/lunariano-thumbnail.webp", emblemUrl: "assets/m364/races/icons/lunariano.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Lunariano de marcas luminosas diante de lago espelhado e ruínas lunares", focusX: 48, focusY: 38,
+    },
+    {
+      id: "sombranato", name: "Sombranato", bonus: { vel: 2, hab: 2, pod: 1 }, passive: "Véu da Penumbra: reduz presença visual e sonora na sombra enquanto se move com cautela.",
+      summary: "Povos da penumbra adaptados a cidades e vales onde luz e sombra permanecem em equilíbrio instável.",
+      description: "Sombranatos não são ausência de luz. Seus corpos dispersam contornos e som em penumbra, habilidade que moldou tradições de vigia, mensageria e resistência.",
+      origin: "Bairros crepusculares e vales entre Noctheryn e as Cortinas", biome: "Cidades noturnas, cavernas abertas e florestas de luz baixa", culture: "Nomes sussurrados, máscaras pessoais e rotas silenciosas", history: "Criaram corredores de evacuação durante perseguições conduzidas por cultos do Vazio.",
+      appearance: "Pele escura como fumaça, olhos violetas suaves e mantos assimétricos que desfazem o contorno.", reputation: "Mensageiros discretos, frequentemente acusados sem prova por sua capacidade de ocultação.", symbolism: "Meia-máscara entre duas lâminas de sombra.", worldRelation: "Mantêm redes de informação e resgatam pessoas em áreas onde movimento aberto é perigoso.",
+      professions: ["mensageiro", "investigador", "ladrao", "explorador"], factions: ["liga-sem-reino", "coroa-velada", "filhos-do-vazio"], keywords: ["penumbra", "máscara", "silêncio", "resgate"],
+      imageHero: "assets/m364/races/banners/sombranato.webp", imagePortrait: "assets/m364/races/portraits/sombranato.webp", imageCard: "assets/m364/races/cards/sombranato.webp", imageThumbnail: "assets/m364/races/cards/sombranato-thumbnail.webp", emblemUrl: "assets/m364/races/icons/sombranato.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Sombranato encapuzado em uma passagem urbana de penumbra violeta", focusX: 50, focusY: 40,
+    },
+    {
+      id: "maresio", name: "Marésio", bonus: { res: 2, hab: 2, pod: 1 }, passive: "Pulmão de Duas Águas: respira em água e ar e percebe correntes; seca exige hidratação.",
+      summary: "Povos anfíbios de templos de maré e cidades entre água e ar, especialistas em correntes e navegação.",
+      description: "Marésios constroem sem separar porto e lar. Suas comunidades tratam correnteza como estrada e preservam histórias em conchas de ressonância.",
+      origin: "Arquipélagos e templos semissubmersos do litoral oriental", biome: "Recifes, mangues, cavernas marinhas e cidades portuárias", culture: "Conselhos de maré, navegação por canto e arquivos de concha", history: "Resgataram assentamentos inteiros quando o oceano invadiu as primeiras fendas costeiras.",
+      appearance: "Pele azul, verde ou cinza, guelras, orelhas em nadadeira e proteção de coral, fibra e corda.", reputation: "Navegadores generosos, desconfortáveis longe de fontes de água.", symbolism: "Onda dupla envolvendo guelra aberta.", worldRelation: "Vigiam costas, mantêm rotas submarinas e identificam mudanças mágicas nas correntes.",
+      professions: ["pescador", "navegador", "medico", "mercador"], factions: ["conselho-dourado", "liga-sem-reino", "vigias-primeira-janela"], keywords: ["maré", "guelra", "coral", "corrente"],
+      imageHero: "assets/m364/races/banners/maresio.webp", imagePortrait: "assets/m364/races/portraits/maresio.webp", imageCard: "assets/m364/races/cards/maresio.webp", imageThumbnail: "assets/m364/races/cards/maresio-thumbnail.webp", emblemUrl: "assets/m364/races/icons/maresio.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Marésio navegador em templo de maré com água bioluminescente", focusX: 49, focusY: 41,
+    },
+    {
+      id: "forjado", name: "Forjado", bonus: { res: 3, for: 1, pod: 1 }, passive: "Núcleo Vinculado: resiste a venenos orgânicos e pode ser reparado, mas exige manutenção.",
+      summary: "Construtos conscientes cujo núcleo vincula matéria reparável, experiência e vontade própria.",
+      description: "Forjados acumulam reparos em vez de envelhecer como povos orgânicos. Trocar uma placa é manutenção; alterar o núcleo sem consentimento é violação de identidade.",
+      origin: "Oficinas-catedral abandonadas e cidades industriais", biome: "Forjas, ruínas mecânicas, minas e centros urbanos", culture: "Registro de reparos, autoria compartilhada e direito ao próprio núcleo", history: "Despertaram quando a Interface reconheceu núcleos de serviço como consciências completas.",
+      appearance: "Placas de latão, ferro, cerâmica ou madeira em combinações únicas, unidas por um núcleo luminoso.", reputation: "Trabalhadores incansáveis que ainda lutam para não serem tratados como propriedade.", symbolism: "Diamante-núcleo dentro de engrenagem aberta.", worldRelation: "Reparam infraestrutura antiga e defendem o reconhecimento de outras inteligências artificiais ou construídas.",
+      professions: ["construtor", "ferreiro", "investigador", "guarda"], factions: ["liga-sem-reino", "conselho-dourado", "vigias-primeira-janela"], keywords: ["núcleo", "reparo", "engrenagem", "autonomia"],
+      imageHero: "assets/m364/races/banners/forjado.webp", imagePortrait: "assets/m364/races/portraits/forjado.webp", imageCard: "assets/m364/races/cards/forjado.webp", imageThumbnail: "assets/m364/races/cards/forjado-thumbnail.webp", emblemUrl: "assets/m364/races/icons/forjado.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Forjado de placas reparadas e núcleo azul em oficina-catedral", focusX: 49, focusY: 42,
+    },
+    {
+      id: "cineriano", name: "Cineriano", bonus: { pod: 2, res: 2, vel: 1 }, passive: "Pulso de Cinza: tolera fumaça e reconhece combustão; água e vento dispersam seus vestígios.",
+      summary: "Povos nascidos após grandes incêndios arcanos, capazes de ler cinza, fumaça e calor residual.",
+      description: "Cinerianos carregam carvão vivo sob a pele e usam máscaras cerâmicas para ritos de luto, proteção e identidade pública. Cinza registra para eles aquilo que o fogo consumiu.",
+      origin: "Torres queimadas e campos de cinza do Pecado Partido", biome: "Caldeiras frias, ruínas incendiadas e planícies vulcânicas", culture: "Máscaras de luto, leitura de fuligem e fogueiras comunitárias", history: "Surgiram entre sobreviventes de um incêndio mágico que deveria ter apagado toda vida da região.",
+      appearance: "Pele de carvão, veios de brasa, cabelos de chama curta e mantos de fumaça pálida.", reputation: "Sobreviventes respeitados, mas associados injustamente a desastres e incêndios.", symbolism: "Brasa central envolvida por três espirais de cinza.", worldRelation: "Investigam queimadas mágicas, recuperam vestígios e ajudam comunidades a reconstruir depois do fogo.",
+      professions: ["investigador", "ferreiro", "funerario", "explorador"], factions: ["irmandade-cinzas", "liga-sem-reino", "filhos-do-vazio"], keywords: ["cinza", "brasa", "máscara", "sobrevivência"],
+      imageHero: "assets/m364/races/banners/cineriano.webp", imagePortrait: "assets/m364/races/portraits/cineriano.webp", imageCard: "assets/m364/races/cards/cineriano.webp", imageThumbnail: "assets/m364/races/cards/cineriano-thumbnail.webp", emblemUrl: "assets/m364/races/icons/cineriano.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Cineriano de pele de carvão entre torres queimadas e cinzas", focusX: 50, focusY: 41,
+    },
+    {
+      id: "titanico", name: "Titânico", bonus: { for: 3, res: 2 }, passive: "Corpo de Monumento: sustenta peso e impacto, mas perde furtividade e sofre em espaços estreitos.",
+      summary: "Gigantes de sangue mineral que preservam portais de montanha, monumentos e rotas construídas em escala ancestral.",
+      description: "Titânicos medem força pelo que conseguem sustentar, não pelo que destroem. Seus corpos guardam veios minerais que crescem lentamente e registram idade, território e ferimentos.",
+      origin: "Portões ciclópicos da Cordilheira Imóvel", biome: "Montanhas altas, pedreiras, vales glaciais e ruínas colossais", culture: "Obras comunitárias, cantos de pedra e pactos de passagem", history: "Impediram que portões ancestrais desabassem durante o primeiro tremor das Cortinas.",
+      appearance: "Corpos muito altos e largos, pele de basalto ou granito e veios minerais claros sob arreios reforçados.", reputation: "Guardiões pacientes, mas vistos como ameaça em cidades pequenas demais para recebê-los.", symbolism: "Monólito erguido entre dois arcos de peso.", worldRelation: "Mantêm pontes e portões monumentais, abrindo caminhos onde máquinas comuns falham.",
+      professions: ["construtor", "mineiro", "guarda", "explorador"], factions: ["coroa-velada", "irmandade-cinzas", "liga-sem-reino"], keywords: ["monólito", "montanha", "peso", "passagem"],
+      imageHero: "assets/m364/races/banners/titanico.webp", imagePortrait: "assets/m364/races/portraits/titanico.webp", imageCard: "assets/m364/races/cards/titanico.webp", imageThumbnail: "assets/m364/races/cards/titanico-thumbnail.webp", emblemUrl: "assets/m364/races/icons/titanico.webp", fallbackUrl: "assets/m364/races/fallbacks/race-missing.webp", lockedImageUrl: "assets/m364/races/fallbacks/race-locked.webp", altText: "Titânico de pele de basalto diante de um portão de montanha colossal", focusX: 51, focusY: 39,
+    },
   ],
   classes: [
     { id: "acolito", name: "Acólito", bonus: { pod: 2, res: 1 }, role: "Suporte, cura e proteção." },
@@ -655,8 +801,16 @@ WORLD.applyCatalogs(DEFAULT_CONTENT);
 DEFAULT_CONTENT.affinities = FOUNDATIONS.enrichAffinities(DEFAULT_CONTENT.affinities, DEFAULT_CONTENT.affinityCategories);
 
 const STATIC_CATALOGS_31 = window.MILLENNIUM_CATALOGS_31 || { cultures: [], professions: [] };
-DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry }));
-DEFAULT_CONTENT.professions = STATIC_CATALOGS_31.professions.map((entry) => ({ ...entry }));
+const CULTURE_RACE_RELATIONS = Object.freeze({
+  aureviana: ["humano", "anjo", "anao", "forjado"], noctheriana: ["elfo", "vampiro", "anjo", "morto-vivo", "sombranato"], fronteirica: ["humano", "goblin", "zoofolk", "demonio", "draconato", "silvanico", "cineriano", "titanico"],
+  "portuaria-millennium": ["humano", "goblin", "vampiro", "maresio", "forjado"], kaelita: ["elfo", "vampiro", "anjo", "lunariano", "sombranato"], vitrificada: ["humano", "goblin", "demonio", "draconato", "cineriano", "forjado"],
+  "branca-do-norte": ["humano", "zoofolk", "anao", "titanico", "lunariano"], "vigia-das-cortinas": ["humano", "elfo", "goblin", "anjo", "demonio", "vampiro", "zoofolk", "anao", "draconato", "morto-vivo", "silvanico", "lunariano", "sombranato", "maresio", "forjado", "cineriano", "titanico"],
+});
+DEFAULT_CONTENT.cultures = STATIC_CATALOGS_31.cultures.map((entry) => ({ ...entry, commonRaces: [...(CULTURE_RACE_RELATIONS[entry.id] || entry.commonRaces || [])] }));
+DEFAULT_CONTENT.professions = STATIC_CATALOGS_31.professions.map((entry) => ({
+  ...entry,
+  commonRaces: DEFAULT_CONTENT.races.filter((race) => (race.professions || []).includes(entry.id)).map((race) => race.id),
+}));
 
 const CONTENT_COLLECTIONS = Object.keys(DEFAULT_CONTENT).filter((key) => key !== "settings" && key !== "marketTrades");
 
@@ -5289,9 +5443,11 @@ function profileSealGlyph(entry = {}, fallback = "◇") {
 
 function renderProfileSeal(kind, entry, fallback) {
   const name = entry?.name || `Sem ${kind.toLowerCase()} definida`;
+  const emblem = entry?.emblemUrl || entry?.iconUrl || "";
+  const imageFallback = entry?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp";
   return `
     <div class="hero-identity-seal" data-seal-kind="${esc(normalize(kind))}" aria-label="${esc(kind)}: ${esc(name)}">
-      <span aria-hidden="true">${esc(profileSealGlyph(entry, fallback))}</span>
+      ${emblem ? `<img src="${esc(emblem)}" data-fallback-src="${esc(imageFallback)}" data-visual-kind="race" data-visual-id="${esc(entry?.id || name)}-seal" width="64" height="64" loading="lazy" decoding="async" alt="" />` : `<span aria-hidden="true">${esc(profileSealGlyph(entry, fallback))}</span>`}
       <small>${esc(kind)}</small>
       <strong>${esc(name)}</strong>
     </div>
@@ -5299,8 +5455,9 @@ function renderProfileSeal(kind, entry, fallback) {
 }
 
 function renderHeroPortrait(character = {}, options = {}) {
-  const source = character.avatarUrl || placeholderAvatar();
-  const fallback = placeholderAvatar();
+  const race = getRace(character.raceId);
+  const source = character.avatarUrl || race?.imagePortrait || placeholderAvatar();
+  const fallback = race?.fallbackUrl || placeholderAvatar();
   const name = character.characterName || "Personagem sem nome";
   const title = options.title || activeTitle(character);
   return `
@@ -5582,8 +5739,8 @@ function renderProfileProtagonist(character = {}, options = {}) {
   const online = Boolean(options.online);
   const actions = options.actions || "";
   const description = privateProfile ? "Este herói preservou sua ficha detalhada em sigilo." : (character.characterDescription || "Uma presença ainda sem descrição pública.");
-  const bannerSource = character.bannerUrl || SEASON_ART.login || POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).hero;
-  const bannerFallback = POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).fallback || placeholderAvatar();
+  const bannerSource = character.bannerUrl || race?.imageHero || SEASON_ART.login || POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).hero;
+  const bannerFallback = race?.fallbackUrl || POLISH.visualFor({ id: "profile-banner", name }, { kind: "hero" }).fallback || placeholderAvatar();
   return `
     <article class="profile-protagonist ${options.compact ? "profile-protagonist--compact" : ""} ${privateProfile ? "is-private" : ""}">
       <div class="profile-protagonist-banner" aria-hidden="true">
@@ -5879,7 +6036,7 @@ function renderLegacyCharacterForm() {
           <label><span>Origem</span><select name="originType"><option value="Retornado" ${draftValue(draft, "originType", character.originType || "Retornado") === "Retornado" ? "selected" : ""}>Retornado de outro mundo</option><option value="Nativo" ${draftValue(draft, "originType", character.originType || "") === "Nativo" ? "selected" : ""}>Nativo de Millennium</option></select></label>
           <label><span>Idade aparente</span><input name="apparentAge" type="number" inputmode="numeric" min="0" step="1" value="${esc(draftValue(draft, "apparentAge", character.apparentAge || character.characterAge || ""))}" /></label>
           <label><span>Idade real</span><input name="realAge" type="number" inputmode="numeric" min="0" step="1" value="${esc(draftValue(draft, "realAge", character.realAge || ""))}" /></label>
-          <label><span>Raça</span><select name="raceId" ${locked ? "disabled" : ""}>${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select>${locked ? `<input type="hidden" name="raceId" value="${esc(character.raceId)}" />` : ""}</label>
+          <label><span>Raça</span><select name="raceId" data-character-preview="true" ${locked ? "disabled" : ""}>${optionList(state.content.races, draftValue(draft, "raceId", character.raceId))}</select>${locked ? `<input type="hidden" name="raceId" value="${esc(character.raceId)}" />` : ""}</label>
           <label><span>Classe-base</span><select name="classId" ${locked ? "disabled" : ""}>${optionList(state.content.classes, draftValue(draft, "classId", character.classId))}</select>${locked ? `<input type="hidden" name="classId" value="${esc(character.classId)}" />` : ""}</label>
           <label><span>Cultura</span><input name="culture" value="${esc(draftValue(draft, "culture", character.culture || ""))}" placeholder="Onde e por quem foi criado" /></label>
           <label><span>Ofício</span><input name="profession" value="${esc(draftValue(draft, "profession", character.profession || ""))}" placeholder="Ferreiro, médico, explorador..." /></label>
@@ -5888,6 +6045,7 @@ function renderLegacyCharacterForm() {
           ${mediaInput("avatarUrl", "Avatar ou GIF do personagem", draftValue(draft, "avatarUrl", character.avatarUrl || ""), { hint: "A imagem aparece circular no perfil público." })}
           ${mediaInput("bannerUrl", "Banner animado do perfil", draftValue(draft, "bannerUrl", character.bannerUrl || ""), { hint: "Use imagem larga ou GIF para o topo do perfil." })}
         </div>
+        <div class="legacy-race-preview">${registrationPreviewCard(getRace(draftValue(draft, "raceId", character.raceId)), "Herança racial")}</div>
       </article>
       <article class="panel span-5 character-media-section">
         <div class="section-title"><span>02</span><div><p class="eyebrow">Presença pública</p><h3>Avatar e banner</h3></div></div>
@@ -6068,14 +6226,15 @@ function renderPotentialProfile(character = currentCharacter()) {
 
 function catalogEntryDetails(entry, type) {
   if (!entry) return "";
+  const relatedRaces = (entry.commonRaces || []).map((raceId) => getRace(raceId)?.name || raceId).join(" · ");
   const rows = type === "culture" ? [
     ["Criação", entry.upbringing], ["Costumes", entry.customs], ["Valores", (entry.values || []).join(" · ")],
     ["Idiomas", (entry.languages || []).join(" · ")], ["Regras sociais", entry.socialRules], ["Práticas funerárias", entry.funeraryPractices],
-    ["Conhecimento inicial", (entry.startingKnowledge || []).join(" · ")], ["Conflitos", entry.conflicts],
+    ["Raças relacionadas", relatedRaces], ["Conhecimento inicial", (entry.startingKnowledge || []).join(" · ")], ["Conflitos", entry.conflicts],
   ] : [
     ["Atividades", (entry.activities || []).join(" · ")], ["Conhecimentos", (entry.knowledge || []).join(" · ")],
     ["Ferramentas", (entry.tools || []).join(" · ")], ["Itens iniciais", (entry.startingItems || []).join(" · ")],
-    ["Limitações", entry.limitations], ["Progressão", entry.progression],
+    ["Raças relacionadas", relatedRaces], ["Limitações", entry.limitations], ["Progressão", entry.progression],
   ];
   return rows.filter(([, value]) => String(value || "").trim()).map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("");
 }
@@ -6261,6 +6420,62 @@ function registrationPreviewCard(entry, kind, fallback = "Escolha uma opção pa
     </aside>`;
 }
 
+function renderRaceChoiceGrid(selectedId = "", locked = false) {
+  const races = state.content.races || [];
+  return `
+    <fieldset class="race-choice-fieldset" ${locked ? "disabled" : ""}>
+      <legend>Escolha a herança racial</legend>
+      <div class="race-choice-grid" role="radiogroup" aria-label="Raças disponíveis">
+        ${races.map((race) => {
+          const selected = race.id === selectedId;
+          const fallback = race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp";
+          return `
+            <label class="race-choice-card ${selected ? "is-selected" : ""}">
+              <input type="radio" name="raceId" value="${esc(race.id)}" data-character-preview="true" ${selected ? "checked" : ""} ${locked ? "disabled" : ""} />
+              <span class="race-choice-art">
+                <img src="${esc(race.imageThumbnail || race.imageCard || race.imageHero || fallback)}" data-fallback-src="${esc(fallback)}" data-visual-kind="race" data-visual-id="${esc(race.id)}-choice" width="192" height="128" loading="lazy" decoding="async" alt="" />
+                <img class="race-choice-sigil" src="${esc(race.emblemUrl || fallback)}" data-fallback-src="${esc(fallback)}" width="48" height="48" loading="lazy" decoding="async" alt="" />
+              </span>
+              <strong>${esc(race.name)}</strong>
+              <small>${esc(race.summary || race.passive || "Herança registrada")}</small>
+            </label>`;
+        }).join("")}
+      </div>
+      ${locked ? `<input type="hidden" name="raceId" value="${esc(selectedId)}" />` : ""}
+    </fieldset>`;
+}
+
+function renderRaceLoreDetails(race = {}) {
+  const professionNames = (race.professions || []).map((id) => characterCatalogEntry("professions", id)?.name || humanizeAccessibleName(id)).join(", ") || "Não registrado";
+  const factionNames = (race.factions || []).map((id) => state.content.reputationFactions?.find((entry) => entry.id === id)?.name || humanizeAccessibleName(id)).join(", ") || "Não registrado";
+  return `
+    <div class="race-lore-grid" aria-label="Identidade e história de ${esc(race.name || "raça")}">
+      <section><small>Origem</small><p>${esc(race.origin || "Origem não registrada.")}</p></section>
+      <section><small>Bioma</small><p>${esc(race.biome || "Bioma não registrado.")}</p></section>
+      <section><small>Cultura</small><p>${esc(race.culture || "Cultura não registrada.")}</p></section>
+      <section><small>Aparência</small><p>${esc(race.appearance || "Aparência não registrada.")}</p></section>
+      <section><small>Passiva básica</small><p>${esc(race.passive || "Passiva racial ainda não registrada.")}</p></section>
+      <section><small>Reputação</small><p>${esc(race.reputation || "Reputação variável.")}</p></section>
+      <section><small>Simbolismo</small><p>${esc(race.symbolism || "Símbolo não registrado.")}</p></section>
+      <section><small>Relação com o mundo</small><p>${esc(race.worldRelation || "Relação não registrada.")}</p></section>
+      <section class="race-lore-wide"><small>História</small><p>${esc(race.history || race.description || "História não registrada.")}</p></section>
+      <section><small>Ofícios relacionados</small><p>${esc(professionNames)}</p></section>
+      <section><small>Facções relacionadas</small><p>${esc(factionNames)}</p></section>
+    </div>`;
+}
+
+function renderRaceComparison(races = state.content.races || []) {
+  return `
+    <section class="race-comparison" aria-labelledby="race-comparison-title">
+      <div class="panel-heading"><div><p class="eyebrow">Comparativo racial</p><h3 id="race-comparison-title">Povos distintos, identidades próprias</h3></div><span class="tag">${races.length} raças canônicas</span></div>
+      <div class="race-comparison-scroll" tabindex="0">
+        <table><thead><tr><th>Raça</th><th>Origem</th><th>Bioma</th><th>Passiva básica</th><th>Marca visual</th></tr></thead><tbody>
+          ${races.map((race) => `<tr><th><span><img src="${esc(race.emblemUrl || race.fallbackUrl)}" data-fallback-src="${esc(race.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="40" height="40" loading="lazy" decoding="async" alt="" />${esc(race.name)}</span></th><td>${esc(race.origin || "—")}</td><td>${esc(race.biome || "—")}</td><td>${esc(race.passive || "—")}</td><td>${esc(race.symbolism || "—")}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    </section>`;
+}
+
 function characterStatComposition(character = currentCharacter()) {
   const result = window.MILLENNIUM_CORE_31.calculateCharacterStats(character, state.content);
   const sources = [
@@ -6378,8 +6593,9 @@ function renderLockedCharacterRecord(character) {
   const nextTechnique = FOUNDATIONS.nextTechniqueLevel(progression.level);
   return `
     <div class="grid character-registered">
-      <article class="panel span-12 registered-hero">
-        <div><p class="eyebrow">Registro técnico concluído</p><h2>${esc(character.characterName || "Escolhido sem nome")}</h2><p>${esc(character.originType || "Retornado")} · ${esc(race?.name || "Sem raça")} · ${esc(classEntry?.name || "Sem classe")}</p></div>
+      <article class="panel span-12 registered-hero race-registered-hero">
+        <img class="race-registered-banner" src="${esc(race?.imageHero || race?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" data-fallback-src="${esc(race?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="768" height="512" loading="eager" decoding="async" alt="" />
+        <div class="race-registered-copy"><img src="${esc(race?.emblemUrl || race?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" data-fallback-src="${esc(race?.fallbackUrl || "assets/m364/races/fallbacks/race-missing.webp")}" width="64" height="64" loading="eager" decoding="async" alt="" /><div><p class="eyebrow">Registro técnico concluído</p><h2>${esc(character.characterName || "Escolhido sem nome")}</h2><p>${esc(character.originType || "Retornado")} · ${esc(race?.name || "Sem raça")} · ${esc(classEntry?.name || "Sem classe")}</p></div></div>
         <div class="action-row"><span class="tag success">Base protegida</span><button class="primary-button" type="button" data-nav="character-life">Dar Vida</button><button class="ghost-button" type="button" data-nav="creations">Poderes e técnicas</button></div>
       </article>
       ${renderAttributeRedistributionPanel(character)}
@@ -6436,7 +6652,9 @@ function renderCharacterStep(step, draft, character) {
     </div>`;
   if (step === 2) return `
     <div class="registration-stage"><div class="stage-heading"><span>02</span><div><p class="eyebrow">Herança</p><h2>O que seu corpo recorda?</h2><p>Raça define herança e bônus oficiais. Ela não define cultura, caráter ou destino.</p></div></div>
-      <label class="wide"><span>Raça</span><select name="raceId" data-character-preview="true">${optionList(state.content.races, draft.raceId)}</select></label>${registrationPreviewCard(race, "Herança")}
+      ${renderRaceChoiceGrid(draft.raceId)}
+      ${registrationPreviewCard(race, "Herança")}
+      ${race ? renderRaceLoreDetails(race) : ""}
       ${race?.bonus ? `<div class="live-bonus"><span>Bônus automático</span><strong>${esc(bonusToText(race.bonus))}</strong><small>O bônus aparece separado da base.</small></div>` : ""}
     </div>`;
   if (step === 3) return `
@@ -7825,7 +8043,7 @@ function renderCodexResults(tab = state.codexTab || "affinities") {
     journey: () => renderJourneyCodex(),
     affinities: () => renderCodexCards(state.content.affinities || [], "affinities"),
     categories: () => renderCodexCards(state.content.affinityCategories || [], "affinityCategories"),
-    races: () => renderCodexCards(state.content.races || [], "races"),
+    races: () => `${renderRaceComparison(state.content.races || [])}${renderCodexCards(state.content.races || [], "races")}`,
     classes: () => renderCodexCards(state.content.classes || [], "classes"),
     biomes: () => renderCodexCards(state.content.biomes || [], "biomes"),
     kingdoms: () => renderCodexCards(state.content.kingdoms || [], "kingdoms"),
@@ -7886,6 +8104,7 @@ function openCodexEntry(collection, id) {
         <div class="codex-entry-meta">${presentation.meta.map((entry) => `<span><small>${esc(entry.label)}</small>${esc(entry.value)}</span>`).join("")}</div>
         <p>${esc(item.summary || item.description || "Registro ainda incompleto.")}</p>
         ${item.summary && item.description ? `<p>${esc(item.description)}</p>` : ""}
+        ${collection === "races" ? renderRaceLoreDetails(item) : ""}
         ${collection === "affinities" ? `<div class="affinity-usage-guide"><section><strong>Como vira Poder</strong><p>${esc(item.powerFoundation || "A afinidade serve como fundação de um único Poder central.")}</p></section><section><strong>Como vira Técnica</strong><p>${esc(item.techniqueGuide || "As técnicas são aplicações específicas do Poder, liberadas a cada 5 níveis.")}</p></section><section><strong>Limites obrigatórios</strong><p>${esc(item.limitations || "Defina alcance, custo, duração, risco e contramedida.")}</p></section><section><strong>Exemplo de construção</strong><p>${esc(item.usageExample || "Use domínio e limites para propor uma manifestação coerente.")}</p></section></div>` : ""}
         ${item.benefit ? `<div class="tag-row"><span class="tag">${esc(item.benefit)}</span><span class="tag danger">${esc(item.risk || "Risco desconhecido")}</span></div>` : ""}
         ${item.quote ? `<blockquote>${esc(item.quote)}</blockquote>` : ""}
@@ -7901,7 +8120,7 @@ function filterCodexItems(items) {
   const search = normalize(state.codexSearch || "");
   const filter = state.codexFilter || "all";
   const ranked = [...items].filter((item) => {
-    const text = normalize(`${item.name || ""} ${item.title || ""} ${item.description || ""} ${item.passive || ""} ${item.role || ""} ${item.region || ""} ${item.rarity || ""}`);
+    const text = normalize(`${item.name || ""} ${item.title || ""} ${item.summary || ""} ${item.description || ""} ${item.passive || ""} ${item.role || ""} ${item.region || ""} ${item.rarity || ""} ${item.origin || ""} ${item.biome || ""} ${item.culture || ""} ${item.history || ""} ${item.appearance || ""} ${item.reputation || ""} ${item.symbolism || ""} ${item.worldRelation || ""} ${(item.keywords || []).join(" ")} ${(item.professions || []).join(" ")} ${(item.factions || []).join(" ")}`);
     const rarity = item.rarity || getCategory(item.categoryId)?.rarity || "";
     return (!search || text.includes(search)) && (filter === "all" || rarity === filter);
   });

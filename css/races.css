@@ -1,0 +1,280 @@
+/* Millennium 3.6.4-r3.4 — identidade racial em pixel art. */
+
+.race-choice-fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.race-choice-fieldset > legend {
+  margin-block-end: .75rem;
+  color: var(--muted, #aab6c8);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.race-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: .75rem;
+}
+
+.race-choice-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line, #31435c) 82%, transparent);
+  border-radius: .9rem;
+  background: color-mix(in srgb, var(--panel, #101b2b) 93%, #02060c);
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.race-choice-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent, #d7b35c);
+}
+
+.race-choice-card:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--cyan, #5fd4ff) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.race-choice-card.is-selected,
+.race-choice-card:has(input:checked) {
+  border-color: var(--accent, #d7b35c);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, #d7b35c) 56%, transparent), 0 .7rem 1.7rem rgb(0 0 0 / .28);
+}
+
+.race-choice-card > input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.race-choice-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #05080d;
+}
+
+.race-choice-art > img:first-child {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.race-choice-sigil {
+  position: absolute;
+  inset-inline-end: .45rem;
+  inset-block-end: .45rem;
+  inline-size: 2.7rem;
+  block-size: 2.7rem;
+  border: 1px solid rgb(232 199 116 / .62);
+  border-radius: .65rem;
+  background: #06090f;
+  object-fit: cover;
+  box-shadow: 0 .3rem .8rem rgb(0 0 0 / .46);
+}
+
+.race-choice-card > strong,
+.race-choice-card > small {
+  padding-inline: .72rem;
+}
+
+.race-choice-card > strong {
+  padding-block-start: .68rem;
+  color: var(--ink, #f5f1e7);
+}
+
+.race-choice-card > small {
+  padding-block: .35rem .8rem;
+  color: var(--muted, #aab6c8);
+  line-height: 1.35;
+}
+
+.race-choice-art img,
+.race-choice-sigil,
+.race-lore-grid img,
+.race-comparison img,
+.hero-identity-seal img,
+.race-registered-hero img,
+.codex-view[data-codex-active-tab="races"] img,
+.legacy-race-preview img {
+  image-rendering: pixelated;
+}
+
+.race-lore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin-block: .9rem;
+}
+
+.race-lore-grid > section {
+  min-width: 0;
+  padding: .78rem;
+  border: 1px solid color-mix(in srgb, var(--line, #31435c) 72%, transparent);
+  border-radius: .72rem;
+  background: rgb(3 8 15 / .42);
+}
+
+.race-lore-grid > .race-lore-wide {
+  grid-column: 1 / -1;
+}
+
+.race-lore-grid small {
+  display: block;
+  margin-block-end: .3rem;
+  color: var(--accent, #d7b35c);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.race-lore-grid p {
+  margin: 0;
+  color: var(--muted, #c0c8d5);
+  line-height: 1.5;
+}
+
+.race-comparison {
+  margin-block-end: 1rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--line, #31435c) 82%, transparent);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgb(10 18 30 / .96), rgb(4 8 15 / .96));
+}
+
+.race-comparison-scroll {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+}
+
+.race-comparison table {
+  inline-size: 100%;
+  min-inline-size: 58rem;
+  border-collapse: collapse;
+}
+
+.race-comparison th,
+.race-comparison td {
+  padding: .68rem .75rem;
+  border-block-end: 1px solid color-mix(in srgb, var(--line, #31435c) 58%, transparent);
+  text-align: start;
+  vertical-align: top;
+}
+
+.race-comparison th > span {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  white-space: nowrap;
+}
+
+.race-comparison th img {
+  flex: 0 0 auto;
+  border-radius: .5rem;
+}
+
+.hero-identity-seal > img {
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  margin-inline: auto;
+  border-radius: .72rem;
+  object-fit: cover;
+}
+
+.race-registered-hero {
+  position: relative;
+  isolation: isolate;
+  min-block-size: 15rem;
+  overflow: hidden;
+}
+
+.race-registered-banner {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  opacity: .48;
+}
+
+.race-registered-hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, rgb(4 9 16 / .94) 0 42%, rgb(4 9 16 / .55) 72%, rgb(4 9 16 / .78));
+}
+
+.race-registered-copy {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+}
+
+.race-registered-copy > img {
+  flex: 0 0 auto;
+  border: 1px solid rgb(232 199 116 / .62);
+  border-radius: .75rem;
+}
+
+.legacy-race-preview {
+  margin-block-start: 1rem;
+}
+
+/* O atributo height do helper de mídia é apenas reserva de layout. A arte
+   racial deve seguir a largura responsiva do card sem ser deformada. */
+.registration-preview > img {
+  block-size: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (max-width: 47.5rem) {
+  .race-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .race-choice-card > small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .race-lore-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .race-lore-grid > .race-lore-wide {
+    grid-column: auto;
+  }
+
+  .race-registered-hero {
+    min-block-size: 19rem;
+  }
+
+  .race-registered-hero::after {
+    background: linear-gradient(180deg, rgb(4 9 16 / .78), rgb(4 9 16 / .95) 70%);
+  }
+}
+
+@media (max-width: 24rem) {
+  .race-choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
