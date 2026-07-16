@@ -75,7 +75,7 @@
     const kind = clean(options.kind || "record", 48).toLowerCase();
     const hero = clean(item.imageHero || item.imageUrl || item.heroUrl || "", 2000);
     const thumbnail = clean(item.imageThumbnail || item.thumbnailUrl || "", 2000);
-    const fallback = fallbackVisual(kind, item);
+    const fallback = clean(item.fallbackUrl || item.imageFallback || "", 2000) || fallbackVisual(kind, item);
     return Object.freeze({
       hero: hero || thumbnail || fallback,
       thumbnail: thumbnail || hero || fallback,
@@ -121,6 +121,11 @@
     } else if (["races", "classes"].includes(tab)) {
       add("Bônus", bonus);
       add(tab === "classes" ? "Função" : "Passiva", tab === "classes" ? item.role : item.passive);
+      if (tab === "races") {
+        add("Origem", item.origin);
+        add("Bioma", item.biome);
+        add("Símbolo", item.symbolism);
+      }
     } else if (tab === "bestiary") {
       add("Região", item.region);
       add("Fraqueza", item.weakness);
